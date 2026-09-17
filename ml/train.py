@@ -61,6 +61,7 @@ from composite import composite  # noqa: E402
 
 MANIFEST = ROOT / "data" / "processed" / "icar_images.csv"
 EXTRA_MANIFEST = ROOT / "data" / "processed" / "extra_images.csv"
+MORE_MANIFEST = ROOT / "data" / "processed" / "more_images.csv"
 ART = ROOT / "ml" / "artifacts"
 REP = ROOT / "ml" / "reports"
 SEED = 42
@@ -69,6 +70,14 @@ IMG = 300
 # Classes the ICAR set already has get fewer, so its field photos keep weight.
 EXTRA_CAP_NEW = {"train": 300, "val": 40, "test": 80}
 EXTRA_CAP_EXISTING = {"train": 150, "val": 30, "test": 60}
+# --with-more: the cotton, soybean and extra maize/rice sets (data/ingest_more.py).
+# Cotton and soybean have no ICAR photos at all — their classes are carried by
+# this source alone, so it may bring as much as it has. Raised from 420 after the
+# first cotton/soybean candidate missed the deploy bar on soybean rust, septoria
+# and caterpillar recall: those classes have 300-865 images and were being cut in
+# half for no reason.
+MORE_CAP_NEW = {"train": 700, "val": 100, "test": 150}
+MORE_CAP_EXISTING = {"train": 350, "val": 50, "test": 90}
 COMPOSITE_P = 0.85
 
 
@@ -113,9 +122,14 @@ def load_split():
     return train, val, test
 
 
+# 2 workers, not 4: on a 16 GB laptop the extra copies of the dataset cost more
+# in memory pressure than they save in decode time (an item takes ~4 ms).
+WORKERS = int(os.environ.get("ANNRAKSHAK_WORKERS", "2"))
+
+
 def loader(rows, class_idx, tf, shuffle, bs=16, sampler=None, **ds):
     return DataLoader(Images(rows, class_idx, tf, **ds), batch_size=bs, shuffle=shuffle and sampler is None,
-                      sampler=sampler, num_workers=4, persistent_workers=True)
+                      sampler=sampler, num_workers=WORKERS, persistent_workers=WORKERS > 0)
 
 
 def balanced_sampler(rows, epoch_size, icar_share=0.5):
@@ -144,21 +158,24 @@ def balanced_sampler(rows, epoch_size, icar_share=0.5):
     return WeightedRandomSampler(torch.tensor(w, dtype=torch.double), num_samples=epoch_size, replacement=True)
 
 
-def load_extra_split():
-    """Extra-source rows split per class (seeded, stratified), capped."""
-    rows = list(csv.DictReader(EXTRA_MANIFEST.open()))
-    icar_classes = {r["train_class"] for r in csv.DictReader(MANIFEST.open())}
+def load_extra_split(manifest=None, cap_new=None, cap_existing=None, known=None):
+    """Extra-source rows split per class (seeded, stratified), capped. A class
+    the ICAR set already covers gets the smaller cap, so ICAR's field photos
+    keep their weight."""
+    rows = list(csv.DictReader((manifest or EXTRA_MANIFEST).open()))
+    icar_classes = known if known is not None else {r["train_class"] for r in csv.DictReader(MANIFEST.open())}
+    cap_new, cap_existing = cap_new or EXTRA_CAP_NEW, cap_existing or EXTRA_CAP_EXISTING
     rng = random.Random(SEED)
     by_class: dict[str, list] = {}
     for r in rows:
         by_class.setdefault(r["train_class"], []).append(r)
     out = {"train": [], "val": [], "test": []}
     for cls, items in sorted(by_class.items()):
-        items = sorted(items, key=lambda r: r["sha1"])
+        items = sorted(items, key=lambda r: r.get("sha1") or r["dhash"] + r["path"])
         rng.shuffle(items)
         n = len(items)
         cut1, cut2 = int(n * 0.70), int(n * 0.85)
-        caps = EXTRA_CAP_EXISTING if cls in icar_classes else EXTRA_CAP_NEW
+        caps = cap_existing if cls in icar_classes else cap_new
         for split, part in (("train", items[:cut1]), ("val", items[cut1:cut2]), ("test", items[cut2:])):
             out[split] += part[: caps[split]]
     return out["train"], out["val"], out["test"]
@@ -253,14 +270,31 @@ def warm_start(net, state: dict, old_classes: list[str], class_idx: dict[str, in
 
 
 def finetune(backbone, train, val, class_idx, device, quick, epochs, backgrounds=None, val_backgrounds=None,
-             epoch_size=None, init=None, icar_share=0.5):
+             epoch_size=None, init=None, icar_share=0.5, freeze_all=False, lr_override=None):
     net = Net(backbone, len(class_idx), "finetune").to(device)
     lr_feat, lr_head, warm = 1.5e-4, 1e-3, 3
     if init is not None:  # (state_dict, class list) of the deployed model
         new = warm_start(net, init[0], init[1], class_idx)
         net.to(device)
-        lr_feat, lr_head, warm = 5e-5, 5e-4, 2  # gentle: don't wash out what it knows
-        print(f"  warm start from the deployed model; new classes: {new}")
+        # A gentle rate protects what the model already knows, and is right when a
+        # run only refreshes known classes. Bringing in a whole new crop is not
+        # that: those head rows start from noise, and at 5e-5 the backbone never
+        # moves far enough to grow features for them. So the rate follows how much
+        # is actually new (this is why the first cotton/soybean candidate plateaued).
+        share_new = len(new) / max(len(class_idx), 1)
+        if share_new > 0.1:
+            lr_feat, lr_head, warm = 1.2e-4, 1e-3, 3
+        else:
+            lr_feat, lr_head, warm = 5e-5, 5e-4, 2
+        if freeze_all:
+            # The backbone stays exactly as the deployed model learnt it, so the
+            # rice and maize features that model was trusted for cannot be
+            # damaged; only the head learns, and it is the only thing that has to.
+            lr_feat, lr_head, warm = 0.0, 2e-3, 0
+        if lr_override:  # a continuation that must barely move the backbone
+            lr_feat, lr_head, warm = lr_override[0], lr_override[1], 1
+        print(f"  warm start from the deployed model; new classes ({len(new)}): {new}")
+        print(f"  lr feat {lr_feat:g} head {lr_head:g} ({share_new:.0%} of classes are new)")
     if backgrounds:
         dl_tr = loader(train, class_idx, train_transform(IMG), shuffle=True,
                        sampler=balanced_sampler(train, epoch_size or len(train), icar_share),
@@ -283,14 +317,27 @@ def finetune(backbone, train, val, class_idx, device, quick, epochs, backgrounds
     best, best_state, history = -1.0, None, []
     t0 = time.time()
     for epoch in range(warm + epochs):
-        frozen = epoch < warm
+        frozen = freeze_all or epoch < warm
         for p in net.features.parameters():
             p.requires_grad = not frozen
         net.train()
+        if frozen:
+            # requires_grad=False stops the weights moving; it does NOT stop
+            # batch-norm updating its running mean and variance, and in training
+            # mode it does that on every batch. The backbone would drift while
+            # being called frozen — exactly what this run exists to prevent — so
+            # the feature extractor is put in inference mode as well.
+            net.features.train(False)
         total = 0.0
         for x, y in dl_tr:
             x, y = x.to(device), y.to(device)
-            loss = F.cross_entropy(net(x), y, label_smoothing=0.1)
+            if frozen:  # no gradients through the backbone: the forward pass is
+                with torch.no_grad():  # then the only cost, and epochs halve
+                    feats = net.pooled(x)
+                logits = net.head(feats)
+            else:
+                logits = net(x)
+            loss = F.cross_entropy(logits, y, label_smoothing=0.1)
             opt.zero_grad()
             loss.backward()
             opt.step()
@@ -306,6 +353,8 @@ def finetune(backbone, train, val, class_idx, device, quick, epochs, backgrounds
               f"[{time.time() - t0:.0f}s]")
         if s["f1"] > best:
             best, best_state = s["f1"], {k: v.detach().clone() for k, v in net.state_dict().items()}
+        if device.type == "mps":  # a 16 GB laptop swaps without this
+            torch.mps.empty_cache()
     net.load_state_dict(best_state)
     return net, best, history
 
@@ -436,6 +485,17 @@ def main():
                     help="with --with-extra: add expert-labelled field photos from ml/export_confirmed.py")
     ap.add_argument("--warm-start", action="store_true",
                     help="with --with-extra: continue from the deployed model instead of ImageNet weights")
+    ap.add_argument("--from-candidate", action="store_true",
+                    help="continue from ml/artifacts/candidate (a run that did not pass the deploy gate)")
+    ap.add_argument("--per-class", type=int, default=120,
+                    help="with --with-extra: samples drawn per class per epoch")
+    ap.add_argument("--with-more", action="store_true",
+                    help="also the cotton, soybean and extra maize/rice sets (data/processed/more_images.csv)")
+    ap.add_argument("--lr-feat", type=float, default=None,
+                    help="backbone learning rate for a continuation (with --lr-head)")
+    ap.add_argument("--lr-head", type=float, default=3e-4)
+    ap.add_argument("--freeze-backbone", action="store_true",
+                    help="train only the head; the deployed model's features are left untouched")
     ap.add_argument("--with-extra", action="store_true",
                     help="v2: add the extra sources (blast, rust, field FAW) with background randomisation")
     args = ap.parse_args()
@@ -607,6 +667,12 @@ def main_extra(args):
     else:
         i_tr, i_va, i_te = load_split()
     e_tr, e_va, e_te = load_extra_split()
+    if getattr(args, "with_more", False):
+        known = {r["train_class"] for r in list(icar.values()) + e_tr + e_va + e_te}
+        m_tr, m_va, m_te = load_extra_split(MORE_MANIFEST, MORE_CAP_NEW, MORE_CAP_EXISTING, known)
+        e_tr, e_va, e_te = e_tr + m_tr, e_va + m_va, e_te + m_te
+        print(f"with cotton, soybean and more maize/rice: {len(m_tr)}/{len(m_va)}/{len(m_te)} "
+              f"images over {len({r['train_class'] for r in m_tr})} classes (data/ingest_more.py)")
     if getattr(args, "with_confirmed", False):
         conf_csv = ROOT / "data" / "processed" / "confirmed.csv"
         if conf_csv.exists():
@@ -623,26 +689,31 @@ def main_extra(args):
     def healthy(rows, crop):
         return [r["path"] for r in rows if r["train_class"] == f"{crop}_healthy" and r["bg"] == "field"]
 
-    crops = ("rice", "maize")
+    crops = tuple(sorted({r["crop"] for r in train + val + i_te + e_te}))
     bgs = {"train": {c: healthy(i_tr + e_tr, c) for c in crops},
            "val": {c: healthy(i_va + e_va, c) for c in crops},
            "test": {c: healthy(i_te + e_te, c) for c in crops}}
-    epoch_size = 96 if args.quick else 120 * len(classes)
+    epoch_size = 96 if args.quick else args.per_class * len(classes)
     print(f"device={device}  classes={len(classes)}  ICAR {len(i_tr)}/{len(i_va)}/{len(i_te)}  "
           f"extra {len(e_tr)}/{len(e_va)}/{len(e_te)}  epoch={epoch_size or len(train)} samples  "
           f"backgrounds train={ {c: len(v) for c, v in bgs['train'].items()} }")
 
     init, icar_share = None, 0.5
-    if args.warm_start:
-        if not prev_meta or not (ART / "model.pt").exists():
-            sys.exit("--warm-start needs a deployed model in ml/artifacts/")
-        init = (torch.load(ART / "model.pt", map_location="cpu"), prev_meta["classes"])
+    if args.warm_start or args.from_candidate:
+        # --from-candidate continues a candidate that did not pass the deploy gate,
+        # without touching the model the app is serving.
+        src = cand_dir if args.from_candidate else ART
+        src_meta = json.loads((src / "meta.json").read_text()) if (src / "meta.json").exists() else None
+        if not src_meta or not (src / "model.pt").exists():
+            sys.exit(f"warm start needs a model in {src}")
+        init = (torch.load(src / "model.pt", map_location="cpu"), src_meta["classes"])
         icar_share = 0.75  # the ICAR field photos anchor the classes both sources share
     print("fine-tune — EfficientNetV2-S, ICAR + extra sources, background randomisation"
           f"{', warm start' if init else ''}:")
     net, f1, hist = finetune("efficientnet_v2_s", train, val, class_idx, device, args.quick, args.epochs,
                              backgrounds=bgs["train"], val_backgrounds=bgs["val"], epoch_size=epoch_size or None,
-                             init=init, icar_share=icar_share)
+                             init=init, icar_share=icar_share, freeze_all=args.freeze_backbone,
+                             lr_override=(args.lr_feat, args.lr_head) if args.lr_feat else None)
 
     dl_va = loader(val, class_idx, test_transform(IMG), shuffle=False, backgrounds=bgs["val"], deterministic=True)
     lv, yv = logits_of(net, dl_va, device)
@@ -685,12 +756,19 @@ def main_extra(args):
         checks.append(("ICAR accuracy-when-advised within 1 point of deployed",
                        (gate["accuracy_when_advised"] or 0) >= pg - 0.01,
                        f"{gate['accuracy_when_advised']} vs {pg}"))
+    MIN_SWAP_ROWS = 10
     for c in new_classes:
-        r = extra["plain_rows_swapped"]["per_class"].get(c, {}).get("recall", 0)
-        checks.append((f"{c} recall after background swap >= 0.70", r >= 0.70, f"{r:.3f}"))
+        swapped = extra["plain_rows_swapped"]["per_class"].get(c, {})
+        if swapped.get("n", 0) >= MIN_SWAP_ROWS:  # enough lab-backdrop photos to swap the backdrop
+            r = swapped.get("recall", 0)
+            checks.append((f"{c} recall after background swap >= 0.70", r >= 0.70, f"{r:.3f}"))
+        else:  # a class learnt from field photos: judge it on its own held-out photos
+            r = extra["original_background"]["per_class"].get(c, {}).get("recall", 0)
+            checks.append((f"{c} recall on held-out photos >= 0.70", r >= 0.70, f"{r:.3f}"))
     deploy = not args.quick and all(ok for _, ok, _ in checks)
 
-    version = (f"icar+extra-efficientnet_v2_s-{'warmstart' if init else 'finetune'}-"
+    version = (f"icar+extra{'+more' if getattr(args, 'with_more', False) else ''}-"
+               f"efficientnet_v2_s-{'warmstart' if init else 'finetune'}-"
                f"{datetime.now(UTC):%Y%m%d}")
     meta = {
         "model_version": version, "backbone": "efficientnet_v2_s", "head": "finetune", "img_size": IMG,

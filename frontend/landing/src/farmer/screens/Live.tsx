@@ -35,7 +35,7 @@ function position(timeoutMs = 6000): Promise<GeolocationPosition | null> {
 export default function Live() {
   const { farmId, lang, t } = useFarmer()
   const navigate = useNavigate()
-  const home = useAsync(() => api.home(farmId!, lang), [farmId, lang])
+  const home = useAsync(() => api.home(farmId!, lang), [farmId, lang], ['home', farmId!, lang].join(':'))
   const [phase, setPhase] = useState<Phase>('intro')
   const [error, setError] = useState<string | null>(null)
   const [ctx, setCtx] = useState<LiveContext | null>(null)
@@ -165,11 +165,30 @@ export default function Live() {
       setSummary(m.summary)
       setPhase('summary')
       void sp?.prompt(m.summary.speech)
+    } else if (m.type === 'lang') {
+      // Language switched mid-call: the server re-sent the context and the current step.
+      setCtx(m.context)
+      setGuide(m.guide)
+      void sp?.prompt(m.guide.text)
     } else if (m.type === 'error') {
       st.current.inflight = false
       if (m.code === 'SESSION_LIMIT') finish(false)
     }
   }, [finish, stopCamera])
+
+  // A language change takes effect at once: mid-call the server switches the
+  // guidance and context; after the call the summary is re-rendered from what was saved.
+  const langSeen = useRef(lang)
+  useEffect(() => {
+    if (langSeen.current === lang) return
+    langSeen.current = lang
+    speakerRef.current?.setLang(lang)
+    const ws = wsRef.current
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'lang', lang }))
+    if (summary && farmId != null) {
+      api.liveSummary(farmId, summary.scan_id, lang).then(setSummary).catch(() => undefined)
+    }
+  }, [lang, summary, farmId])
 
   const start = async () => {
     setPhase('starting')

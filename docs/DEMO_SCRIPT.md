@@ -8,6 +8,11 @@ check, a phone on the same Wi-Fi needs HTTPS for the camera (a tunnel such as
 localhost is fine — point the webcam at a real leaf, or at held-out photos
 shown on a second screen.
 
+Signing in: the landing page's **Log in** has **Demo farmer** and **Demo expert**
+buttons (the seeded demo farms / an expert who covers every district), so no
+code is needed on stage. To show a real sign-up, use **Get Started** → farmer or
+expert: the two ask different questions, and the one-time code arrives by email.
+
 Every step names the PS clause it proves.
 
 ## 1. The alert comes first (0:00–0:40) — *weather-based risk forecasting, pest-trap/sensor inputs*
@@ -67,6 +72,7 @@ Every step names the PS clause it proves.
 - **Real time**: officials' "Run risk sweep" (or `POST /api/officials/watch/run`) → the farmer's app shows a toast instantly and the bell counts it; phone notification when the app is closed; a warning email in the farmer's language and the 6 am farm summary (weather, pH, moisture, water, spray window, crop risks). Alerts → "Email today's summary" sends it now.
 - **Languages**: header language button → Bengali / Tamil / Telugu / Kannada: the whole app, the advice and the voice switch. The farmer's saved language drives voice, notifications and email.
 - **Wrong crop, or not a crop**: a maize photo on a rice farm says what it sees ("Fall armyworm on Maize, 97%") and re-checks it on a maize farm in one tap; a photo of a person, a guitar or a bird is refused ("retake — not a crop photo") instead of guessed at.
+- **Krishi, the helper** (bottom-right, every farmer screen): tap a suggested question, or type "spray kab karu" / "पाऊस पडेल का?" — the answer comes from this farm's forecast, with a button to the right screen and a Listen button. Ask "onion price" and it says that's outside the app and gives the Kisan Call Centre number instead of inventing one. Switch language with the conversation open: it re-renders in place.
 - **Crop health from space**: satellite greenness (NDVI) and soil moisture per field, and an honest "clouds have hidden your field" in the monsoon.
 - **Officials — Kisan Call Centre signal**: 262,778 farmer calls show when and where each pest is asked about (sucking pests peak Aug–Sep in Jalna; stem borer in Gondia) — an independent check on the risk calendar.
 
@@ -81,4 +87,7 @@ Every step names the PS clause it proves.
 - **"Is it pan-India?"** Seven languages today (Marathi, Hindi, English hand-written; Bengali, Tamil, Telugu, Kannada machine translated from the approved text and under native review). Malayalam, Gujarati, Punjabi and Odia next — the pipeline is built, it needs translation credits.
 - **"Is the live check just video upload?"** No. Frames go over a WebSocket at ~1.5/s (about 30 KB each, fine on 4G), are analysed in memory and dropped; only the close-ups that prove a problem are kept, for the expert. Leave mid-call and nothing is saved.
 - **"Is that pH measured?"** Only if a sensor or Soil Health Card gave it — the card says *measured*, *from your Soil Health Card* or *estimated (soil map)*. We never present a map estimate as a measurement.
+- **"Is Krishi a chatbot that can hallucinate?"** No. It matches the question to authored help topics (checked against the app, tested with 45 real phrasings in four scripts) or builds the answer from the same data the screens show. Below a similarity threshold it says it didn't understand and offers the Kisan Call Centre. It never names a pesticide — that goes through the photo check and Spray check.
+- **"Who can see a farmer's data?"** The farmer, and an expert or officer once a case or a confirmed outbreak nearby involves their field — every farm, case and dashboard call checks the signed-in role on the server, not just in the app. Codes are stored only as hashes; sessions are HttpOnly cookies.
+- **"Why email codes, not SMS?"** No free SMS gateway yet; both roles give a mobile number at sign-up, so switching the code to SMS is a config change once DLT registration and a gateway are in place.
 - **"Does it work offline / without a smartphone?"** Honest answer: web app installable as a PWA today; SMS/IVR is the next integration (see docs/INTEGRATIONS.md).

@@ -2,11 +2,14 @@ import { useState } from 'react'
 import { ChevronRight, LocateFixed, Plus, Sprout } from 'lucide-react'
 import { api } from '../../api/client'
 import type { Farm } from '../../api/types'
-import { DISTRICTS } from '../../lib/districts'
+import WherePicker, { type Where } from '../../auth/WherePicker'
 import { useAsync } from '../../lib/hooks'
 import { Card, ErrorBox, Pill, Spinner } from '../../ui/kit'
 import LanguagePicker from '../components/LanguagePicker'
 import { useFarmer } from '../FarmerContext'
+import { useAuth } from '../../auth/AuthContext'
+import { Chips } from '../../auth/parts'
+import type { Irrigation } from '../../api/types'
 
 const CROP_TINT: Record<string, string> = {
   rice: 'bg-leaf/15 text-leaf-deep',
@@ -17,8 +20,8 @@ const CROP_TINT: Record<string, string> = {
 
 export default function Onboard() {
   const { lang, t, setFarmId, setLang } = useFarmer()
-  const farms = useAsync(() => api.farms(lang), [lang])
-  const crops = useAsync(() => api.crops(lang), [lang])
+  const farms = useAsync(() => api.farms(lang), [lang], ['farms', lang].join(':'))
+  const crops = useAsync(() => api.crops(lang), [lang], ['crops', lang].join(':'))
   const [adding, setAdding] = useState(false)
   const [cropFilter, setCropFilter] = useState<string | null>(null)
   const shown = (farms.data ?? []).filter((f) => !cropFilter || f.crop === cropFilter)
@@ -36,7 +39,7 @@ export default function Onboard() {
         <LanguagePicker variant="grid" onPick={setLang} />
       </section>
 
-      {farms.loading && <Spinner />}
+      {farms.loading && !farms.data && <Spinner />}
       {farms.error && <ErrorBox error={farms.error} onRetry={farms.reload} retryLabel={t('retry')} />}
 
       {crops.data && farms.data && (
@@ -81,7 +84,7 @@ export default function Onboard() {
           className="w-full min-h-[52px] rounded-2xl border-2 border-dashed border-leaf/40 text-leaf-deep text-sm font-medium flex items-center justify-center gap-2 hover:bg-leaf/5"
         >
           <Plus className="w-4 h-4" />
-          {t('registerFarm')}
+          {(farms.data?.length ?? 0) > 0 ? t('authAddField') : t('registerFarm')}
         </button>
       ) : (
         crops.data && <RegisterForm crops={crops.data} onDone={(id) => setFarmId(id)} />
@@ -95,10 +98,15 @@ function RegisterForm({ crops, onDone }: {
   onDone: (id: number) => void
 }) {
   const { lang, t } = useFarmer()
-  const [name, setName] = useState('')
+  const { me } = useAuth()
+  const [name, setName] = useState(me?.name ?? '')
+  const [irrigation, setIrrigation] = useState<Irrigation>('rainfed')
   const [crop, setCrop] = useState(crops[0]?.id ?? 'rice')
   const [sowing, setSowing] = useState(() => new Date(Date.now() - 60 * 864e5).toISOString().slice(0, 10))
-  const [district, setDistrict] = useState('Pune')
+  const [where, setWhere] = useState<Where>({
+    state: me?.profile?.state ?? '', district: me?.profile?.district ?? '', village: me?.profile?.village ?? '',
+    taluka: me?.profile?.taluka ?? '', lat: null, lon: null, fromGps: false,
+  })
   const [area, setArea] = useState('2')
   const [ph, setPh] = useState('')  // Soil Health Card pH, optional
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null)
@@ -120,7 +128,7 @@ function RegisterForm({ crops, onDone }: {
   }
 
   const submit = async () => {
-    const d = DISTRICTS.find((x) => x.name === district)!
+
     setBusy(true)
     setError(null)
     try {
@@ -129,10 +137,13 @@ function RegisterForm({ crops, onDone }: {
         lang,
         crop,
         sowing_date: sowing,
-        district,
-        lat: coords?.lat ?? d.lat,
-        lon: coords?.lon ?? d.lon,
+        state: where.state || null,
+        district: where.district,
+        lat: where.lat ?? coords?.lat,
+        lon: where.lon ?? coords?.lon,
         area_acres: parseFloat(area),
+        irrigation,
+        village: where.village || null,
         ...(phOk && ph ? { soil_ph: parseFloat(ph), soil_ph_on: new Date().toISOString().slice(0, 10) } : {}),
       })
       onDone(f.id)
@@ -176,14 +187,12 @@ function RegisterForm({ crops, onDone }: {
         {t('sowingDate')}
         <input className={field} type="date" value={sowing} onChange={(e) => setSowing(e.target.value)} />
       </label>
-      <label className="block text-xs text-soil-dark/60">
-        {t('district')}
-        <select className={field} value={district} onChange={(e) => setDistrict(e.target.value)}>
-          {DISTRICTS.map((d) => (
-            <option key={d.name}>{d.name}</option>
-          ))}
-        </select>
-      </label>
+      <WherePicker value={where} onChange={setWhere} />
+      <div className="text-xs text-soil-dark/60">
+        <p className="mb-1">{t('authIrrigation')}</p>
+        <Chips columns={2} value={[irrigation]} onChange={([v]) => setIrrigation(v)}
+          options={(['rainfed', 'canal', 'borewell', 'open_well', 'farm_pond', 'drip', 'sprinkler'] as const).map((id) => ({ id, label: t(`irr_${id}`) }))} />
+      </div>
       <label className="block text-xs text-soil-dark/60">
         {t('soilPhCard')}
         <input className={field} type="number" inputMode="decimal" min="3" max="11" step="0.1" value={ph}

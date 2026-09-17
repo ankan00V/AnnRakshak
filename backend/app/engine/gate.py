@@ -71,6 +71,20 @@ def is_healthy(target: str) -> bool:
     return target.endswith("_healthy")
 
 
+def threshold_of(reason: str, top_target: str | None) -> float:
+    """The bar a stored decision was judged against, from its reason — so a
+    past result can be shown again (in another language) with the same meter."""
+    if reason == "BELOW_FLOOR":
+        return FLOOR
+    if reason in ("AMBIGUOUS", "AMBIGUOUS_NO_CUE"):
+        return MARGIN
+    if reason in ("LAB_CLASS_CONFIRM", "LAB_CLASS_BELOW_GATE") and top_target:
+        return gate_for(top_target)
+    if reason == "CROP_NOT_SUPPORTED":
+        return 0.0
+    return GATE
+
+
 def decide(
     topk: TopK,
     *,

@@ -5,19 +5,21 @@ from __future__ import annotations
 from datetime import date
 from typing import Literal
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import services
+from app import auth, config, nim, services
 from app.db import get_db
 from app.limits import limit
 from app.engine import labelcheck, vision
 from app.kb import KB, get_kb, tr
 from app.models import Alert, Farm, FollowUp, Problem, SensorReading, TrapReading
 
-router = APIRouter(prefix="/api", tags=["farmer"])
+# Every /farms/{farm_id}, /problems/{id}, /alerts/{id} and /followups/{id} URL is
+# checked against the signed-in farmer (app.auth.guard); experts may open any farm.
+router = APIRouter(prefix="/api", tags=["farmer"], dependencies=[Depends(auth.require())])
 Lang = Literal["en", "hi", "mr", "bn", "ta", "te", "kn", "ml", "gu", "pa", "od"]
 MAX_UPLOAD_BYTES = 12 * 1024 * 1024
 
@@ -51,9 +53,17 @@ def targets(lang: Lang = "en", crop: str | None = None, kb: KB = Depends(get_kb)
 
 
 @router.get("/samples")
-def samples(crop: str | None = None, per_class: int = 1):
-    """Held-out TEST images (never seen in training) for demos without a sick
-    plant at hand. Empty when the dataset or split is not on this machine."""
+def samples(request: Request, crop: str | None = None, per_class: int = 1,
+            db: Session = Depends(get_db)):
+    """Held-out TEST images (never seen in training) for showing the app without
+    a sick plant at hand. Empty when the dataset or split is not on this machine.
+
+    Demo accounts only. A farmer who signed up for their own field is looking at
+    their own crop, and a strip of somebody else's photos in the middle of that
+    is not something they should have to tell apart from their own."""
+    user = auth.current_user(request, db)
+    if not (user and user.is_demo):
+        return []
     split = vision.ARTIFACTS / "split.json"
     if not split.exists():
         return []
@@ -74,9 +84,12 @@ def samples(crop: str | None = None, per_class: int = 1):
         if crop and not cls.startswith(crop + "_"):
             continue
         key = "/".join(path.split("/")[-2:])
-        extra = "/extra_640/" in path
-        url = "/samples-extra/" + "/".join(path.split("/")[-3:]) if extra else "/samples/" + key
-        item = {"url": url, "true_class": cls, "source": path.split("/")[-3] if extra else "icar",
+        # Each processed set has its own mount (app.main); ICAR photos sit one
+        # directory shallower, the others under their source folder.
+        mount = next((m for d, m in (("/extra_640/", "/samples-extra/"), ("/more_640/", "/samples-more/"))
+                      if d in path), None)
+        url = mount + "/".join(path.split("/")[-3:]) if mount else "/samples/" + key
+        item = {"url": url, "true_class": cls, "source": path.split("/")[-3] if mount else "icar",
                 "expected": outcomes.get(key, {}).get("outcome")}
         if item["expected"] == "clarify" or (item["expected"] == "escalate" and n_escalate < 2):
             n_escalate += item["expected"] == "escalate"
@@ -115,35 +128,55 @@ class FarmIn(BaseModel):
     soil: str | None = None
     soil_ph: float | None = Field(default=None, ge=3, le=11)  # from the Soil Health Card, if the farmer has one
     soil_ph_on: date | None = None
+    irrigation: Literal["rainfed", "canal", "borewell", "open_well", "farm_pond", "drip", "sprinkler"] | None = None
 
 
 @router.get("/farms")
-def list_farms(lang: Lang = "en", db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
-    return [services.farm_view(kb, f, lang) for f in db.scalars(select(Farm).order_by(Farm.id)).all()]
+def list_farms(request: Request, lang: Lang = "en", db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    """The signed-in farmer's farms (a demo farmer: the demo farms; an expert: all)."""
+    ids = auth.farm_ids_for(db, auth.signed_in(request, db))
+    q = select(Farm).order_by(Farm.id)
+    if ids is not None:
+        q = q.where(Farm.id.in_(ids))
+    return [services.farm_view(kb, f, lang) for f in db.scalars(q).all()]
 
 
 @router.post("/farms", status_code=201)
-def create_farm(body: FarmIn, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+def create_farm(body: FarmIn, request: Request, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    """Another field for the signed-in farmer (the first comes with sign-up)."""
+    user = auth.signed_in(request, db)
+    if user is not None and user.role != "farmer":
+        raise HTTPException(403, "only farmers add farms")
     if body.crop not in kb.crops:
         raise HTTPException(422, f"unsupported crop {body.crop}")
-    farm = Farm(**body.model_dump())
+    farm = Farm(**body.model_dump(), user_id=user.id if user else None)
+    if user is not None:  # the account's contact details reach this field's alerts too
+        farm.phone = farm.phone or user.phone
+        farm.email = user.email
     db.add(farm)
     db.commit()
     return services.farm_view(kb, farm, body.lang)
 
 
 class FarmPrefs(BaseModel):
-    lang: Lang
+    lang: Lang | None = None
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lon: float | None = Field(default=None, ge=-180, le=180)
 
 
 @router.patch("/farms/{farm_id}")
 def update_farm(farm_id: int, body: FarmPrefs, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
-    """The farmer's preferred language: the app, the voice, phone notifications
-    and emails all follow it."""
+    """The farmer's preferred language (the app, the voice, notifications and
+    emails all follow it), and the field's own spot once they allow location —
+    everything from the weather to the outbreak radius is read there."""
     farm = _farm(db, farm_id)
-    farm.lang = body.lang
+    if body.lang:
+        farm.lang = body.lang
+    if body.lat is not None and body.lon is not None:
+        farm.lat, farm.lon, farm.location_source = body.lat, body.lon, "gps"
+        farm.agro_polygon_id = None  # the satellite field polygon is redrawn around the new spot
     db.commit()
-    return services.farm_view(kb, farm, body.lang)
+    return services.farm_view(kb, farm, body.lang or farm.lang)
 
 
 @router.get("/farms/{farm_id}")
@@ -229,6 +262,15 @@ def get_problem(problem_id: int, lang: Lang = "en", db: Session = Depends(get_db
 class FollowUpIn(BaseModel):
     response: Literal["improved", "no_change", "got_worse"]
     lang: Lang = "en"
+
+
+@router.get("/problems/{problem_id}/result")
+def problem_result(problem_id: int, lang: Lang = "en", db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    """The photo result screen again in `lang` — for a language switch on it."""
+    try:
+        return services.result_view(db, kb, _problem(db, problem_id), lang)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
 
 
 @router.post("/followups/{followup_id}")
@@ -331,8 +373,9 @@ class LabelCheckIn(BaseModel):
 
 
 @router.post("/labelcheck")
-def label_check(body: LabelCheckIn, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+def label_check(body: LabelCheckIn, request: Request, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
     farm = _farm(db, body.farm_id)
+    auth.check_farm(auth.signed_in(request, db), farm)
     target = None
     if body.problem_id is not None:
         target = _problem(db, body.problem_id).target
@@ -343,4 +386,16 @@ def label_check(body: LabelCheckIn, db: Session = Depends(get_db), kb: KB = Depe
         target = latest.target if latest else None
     if target and target.endswith("_healthy"):
         target = None
-    return labelcheck.check(kb, body.product, farm.crop, target, body.lang) | {"target": target}
+    out = labelcheck.check(kb, body.product, farm.crop, target, body.lang) | {"target": target}
+    if out["tone"] == "unknown":
+        # We hold no record of what was typed, so the verified answer stops at
+        # "ask an expert". A model can still say what the thing IS — that water
+        # is not a pesticide, that a fertiliser will not cure a fungus — which is
+        # the difference between a dead end and an answer. It explains only:
+        # labelcheck.safe_suggestion drops anything carrying a dose or naming a
+        # chemical, and the verified refusal above is never replaced.
+        problem = tr(kb.targets[target]["names"], "en") if target else "not diagnosed yet"
+        out["suggestion"] = labelcheck.safe_suggestion(kb, nim.suggest(
+            body.product, tr(kb.crops[farm.crop]["names"], "en"), problem, body.lang,
+            key=config.NVIDIA_SUGGEST_KEY))
+    return out

@@ -11,8 +11,8 @@ import { useFarmer } from '../FarmerContext'
 
 export default function Alerts() {
   const { farmId, lang, t } = useFarmer()
-  const home = useAsync(() => api.home(farmId!, lang), [farmId, lang])
-  const alerts = useAsync(() => api.alerts(farmId!, lang), [farmId, lang])
+  const home = useAsync(() => api.home(farmId!, lang), [farmId, lang], ['home', farmId!, lang].join(':'))
+  const alerts = useAsync(() => api.alerts(farmId!, lang), [farmId, lang], ['alerts', farmId!, lang].join(':'))
 
   if ((alerts.loading && !alerts.data) || (home.loading && !home.data)) return <Spinner label={t('loading')} />
   if (alerts.error) return <ErrorBox error={alerts.error} onRetry={alerts.reload} retryLabel={t('retry')} />
@@ -59,7 +59,7 @@ export default function Alerts() {
 
 function TrapForm({ crop, onSaved }: { crop: string; onSaved: () => void }) {
   const { farmId, lang, t } = useFarmer()
-  const kb = useAsync(() => api.targets(lang, crop), [lang, crop])
+  const kb = useAsync(() => api.targets(lang, crop), [lang, crop], ['targets', lang, crop].join(':'))
   const pests: TargetView[] = (kb.data ?? []).filter((x) => x.kind === 'pest')
     .sort((a, b) => Number(b.trap_etl != null) - Number(a.trap_etl != null))
   const [chosen, setTarget] = useState<string | null>(null)
@@ -69,7 +69,7 @@ function TrapForm({ crop, onSaved }: { crop: string; onSaved: () => void }) {
   const [traps, setTraps] = useState('3')
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
-  const readings = useAsync(() => api.traps(farmId!), [farmId])
+  const readings = useAsync(() => api.traps(farmId!), [farmId], ['traps', farmId!].join(':'))
 
   const save = async () => {
     setBusy(true)

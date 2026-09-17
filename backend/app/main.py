@@ -14,12 +14,14 @@ from app.engine import vision
 from app.kb import get_kb
 from app import voice
 from app import cache, notify, watch
-from app.routers import expert, farmer, live, officials, weather
+from app import krishi as krishi_kb
+from app.routers import auth, expert, farmer, geo, krishi, live, officials, weather
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     get_kb()  # refuse to start on a broken knowledge base
+    krishi_kb.index()  # ... or a broken Krishi help base
     init_db()
     tasks = [asyncio.create_task(cache.listen(notify.broker.deliver_local))]
     if WATCH_ENABLED:
@@ -48,7 +50,13 @@ if _SAMPLES.exists():  # held-out demo images; absent on machines without the da
 _EXTRA = BACKEND_DIR.parent / "data" / "processed" / "extra_640"
 if _EXTRA.exists():  # held-out photos from the extra sources (blast, rust, field FAW)
     app.mount("/samples-extra", StaticFiles(directory=_EXTRA), name="samples-extra")
+_MORE = BACKEND_DIR.parent / "data" / "processed" / "more_640"
+if _MORE.exists():  # held-out cotton, soybean and more maize/rice photos
+    app.mount("/samples-more", StaticFiles(directory=_MORE), name="samples-more")
 
+app.include_router(auth.router)
+app.include_router(krishi.router)
+app.include_router(geo.router)
 app.include_router(farmer.router)
 app.include_router(expert.router)
 app.include_router(officials.router)

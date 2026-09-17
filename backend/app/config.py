@@ -19,6 +19,21 @@ SARVAM_API_KEY = os.environ.get("SARVAM_API_KEY")
 SARVAM_API_KEYS = list(dict.fromkeys(
     k.strip() for k in [*(os.environ.get("SARVAM_API_KEYS") or "").split(","), SARVAM_API_KEY or ""] if k.strip()))
 """Every Sarvam key we may use, rotated; one out of credits is benched and the next takes over."""
+NVIDIA_API_KEY = os.environ.get("NVIDIA_API_KEY") if os.environ.get("ANNRAKSHAK_NIM") != "off" else None
+"""NVIDIA NIM, used by Krishi to understand a question — never to answer one.
+Absent, Krishi falls back to its own matcher and loses nothing it can promise."""
+NVIDIA_BASE_URL = os.environ.get("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
+NVIDIA_MODEL = os.environ.get("NVIDIA_MODEL", "openai/gpt-oss-20b")
+"""Chosen by measurement on 28 questions typed the way farmers actually type
+(Hinglish, romanised Marathi, typos): it routed 25 right where Krishi's own
+matcher managed 16, refused all 4 off-topic questions, and answers in under a
+second. nemotron-3-super-120b was faster (366 ms) but got 21."""
+NVIDIA_SUGGEST_KEY = (os.environ.get("NVIDIA_API_KEYS") or "").split(",")[-1].strip() or NVIDIA_API_KEY
+"""The spray check's own key. It is a separate, farmer-facing call on a screen
+about chemicals, and it should not go dark because Krishi used up the quota."""
+NVIDIA_TIMEOUT_S = 10.0
+"""Measured median 2.6 s, 90th percentile 4.8 s. A call that times out costs the
+farmer the wait AND falls back anyway, so the bar is set past the slow tail."""
 OPENWEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY")
 AGRO_API_KEY = os.environ.get("AGRO_API_KEY")  # AgroMonitoring: satellite NDVI and soil per field  # optional; Open-Meteo is the keyless fallback
 SARVAM_TTS_MODEL = "bulbul:v3"
@@ -52,6 +67,15 @@ is rejected before the classifier's softmax is trusted. A softmax with no
 reject class always puts its mass somewhere, even on a photo of a shoe.
 Measured on the 835 ICAR images: 10 (1.2%) fall below it, mostly insects shot
 off the plant; flat wood, cardboard, soil, skin and grey all score 0."""
+
+CLEARLY_VEGETATION = 0.35
+"""At or above this share of plant-coloured pixels the photo IS of a plant,
+whatever the familiarity score says. The two are independent: familiarity asks
+"have I seen photos like this?", which a farmer's wide phone shot of a chewed
+whorl can fail honestly. Telling that farmer "this is not a crop photo, take
+another" is the worst answer the app can give, so above this bar an unfamiliar
+photo goes to an expert instead of back to the farmer. Measured on the 44
+out-of-scope photos in the familiarity check: 32 of them fall below it."""
 
 TARGET_GATE = {
     "rice_blast": 0.90,
@@ -108,6 +132,25 @@ REDIS_URL = os.environ.get("REDIS_URL")
 
 AGRO_CACHE_MINUTES = 30
 """Hour-by-hour agro-weather is re-fetched at most this often per location."""
+
+# --- Sign-in (OTP) and roles ------------------------------------------------
+
+AUTH_ENFORCE = os.environ.get("ANNRAKSHAK_AUTH", "on") != "off"
+"""Every farm, problem, alert and expert endpoint checks who is asking. Tests
+of the older flows turn it off; the auth tests turn it on."""
+DEMO_LOGIN = os.environ.get("ANNRAKSHAK_DEMO_LOGIN", "on") != "off"
+"""'Try the demo' sign-in to the seeded demo farms / a demo expert. Off in production."""
+OTP_CHANNEL = "email"
+"""Where one-time codes go. Both roles give a mobile number at sign-up, but
+there is no free SMS gateway yet, so every code is emailed (SMTP above)."""
+EXPERT_AUTO_VERIFY = os.environ.get("ANNRAKSHAK_EXPERT_AUTO_VERIFY", "on") != "off"
+"""Hackathon builds verify experts at sign-up; production sets this off and the district office verifies."""
+OTP_DIGITS = 6
+OTP_TTL_MINUTES = 5
+OTP_MAX_ATTEMPTS = 5
+OTP_RESEND_SECONDS = 30
+SESSION_DAYS = 30
+COOKIE_SECURE = os.environ.get("ANNRAKSHAK_COOKIE_SECURE", "off") == "on"  # on behind HTTPS
 
 # --- Notifications: in-app (SSE), phone (Web Push) and email ---------------
 

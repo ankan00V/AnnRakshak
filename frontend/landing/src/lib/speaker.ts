@@ -28,6 +28,11 @@ export class Speaker {
   muted = false
   private lang: Lang
 
+  /** The farmer switched language mid-call: speak the new one from now on. */
+  setLang(lang: Lang) {
+    this.lang = lang
+  }
+
   constructor(lang: Lang) {
     this.lang = lang
   }

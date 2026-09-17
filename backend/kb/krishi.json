@@ -1,0 +1,2535 @@
+{
+ "_note": "Krishi, the in-app helper. Every answer here is authored and checked against the app; Krishi never makes up an answer. 'ask' lists example questions (the first is the suggestion chip), 'keys' are extra words people type (any language or spelling), 'go' are buttons to the right screen. Topics marked 'live' are answered from the farmer's own data (app/krishi.py). Other languages come from the translation memory.",
+ "screens": [
+  "home",
+  "scan",
+  "live",
+  "result",
+  "weather",
+  "spray",
+  "alerts",
+  "history",
+  "onboard",
+  "login",
+  "signup"
+ ],
+ "routes": [
+  "/app",
+  "/app/scan",
+  "/app/live",
+  "/app/weather",
+  "/app/spray",
+  "/app/alerts",
+  "/app/history",
+  "/login",
+  "/signup",
+  "/signup/farmer",
+  "/signup/expert"
+ ],
+ "topics": [
+  {
+   "id": "today",
+   "live": true,
+   "screens": [
+    "home",
+    "alerts"
+   ],
+   "ask": {
+    "en": [
+     "What should I do today?",
+     "anything to do in my field today",
+     "today's work"
+    ],
+    "hi": [
+     "आज मुझे खेत में क्या करना है?",
+     "आज क्या करूँ",
+     "आज का काम"
+    ],
+    "mr": [
+     "आज शेतात काय करायचे?",
+     "आज काय करू",
+     "आजचे काम",
+     "आज काय करायचे"
+    ]
+   },
+   "keys": [
+    "today",
+    "kaam",
+    "kya karu",
+    "kay karu",
+    "aaj kay",
+    "aaj kya karu",
+    "aaj kay karu",
+    "आज काय",
+    "आज क्या करूँ"
+   ]
+  },
+  {
+   "id": "weather_now",
+   "live": true,
+   "screens": [
+    "home",
+    "weather"
+   ],
+   "ask": {
+    "en": [
+     "Will it rain?",
+     "weather today",
+     "how is the weather",
+     "aaj barish hogi kya",
+     "paus padel ka",
+     "will it rain tomorrow"
+    ],
+    "hi": [
+     "क्या बारिश होगी?",
+     "आज का मौसम",
+     "मौसम कैसा है"
+    ],
+    "mr": [
+     "पाऊस पडेल का?",
+     "आजचे हवामान",
+     "हवामान कसे आहे"
+    ]
+   },
+   "keys": [
+    "rain",
+    "barish",
+    "baarish",
+    "paus",
+    "paaus",
+    "mausam",
+    "havaman",
+    "hawaman",
+    "weather",
+    "बारिश",
+    "पाऊस",
+    "मौसम",
+    "हवामान",
+    "temperature",
+    "garmi",
+    "thand",
+    "barish hogi",
+    "paus yenar",
+    "mausam kaisa",
+    "tomorrow",
+    "kal",
+    "udya",
+    "rain tomorrow"
+   ]
+  },
+  {
+   "id": "spray_now",
+   "live": true,
+   "screens": [
+    "weather",
+    "spray",
+    "result"
+   ],
+   "ask": {
+    "en": [
+     "Can I spray now?",
+     "is it a good time to spray",
+     "when should I spray",
+     "is it ok to spray today"
+    ],
+    "hi": [
+     "क्या अभी छिड़काव कर सकता हूँ?",
+     "छिड़काव कब करूँ",
+     "दवा कब डालूँ",
+     "क्या आज दवा छिड़क सकते हैं",
+     "छिड़काव करने का सही समय"
+    ],
+    "mr": [
+     "आत्ता फवारणी करू का?",
+     "फवारणी कधी करू",
+     "औषध कधी मारू"
+    ]
+   },
+   "keys": [
+    "spray",
+    "chidkav",
+    "chhidkav",
+    "fawarni",
+    "favarni",
+    "dawai",
+    "dawa",
+    "aushadh",
+    "chhidakna",
+    "फवारणी",
+    "छिड़काव",
+    "kab",
+    "kadhi",
+    "छिड़क",
+    "छिड़कना",
+    "chhidak",
+    "spray karu",
+    "fawarni karu"
+   ]
+  },
+  {
+   "id": "irrigate_now",
+   "live": true,
+   "screens": [
+    "weather",
+    "home"
+   ],
+   "ask": {
+    "en": [
+     "Should I water my field?",
+     "do I need to irrigate",
+     "irrigation today"
+    ],
+    "hi": [
+     "क्या खेत में पानी देना है?",
+     "सिंचाई करूँ क्या",
+     "पानी कब दूँ"
+    ],
+    "mr": [
+     "शेताला पाणी द्यायचे का?",
+     "पाणी देऊ का",
+     "सिंचन कधी करू"
+    ]
+   },
+   "keys": [
+    "water",
+    "paani",
+    "pani",
+    "sinchai",
+    "sinchan",
+    "irrigate",
+    "irrigation",
+    "पानी",
+    "पाणी",
+    "सिंचाई",
+    "सिंचन"
+   ]
+  },
+  {
+   "id": "risks_now",
+   "live": true,
+   "screens": [
+    "home",
+    "alerts",
+    "weather"
+   ],
+   "ask": {
+    "en": [
+     "Which pests or diseases can come now?",
+     "what disease risk is there",
+     "which pest to watch for"
+    ],
+    "hi": [
+     "अभी कौन से कीट या रोग आ सकते हैं?",
+     "रोग का खतरा",
+     "किस कीड़े से बचना है"
+    ],
+    "mr": [
+     "आता कोणती कीड किंवा रोग येऊ शकतो?",
+     "रोगाचा धोका",
+     "कोणत्या किडीकडे लक्ष द्यायचे"
+    ]
+   },
+   "keys": [
+    "pest",
+    "disease",
+    "keeda",
+    "kida",
+    "keede",
+    "rog",
+    "bimari",
+    "kid",
+    "khatra",
+    "dhoka",
+    "risk",
+    "कीट",
+    "कीड",
+    "रोग",
+    "धोका",
+    "खतरा"
+   ]
+  },
+  {
+   "id": "my_cases",
+   "live": true,
+   "screens": [
+    "history",
+    "result",
+    "home"
+   ],
+   "ask": {
+    "en": [
+     "What did the expert say?",
+     "status of my problem",
+     "has the expert replied"
+    ],
+    "hi": [
+     "विशेषज्ञ ने क्या कहा?",
+     "मेरी समस्या का क्या हुआ",
+     "जवाब आया क्या"
+    ],
+    "mr": [
+     "तज्ज्ञांनी काय सांगितले?",
+     "माझ्या समस्येचे काय झाले",
+     "उत्तर आले का"
+    ]
+   },
+   "keys": [
+    "expert",
+    "reply",
+    "jawab",
+    "uttar",
+    "case",
+    "status",
+    "visheshagya",
+    "tadnya",
+    "tagya",
+    "विशेषज्ञ",
+    "तज्ज्ञ",
+    "जवाब",
+    "उत्तर"
+   ]
+  },
+  {
+   "id": "my_farm",
+   "live": true,
+   "screens": [
+    "home"
+   ],
+   "ask": {
+    "en": [
+     "What stage is my crop at?",
+     "how old is my crop",
+     "my farm details"
+    ],
+    "hi": [
+     "मेरी फसल किस अवस्था में है?",
+     "फसल कितने दिन की है",
+     "मेरे खेत की जानकारी"
+    ],
+    "mr": [
+     "माझे पीक कोणत्या अवस्थेत आहे?",
+     "पीक किती दिवसांचे आहे",
+     "माझ्या शेताची माहिती"
+    ]
+   },
+   "keys": [
+    "stage",
+    "avastha",
+    "din",
+    "divas",
+    "days",
+    "old",
+    "umar",
+    "अवस्था",
+    "दिवस",
+    "दिन"
+   ]
+  },
+  {
+   "id": "what_is_app",
+   "screens": [
+    "home",
+    "onboard",
+    "login",
+    "signup"
+   ],
+   "ask": {
+    "en": [
+     "What can AnnRakshak do?",
+     "who are you",
+     "what is this app",
+     "help"
+    ],
+    "hi": [
+     "AnnRakshak क्या-क्या कर सकता है?",
+     "तुम कौन हो",
+     "यह ऐप क्या है",
+     "मदद"
+    ],
+    "mr": [
+     "AnnRakshak काय काय करू शकते?",
+     "तू कोण आहेस",
+     "हे ॲप काय आहे",
+     "मदत"
+    ]
+   },
+   "keys": [
+    "help",
+    "madad",
+    "madat",
+    "kaun",
+    "kon",
+    "app",
+    "krishi",
+    "मदद",
+    "मदत"
+   ],
+   "answer": {
+    "en": "I'm Krishi, your AnnRakshak helper. AnnRakshak checks a sick plant from a photo or a live video call, warns you about weather and pests before they strike, tells you when to spray and water, checks a pesticide before you buy it, and sends your case to an agriculture expert when it isn't sure. Ask me about any screen.",
+    "hi": "मैं कृषि हूँ, आपका AnnRakshak सहायक। AnnRakshak फोटो या लाइव वीडियो कॉल से बीमार पौधे की जाँच करता है, मौसम और कीटों की चेतावनी पहले देता है, छिड़काव और पानी का सही समय बताता है, दवा खरीदने से पहले जाँचता है, और पक्का न हो तो आपका केस कृषि विशेषज्ञ को भेजता है। किसी भी स्क्रीन के बारे में मुझसे पूछें।",
+    "mr": "मी कृषी, तुमचा AnnRakshak मदतनीस. AnnRakshak फोटो किंवा थेट व्हिडिओ कॉलने आजारी रोपाची तपासणी करते, हवामान आणि किडीचे इशारे आधीच देते, फवारणी व पाण्याची योग्य वेळ सांगते, औषध घेण्यापूर्वी तपासते, आणि खात्री नसेल तर तुमचे प्रकरण कृषी तज्ज्ञांकडे पाठवते. कोणत्याही स्क्रीनबद्दल मला विचारा."
+   }
+  },
+  {
+   "id": "language",
+   "screens": [
+    "home",
+    "onboard",
+    "login",
+    "signup"
+   ],
+   "ask": {
+    "en": [
+     "How do I change the language?",
+     "change language",
+     "Marathi please"
+    ],
+    "hi": [
+     "भाषा कैसे बदलें?",
+     "भाषा बदलो",
+     "हिंदी में"
+    ],
+    "mr": [
+     "भाषा कशी बदलायची?",
+     "भाषा बदला",
+     "मराठीत"
+    ]
+   },
+   "keys": [
+    "language",
+    "bhasha",
+    "bhaasha",
+    "marathi",
+    "hindi",
+    "english",
+    "tamil",
+    "telugu",
+    "kannada",
+    "bengali",
+    "भाषा"
+   ],
+   "answer": {
+    "en": "Tap the language button at the top right (it shows your current language) and pick one. The whole app, the voice, phone notifications and emails switch to it, and your farm remembers your choice.",
+    "hi": "ऊपर दाईं ओर भाषा वाले बटन (उस पर आपकी अभी की भाषा लिखी है) को दबाएँ और भाषा चुनें। पूरा ऐप, आवाज़, फ़ोन सूचनाएँ और ईमेल उसी भाषा में हो जाएँगे, और आपका खेत यह पसंद याद रखेगा।",
+    "mr": "वर उजवीकडे भाषेच्या बटणावर (त्यावर तुमची सध्याची भाषा लिहिलेली असते) टॅप करा आणि भाषा निवडा. संपूर्ण ॲप, आवाज, फोन सूचना आणि ईमेल त्या भाषेत होतील, आणि तुमचे शेत ही निवड लक्षात ठेवेल."
+   }
+  },
+  {
+   "id": "voice",
+   "screens": [
+    "home",
+    "result",
+    "spray",
+    "weather"
+   ],
+   "ask": {
+    "en": [
+     "Can the app read aloud?",
+     "I can't read, can it speak",
+     "speak instead of typing"
+    ],
+    "hi": [
+     "क्या ऐप बोलकर सुना सकता है?",
+     "पढ़ नहीं सकता, सुनाओ",
+     "टाइप की जगह बोलना"
+    ],
+    "mr": [
+     "ॲप मोठ्याने वाचून दाखवते का?",
+     "वाचता येत नाही, ऐकवा",
+     "टाइप ऐवजी बोलणे"
+    ]
+   },
+   "keys": [
+    "voice",
+    "awaaz",
+    "aawaj",
+    "sunao",
+    "aika",
+    "bol",
+    "listen",
+    "speak",
+    "read",
+    "आवाज़",
+    "आवाज",
+    "सुनें",
+    "ऐका",
+    "बोलें",
+    "बोला",
+    "mic"
+   ],
+   "answer": {
+    "en": "Yes. Tap Listen next to any advice and it is read out in your language. On the Spray check screen, and here in Krishi, tap the microphone and speak instead of typing.",
+    "hi": "हाँ। किसी भी सलाह के पास 'सुनें' दबाएँ, वह आपकी भाषा में पढ़कर सुनाई जाएगी। छिड़काव जाँच स्क्रीन पर और यहाँ कृषि में, माइक दबाकर टाइप करने की जगह बोल सकते हैं।",
+    "mr": "हो. कोणत्याही सल्ल्याजवळ 'ऐका' दाबा, तो तुमच्या भाषेत वाचून दाखवला जाईल. फवारणी तपासणी स्क्रीनवर आणि इथे कृषीमध्ये, माइक दाबून टाइप करण्याऐवजी बोलू शकता."
+   }
+  },
+  {
+   "id": "switch_farm",
+   "screens": [
+    "home",
+    "onboard"
+   ],
+   "ask": {
+    "en": [
+     "How do I add another field?",
+     "switch to my other farm",
+     "register a new farm"
+    ],
+    "hi": [
+     "दूसरा खेत कैसे जोड़ें?",
+     "दूसरे खेत पर जाना",
+     "नया खेत दर्ज करना"
+    ],
+    "mr": [
+     "दुसरे शेत कसे जोडायचे?",
+     "दुसऱ्या शेतावर जायचे",
+     "नवीन शेत नोंदवायचे"
+    ]
+   },
+   "keys": [
+    "another",
+    "farm",
+    "field",
+    "khet",
+    "shet",
+    "dusra",
+    "dusre",
+    "naya",
+    "navin",
+    "add",
+    "switch",
+    "खेत",
+    "शेत",
+    "दूसरा",
+    "दुसरे"
+   ],
+   "answer": {
+    "en": "Tap the two-arrows button at the top to see all your fields. Tap a field to open it, or tap 'Register a new farm' at the bottom to add another one with its crop, sowing date and size. Each field gets its own weather, alerts and advice.",
+    "hi": "ऊपर दो तीरों वाला बटन दबाएँ, आपके सारे खेत दिखेंगे। किसी खेत को दबाकर खोलें, या नीचे 'नया खेत दर्ज करें' दबाकर फसल, बुवाई की तारीख और आकार के साथ नया खेत जोड़ें। हर खेत का मौसम, अलर्ट और सलाह अलग मिलती है।",
+    "mr": "वरचे दोन बाणांचे बटण दाबा, तुमची सर्व शेते दिसतील. शेतावर टॅप करून ते उघडा, किंवा खाली 'नवीन शेत नोंदवा' दाबून पीक, पेरणीची तारीख आणि क्षेत्रासह नवीन शेत जोडा. प्रत्येक शेताचे हवामान, सूचना आणि सल्ला वेगळा मिळतो."
+   }
+  },
+  {
+   "id": "account",
+   "screens": [
+    "home",
+    "onboard"
+   ],
+   "ask": {
+    "en": [
+     "How do I log out?",
+     "my account",
+     "change my mobile number"
+    ],
+    "hi": [
+     "लॉग आउट कैसे करें?",
+     "मेरा खाता",
+     "मोबाइल नंबर बदलना"
+    ],
+    "mr": [
+     "लॉग आउट कसे करायचे?",
+     "माझे खाते",
+     "मोबाइल नंबर बदलायचा"
+    ]
+   },
+   "keys": [
+    "logout",
+    "log out",
+    "account",
+    "khata",
+    "khate",
+    "sign out",
+    "profile",
+    "number",
+    "खाता",
+    "खाते"
+   ],
+   "answer": {
+    "en": "Tap the round button with your initials at the top right. It shows your name, mobile and email, and has Log out. Changing your mobile number or email from the app is coming soon.",
+    "hi": "ऊपर दाईं ओर आपके नाम के अक्षरों वाला गोल बटन दबाएँ। उसमें आपका नाम, मोबाइल और ईमेल है, और 'लॉग आउट' भी। ऐप से मोबाइल नंबर या ईमेल बदलने की सुविधा जल्द आ रही है।",
+    "mr": "वर उजवीकडे तुमच्या नावाच्या अक्षरांचे गोल बटण दाबा. त्यात तुमचे नाव, मोबाइल आणि ईमेल आहे, आणि 'लॉग आउट' सुद्धा. ॲपमधून मोबाइल नंबर किंवा ईमेल बदलण्याची सुविधा लवकरच येत आहे."
+   }
+  },
+  {
+   "id": "offline",
+   "screens": [
+    "home",
+    "weather",
+    "scan"
+   ],
+   "ask": {
+    "en": [
+     "The app is not loading",
+     "no internet",
+     "it says cannot reach the server"
+    ],
+    "hi": [
+     "ऐप नहीं खुल रहा",
+     "इंटरनेट नहीं है",
+     "सर्वर से संपर्क नहीं"
+    ],
+    "mr": [
+     "ॲप उघडत नाही",
+     "इंटरनेट नाही",
+     "सर्व्हरशी संपर्क होत नाही"
+    ]
+   },
+   "keys": [
+    "internet",
+    "network",
+    "offline",
+    "loading",
+    "slow",
+    "net",
+    "signal",
+    "नेटवर्क",
+    "इंटरनेट"
+   ],
+   "answer": {
+    "en": "AnnRakshak needs some mobile data. Move to a spot with signal and tap Retry. Weather you've already opened is kept and shown as 'saved weather' when you're offline. A photo check needs a connection — take the photo now and check it when you have signal.",
+    "hi": "AnnRakshak को थोड़ा मोबाइल डेटा चाहिए। जहाँ सिग्नल हो वहाँ जाकर 'फिर से' दबाएँ। पहले खोला गया मौसम सहेजा रहता है और ऑफ़लाइन में 'सहेजा मौसम' के रूप में दिखता है। फोटो जाँच के लिए नेटवर्क चाहिए — फोटो अभी लें और सिग्नल मिलने पर जाँचें।",
+    "mr": "AnnRakshak ला थोडा मोबाइल डेटा लागतो. सिग्नल असलेल्या जागी जाऊन 'पुन्हा' दाबा. आधी उघडलेले हवामान जतन राहते आणि ऑफलाइन असताना 'जतन केलेले हवामान' म्हणून दिसते. फोटो तपासणीसाठी नेटवर्क लागते — फोटो आत्ता काढा आणि सिग्नल मिळाल्यावर तपासा."
+   }
+  },
+  {
+   "id": "kcc",
+   "screens": [
+    "home",
+    "result",
+    "history",
+    "login",
+    "signup"
+   ],
+   "ask": {
+    "en": [
+     "I want to talk to a person",
+     "helpline number",
+     "call someone for help"
+    ],
+    "hi": [
+     "किसी इंसान से बात करनी है",
+     "हेल्पलाइन नंबर",
+     "मदद के लिए फ़ोन"
+    ],
+    "mr": [
+     "माणसाशी बोलायचे आहे",
+     "हेल्पलाइन नंबर",
+     "मदतीसाठी फोन"
+    ]
+   },
+   "keys": [
+    "call",
+    "phone",
+    "helpline",
+    "number",
+    "kisan call",
+    "kcc",
+    "baat",
+    "bolaycha",
+    "फ़ोन",
+    "फोन",
+    "हेल्पलाइन"
+   ],
+   "answer": {
+    "en": "Call the Kisan Call Centre on 1800-180-1551 — it's free, from 6 am to 10 pm, in your language. For a sick crop, you can also send your photo to an agriculture expert from the result screen.",
+    "hi": "किसान कॉल सेंटर 1800-180-1551 पर फ़ोन करें — यह निःशुल्क है, सुबह 6 से रात 10 बजे तक, आपकी भाषा में। बीमार फसल के लिए आप नतीजे वाली स्क्रीन से अपनी फोटो कृषि विशेषज्ञ को भी भेज सकते हैं।",
+    "mr": "किसान कॉल सेंटर 1800-180-1551 वर फोन करा — ते मोफत आहे, सकाळी 6 ते रात्री 10, तुमच्या भाषेत. आजारी पिकासाठी तुम्ही निकालाच्या स्क्रीनवरून तुमचा फोटो कृषी तज्ज्ञांनाही पाठवू शकता."
+   }
+  },
+  {
+   "id": "privacy",
+   "screens": [
+    "home",
+    "signup",
+    "login"
+   ],
+   "ask": {
+    "en": [
+     "Who can see my data?",
+     "is my information safe",
+     "privacy"
+    ],
+    "hi": [
+     "मेरी जानकारी कौन देख सकता है?",
+     "मेरी जानकारी सुरक्षित है?",
+     "गोपनीयता"
+    ],
+    "mr": [
+     "माझी माहिती कोण पाहू शकते?",
+     "माझी माहिती सुरक्षित आहे का?",
+     "गोपनीयता"
+    ]
+   },
+   "keys": [
+    "data",
+    "privacy",
+    "safe",
+    "secure",
+    "jankari",
+    "mahiti",
+    "suraksha",
+    "जानकारी",
+    "माहिती",
+    "सुरक्षित"
+   ],
+   "answer": {
+    "en": "Only you see your farms. An agriculture expert or officer sees a field only when you send them a case, or when a pest they confirmed is spreading near it. Your sign-in code is never stored as-is, and AnnRakshak staff will never ask you for it.",
+    "hi": "आपके खेत सिर्फ़ आप देखते हैं। कृषि विशेषज्ञ या अधिकारी किसी खेत को तभी देखते हैं जब आप उन्हें केस भेजें, या जब उनके द्वारा पुष्ट कीट उसके पास फैल रहा हो। आपका साइन-इन कोड वैसे का वैसा कभी नहीं रखा जाता, और AnnRakshak का कोई कर्मचारी उसे कभी नहीं माँगेगा।",
+    "mr": "तुमची शेते फक्त तुम्ही पाहता. कृषी तज्ज्ञ किंवा अधिकारी एखादे शेत तेव्हाच पाहतात जेव्हा तुम्ही त्यांना प्रकरण पाठवता, किंवा त्यांनी खात्री केलेली कीड जवळ पसरत असते. तुमचा साइन-इन कोड जसाच्या तसा कधीही ठेवला जात नाही, आणि AnnRakshak चे कर्मचारी तो कधीही मागणार नाहीत."
+   }
+  },
+  {
+   "id": "install_app",
+   "screens": [
+    "home",
+    "alerts"
+   ],
+   "ask": {
+    "en": [
+     "How do I put the app on my home screen?",
+     "install the app",
+     "download app"
+    ],
+    "hi": [
+     "ऐप को होम स्क्रीन पर कैसे लगाएँ?",
+     "ऐप इंस्टॉल करना",
+     "ऐप डाउनलोड"
+    ],
+    "mr": [
+     "ॲप होम स्क्रीनवर कसे आणायचे?",
+     "ॲप इन्स्टॉल करायचे",
+     "ॲप डाउनलोड"
+    ]
+   },
+   "keys": [
+    "install",
+    "download",
+    "home screen",
+    "icon",
+    "shortcut",
+    "इंस्टॉल",
+    "डाउनलोड"
+   ],
+   "answer": {
+    "en": "In Chrome, tap the ⋮ menu and choose 'Add to Home screen' or 'Install app'. AnnRakshak then opens like any app, and phone notifications work even when it's closed.",
+    "hi": "Chrome में ⋮ मेनू दबाएँ और 'होम स्क्रीन में जोड़ें' या 'ऐप इंस्टॉल करें' चुनें। फिर AnnRakshak किसी भी ऐप की तरह खुलेगा, और बंद होने पर भी फ़ोन सूचनाएँ आएँगी।",
+    "mr": "Chrome मध्ये ⋮ मेनू दाबा आणि 'होम स्क्रीनवर जोडा' किंवा 'ॲप इन्स्टॉल करा' निवडा. मग AnnRakshak इतर ॲपसारखे उघडेल, आणि बंद असतानाही फोन सूचना येतील."
+   }
+  },
+  {
+   "id": "today_checks",
+   "screens": [
+    "home",
+    "alerts"
+   ],
+   "ask": {
+    "en": [
+     "What are 'Today's field checks'?",
+     "what do the check buttons mean",
+     "I found it — what happens"
+    ],
+    "hi": [
+     "'आज की खेत जाँच' क्या है?",
+     "जाँच के बटन का मतलब",
+     "'मिल गया' दबाने पर क्या होगा"
+    ],
+    "mr": [
+     "'आजची शेत तपासणी' म्हणजे काय?",
+     "तपासणीच्या बटणांचा अर्थ",
+     "'आढळले' दाबल्यावर काय होते"
+    ]
+   },
+   "keys": [
+    "check",
+    "jaanch",
+    "tapasni",
+    "found",
+    "mila",
+    "aadhle",
+    "nothing",
+    "जाँच",
+    "तपासणी"
+   ],
+   "answer": {
+    "en": "When the weather, your crop's stage or a confirmed case nearby makes a pest likely, AnnRakshak tells you exactly where to look — before damage shows. Walk the field and tap one: 'Checked — nothing found', 'I found it' (it opens a photo check right away) or 'Tomorrow' to be reminded.",
+    "hi": "जब मौसम, फसल की अवस्था या पास में पुष्ट केस से किसी कीट का खतरा बनता है, AnnRakshak बताता है कि ठीक कहाँ देखना है — नुकसान दिखने से पहले। खेत में देखकर एक दबाएँ: 'देखा — कुछ नहीं मिला', 'मिल गया' (तुरंत फोटो जाँच खुलेगी) या 'कल' ताकि याद दिलाया जाए।",
+    "mr": "हवामान, पिकाची अवस्था किंवा जवळचे खात्रीशीर प्रकरण यामुळे किडीचा धोका असेल, तेव्हा AnnRakshak नेमके कुठे पाहायचे ते सांगते — नुकसान दिसण्याआधी. शेतात पाहून एक दाबा: 'तपासले — काही आढळले नाही', 'आढळले' (लगेच फोटो तपासणी उघडते) किंवा आठवण करून देण्यासाठी 'उद्या'."
+   },
+   "go": [
+    {
+     "to": "/app/alerts",
+     "label": {
+      "en": "Open Alerts",
+      "hi": "अलर्ट खोलें",
+      "mr": "सूचना उघडा"
+     }
+    }
+   ]
+  },
+  {
+   "id": "followup",
+   "screens": [
+    "home",
+    "history"
+   ],
+   "ask": {
+    "en": [
+     "Why is it asking how my crop is?",
+     "Better, Same or Worse — what happens",
+     "follow-up question"
+    ],
+    "hi": [
+     "फसल कैसी है — यह क्यों पूछ रहा है?",
+     "बेहतर, वैसी ही, बदतर — क्या होगा",
+     "बाद में पूछा गया सवाल"
+    ],
+    "mr": [
+     "पीक कसे आहे — हे का विचारते?",
+     "बरे, तसेच, वाईट — काय होते",
+     "नंतर विचारलेला प्रश्न"
+    ]
+   },
+   "keys": [
+    "better",
+    "worse",
+    "same",
+    "behtar",
+    "badtar",
+    "bare",
+    "vait",
+    "follow",
+    "treatment",
+    "ilaj",
+    "upchar",
+    "इलाज",
+    "उपचार"
+   ],
+   "answer": {
+    "en": "Four days after advice, AnnRakshak asks how your crop is doing. 'Better' closes the problem. 'Same' keeps watching. 'Worse' sends it straight to an agriculture expert, with your photos and answers, so you don't lose more days.",
+    "hi": "सलाह के चार दिन बाद AnnRakshak पूछता है कि फसल कैसी है। 'बेहतर' से समस्या बंद होती है। 'वैसी ही' पर नज़र बनी रहती है। 'बदतर' दबाने पर केस आपकी फोटो और जवाबों के साथ सीधे कृषि विशेषज्ञ के पास जाता है, ताकि और दिन बर्बाद न हों।",
+    "mr": "सल्ल्यानंतर चार दिवसांनी AnnRakshak पीक कसे आहे ते विचारते. 'बरे' दाबल्यास समस्या बंद होते. 'तसेच' असल्यास लक्ष ठेवले जाते. 'वाईट' दाबल्यास प्रकरण तुमच्या फोटो आणि उत्तरांसह थेट कृषी तज्ज्ञांकडे जाते, म्हणजे आणखी दिवस वाया जात नाहीत."
+   }
+  },
+  {
+   "id": "rain_normal",
+   "screens": [
+    "home",
+    "weather"
+   ],
+   "ask": {
+    "en": [
+     "What is 'Rain vs IMD normal'?",
+     "is this monsoon less than normal",
+     "rain compared to normal"
+    ],
+    "hi": [
+     "'बारिश बनाम IMD सामान्य' क्या है?",
+     "क्या इस बार बारिश कम है",
+     "सामान्य से तुलना"
+    ],
+    "mr": [
+     "'पाऊस विरुद्ध IMD सामान्य' म्हणजे काय?",
+     "यंदा पाऊस कमी आहे का",
+     "सामान्याशी तुलना"
+    ]
+   },
+   "keys": [
+    "imd",
+    "normal",
+    "samanya",
+    "kam",
+    "kami",
+    "monsoon",
+    "mansoon",
+    "सामान्य"
+   ],
+   "answer": {
+    "en": "It compares this month's rain at your farm with the India Meteorological Department's long-term normal for your area. A big shortfall means plan irrigation and watch for sucking pests; a big excess means watch for fungal disease and waterlogging.",
+    "hi": "यह आपके खेत पर इस महीने की बारिश की तुलना भारतीय मौसम विभाग (IMD) के आपके क्षेत्र के लंबे समय के सामान्य से करता है। बहुत कम बारिश हो तो सिंचाई की योजना बनाएँ और रस चूसने वाले कीटों पर नज़र रखें; बहुत ज़्यादा हो तो फफूँद रोग और जलभराव पर नज़र रखें।",
+    "mr": "हे तुमच्या शेतावरील या महिन्याच्या पावसाची तुलना भारतीय हवामान विभागाच्या (IMD) तुमच्या भागाच्या दीर्घकालीन सामान्य पावसाशी करते. पाऊस खूप कमी असेल तर सिंचनाचे नियोजन करा आणि रस शोषणाऱ्या किडींकडे लक्ष द्या; खूप जास्त असेल तर बुरशीजन्य रोग आणि पाणी साचण्याकडे लक्ष द्या."
+   }
+  },
+  {
+   "id": "satellite",
+   "screens": [
+    "weather"
+   ],
+   "ask": {
+    "en": [
+     "What is 'Crop health from space'?",
+     "what is NDVI greenness",
+     "satellite shows my field"
+    ],
+    "hi": [
+     "'अंतरिक्ष से फसल की सेहत' क्या है?",
+     "NDVI हरियाली क्या है",
+     "उपग्रह से खेत"
+    ],
+    "mr": [
+     "'उपग्रहावरून पिकाचे आरोग्य' म्हणजे काय?",
+     "NDVI हिरवेपणा म्हणजे काय",
+     "उपग्रहावरून शेत"
+    ]
+   },
+   "keys": [
+    "satellite",
+    "space",
+    "ndvi",
+    "greenness",
+    "hariyali",
+    "upgrah",
+    "उपग्रह",
+    "हरियाली"
+   ],
+   "answer": {
+    "en": "Satellites (Sentinel-2 and Landsat 8) photograph your field every few days and measure how green it is (NDVI). If greenness falls, AnnRakshak tells you to walk the field that week. In the monsoon, clouds often hide the field — the card says so and waits for the next clear picture.",
+    "hi": "उपग्रह (Sentinel-2 और Landsat 8) हर कुछ दिनों में आपके खेत की तस्वीर लेते हैं और मापते हैं कि वह कितना हरा है (NDVI)। हरियाली घटे तो AnnRakshak उसी हफ़्ते खेत में घूमकर देखने को कहता है। बरसात में बादल अक्सर खेत छिपा लेते हैं — कार्ड यह बताता है और अगली साफ़ तस्वीर का इंतज़ार करता है।",
+    "mr": "उपग्रह (Sentinel-2 आणि Landsat 8) दर काही दिवसांनी तुमच्या शेताचे चित्र घेतात आणि ते किती हिरवे आहे (NDVI) ते मोजतात. हिरवेपणा कमी झाला तर AnnRakshak त्याच आठवड्यात शेतात फिरून पाहायला सांगते. पावसाळ्यात ढग अनेकदा शेत झाकतात — कार्ड तसे सांगते आणि पुढच्या स्वच्छ चित्राची वाट पाहते."
+   },
+   "go": [
+    {
+     "to": "/app/weather",
+     "label": {
+      "en": "Open Weather",
+      "hi": "मौसम खोलें",
+      "mr": "हवामान उघडा"
+     }
+    }
+   ]
+  },
+  {
+   "id": "kcc_calls",
+   "screens": [
+    "weather"
+   ],
+   "ask": {
+    "en": [
+     "What are the Kisan Call Centre calls on the weather screen?",
+     "what other farmers ask about",
+     "KCC calls panel"
+    ],
+    "hi": [
+     "मौसम स्क्रीन पर किसान कॉल सेंटर वाली बात क्या है?",
+     "दूसरे किसान क्या पूछते हैं",
+     "KCC कॉल"
+    ],
+    "mr": [
+     "हवामान स्क्रीनवरील किसान कॉल सेंटरचा भाग काय आहे?",
+     "इतर शेतकरी काय विचारतात",
+     "KCC कॉल"
+    ]
+   },
+   "keys": [
+    "kcc",
+    "calls",
+    "other farmers",
+    "dusre kisan",
+    "itar shetkari"
+   ],
+   "answer": {
+    "en": "It shows what farmers in your district asked the Kisan Call Centre about most in this month in past years — from 2.6 lakh real calls. It's an early hint of which pests usually show up now near you.",
+    "hi": "यह दिखाता है कि पिछले सालों में इसी महीने आपके ज़िले के किसानों ने किसान कॉल सेंटर से सबसे ज़्यादा किस बारे में पूछा — 2.6 लाख असली कॉल से। इससे पता चलता है कि आपके आसपास अभी आम तौर पर कौन से कीट आते हैं।",
+    "mr": "मागील वर्षांत याच महिन्यात तुमच्या जिल्ह्यातील शेतकऱ्यांनी किसान कॉल सेंटरला सर्वाधिक कशाबद्दल विचारले ते हे दाखवते — 2.6 लाख खऱ्या कॉलमधून. तुमच्या भागात सध्या सहसा कोणत्या किडी येतात याचा हा आधीचा अंदाज आहे."
+   }
+  },
+  {
+   "id": "scan_photo",
+   "screens": [
+    "home",
+    "scan",
+    "result"
+   ],
+   "ask": {
+    "en": [
+     "How do I check a sick plant?",
+     "check disease with a photo",
+     "my leaves have spots"
+    ],
+    "hi": [
+     "बीमार पौधे की जाँच कैसे करें?",
+     "फोटो से रोग पहचानना",
+     "पत्तों पर धब्बे हैं"
+    ],
+    "mr": [
+     "आजारी रोपाची तपासणी कशी करायची?",
+     "फोटोने रोग ओळखणे",
+     "पानांवर ठिपके आहेत"
+    ]
+   },
+   "keys": [
+    "photo",
+    "camera",
+    "scan",
+    "sick",
+    "spots",
+    "dhabbe",
+    "thipke",
+    "patte",
+    "paane",
+    "leaf",
+    "bimar",
+    "aajari",
+    "पत्ते",
+    "पाने",
+    "धब्बे",
+    "ठिपके",
+    "फोटो",
+    "diagnose",
+    "pehchan",
+    "olakh"
+   ],
+   "answer": {
+    "en": "Tap Scan at the bottom, then 'Photograph a sick plant'. Take a close-up of one affected leaf in daylight. In a few seconds you get what it is and how sure the AI is, what to do (safest first) and what not to do. If it isn't sure, it asks you one question or sends the photo to an expert — it never guesses.",
+    "hi": "नीचे 'जाँच' दबाएँ, फिर 'बीमार पौधे की फोटो लें'। दिन की रोशनी में एक प्रभावित पत्ते की पास से फोटो लें। कुछ सेकंड में पता चलेगा कि क्या है और AI कितना पक्का है, क्या करें (सबसे सुरक्षित पहले) और क्या न करें। पक्का न हो तो वह एक सवाल पूछता है या फोटो विशेषज्ञ को भेजता है — अंदाज़ा कभी नहीं लगाता।",
+    "mr": "खाली 'तपासणी' दाबा, मग 'आजारी रोपाचा फोटो घ्या'. दिवसाच्या उजेडात एका बाधित पानाचा जवळून फोटो घ्या. काही सेकंदांत कळेल की काय आहे आणि AI ला किती खात्री आहे, काय करावे (सर्वात सुरक्षित आधी) आणि काय करू नये. खात्री नसेल तर ते एक प्रश्न विचारते किंवा फोटो तज्ज्ञांकडे पाठवते — कधीही अंदाज लावत नाही."
+   },
+   "go": [
+    {
+     "to": "/app/scan",
+     "label": {
+      "en": "Open Scan",
+      "hi": "जाँच खोलें",
+      "mr": "तपासणी उघडा"
+     }
+    }
+   ]
+  },
+  {
+   "id": "photo_tips",
+   "screens": [
+    "scan",
+    "result"
+   ],
+   "ask": {
+    "en": [
+     "How do I take a good photo?",
+     "it asked me to take another photo",
+     "photo not clear"
+    ],
+    "hi": [
+     "अच्छी फोटो कैसे लें?",
+     "दूसरी फोटो लेने को कहा",
+     "फोटो साफ़ नहीं"
+    ],
+    "mr": [
+     "चांगला फोटो कसा काढायचा?",
+     "दुसरा फोटो घ्यायला सांगितले",
+     "फोटो स्पष्ट नाही"
+    ]
+   },
+   "keys": [
+    "retake",
+    "blur",
+    "clear",
+    "dark",
+    "good photo",
+    "saaf",
+    "spasht",
+    "andhera",
+    "dusri photo",
+    "साफ़",
+    "स्पष्ट"
+   ],
+   "steps": {
+    "en": [
+     "One affected leaf should fill most of the photo",
+     "Daylight, no shadow of your hand or phone",
+     "Hold steady and tap only when it's sharp",
+     "Show the spots or damage clearly — top of the leaf first; for insects, also the underside"
+    ],
+    "hi": [
+     "एक प्रभावित पत्ता फोटो का ज़्यादातर हिस्सा भरे",
+     "दिन की रोशनी, हाथ या फ़ोन की छाया न हो",
+     "फ़ोन स्थिर रखें और साफ़ दिखने पर ही दबाएँ",
+     "धब्बे या नुकसान साफ़ दिखाएँ — पहले पत्ते का ऊपरी हिस्सा; कीड़ों के लिए नीचे का हिस्सा भी"
+    ],
+    "mr": [
+     "एका बाधित पानाने फोटोचा बहुतेक भाग भरावा",
+     "दिवसाचा उजेड, हात किंवा फोनची सावली नको",
+     "फोन स्थिर धरा आणि स्पष्ट दिसल्यावरच दाबा",
+     "ठिपके किंवा नुकसान स्पष्ट दाखवा — आधी पानाचा वरचा भाग; किडींसाठी खालचा भागही"
+    ]
+   },
+   "answer": {
+    "en": "A clear close-up gives the right answer. If the photo is too dark, blurred or far away, AnnRakshak asks for another instead of guessing:",
+    "hi": "साफ़, पास की फोटो से सही जवाब मिलता है। फोटो बहुत अँधेरी, धुंधली या दूर की हो तो AnnRakshak अंदाज़ा लगाने की जगह दूसरी फोटो माँगता है:",
+    "mr": "स्पष्ट, जवळचा फोटो दिल्यास योग्य उत्तर मिळते. फोटो खूप अंधारा, धूसर किंवा लांबचा असेल तर AnnRakshak अंदाज लावण्याऐवजी दुसरा फोटो मागते:"
+   },
+   "go": [
+    {
+     "to": "/app/scan",
+     "label": {
+      "en": "Take a photo",
+      "hi": "फोटो लें",
+      "mr": "फोटो घ्या"
+     }
+    }
+   ]
+  },
+  {
+   "id": "live_check",
+   "screens": [
+    "home",
+    "scan"
+   ],
+   "ask": {
+    "en": [
+     "What is the live field check?",
+     "video call with the AI",
+     "check my whole field live"
+    ],
+    "hi": [
+     "लाइव खेत जाँच क्या है?",
+     "AI के साथ वीडियो कॉल",
+     "पूरा खेत लाइव दिखाना"
+    ],
+    "mr": [
+     "थेट शेत तपासणी म्हणजे काय?",
+     "AI सोबत व्हिडिओ कॉल",
+     "संपूर्ण शेत थेट दाखवणे"
+    ]
+   },
+   "keys": [
+    "live",
+    "video",
+    "call",
+    "laiv",
+    "thet",
+    "camera",
+    "walk",
+    "लाइव",
+    "थेट",
+    "वीडियो",
+    "व्हिडिओ"
+   ],
+   "answer": {
+    "en": "Tap 'Show me your field — live' on Home. It's a video call with the AI: it tells you, in your language, where to point the camera — the field, one plant, the top and underside of a leaf, the stem base, a second spot. It reports a problem only when it sees it in two or more close-ups, and adds weather, soil and pest risk. Nothing is recorded except close-ups of a problem, for the expert.",
+    "hi": "होम पर 'अपना खेत दिखाइए — लाइव' दबाएँ। यह AI के साथ वीडियो कॉल है: वह आपकी भाषा में बताता है कि कैमरा कहाँ करें — खेत, एक पौधा, पत्ते का ऊपर और नीचे का हिस्सा, तने का निचला भाग, दूसरी जगह। समस्या तभी बताता है जब दो या ज़्यादा पास की तस्वीरों में दिखे, और मौसम, मिट्टी और कीट का खतरा भी बताता है। समस्या की पास की तस्वीरों के सिवा कुछ रिकॉर्ड नहीं होता, वे भी विशेषज्ञ के लिए।",
+    "mr": "होमवर 'तुमचे शेत दाखवा — थेट' दाबा. हा AI सोबत व्हिडिओ कॉल आहे: ते तुमच्या भाषेत सांगते की कॅमेरा कुठे धरायचा — शेत, एक रोप, पानाचा वरचा व खालचा भाग, खोडाचा तळ, दुसरी जागा. दोन किंवा अधिक जवळच्या दृश्यांत दिसली तरच समस्या सांगते, आणि हवामान, माती व किडीचा धोकाही सांगते. समस्येच्या जवळच्या फोटोंशिवाय काहीही रेकॉर्ड होत नाही, तेही तज्ज्ञांसाठी."
+   },
+   "go": [
+    {
+     "to": "/app/live",
+     "label": {
+      "en": "Start live check",
+      "hi": "लाइव जाँच शुरू करें",
+      "mr": "थेट तपासणी सुरू करा"
+     }
+    }
+   ]
+  },
+  {
+   "id": "crop_support",
+   "screens": [
+    "scan",
+    "home",
+    "onboard"
+   ],
+   "ask": {
+    "en": [
+     "Which crops can it check from a photo?",
+     "does it work for cotton and soybean",
+     "my crop is not supported"
+    ],
+    "hi": [
+     "फोटो से किन फसलों की जाँच होती है?",
+     "कपास और सोयाबीन के लिए चलता है?",
+     "मेरी फसल नहीं है"
+    ],
+    "mr": [
+     "फोटोने कोणत्या पिकांची तपासणी होते?",
+     "कापूस आणि सोयाबीनसाठी चालते का?",
+     "माझे पीक नाही"
+    ]
+   },
+   "keys": [
+    "cotton",
+    "soybean",
+    "soya",
+    "kapas",
+    "kapus",
+    "rice",
+    "dhan",
+    "bhat",
+    "maize",
+    "makka",
+    "maka",
+    "crops",
+    "fasal",
+    "pik",
+    "कपास",
+    "कापूस",
+    "सोयाबीन",
+    "धान",
+    "भात",
+    "मक्का",
+    "मका"
+   ],
+   "live": true
+  },
+  {
+   "id": "photo_refused",
+   "screens": [
+    "result",
+    "scan"
+   ],
+   "ask": {
+    "en": [
+     "Why did it refuse my photo?",
+     "it says this is another crop",
+     "not a crop photo"
+    ],
+    "hi": [
+     "मेरी फोटो क्यों नहीं ली?",
+     "कहता है यह दूसरी फसल है",
+     "यह फसल की फोटो नहीं"
+    ],
+    "mr": [
+     "माझा फोटो का नाकारला?",
+     "हे दुसरे पीक आहे असे सांगते",
+     "हा पिकाचा फोटो नाही"
+    ]
+   },
+   "keys": [
+    "refuse",
+    "wrong crop",
+    "another crop",
+    "dusri fasal",
+    "dusre pik",
+    "not crop",
+    "mismatch"
+   ],
+   "answer": {
+    "en": "If the photo isn't of a crop leaf (a person, an animal, a wall), AnnRakshak refuses instead of guessing. If it shows a different crop from the one registered for this field — say maize on a rice farm — it tells you what it sees and offers to check the same photo on a farm of that crop, because the right advice depends on the crop.",
+    "hi": "फोटो फसल के पत्ते की न हो (कोई व्यक्ति, जानवर, दीवार), तो AnnRakshak अंदाज़ा लगाने की जगह मना कर देता है। अगर फोटो इस खेत में दर्ज फसल से अलग फसल की हो — जैसे धान के खेत पर मक्का — तो वह बताता है कि क्या दिख रहा है और उसी फोटो को उस फसल वाले खेत पर जाँचने का विकल्प देता है, क्योंकि सही सलाह फसल पर निर्भर है।",
+    "mr": "फोटो पिकाच्या पानाचा नसेल (माणूस, प्राणी, भिंत), तर AnnRakshak अंदाज लावण्याऐवजी नकार देते. फोटो या शेतात नोंदवलेल्या पिकापेक्षा वेगळ्या पिकाचा असेल — जसे भाताच्या शेतावर मका — तर काय दिसते ते सांगते आणि तोच फोटो त्या पिकाच्या शेतावर तपासण्याचा पर्याय देते, कारण योग्य सल्ला पिकावर अवलंबून असतो."
+   }
+  },
+  {
+   "id": "confidence",
+   "screens": [
+    "result"
+   ],
+   "ask": {
+    "en": [
+     "What does '% sure' mean?",
+     "how sure is the AI",
+     "what are 'ask' and 'advise' on the meter"
+    ],
+    "hi": [
+     "'% पक्का' का क्या मतलब है?",
+     "AI कितना पक्का है",
+     "मीटर पर 'पूछें' और 'सलाह' क्या है"
+    ],
+    "mr": [
+     "'% खात्री' म्हणजे काय?",
+     "AI ला किती खात्री आहे",
+     "मीटरवर 'विचारा' आणि 'सल्ला' काय आहे"
+    ]
+   },
+   "keys": [
+    "sure",
+    "percent",
+    "confidence",
+    "meter",
+    "pakka",
+    "khatri",
+    "accurate",
+    "sahi",
+    "barobar",
+    "पक्का",
+    "खात्री"
+   ],
+   "answer": {
+    "en": "The number is how sure the AI is. The meter shows the bar it must clear: below 'ask' it won't advise and sends you to an expert; between 'ask' and 'advise' it asks you one quick field question; above 'advise' it gives advice. Hard-to-tell diseases like blast must clear a higher bar. 'What else it considered' shows the other possibilities.",
+    "hi": "यह संख्या बताती है कि AI कितना पक्का है। मीटर वह सीमा दिखाता है जो पार करनी है: 'पूछें' से नीचे वह सलाह नहीं देता और विशेषज्ञ के पास भेजता है; 'पूछें' और 'सलाह' के बीच वह खेत के बारे में एक छोटा सवाल पूछता है; 'सलाह' से ऊपर सलाह देता है। ब्लास्ट जैसे मुश्किल रोगों के लिए सीमा ऊँची है। 'और क्या हो सकता है' में दूसरी संभावनाएँ दिखती हैं।",
+    "mr": "हा आकडा AI ला किती खात्री आहे ते सांगतो. मीटर ओलांडायची मर्यादा दाखवते: 'विचारा' च्या खाली ते सल्ला देत नाही आणि तज्ज्ञांकडे पाठवते; 'विचारा' आणि 'सल्ला' यांच्यामध्ये ते शेताबद्दल एक छोटा प्रश्न विचारते; 'सल्ला' च्या वर सल्ला देते. करपा (ब्लास्ट) सारख्या अवघड रोगांसाठी मर्यादा जास्त आहे. 'आणखी काय असू शकते' मध्ये इतर शक्यता दिसतात."
+   }
+  },
+  {
+   "id": "doubt_question",
+   "screens": [
+    "result"
+   ],
+   "ask": {
+    "en": [
+     "Why is it asking me a question?",
+     "it says two possibilities",
+     "yes / no / can't tell"
+    ],
+    "hi": [
+     "यह मुझसे सवाल क्यों पूछ रहा है?",
+     "दो संभावनाएँ कहता है",
+     "हाँ / नहीं / पता नहीं"
+    ],
+    "mr": [
+     "हे मला प्रश्न का विचारते?",
+     "दोन शक्यता असे सांगते",
+     "हो / नाही / सांगता येत नाही"
+    ]
+   },
+   "keys": [
+    "question",
+    "sawal",
+    "prashna",
+    "two",
+    "possibilities",
+    "doubt",
+    "yes no",
+    "सवाल",
+    "प्रश्न"
+   ],
+   "answer": {
+    "en": "Some problems look alike in a photo. Instead of guessing, AnnRakshak asks one thing you can check in the field in a minute — for example, whether the spots have a grey centre. Answer Yes, No or 'Can't tell'. Your answer settles it, or the case goes to an expert with your answer attached.",
+    "hi": "कुछ समस्याएँ फोटो में एक जैसी दिखती हैं। अंदाज़ा लगाने की जगह AnnRakshak एक बात पूछता है जो आप खेत में एक मिनट में देख सकें — जैसे क्या धब्बों का बीच का हिस्सा धूसर है। 'हाँ', 'नहीं' या 'पता नहीं' दबाएँ। आपके जवाब से फ़ैसला होता है, या केस आपके जवाब के साथ विशेषज्ञ के पास जाता है।",
+    "mr": "काही समस्या फोटोमध्ये सारख्या दिसतात. अंदाज लावण्याऐवजी AnnRakshak अशी एक गोष्ट विचारते जी तुम्ही शेतात एका मिनिटात पाहू शकता — उदा. ठिपक्यांचा मधला भाग राखाडी आहे का. 'हो', 'नाही' किंवा 'सांगता येत नाही' दाबा. तुमच्या उत्तराने निर्णय होतो, किंवा प्रकरण तुमच्या उत्तरासह तज्ज्ञांकडे जाते."
+   }
+  },
+  {
+   "id": "expert_wait",
+   "screens": [
+    "result",
+    "history"
+   ],
+   "ask": {
+    "en": [
+     "It sent my photo to an expert — now what?",
+     "how long will the expert take",
+     "should I spray while waiting"
+    ],
+    "hi": [
+     "फोटो विशेषज्ञ को भेजी — अब क्या?",
+     "विशेषज्ञ कितना समय लेंगे",
+     "इंतज़ार में छिड़काव करूँ?"
+    ],
+    "mr": [
+     "फोटो तज्ज्ञांकडे पाठवला — आता काय?",
+     "तज्ज्ञांना किती वेळ लागेल",
+     "वाट पाहताना फवारणी करू का?"
+    ]
+   },
+   "keys": [
+    "expert",
+    "wait",
+    "intezaar",
+    "vaat",
+    "queue",
+    "kitna samay",
+    "kiti vel",
+    "reply",
+    "eta"
+   ],
+   "answer": {
+    "en": "An agriculture expert (KVK scientist or officer) sees your photo, the AI's view and your answers. The screen shows your place in the queue and the expected reply time. Please don't spray until the expert replies — a wrong spray costs money and can make it worse. Their verdict appears in History and on your Home.",
+    "hi": "कृषि विशेषज्ञ (KVK वैज्ञानिक या अधिकारी) आपकी फोटो, AI की राय और आपके जवाब देखते हैं। स्क्रीन पर कतार में आपकी जगह और जवाब का अनुमानित समय दिखता है। विशेषज्ञ के जवाब तक छिड़काव न करें — गलत छिड़काव से पैसा जाता है और समस्या बढ़ सकती है। उनका फ़ैसला इतिहास और होम पर दिखेगा।",
+    "mr": "कृषी तज्ज्ञ (KVK शास्त्रज्ञ किंवा अधिकारी) तुमचा फोटो, AI चे मत आणि तुमची उत्तरे पाहतात. स्क्रीनवर रांगेतील तुमची जागा आणि उत्तराची अपेक्षित वेळ दिसते. तज्ज्ञांचे उत्तर येईपर्यंत फवारणी करू नका — चुकीच्या फवारणीने पैसे वाया जातात आणि समस्या वाढू शकते. त्यांचा निर्णय इतिहास आणि होमवर दिसेल."
+   },
+   "go": [
+    {
+     "to": "/app/history",
+     "label": {
+      "en": "Open History",
+      "hi": "इतिहास खोलें",
+      "mr": "इतिहास उघडा"
+     }
+    }
+   ]
+  },
+  {
+   "id": "advice_ladder",
+   "screens": [
+    "result"
+   ],
+   "ask": {
+    "en": [
+     "Why is the chemical option hidden?",
+     "what does 'safest first' mean",
+     "how should I follow the advice"
+    ],
+    "hi": [
+     "रासायनिक उपाय छिपा क्यों है?",
+     "'सबसे सुरक्षित पहले' का मतलब",
+     "सलाह कैसे मानूँ"
+    ],
+    "mr": [
+     "रासायनिक उपाय लपलेला का आहे?",
+     "'सर्वात सुरक्षित आधी' म्हणजे काय",
+     "सल्ला कसा पाळायचा"
+    ]
+   },
+   "keys": [
+    "chemical",
+    "rasayanik",
+    "safest",
+    "surakshit",
+    "biological",
+    "natural",
+    "jaivik",
+    "cultural",
+    "advice",
+    "salah",
+    "salla",
+    "रासायनिक",
+    "सलाह",
+    "सल्ला"
+   ],
+   "answer": {
+    "en": "Advice always goes field practice first, then natural control, and chemical only as a last resort — that is how ICAR recommends it, and it saves money. Tap 'Show chemical option' only if the problem keeps spreading after the first steps. 'Do NOT do this' lists common mistakes, and 'Call an expert if' says when to get help.",
+    "hi": "सलाह हमेशा पहले खेत के उपाय, फिर प्राकृतिक नियंत्रण, और रासायनिक सिर्फ़ आख़िरी उपाय — ICAR यही सुझाता है, और इससे पैसा बचता है। पहले कदमों के बाद भी समस्या फैलती रहे तभी 'रासायनिक उपाय दिखाएँ' दबाएँ। 'यह बिल्कुल न करें' में आम गलतियाँ हैं, और 'विशेषज्ञ को बुलाएँ अगर' बताता है कि कब मदद लें।",
+    "mr": "सल्ला नेहमी आधी शेतातील उपाय, मग नैसर्गिक नियंत्रण, आणि रासायनिक फक्त शेवटचा उपाय — ICAR असेच सुचवते, आणि यात पैसे वाचतात. पहिल्या पायऱ्यांनंतरही समस्या पसरत राहिली तरच 'रासायनिक उपाय दाखवा' दाबा. 'हे अजिबात करू नका' मध्ये नेहमीच्या चुका आहेत, आणि 'तज्ज्ञांना बोलवा जर' कधी मदत घ्यायची ते सांगते."
+   }
+  },
+  {
+   "id": "heatmap",
+   "screens": [
+    "result"
+   ],
+   "ask": {
+    "en": [
+     "What is 'Where the AI looked'?",
+     "what is the coloured patch on my photo",
+     "heat map"
+    ],
+    "hi": [
+     "'AI ने यहाँ देखा' क्या है?",
+     "फोटो पर रंगीन हिस्सा क्या है",
+     "हीट मैप"
+    ],
+    "mr": [
+     "'AI ने इथे पाहिले' म्हणजे काय?",
+     "फोटोवरचा रंगीत भाग काय आहे",
+     "हीट मॅप"
+    ]
+   },
+   "keys": [
+    "heatmap",
+    "heat map",
+    "colour",
+    "rang",
+    "looked",
+    "dekha",
+    "pahile",
+    "रंग"
+   ],
+   "answer": {
+    "en": "The coloured patch shows which part of your photo the AI used to decide. If it sits on the spots or damage, the answer is based on the right thing. If it sits on soil or background, take a closer photo of the leaf.",
+    "hi": "रंगीन हिस्सा दिखाता है कि AI ने फ़ैसले के लिए आपकी फोटो का कौन सा भाग देखा। अगर वह धब्बों या नुकसान पर है, तो जवाब सही चीज़ पर आधारित है। अगर वह मिट्टी या पीछे की चीज़ पर है, तो पत्ते की और पास से फोटो लें।",
+    "mr": "रंगीत भाग दाखवतो की निर्णयासाठी AI ने तुमच्या फोटोचा कोणता भाग पाहिला. तो ठिपक्यांवर किंवा नुकसानावर असेल, तर उत्तर योग्य गोष्टीवर आधारित आहे. तो मातीवर किंवा मागच्या भागावर असेल, तर पानाचा आणखी जवळून फोटो घ्या."
+   }
+  },
+  {
+   "id": "icar_products",
+   "screens": [
+    "result"
+   ],
+   "ask": {
+    "en": [
+     "What is 'Proven by ICAR'?",
+     "where do I get these bio-products",
+     "resistant variety"
+    ],
+    "hi": [
+     "'ICAR द्वारा प्रमाणित' क्या है?",
+     "ये जैविक उत्पाद कहाँ मिलेंगे",
+     "रोग-रोधी किस्म"
+    ],
+    "mr": [
+     "'ICAR ने सिद्ध केलेले' म्हणजे काय?",
+     "ही जैविक उत्पादने कुठे मिळतील",
+     "रोगप्रतिकारक वाण"
+    ]
+   },
+   "keys": [
+    "icar",
+    "bio",
+    "jaivik",
+    "variety",
+    "kism",
+    "vaan",
+    "trichoderma",
+    "kvk",
+    "जैविक",
+    "किस्म",
+    "वाण"
+   ],
+   "answer": {
+    "en": "These are products and practices released by ICAR institutes for this exact problem — natural enemies, bio-products, resistant varieties, free apps — with their tested result and where to get them. Ask your KVK or agriculture officer; some need ordering a few days ahead, as the card says.",
+    "hi": "ये ICAR संस्थानों द्वारा इसी समस्या के लिए जारी उत्पाद और तरीके हैं — मित्र कीट, जैविक उत्पाद, रोग-रोधी किस्में, मुफ़्त ऐप — उनके परखे हुए नतीजे और कहाँ मिलेंगे, इसके साथ। अपने KVK या कृषि अधिकारी से पूछें; कुछ को कुछ दिन पहले मँगवाना होता है, जैसा कार्ड पर लिखा है।",
+    "mr": "ही ICAR संस्थांनी याच समस्येसाठी दिलेली उत्पादने आणि पद्धती आहेत — मित्र कीटक, जैविक उत्पादने, रोगप्रतिकारक वाण, मोफत ॲप — त्यांच्या तपासलेल्या निकालासह आणि कुठे मिळतील ते. तुमच्या KVK किंवा कृषी अधिकाऱ्यांना विचारा; काही काही दिवस आधी मागवावी लागतात, कार्डवर लिहिल्याप्रमाणे."
+   }
+  },
+  {
+   "id": "spray_check",
+   "screens": [
+    "spray",
+    "result",
+    "home"
+   ],
+   "ask": {
+    "en": [
+     "How do I check a pesticide before spraying?",
+     "is this medicine right for my crop",
+     "check the bottle"
+    ],
+    "hi": [
+     "छिड़काव से पहले दवा कैसे जाँचें?",
+     "क्या यह दवा मेरी फसल के लिए सही है",
+     "बोतल जाँचना"
+    ],
+    "mr": [
+     "फवारणीपूर्वी औषध कसे तपासायचे?",
+     "हे औषध माझ्या पिकासाठी योग्य आहे का",
+     "बाटली तपासणे"
+    ]
+   },
+   "keys": [
+    "bottle",
+    "botal",
+    "batli",
+    "pesticide",
+    "medicine",
+    "dawa",
+    "aushadh",
+    "product",
+    "brand",
+    "label",
+    "बोतल",
+    "बाटली",
+    "दवा",
+    "औषध"
+   ],
+   "answer": {
+    "en": "Open Spray check at the bottom. Type or speak the product name or active ingredient from the bottle (for example Mancozeb). AnnRakshak checks it against your crop and the problem it diagnosed, and warns you if it's wrong, banned, or not meant for this — before you spend money.",
+    "hi": "नीचे 'छिड़काव' खोलें। बोतल पर लिखा उत्पाद का नाम या सक्रिय तत्व टाइप करें या बोलें (जैसे मैंकोज़ेब)। AnnRakshak उसे आपकी फसल और पहचानी गई समस्या से मिलाता है, और पैसा खर्च करने से पहले चेतावनी देता है अगर वह गलत, प्रतिबंधित या इस काम का नहीं है।",
+    "mr": "खाली 'फवारणी' उघडा. बाटलीवर लिहिलेले उत्पादनाचे नाव किंवा सक्रिय घटक टाइप करा किंवा बोला (उदा. मॅन्कोझेब). AnnRakshak ते तुमच्या पिकाशी आणि ओळखलेल्या समस्येशी जुळवते, आणि ते चुकीचे, बंदी असलेले किंवा या कामाचे नसेल तर पैसे खर्च करण्याआधीच इशारा देते."
+   },
+   "go": [
+    {
+     "to": "/app/spray",
+     "label": {
+      "en": "Open Spray check",
+      "hi": "छिड़काव जाँच खोलें",
+      "mr": "फवारणी तपासणी उघडा"
+     }
+    }
+   ]
+  },
+  {
+   "id": "never_safe",
+   "screens": [
+    "spray"
+   ],
+   "ask": {
+    "en": [
+     "Why doesn't it say the pesticide is safe?",
+     "it says no objection found",
+     "is it safe to spray"
+    ],
+    "hi": [
+     "यह दवा को सुरक्षित क्यों नहीं कहता?",
+     "'कोई आपत्ति नहीं मिली' का मतलब",
+     "छिड़कना सुरक्षित है?"
+    ],
+    "mr": [
+     "हे औषध सुरक्षित आहे असे का सांगत नाही?",
+     "'कोणताही आक्षेप आढळला नाही' म्हणजे",
+     "फवारणे सुरक्षित आहे का?"
+    ]
+   },
+   "keys": [
+    "safe",
+    "surakshit",
+    "objection",
+    "aapatti",
+    "aakshep",
+    "सुरक्षित",
+    "आपत्ति",
+    "आक्षेप"
+   ],
+   "answer": {
+    "en": "AnnRakshak only warns you about wrong sprays — it never calls a pesticide 'safe'. 'No objection found' means it found nothing wrong with that product for your crop and problem. The printed label on the bottle still decides the dose, the waiting period before harvest and the protective clothing.",
+    "hi": "AnnRakshak सिर्फ़ गलत छिड़काव की चेतावनी देता है — वह किसी दवा को कभी 'सुरक्षित' नहीं कहता। 'कोई आपत्ति नहीं मिली' का मतलब है कि आपकी फसल और समस्या के लिए उस उत्पाद में कोई गलती नहीं मिली। खुराक, कटाई से पहले का इंतज़ार और बचाव के कपड़े बोतल पर छपा लेबल ही तय करता है।",
+    "mr": "AnnRakshak फक्त चुकीच्या फवारणीचा इशारा देते — ते कोणत्याही औषधाला कधीही 'सुरक्षित' म्हणत नाही. 'कोणताही आक्षेप आढळला नाही' म्हणजे तुमच्या पिकासाठी व समस्येसाठी त्या उत्पादनात काही चूक आढळली नाही. मात्रा, काढणीपूर्वीचा प्रतीक्षा काळ आणि संरक्षक कपडे बाटलीवरचे छापील लेबलच ठरवते."
+   }
+  },
+  {
+   "id": "spraying_now",
+   "screens": [
+    "spray",
+    "weather"
+   ],
+   "ask": {
+    "en": [
+     "What does 'I'm spraying now' do?",
+     "tell me if rain comes after spraying",
+     "I just sprayed"
+    ],
+    "hi": [
+     "'मैं अभी छिड़काव कर रहा हूँ' से क्या होता है?",
+     "छिड़काव के बाद बारिश आए तो बताना",
+     "अभी छिड़काव किया"
+    ],
+    "mr": [
+     "'मी आत्ता फवारणी करत आहे' ने काय होते?",
+     "फवारणीनंतर पाऊस आला तर सांगा",
+     "आत्ताच फवारणी केली"
+    ]
+   },
+   "keys": [
+    "spraying now",
+    "just sprayed",
+    "abhi",
+    "aatta",
+    "after spray",
+    "wash",
+    "dhul"
+   ],
+   "answer": {
+    "en": "Tap it when you start spraying. AnnRakshak notes the time, and if rain is coming in the next 6 hours it warns you right away — rain can wash the spray off before it works.",
+    "hi": "छिड़काव शुरू करते समय इसे दबाएँ। AnnRakshak समय नोट करता है, और अगर अगले 6 घंटों में बारिश आने वाली हो तो तुरंत चेतावनी देता है — असर होने से पहले बारिश दवा धो सकती है।",
+    "mr": "फवारणी सुरू करताना हे दाबा. AnnRakshak वेळ नोंदवते, आणि पुढच्या 6 तासांत पाऊस येणार असेल तर लगेच इशारा देते — औषधाचा परिणाम होण्याआधी पाऊस ते धुऊन टाकू शकतो."
+   },
+   "go": [
+    {
+     "to": "/app/spray",
+     "label": {
+      "en": "Open Spray check",
+      "hi": "छिड़काव जाँच खोलें",
+      "mr": "फवारणी तपासणी उघडा"
+     }
+    }
+   ]
+  },
+  {
+   "id": "which_pesticide",
+   "screens": [
+    "spray",
+    "result",
+    "home"
+   ],
+   "ask": {
+    "en": [
+     "Which pesticide should I use?",
+     "tell me a medicine",
+     "how much dose",
+     "which medicine to spray",
+     "which chemical for this disease"
+    ],
+    "hi": [
+     "कौन सी दवा डालूँ?",
+     "कोई दवा बताओ",
+     "कितनी मात्रा"
+    ],
+    "mr": [
+     "कोणते औषध वापरू?",
+     "एखादे औषध सांगा",
+     "किती मात्रा"
+    ]
+   },
+   "keys": [
+    "which",
+    "kaun si",
+    "konte",
+    "dose",
+    "matra",
+    "kitna",
+    "kiti",
+    "recommend",
+    "medicine",
+    "dawai",
+    "कौन सी",
+    "कोणते",
+    "मात्रा",
+    "which medicine",
+    "konsi dawai",
+    "konti dawa",
+    "chemical name"
+   ],
+   "answer": {
+    "en": "I don't name a pesticide without knowing the problem — a wrong one wastes money and harms the crop and you. First check the plant with a photo: the advice lists what works, safest first, with the dose for your field size. Before buying, run the bottle through Spray check.",
+    "hi": "समस्या जाने बिना मैं कोई दवा नहीं बताता — गलत दवा से पैसा बर्बाद होता है और फसल व आपको नुकसान होता है। पहले फोटो से पौधे की जाँच करें: सलाह में वह दिया है जो काम करता है, सबसे सुरक्षित पहले, आपके खेत के आकार की मात्रा के साथ। खरीदने से पहले बोतल को 'छिड़काव' जाँच में डालें।",
+    "mr": "समस्या कळल्याशिवाय मी कोणतेही औषध सांगत नाही — चुकीच्या औषधाने पैसे वाया जातात आणि पिकाला व तुम्हाला त्रास होतो. आधी फोटोने रोपाची तपासणी करा: सल्ल्यात जे उपयोगी आहे ते दिले आहे, सर्वात सुरक्षित आधी, तुमच्या शेताच्या क्षेत्रानुसार मात्रेसह. घेण्यापूर्वी बाटली 'फवारणी' तपासणीत तपासा."
+   },
+   "go": [
+    {
+     "to": "/app/scan",
+     "label": {
+      "en": "Check the plant",
+      "hi": "पौधे की जाँच",
+      "mr": "रोप तपासा"
+     }
+    },
+    {
+     "to": "/app/spray",
+     "label": {
+      "en": "Check a bottle",
+      "hi": "बोतल जाँचें",
+      "mr": "बाटली तपासा"
+     }
+    }
+   ]
+  },
+  {
+   "id": "weather_screen",
+   "screens": [
+    "weather",
+    "home"
+   ],
+   "ask": {
+    "en": [
+     "What is on the Weather screen?",
+     "explain the weather page",
+     "what do these weather numbers mean"
+    ],
+    "hi": [
+     "मौसम स्क्रीन पर क्या है?",
+     "मौसम पेज समझाओ",
+     "मौसम के ये आँकड़े क्या हैं"
+    ],
+    "mr": [
+     "हवामान स्क्रीनवर काय आहे?",
+     "हवामान पान समजावून सांगा",
+     "हवामानाचे हे आकडे काय आहेत"
+    ]
+   },
+   "keys": [
+    "weather screen",
+    "humidity",
+    "wind",
+    "hawa",
+    "vara",
+    "uv",
+    "dew",
+    "pressure",
+    "namii",
+    "aardrata",
+    "हवा",
+    "वारा",
+    "नमी",
+    "आर्द्रता"
+   ],
+   "answer": {
+    "en": "At the top is what to do today — warnings like lightning, heavy rain, strong wind, heat at flowering or fungal weather, each with steps. Below: the weather right now, the 24-hour spraying strip, the next 7 days, soil and water with irrigation advice, crop health from space, and which pests this weather favours on your crop.",
+    "hi": "सबसे ऊपर आज क्या करें — बिजली, भारी बारिश, तेज़ हवा, फूल आने पर गर्मी या फफूँद वाले मौसम जैसी चेतावनियाँ, हर एक के साथ कदम। नीचे: अभी का मौसम, 24 घंटे की छिड़काव पट्टी, अगले 7 दिन, सिंचाई सलाह के साथ मिट्टी और पानी, अंतरिक्ष से फसल की सेहत, और यह मौसम आपकी फसल पर किन कीटों को बढ़ाता है।",
+    "mr": "सर्वात वर आज काय करावे — वीज, मुसळधार पाऊस, जोरदार वारा, फुलोऱ्यात उष्णता किंवा बुरशीला पोषक हवामान असे इशारे, प्रत्येकासह पायऱ्या. खाली: आत्ताचे हवामान, 24 तासांची फवारणी पट्टी, पुढील 7 दिवस, सिंचन सल्ल्यासह माती आणि पाणी, उपग्रहावरून पिकाचे आरोग्य, आणि हे हवामान तुमच्या पिकावर कोणत्या किडींना पोषक आहे."
+   },
+   "go": [
+    {
+     "to": "/app/weather",
+     "label": {
+      "en": "Open Weather",
+      "hi": "मौसम खोलें",
+      "mr": "हवामान उघडा"
+     }
+    }
+   ]
+  },
+  {
+   "id": "spray_window",
+   "screens": [
+    "weather",
+    "spray"
+   ],
+   "ask": {
+    "en": [
+     "What do the colours in the spraying window mean?",
+     "green yellow red spray strip",
+     "best time to spray"
+    ],
+    "hi": [
+     "छिड़काव के समय वाले रंगों का क्या मतलब?",
+     "हरा पीला लाल पट्टी",
+     "छिड़काव का सबसे अच्छा समय"
+    ],
+    "mr": [
+     "फवारणीच्या वेळेतील रंगांचा अर्थ काय?",
+     "हिरवा पिवळा लाल पट्टी",
+     "फवारणीची सर्वात चांगली वेळ"
+    ]
+   },
+   "keys": [
+    "colour",
+    "green",
+    "red",
+    "yellow",
+    "strip",
+    "window",
+    "hara",
+    "lal",
+    "hirva",
+    "best time",
+    "रंग",
+    "हरा",
+    "लाल",
+    "हिरवा"
+   ],
+   "answer": {
+    "en": "Each bar is one hour of the next 24. Green: good to spray. Yellow: spray with care (breezy, hot or humid). Red: don't spray — rain likely, strong wind or dark. 'Best' shows the next good stretch. Spraying in a good window stops drift and wash-off, so the medicine reaches the pest.",
+    "hi": "हर पट्टी अगले 24 में से एक घंटा है। हरा: छिड़काव ठीक। पीला: सावधानी से (हवा, गर्मी या नमी)। लाल: छिड़काव न करें — बारिश की संभावना, तेज़ हवा या अँधेरा। 'सबसे अच्छा' अगला अच्छा समय दिखाता है। सही समय पर छिड़काव से दवा न उड़ती है न धुलती है, और कीट तक पहुँचती है।",
+    "mr": "प्रत्येक पट्टी पुढच्या 24 पैकी एक तास आहे. हिरवा: फवारणी योग्य. पिवळा: काळजीपूर्वक (वारा, उष्णता किंवा दमटपणा). लाल: फवारणी करू नका — पावसाची शक्यता, जोरदार वारा किंवा अंधार. 'सर्वोत्तम' पुढची चांगली वेळ दाखवते. योग्य वेळी फवारणी केल्यास औषध उडत नाही, धुतले जात नाही आणि किडीपर्यंत पोहोचते."
+   },
+   "go": [
+    {
+     "to": "/app/weather",
+     "label": {
+      "en": "See the spraying window",
+      "hi": "छिड़काव का समय देखें",
+      "mr": "फवारणीची वेळ पहा"
+     }
+    }
+   ]
+  },
+  {
+   "id": "irrigation_how",
+   "screens": [
+    "weather"
+   ],
+   "ask": {
+    "en": [
+     "How does it decide irrigation?",
+     "what is ET0 and crop water use",
+     "shortfall meaning"
+    ],
+    "hi": [
+     "सिंचाई की सलाह कैसे तय होती है?",
+     "ET0 और फसल का पानी क्या है",
+     "कमी का मतलब"
+    ],
+    "mr": [
+     "सिंचनाचा सल्ला कसा ठरतो?",
+     "ET0 आणि पिकाचा पाणी वापर काय आहे",
+     "तुटीचा अर्थ"
+    ]
+   },
+   "keys": [
+    "et0",
+    "evaporation",
+    "shortfall",
+    "kami",
+    "tut",
+    "water balance",
+    "fao",
+    "वाष्पीकरण"
+   ],
+   "answer": {
+    "en": "It adds up how much water your crop used this week (from the heat and the crop's stage) and the useful rain that fell. If the shortfall is large and no good rain is coming in 3 days, it says irrigate — check that the soil is dry 5 cm down first. If rain is coming, it says hold. This is the FAO-56 method.",
+    "hi": "यह जोड़ता है कि इस हफ़्ते आपकी फसल ने कितना पानी इस्तेमाल किया (गर्मी और फसल की अवस्था से) और कितनी काम की बारिश हुई। कमी ज़्यादा हो और 3 दिन में अच्छी बारिश न आने वाली हो तो सिंचाई करने को कहता है — पहले देखें कि मिट्टी 5 सेमी नीचे तक सूखी है। बारिश आने वाली हो तो रुकने को कहता है। यह FAO-56 तरीका है।",
+    "mr": "या आठवड्यात तुमच्या पिकाने किती पाणी वापरले (उष्णता आणि पिकाच्या अवस्थेवरून) आणि किती उपयोगी पाऊस पडला याची बेरीज करते. तूट मोठी असेल आणि 3 दिवसांत चांगला पाऊस येणार नसेल तर पाणी द्यायला सांगते — आधी माती 5 सेमी खोलपर्यंत कोरडी आहे का ते पाहा. पाऊस येणार असेल तर थांबायला सांगते. ही FAO-56 पद्धत आहे."
+   }
+  },
+  {
+   "id": "notices",
+   "screens": [
+    "alerts",
+    "weather",
+    "home"
+   ],
+   "ask": {
+    "en": [
+     "What is the bell at the top?",
+     "where are my weather notices",
+     "mark all read"
+    ],
+    "hi": [
+     "ऊपर घंटी क्या है?",
+     "मेरी मौसम सूचनाएँ कहाँ हैं",
+     "सब पढ़ा हुआ"
+    ],
+    "mr": [
+     "वरची घंटा काय आहे?",
+     "माझ्या हवामान सूचना कुठे आहेत",
+     "सर्व वाचले"
+    ]
+   },
+   "keys": [
+    "bell",
+    "ghanti",
+    "ghanta",
+    "notice",
+    "suchna",
+    "unread",
+    "red number",
+    "घंटी",
+    "घंटा",
+    "सूचना"
+   ],
+   "answer": {
+    "en": "The bell counts new weather notices for your farm. Tap it to open Alerts, where 'Weather notices' lists each one with what to do. A notice pops up the moment it's issued while the app is open, and comes as a phone notification when it's closed. 'Mark all read' clears the count.",
+    "hi": "घंटी आपके खेत की नई मौसम सूचनाएँ गिनती है। उसे दबाकर 'अलर्ट' खोलें, जहाँ 'मौसम सूचनाएँ' में हर सूचना क्या करें के साथ है। ऐप खुला हो तो सूचना तुरंत ऊपर आती है, और बंद हो तो फ़ोन सूचना के रूप में आती है। 'सब पढ़ा हुआ' से गिनती हट जाती है।",
+    "mr": "घंटा तुमच्या शेतासाठीच्या नवीन हवामान सूचना मोजते. ती दाबून 'सूचना' उघडा, जिथे 'हवामान सूचना' मध्ये प्रत्येक सूचना काय करावे यासह आहे. ॲप उघडे असताना सूचना लगेच वर दिसते, आणि बंद असताना फोन सूचना म्हणून येते. 'सर्व वाचले' ने आकडा जातो."
+   },
+   "go": [
+    {
+     "to": "/app/alerts",
+     "label": {
+      "en": "Open Alerts",
+      "hi": "अलर्ट खोलें",
+      "mr": "सूचना उघडा"
+     }
+    }
+   ]
+  },
+  {
+   "id": "notifications",
+   "screens": [
+    "alerts",
+    "home"
+   ],
+   "ask": {
+    "en": [
+     "How do I get alerts on my phone?",
+     "turn on notifications",
+     "get warnings by email"
+    ],
+    "hi": [
+     "फ़ोन पर अलर्ट कैसे पाएँ?",
+     "सूचनाएँ चालू करना",
+     "ईमेल पर चेतावनी"
+    ],
+    "mr": [
+     "फोनवर सूचना कशा मिळवायच्या?",
+     "सूचना सुरू करा",
+     "ईमेलवर इशारे"
+    ]
+   },
+   "keys": [
+    "notification",
+    "notify",
+    "email",
+    "alert on phone",
+    "chalu",
+    "suru",
+    "turn on",
+    "test",
+    "summary",
+    "ईमेल",
+    "चालू",
+    "सुरू"
+   ],
+   "answer": {
+    "en": "Open Alerts and find 'Get alerts'. Under Phone notifications tap 'Turn on' and allow it, then 'Send a test'. Under Email, choose what you want — warnings right away plus a 6 am summary, every notice, only the summary, or none — and tap Save. At night only warnings come through; the rest wait for morning.",
+    "hi": "'अलर्ट' खोलें और 'सूचनाएँ पाएँ' देखें। 'फ़ोन सूचनाएँ' में 'चालू करें' दबाकर अनुमति दें, फिर 'टेस्ट भेजें'। 'ईमेल' में चुनें — चेतावनी तुरंत और सुबह 6 बजे सारांश, हर सूचना, सिर्फ़ सारांश, या कुछ नहीं — और 'सहेजें' दबाएँ। रात में सिर्फ़ चेतावनियाँ आती हैं; बाकी सुबह।",
+    "mr": "'सूचना' उघडा आणि 'सूचना मिळवा' पहा. 'फोन सूचना' मध्ये 'सुरू करा' दाबून परवानगी द्या, मग 'चाचणी पाठवा'. 'ईमेल' मध्ये निवडा — इशारे लगेच आणि सकाळी 6 वाजता सारांश, प्रत्येक सूचना, फक्त सारांश, किंवा काहीच नाही — आणि 'जतन करा' दाबा. रात्री फक्त इशारे येतात; बाकी सकाळी."
+   },
+   "go": [
+    {
+     "to": "/app/alerts",
+     "label": {
+      "en": "Open Alerts",
+      "hi": "अलर्ट खोलें",
+      "mr": "सूचना उघडा"
+     }
+    }
+   ]
+  },
+  {
+   "id": "alert_levels",
+   "screens": [
+    "alerts",
+    "home"
+   ],
+   "ask": {
+    "en": [
+     "What do Watch, Risk and High risk mean?",
+     "why did I get this alert",
+     "confirmed nearby alert"
+    ],
+    "hi": [
+     "'नज़र रखें', 'जोखिम', 'अधिक जोखिम' का मतलब?",
+     "यह अलर्ट क्यों आया",
+     "पास में पुष्ट अलर्ट"
+    ],
+    "mr": [
+     "'लक्ष ठेवा', 'धोका', 'जास्त धोका' म्हणजे?",
+     "ही सूचना का आली",
+     "जवळ खात्रीशीर सूचना"
+    ]
+   },
+   "keys": [
+    "watch",
+    "high risk",
+    "level",
+    "why alert",
+    "nearby",
+    "paas",
+    "javal",
+    "confirmed",
+    "spread",
+    "phail",
+    "pasar",
+    "पास",
+    "जवळ"
+   ],
+   "answer": {
+    "en": "Watch, Risk and High risk say how likely a pest or disease is on your crop now. Each alert says why — the weather, your crop's stage, your trap count, or 'Confirmed nearby', which means an expert confirmed it on a farm within 5 km of yours. Every alert tells you what to go and check.",
+    "hi": "'नज़र रखें', 'जोखिम' और 'अधिक जोखिम' बताते हैं कि अभी आपकी फसल पर कीट या रोग की कितनी संभावना है। हर अलर्ट कारण बताता है — मौसम, फसल की अवस्था, आपकी ट्रैप गिनती, या 'पास में पुष्ट', यानी किसी विशेषज्ञ ने आपके खेत से 5 किमी के अंदर किसी खेत पर इसकी पुष्टि की। हर अलर्ट बताता है कि जाकर क्या देखना है।",
+    "mr": "'लक्ष ठेवा', 'धोका' आणि 'जास्त धोका' सांगतात की सध्या तुमच्या पिकावर कीड किंवा रोगाची किती शक्यता आहे. प्रत्येक सूचना कारण सांगते — हवामान, पिकाची अवस्था, तुमची सापळा नोंद, किंवा 'जवळ खात्रीशीर', म्हणजे तज्ज्ञांनी तुमच्या शेतापासून 5 किमीच्या आत एखाद्या शेतावर याची खात्री केली. प्रत्येक सूचना जाऊन काय तपासायचे ते सांगते."
+   },
+   "go": [
+    {
+     "to": "/app/alerts",
+     "label": {
+      "en": "Open Alerts",
+      "hi": "अलर्ट खोलें",
+      "mr": "सूचना उघडा"
+     }
+    }
+   ]
+  },
+  {
+   "id": "traps",
+   "screens": [
+    "alerts"
+   ],
+   "ask": {
+    "en": [
+     "How do I enter trap counts?",
+     "pheromone trap",
+     "moths caught"
+    ],
+    "hi": [
+     "ट्रैप गिनती कैसे दर्ज करें?",
+     "फेरोमोन ट्रैप",
+     "पकड़े पतंगे"
+    ],
+    "mr": [
+     "सापळा नोंद कशी करायची?",
+     "कामगंध सापळा",
+     "पकडलेले पतंग"
+    ]
+   },
+   "keys": [
+    "trap",
+    "pheromone",
+    "moth",
+    "patang",
+    "saapla",
+    "sapla",
+    "count",
+    "ginti",
+    "नोंद",
+    "ट्रैप",
+    "सापळा",
+    "पतंग"
+   ],
+   "answer": {
+    "en": "Open Alerts and go to 'Pheromone trap counts'. Choose the pest, enter the moths caught, how many traps and for how many nights, and tap 'Record count'. If the count stays above ICAR's action level for 3 nights, you and your agriculture officer get an alert.",
+    "hi": "'अलर्ट' खोलें और 'फेरोमोन ट्रैप गिनती' पर जाएँ। कीट चुनें, पकड़े पतंगे, कितने ट्रैप और कितनी रातें भरें, और 'गिनती दर्ज करें' दबाएँ। 3 रात तक गिनती ICAR की कार्रवाई सीमा से ऊपर रहे तो आपको और आपके कृषि अधिकारी को अलर्ट मिलेगा।",
+    "mr": "'सूचना' उघडा आणि 'कामगंध सापळा नोंद' वर जा. कीड निवडा, पकडलेले पतंग, किती सापळे आणि किती रात्री भरा, आणि 'नोंद करा' दाबा. सलग 3 रात्री नोंद ICAR च्या कृती मर्यादेच्या वर राहिली तर तुम्हाला आणि तुमच्या कृषी अधिकाऱ्यांना सूचना मिळेल."
+   },
+   "go": [
+    {
+     "to": "/app/alerts",
+     "label": {
+      "en": "Open trap counts",
+      "hi": "ट्रैप गिनती खोलें",
+      "mr": "सापळा नोंद उघडा"
+     }
+    }
+   ]
+  },
+  {
+   "id": "sensor",
+   "screens": [
+    "alerts"
+   ],
+   "ask": {
+    "en": [
+     "I have a rain gauge — where do I enter it?",
+     "field sensor readings",
+     "my own weather readings"
+    ],
+    "hi": [
+     "मेरे पास वर्षा मापी है — कहाँ भरूँ?",
+     "खेत सेंसर रीडिंग",
+     "अपनी मौसम रीडिंग"
+    ],
+    "mr": [
+     "माझ्याकडे पर्जन्यमापक आहे — कुठे भरू?",
+     "शेत सेन्सर नोंद",
+     "माझ्या हवामान नोंदी"
+    ]
+   },
+   "keys": [
+    "sensor",
+    "rain gauge",
+    "reading",
+    "varsha mapi",
+    "parjanya",
+    "own",
+    "सेंसर",
+    "सेन्सर"
+   ],
+   "answer": {
+    "en": "Open Alerts and go to 'Field sensor / rain gauge'. Enter today's rain, humidity or temperature from your own gauge or sensor. Your readings replace the district forecast in today's pest-risk check, because your field is what the pest feels.",
+    "hi": "'अलर्ट' खोलें और 'खेत सेंसर / वर्षा मापी' पर जाएँ। अपनी वर्षा मापी या सेंसर से आज की बारिश, नमी या तापमान भरें। आज की कीट-जोखिम जाँच में ज़िले के पूर्वानुमान की जगह आपकी रीडिंग ली जाएगी, क्योंकि कीट आपके खेत का मौसम महसूस करता है।",
+    "mr": "'सूचना' उघडा आणि 'शेत सेन्सर / पर्जन्यमापक' वर जा. तुमच्या पर्जन्यमापक किंवा सेन्सरवरून आजचा पाऊस, आर्द्रता किंवा तापमान भरा. आजच्या किडीच्या धोका तपासणीत जिल्ह्याच्या अंदाजाऐवजी तुमच्या नोंदी वापरल्या जातील, कारण कीड तुमच्या शेतातले हवामान अनुभवते."
+   },
+   "go": [
+    {
+     "to": "/app/alerts",
+     "label": {
+      "en": "Open Alerts",
+      "hi": "अलर्ट खोलें",
+      "mr": "सूचना उघडा"
+     }
+    }
+   ]
+  },
+  {
+   "id": "history",
+   "screens": [
+    "history",
+    "home"
+   ],
+   "ask": {
+    "en": [
+     "Where are my old problems?",
+     "see past photo checks",
+     "history"
+    ],
+    "hi": [
+     "मेरी पुरानी समस्याएँ कहाँ हैं?",
+     "पुरानी फोटो जाँच देखनी है",
+     "इतिहास"
+    ],
+    "mr": [
+     "माझ्या जुन्या समस्या कुठे आहेत?",
+     "जुन्या फोटो तपासण्या पाहायच्या",
+     "इतिहास"
+    ]
+   },
+   "keys": [
+    "history",
+    "old",
+    "purani",
+    "juni",
+    "past",
+    "previous",
+    "itihas",
+    "इतिहास",
+    "पुरानी",
+    "जुन्या"
+   ],
+   "answer": {
+    "en": "On Home, under 'Your recent problems', tap 'All'. Each problem shows its status — advice from AI, settled by your answer, waiting for expert, or confirmed by expert — and opens to the full advice, the photos and the expert's note.",
+    "hi": "होम पर 'आपकी हाल की समस्याएँ' में 'सभी' दबाएँ। हर समस्या की स्थिति दिखती है — AI की सलाह, आपके जवाब से तय, विशेषज्ञ का इंतज़ार, या विशेषज्ञ द्वारा पुष्ट — और खोलने पर पूरी सलाह, फोटो और विशेषज्ञ की टिप्पणी दिखती है।",
+    "mr": "होमवर 'तुमच्या अलीकडील समस्या' मध्ये 'सर्व' दाबा. प्रत्येक समस्येची स्थिती दिसते — AI चा सल्ला, तुमच्या उत्तराने ठरलेले, तज्ज्ञांची प्रतीक्षा, किंवा तज्ज्ञांनी खात्री केलेले — आणि उघडल्यावर संपूर्ण सल्ला, फोटो आणि तज्ज्ञांची टीप दिसते."
+   },
+   "go": [
+    {
+     "to": "/app/history",
+     "label": {
+      "en": "Open History",
+      "hi": "इतिहास खोलें",
+      "mr": "इतिहास उघडा"
+     }
+    }
+   ]
+  },
+  {
+   "id": "signup_email",
+   "screens": [
+    "login",
+    "signup"
+   ],
+   "ask": {
+    "en": [
+     "Why does the code come by email?",
+     "I don't have email",
+     "no SMS code"
+    ],
+    "hi": [
+     "कोड ईमेल पर क्यों आता है?",
+     "मेरे पास ईमेल नहीं है",
+     "SMS कोड नहीं"
+    ],
+    "mr": [
+     "कोड ईमेलवर का येतो?",
+     "माझ्याकडे ईमेल नाही",
+     "SMS कोड नाही"
+    ]
+   },
+   "keys": [
+    "email",
+    "sms",
+    "code",
+    "gmail",
+    "no email",
+    "ईमेल",
+    "कोड"
+   ],
+   "answer": {
+    "en": "For now the 6-digit sign-in code comes by email; SMS codes are coming soon. A free Gmail account on your phone works. If you don't have email, a family member's works too, or ask your agriculture assistant to help you sign up.",
+    "hi": "अभी 6 अंकों का साइन-इन कोड ईमेल पर आता है; SMS कोड जल्द आएँगे। फ़ोन पर मुफ़्त Gmail खाता चलेगा। ईमेल न हो तो परिवार के किसी सदस्य का भी चलेगा, या साइन अप में अपने कृषि सहायक से मदद लें।",
+    "mr": "सध्या 6 अंकी साइन-इन कोड ईमेलवर येतो; SMS कोड लवकरच येतील. फोनवरचे मोफत Gmail खाते चालेल. ईमेल नसेल तर घरातील कोणाचेही चालेल, किंवा साइन अपसाठी तुमच्या कृषी सहाय्यकाची मदत घ्या."
+   }
+  },
+  {
+   "id": "signup_role",
+   "screens": [
+    "login",
+    "signup"
+   ],
+   "ask": {
+    "en": [
+     "Should I sign up as farmer or expert?",
+     "which account do I need",
+     "I am an agriculture officer"
+    ],
+    "hi": [
+     "किसान या विशेषज्ञ — किस रूप में साइन अप करूँ?",
+     "मुझे कौन सा खाता चाहिए",
+     "मैं कृषि अधिकारी हूँ"
+    ],
+    "mr": [
+     "शेतकरी की तज्ज्ञ — कशाने साइन अप करू?",
+     "मला कोणते खाते हवे",
+     "मी कृषी अधिकारी आहे"
+    ]
+   },
+   "keys": [
+    "farmer",
+    "expert",
+    "officer",
+    "adhikari",
+    "kisan",
+    "shetkari",
+    "role",
+    "which account",
+    "किसान",
+    "शेतकरी",
+    "अधिकारी"
+   ],
+   "answer": {
+    "en": "If you grow crops, choose Farmer — you get the app for your fields. Choose Expert / Officer only if you're a KVK scientist, agriculture officer, agriculture assistant or agronomist who answers farmers' cases; that account opens the expert console and the district dashboard.",
+    "hi": "अगर आप खेती करते हैं तो 'किसान' चुनें — आपको अपने खेतों का ऐप मिलेगा। 'विशेषज्ञ / अधिकारी' तभी चुनें जब आप KVK वैज्ञानिक, कृषि अधिकारी, कृषि सहायक या कृषि विशेषज्ञ हों जो किसानों के केस देखते हैं; उस खाते से विशेषज्ञ कंसोल और ज़िला डैशबोर्ड खुलता है।",
+    "mr": "तुम्ही शेती करत असाल तर 'शेतकरी' निवडा — तुम्हाला तुमच्या शेतांचे ॲप मिळेल. 'तज्ज्ञ / अधिकारी' तेव्हाच निवडा जेव्हा तुम्ही KVK शास्त्रज्ञ, कृषी अधिकारी, कृषी सहाय्यक किंवा कृषी तज्ज्ञ असाल जे शेतकऱ्यांची प्रकरणे पाहतात; त्या खात्याने तज्ज्ञ कन्सोल आणि जिल्हा डॅशबोर्ड उघडतो."
+   },
+   "go": [
+    {
+     "to": "/signup/farmer",
+     "label": {
+      "en": "Sign up as a farmer",
+      "hi": "किसान के रूप में साइन अप",
+      "mr": "शेतकरी म्हणून साइन अप"
+     }
+    }
+   ]
+  },
+  {
+   "id": "signup_location",
+   "screens": [
+    "signup",
+    "onboard"
+   ],
+   "ask": {
+    "en": [
+     "Why does it want my location?",
+     "I am not at my field now",
+     "GPS"
+    ],
+    "hi": [
+     "यह मेरी जगह क्यों माँगता है?",
+     "मैं अभी खेत पर नहीं हूँ",
+     "GPS"
+    ],
+    "mr": [
+     "हे माझे ठिकाण का मागते?",
+     "मी आत्ता शेतात नाही",
+     "GPS"
+    ]
+   },
+   "keys": [
+    "location",
+    "gps",
+    "jagah",
+    "thikan",
+    "where",
+    "kahan",
+    "kuthe",
+    "जगह",
+    "ठिकाण"
+   ],
+   "answer": {
+    "en": "Weather, the spraying window and outbreak alerts from farms within 5 km all depend on where your field is. Tap the location button only when you're standing in your field. Not there now? Skip it — AnnRakshak uses your district headquarters until you update it.",
+    "hi": "मौसम, छिड़काव का समय और 5 किमी के अंदर के खेतों से प्रकोप की चेतावनी — सब आपके खेत की जगह पर निर्भर है। जगह वाला बटन तभी दबाएँ जब आप अपने खेत में खड़े हों। अभी वहाँ नहीं हैं? छोड़ दें — तब तक AnnRakshak आपका ज़िला मुख्यालय लेगा।",
+    "mr": "हवामान, फवारणीची वेळ आणि 5 किमीच्या आतील शेतांवरील प्रादुर्भावाचे इशारे — सर्व तुमचे शेत कुठे आहे यावर अवलंबून आहे. ठिकाणाचे बटण तुम्ही शेतात उभे असतानाच दाबा. आत्ता तिथे नाही? सोडून द्या — तोपर्यंत AnnRakshak तुमचे जिल्हा मुख्यालय वापरेल."
+   }
+  },
+  {
+   "id": "soil_card",
+   "screens": [
+    "signup",
+    "onboard",
+    "weather"
+   ],
+   "ask": {
+    "en": [
+     "What is the Soil Health Card pH?",
+     "I don't have a soil card",
+     "soil pH"
+    ],
+    "hi": [
+     "मृदा स्वास्थ्य कार्ड pH क्या है?",
+     "मेरे पास मिट्टी कार्ड नहीं है",
+     "मिट्टी का pH"
+    ],
+    "mr": [
+     "मृदा आरोग्य पत्रिका pH म्हणजे काय?",
+     "माझ्याकडे माती पत्रिका नाही",
+     "मातीचा pH"
+    ]
+   },
+   "keys": [
+    "soil",
+    "ph",
+    "card",
+    "mitti",
+    "maati",
+    "mati",
+    "mrida",
+    "health card",
+    "मिट्टी",
+    "माती",
+    "मृदा"
+   ],
+   "answer": {
+    "en": "The Soil Health Card from your agriculture department has your soil's pH (how acidic or alkaline it is). Enter it if you have it — it improves the advice. If you don't, leave it empty: AnnRakshak uses the national soil map and labels it 'estimated', never 'measured'.",
+    "hi": "कृषि विभाग से मिले मृदा स्वास्थ्य कार्ड में आपकी मिट्टी का pH (कितनी अम्लीय या क्षारीय) लिखा होता है। हो तो भरें — इससे सलाह बेहतर होती है। न हो तो खाली छोड़ें: AnnRakshak राष्ट्रीय मिट्टी नक्शा इस्तेमाल करता है और उसे 'अनुमानित' लिखता है, 'मापा हुआ' कभी नहीं।",
+    "mr": "कृषी विभागाकडून मिळालेल्या मृदा आरोग्य पत्रिकेत तुमच्या मातीचा pH (किती आम्लयुक्त किंवा अल्कधर्मी) लिहिलेला असतो. असेल तर भरा — त्याने सल्ला अधिक चांगला होतो. नसेल तर रिकामे ठेवा: AnnRakshak राष्ट्रीय माती नकाशा वापरते आणि त्याला 'अंदाजित' लिहिते, 'मोजलेले' कधीही नाही."
+   }
+  },
+  {
+   "id": "no_code",
+   "screens": [
+    "login",
+    "signup"
+   ],
+   "ask": {
+    "en": [
+     "I didn't get the code",
+     "code not received",
+     "the code is wrong"
+    ],
+    "hi": [
+     "कोड नहीं आया",
+     "कोड नहीं मिला",
+     "कोड गलत बता रहा है"
+    ],
+    "mr": [
+     "कोड आला नाही",
+     "कोड मिळाला नाही",
+     "कोड चुकीचा सांगते"
+    ]
+   },
+   "keys": [
+    "not received",
+    "nahi aaya",
+    "aala nahi",
+    "wrong code",
+    "galat",
+    "chukicha",
+    "expired",
+    "resend",
+    "गलत",
+    "चुकीचा",
+    "otp",
+    "one time code",
+    "did not get",
+    "nahi mila"
+   ],
+   "answer": {
+    "en": "Check the Spam or Promotions folder of that email, and that the email address is spelt right. A code works for 5 minutes and only once; after 30 seconds you can tap 'Send a new code'. After 5 wrong tries, ask for a new code.",
+    "hi": "उस ईमेल का स्पैम या प्रमोशन फ़ोल्डर देखें, और जाँचें कि ईमेल पता सही लिखा है। कोड 5 मिनट तक और सिर्फ़ एक बार चलता है; 30 सेकंड बाद 'नया कोड भेजें' दबा सकते हैं। 5 बार गलत होने पर नया कोड माँगें।",
+    "mr": "त्या ईमेलचे स्पॅम किंवा प्रमोशन्स फोल्डर पहा, आणि ईमेल पत्ता बरोबर लिहिला आहे का ते तपासा. कोड 5 मिनिटे आणि फक्त एकदाच चालतो; 30 सेकंदांनंतर 'नवीन कोड पाठवा' दाबू शकता. 5 वेळा चुकल्यावर नवीन कोड मागा."
+   }
+  },
+  {
+   "id": "fertilizer",
+   "screens": [
+    "result",
+    "home"
+   ],
+   "ask": {
+    "en": [
+     "How much fertilizer should I put?",
+     "urea dose",
+     "which fertilizer for my crop"
+    ],
+    "hi": [
+     "कितनी खाद डालूँ?",
+     "यूरिया कितना डालना",
+     "कौन सी खाद"
+    ],
+    "mr": [
+     "किती खत टाकू?",
+     "युरिया किती टाकायचा",
+     "कोणते खत"
+    ]
+   },
+   "keys": [
+    "fertilizer",
+    "fertiliser",
+    "khad",
+    "khaad",
+    "khat",
+    "urea",
+    "dap",
+    "potash",
+    "npk",
+    "manure",
+    "compost",
+    "खाद",
+    "खत",
+    "यूरिया",
+    "युरिया",
+    "डीएपी"
+   ],
+   "answer": {
+    "en": "AnnRakshak doesn't give fertilizer doses yet. Your Soil Health Card lists the fertilizer your soil needs for this crop — follow it, and split nitrogen (urea) into two or three doses rather than one. Your KVK or agriculture officer can advise too, or call the Kisan Call Centre on 1800-180-1551 (free).",
+    "hi": "AnnRakshak अभी खाद की मात्रा नहीं बताता। आपके मृदा स्वास्थ्य कार्ड पर इस फसल के लिए आपकी मिट्टी की ज़रूरत की खाद लिखी होती है — उसी के अनुसार डालें, और नाइट्रोजन (यूरिया) एक बार की बजाय दो-तीन बार में दें। आपका KVK या कृषि अधिकारी भी सलाह दे सकता है, या किसान कॉल सेंटर 1800-180-1551 (निःशुल्क) पर फ़ोन करें।",
+    "mr": "AnnRakshak सध्या खताची मात्रा सांगत नाही. तुमच्या मृदा आरोग्य पत्रिकेवर या पिकासाठी तुमच्या मातीला लागणारे खत लिहिलेले असते — त्यानुसार द्या, आणि नत्र (युरिया) एकदाच न देता दोन-तीन हप्त्यांत द्या. तुमचे KVK किंवा कृषी अधिकारीही सल्ला देऊ शकतात, किंवा किसान कॉल सेंटर 1800-180-1551 (मोफत) वर फोन करा."
+   }
+  },
+  {
+   "id": "not_app",
+   "screens": [],
+   "ask": {
+    "en": [
+     "What is the market price today?",
+     "loan or subsidy",
+     "crop insurance claim"
+    ],
+    "hi": [
+     "आज मंडी का भाव क्या है?",
+     "लोन या सब्सिडी",
+     "फसल बीमा"
+    ],
+    "mr": [
+     "आज बाजारभाव काय आहे?",
+     "कर्ज किंवा अनुदान",
+     "पीक विमा"
+    ]
+   },
+   "keys": [
+    "price",
+    "rate",
+    "mandi",
+    "bhav",
+    "bazar",
+    "market",
+    "loan",
+    "karj",
+    "subsidy",
+    "anudan",
+    "insurance",
+    "bima",
+    "vima",
+    "pm kisan",
+    "pm-kisan",
+    "scheme",
+    "yojana",
+    "seeds shop",
+    "joke",
+    "song",
+    "cricket",
+    "movie",
+    "भाव",
+    "मंडी",
+    "बाजारभाव",
+    "कर्ज",
+    "लोन",
+    "सब्सिडी",
+    "अनुदान",
+    "बीमा",
+    "विमा",
+    "योजना"
+   ],
+   "answer": {
+    "en": "That's outside what I know — I help with AnnRakshak: crop health, weather, spraying and your cases. For mandi prices, loans, subsidies, crop insurance or schemes, call the Kisan Call Centre on 1800-180-1551 (free) or ask your agriculture officer.",
+    "hi": "यह मेरी जानकारी से बाहर है — मैं AnnRakshak में मदद करता हूँ: फसल की सेहत, मौसम, छिड़काव और आपके केस। मंडी भाव, लोन, सब्सिडी, फसल बीमा या योजनाओं के लिए किसान कॉल सेंटर 1800-180-1551 (निःशुल्क) पर फ़ोन करें या अपने कृषि अधिकारी से पूछें।",
+    "mr": "हे माझ्या माहितीबाहेरचे आहे — मी AnnRakshak मध्ये मदत करतो: पिकाचे आरोग्य, हवामान, फवारणी आणि तुमची प्रकरणे. बाजारभाव, कर्ज, अनुदान, पीक विमा किंवा योजनांसाठी किसान कॉल सेंटर 1800-180-1551 (मोफत) वर फोन करा किंवा तुमच्या कृषी अधिकाऱ्यांना विचारा."
+   }
+  },
+  {
+   "id": "greeting",
+   "screens": [],
+   "ask": {
+    "en": [
+     "hello",
+     "hi",
+     "namaste",
+     "good morning"
+    ],
+    "hi": [
+     "नमस्ते",
+     "हेलो",
+     "राम राम"
+    ],
+    "mr": [
+     "नमस्कार",
+     "राम राम",
+     "हॅलो"
+    ]
+   },
+   "keys": [
+    "hello",
+    "hi",
+    "hey",
+    "namaste",
+    "namaskar",
+    "ram ram",
+    "jai kisan",
+    "नमस्ते",
+    "नमस्कार",
+    "good morning",
+    "good evening",
+    "salaam",
+    "jai shri ram",
+    "kem cho"
+   ],
+   "answer": {
+    "en": "Namaste! I'm Krishi. Ask me anything about AnnRakshak — how to check a sick plant, when to spray, what an alert means — or tap a question below.",
+    "hi": "नमस्ते! मैं कृषि हूँ। AnnRakshak के बारे में कुछ भी पूछें — बीमार पौधे की जाँच कैसे करें, छिड़काव कब करें, अलर्ट का क्या मतलब है — या नीचे कोई सवाल दबाएँ।",
+    "mr": "नमस्कार! मी कृषी. AnnRakshak बद्दल काहीही विचारा — आजारी रोपाची तपासणी कशी करायची, फवारणी कधी करायची, सूचनेचा अर्थ काय — किंवा खालचा एखादा प्रश्न दाबा."
+   }
+  },
+  {
+   "id": "thanks",
+   "screens": [],
+   "ask": {
+    "en": [
+     "thank you",
+     "thanks",
+     "ok"
+    ],
+    "hi": [
+     "धन्यवाद",
+     "शुक्रिया",
+     "ठीक है"
+    ],
+    "mr": [
+     "धन्यवाद",
+     "आभारी आहे",
+     "ठीक आहे"
+    ]
+   },
+   "keys": [
+    "thank",
+    "thanks",
+    "dhanyavad",
+    "shukriya",
+    "aabhari",
+    "ok",
+    "theek",
+    "धन्यवाद"
+   ],
+   "answer": {
+    "en": "You're welcome. I'm here in the corner whenever you need help.",
+    "hi": "आपका स्वागत है। जब भी मदद चाहिए, मैं यहीं कोने में हूँ।",
+    "mr": "आपले स्वागत आहे. मदत लागली की मी इथेच कोपऱ्यात आहे."
+   }
+  }
+ ]
+}

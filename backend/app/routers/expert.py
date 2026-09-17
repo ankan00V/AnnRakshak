@@ -5,17 +5,17 @@ from __future__ import annotations
 
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import services
+from app import auth, services
 from app.db import get_db
 from app.kb import KB, get_kb
 from app.models import Case, Farm, Problem
 
-router = APIRouter(prefix="/api/cases", tags=["expert"])
+router = APIRouter(prefix="/api/cases", tags=["expert"], dependencies=[Depends(auth.require("expert"))])
 
 
 @router.get("")
@@ -59,11 +59,16 @@ class ResolveIn(BaseModel):
 
 
 @router.post("/{case_id}/resolve")
-def resolve(case_id: int, body: ResolveIn, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+def resolve(case_id: int, body: ResolveIn, request: Request, db: Session = Depends(get_db),
+            kb: KB = Depends(get_kb)):
     case = db.get(Case, case_id)
     if case is None:
         raise HTTPException(404, "case not found")
+    verdict = body.model_dump()
+    expert = auth.current_user(request, db)
+    if expert is not None:  # signed in: the verdict carries who gave it, not a typed name
+        verdict["expert_name"] = expert.name[:80]
     try:
-        return services.resolve_case(db, kb, case, **body.model_dump())
+        return services.resolve_case(db, kb, case, **verdict)
     except ValueError as exc:
         raise HTTPException(409 if "already" in str(exc) else 422, str(exc)) from exc

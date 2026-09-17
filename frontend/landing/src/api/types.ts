@@ -12,6 +12,7 @@ export interface Farm {
   village: string | null
   lat: number
   lon: number
+  location_source: 'gps' | 'district'
   area_acres: number
   sowing_date: string
   stage: string
@@ -226,6 +227,11 @@ export interface LabelVerdict {
   ingredient: string | null
   product: string | null
   is_veto: boolean
+  /** 'stop' = known to be wrong here, 'unknown' = no record of it, 'ok' = no objection found. */
+  tone: 'stop' | 'unknown' | 'ok'
+  /** AI explanation of an unrecognised input. Never a recommendation — the
+   *  server drops any reply carrying a dose or naming a chemical. */
+  suggestion?: string | null
   target: string | null
 }
 
@@ -581,7 +587,12 @@ export interface WeatherView {
   current: WeatherNow
   hourly: WeatherHour[]
   daily: WeatherDay[]
-  soil: { temp_surface: number | null; temp_6cm: number | null; moisture: { depth: string; pct: number | null }[] } | null
+  soil: {
+    temp_surface: number | null
+    temp_6cm: number | null
+    moisture: { depth: string; pct: number | null }[]
+    ph: { value: number; how: 'measured' | 'card' | 'estimated'; source: string; on?: string | null; band: string } | null
+  } | null
   water: WaterBalance
   spray: { now: SprayHour | null; windows: { start: string; end: string; hours: number; wind: number }[]; reasons_text: string | null }
   advisories: WeatherAdvisory[]
@@ -645,4 +656,89 @@ export interface SatelliteView {
   soil?: { moisture_pct: number; t0_c: number; t10_c: number; observed_at: string } | null
   polygon_ha?: number
   source?: string
+}
+
+// --- Sign-in -----------------------------------------------------------------
+
+export type Role = 'farmer' | 'expert'
+export type Irrigation = 'rainfed' | 'canal' | 'borewell' | 'open_well' | 'farm_pond' | 'drip' | 'sprinkler'
+
+export interface Me {
+  id: number
+  role: Role
+  name: string
+  phone: string | null
+  email: string | null
+  lang: Lang
+  is_demo: boolean
+  farm_ids?: number[]
+  profile: {
+    state?: string | null
+    district?: string
+    taluka?: string | null
+    village?: string | null
+    total_land_acres?: number | null
+    designation?: string
+    designation_name?: string
+    organisation?: string
+    districts?: string[]
+    crops?: string[]
+    specialities?: string[]
+    languages?: Lang[]
+    verified?: boolean
+    experience_years?: number
+  } | null
+}
+
+export interface OtpSent {
+  challenge_id: string
+  channel: 'email'
+  sent_to: string
+  expires_in: number
+  resend_in: number
+  digits: number
+}
+
+export interface AuthOptions {
+  districts: string[]
+  crops: { id: string; name: string }[]
+  languages: { code: Lang; name: string }[]
+  irrigation: Irrigation[]
+  designations: { id: string; name: string }[]
+  qualifications: { id: string; name: string }[]
+  specialities: { id: string; name: string }[]
+  otp: { digits: number; minutes: number; channel: 'email' }
+  demo_login: boolean
+}
+
+// --- Krishi, the in-app helper -------------------------------------------------
+
+export interface KrishiChip {
+  id: string
+  text: string
+}
+
+export interface KrishiAnswer {
+  topic: string | null
+  score: number
+  text: string
+  steps: string[]
+  go: { to: string; label: string }[]
+  suggestions: KrishiChip[]
+}
+
+// --- Where the farm is ---------------------------------------------------------
+
+export interface StatePlaces {
+  name: string
+  districts: { name: string; local: string | null }[]
+}
+
+export interface PlaceHit {
+  name: string
+  taluka: string | null
+  district: string | null
+  state: string | null
+  lat: number
+  lon: number
 }

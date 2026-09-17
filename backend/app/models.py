@@ -30,6 +30,90 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db import Base
 
 
+class User(Base):
+    """A person who signs in: a farmer or an expert (KVK scientist, agriculture
+    officer, agronomist). Both give a mobile number and an email; one-time codes
+    go to the email until an SMS gateway is wired (config.OTP_CHANNEL)."""
+
+    __tablename__ = "app_user"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    role: Mapped[str] = mapped_column(String(10))
+    name: Mapped[str] = mapped_column(String(120))
+    phone: Mapped[str | None] = mapped_column(String(16), unique=True)
+    email: Mapped[str | None] = mapped_column(String(200), unique=True)
+    lang: Mapped[str] = mapped_column(String(2), default="mr")
+    is_demo: Mapped[bool] = mapped_column(default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+    __table_args__ = (CheckConstraint("role IN ('farmer', 'expert')", name="ck_user_role"),)
+
+
+class FarmerProfile(Base):
+    __tablename__ = "farmer_profile"
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("app_user.id"), primary_key=True)
+    state: Mapped[str | None] = mapped_column(String(60))
+    district: Mapped[str] = mapped_column(String(60))
+    taluka: Mapped[str | None] = mapped_column(String(80))
+    village: Mapped[str | None] = mapped_column(String(80))
+    total_land_acres: Mapped[float | None] = mapped_column(Float)
+    has_smartphone_data: Mapped[bool] = mapped_column(default=True)
+    consent_at: Mapped[datetime] = mapped_column(DateTime)
+    """When the farmer agreed to how their data is used (required)."""
+
+
+class ExpertProfile(Base):
+    __tablename__ = "expert_profile"
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("app_user.id"), primary_key=True)
+    designation: Mapped[str] = mapped_column(String(30))
+    organisation: Mapped[str] = mapped_column(String(160))
+    employee_id: Mapped[str] = mapped_column(String(60))
+    qualification: Mapped[str] = mapped_column(String(20))
+    experience_years: Mapped[int] = mapped_column(Integer)
+    districts: Mapped[list] = mapped_column(JSON)
+    crops: Mapped[list] = mapped_column(JSON)
+    specialities: Mapped[list] = mapped_column(JSON)
+    languages: Mapped[list] = mapped_column(JSON)
+    verified: Mapped[bool] = mapped_column(default=False)
+    """Checked by the district office before verdicts count (auto in demo builds)."""
+
+
+class OtpChallenge(Base):
+    """One one-time code, sent to the account's email (SMS later). Only a salted
+    hash is kept."""
+
+    __tablename__ = "otp_challenge"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    public_id: Mapped[str] = mapped_column(String(40), unique=True)
+    channel: Mapped[str] = mapped_column(String(8))
+    destination: Mapped[str] = mapped_column(String(200))
+    purpose: Mapped[str] = mapped_column(String(8))
+    role: Mapped[str] = mapped_column(String(10))
+    code_hash: Mapped[str] = mapped_column(String(64))
+    salt: Mapped[str] = mapped_column(String(32))
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class UserSession(Base):
+    __tablename__ = "user_session"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("app_user.id"))
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime)
+    user_agent: Mapped[str | None] = mapped_column(String(200))
+
+
 class Farm(Base):
     __tablename__ = "farm"
 
@@ -40,6 +124,8 @@ class Farm(Base):
     crop: Mapped[str] = mapped_column(String(20))
     variety: Mapped[str | None] = mapped_column(String(80))
     sowing_date: Mapped[date] = mapped_column(Date)
+    state: Mapped[str | None] = mapped_column(String(60))
+    """Any state or union territory: the app is not one state's app."""
     district: Mapped[str] = mapped_column(String(60))
     village: Mapped[str | None] = mapped_column(String(80))
     lat: Mapped[float] = mapped_column(Float)
@@ -53,6 +139,15 @@ class Farm(Base):
     """Which emails: 'warnings' (right away) + daily summary, 'all', 'digest' (summary only) or 'off'."""
     email_token: Mapped[str | None] = mapped_column(String(40))
     agro_polygon_id: Mapped[str | None] = mapped_column(String(40))
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    """The farmer who owns this farm; None for seeded demo farms."""
+    irrigation: Mapped[str | None] = mapped_column(String(20))
+    """rainfed | canal | borewell | open_well | farm_pond | drip | sprinkler"""
+    location_source: Mapped[str] = mapped_column(String(10), default="district")
+    """'gps' when the farmer stood in the field and allowed location, else
+    'district' — the district headquarters, which the weather, the spray window
+    and the 5 km outbreak radius all have to make do with until they do."""
+    taluka: Mapped[str | None] = mapped_column(String(80))
     """This farm's field polygon at AgroMonitoring (satellite NDVI and soil)."""
     """Secret for the one-click unsubscribe link; never shown in the app."""
     is_demo: Mapped[bool] = mapped_column(default=False)

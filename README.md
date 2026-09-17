@@ -19,7 +19,7 @@ the officials' surveillance dashboard.
 | Weather-based risk forecasting | `backend/app/engine/risk.py` — Open-Meteo window + crop stage + farm history + IMD rainfall normals |
 | Geospatial hotspot mapping | Officials' map: confirmed / awaiting-expert / AI-advised cases, 5 km spread radius, active risk alerts |
 | Expert validation | `/expert` console: pre-packed case bundles, confirm/correct, lab referral, 3-minute review timer |
-| Multilingual advisories | Seven languages, following the farmer's saved choice: Marathi, Hindi, English (hand-authored) + Bengali, Tamil, Telugu, Kannada (machine translated once, under review); Malayalam, Gujarati, Punjabi, Odia next. Sarvam AI voice in each |
+| Multilingual advisories | Eleven languages, following the farmer's saved choice: Marathi, Hindi, English (hand-authored) + Bengali, Tamil, Telugu, Kannada, Malayalam, Gujarati, Punjabi, Odia (machine translated once with AI4Bharat IndicTrans2 / Sarvam-Translate, placeholders checked, pending native review). Sarvam AI voice in each |
 | Weather-based alerts in real time | Hour-by-hour weather screen (temperature, humidity, rain and its chance, wind, gusts, direction, UV, cloud, visibility, pressure, dew point, soil, ET₀) and 15 weather→action rules (lightning, heavy rain, gusts, frost, heat at flowering, fungal weather, spray window, irrigation by FAO-56 water balance…) — delivered in the app instantly, as phone notifications and by email |
 | Crop health from space | Satellite greenness (NDVI, Sentinel-2/Landsat 8) and soil moisture per field; a greenness drop becomes an alert |
 | Farmer demand signal | 262,778 Kisan Call Centre calls → when and where Maharashtra's farmers ask about each pest |
@@ -28,6 +28,8 @@ the officials' surveillance dashboard.
 | Follow-up monitoring | Day-4 check-in; "got worse" re-escalates automatically |
 | Learns from field confirmations | Capped per-district prior + confirmed-vs-corrected field accuracy (not retraining — stated as such) |
 | Dashboards for officials | `/officer`: KPIs, gate breakdown, risk outlook, district table, IMD rainfall vs normal, MoSPI pesticide baseline, model card |
+| Help inside the app | **Krishi**, always in the bottom-right corner of the farmer app and the sign-in screens: 47 authored help topics covering every screen (en/hi/mr, the other eight from the translation memory) plus 7 live answers from the farmer's own field — can I spray now, will it rain, should I water, what's due today, which pests are coming, what did the expert say. Understands English, Hindi, Marathi and romanised Hinglish; speaks and listens; never makes an answer up and never names a pesticide (`backend/app/krishi.py`, `backend/kb/krishi.json`) |
+| Two roles, signed in | Farmers and experts (KVK scientists, agriculture officers, agronomists) sign up with different questions — a farmer's village, GPS field location, crop, sowing date, area, water source and Soil Health Card pH set up their advice; an expert's designation, organisation, staff ID, qualification, experience, districts, crops, specialities and languages decide which cases reach them. One-time codes by email (SMS when a gateway is added), hashed; HttpOnly sessions; every farm, case and dashboard call checks who is asking (`backend/app/auth.py`) |
 
 ## Principles that are enforced in code
 
@@ -37,6 +39,7 @@ the officials' surveillance dashboard.
 - **Veto, never endorse.** The spray check has no vocabulary for "safe".
 - **Every alert carries a task.** The database refuses an alert without inspection tasks.
 - **Labelled stub.** Without a trained model the API says `is_stub: true` and the app shows a banner.
+- **Your farm is yours.** A farmer sees only their own fields; the expert console and officials' dashboard need an expert account; an expert's verdict carries their signed-in name, not a typed one.
 
 ## The model, measured
 
@@ -97,4 +100,4 @@ Tests: `cd backend && ../.venv/bin/python -m pytest -q` (always on the determini
 
 ## Data
 
-ICAR crop disease & insect-pest images (rice, maize), IMD rainfall (subdivision monthly 1901–2017, normals, monsoon departures), MoSPI ENVSTATS pesticide consumption, ICAR technology repository (24 entries linked to our pests), live Open-Meteo weather. Provenance, hashes and caveats in `data/DATASETS.md`.
+ICAR crop disease & insect-pest images (rice, maize), a second wave of 10,174 de-duplicated cotton, soybean, maize and rice field photos (`data/ingest_more.py`), IMD rainfall (subdivision monthly 1901–2017, normals, monsoon departures), MoSPI ENVSTATS pesticide consumption, ICAR technology repository (24 entries linked to our pests), live Open-Meteo weather. Provenance, hashes and caveats in `data/DATASETS.md`.

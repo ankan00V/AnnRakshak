@@ -105,6 +105,21 @@ T = {
         "hi": "आपके खेत के लिए मौसम चेतावनी तुरंत मिलेगी, और हर सुबह 6 बजे छोटा सारांश।",
         "mr": "तुमच्या शेतासाठी हवामान इशारे लगेच मिळतील, आणि दररोज सकाळी 6 वाजता छोटा सारांश.",
     },
+    "otp_subject": {"en": "{code} is your AnnRakshak code", "hi": "{code} आपका AnnRakshak कोड है",
+                    "mr": "{code} हा तुमचा AnnRakshak कोड आहे"},
+    "otp_signup": {"en": "Use this code to finish creating your AnnRakshak account.",
+                   "hi": "अपना AnnRakshak खाता बनाने के लिए यह कोड डालें।",
+                   "mr": "तुमचे AnnRakshak खाते तयार करण्यासाठी हा कोड टाका."},
+    "otp_login": {"en": "Use this code to sign in to AnnRakshak.", "hi": "AnnRakshak में साइन इन करने के लिए यह कोड डालें।",
+                  "mr": "AnnRakshak मध्ये साइन इन करण्यासाठी हा कोड टाका."},
+    "otp_expiry": {"en": "It works for {mins} minutes, once.", "hi": "यह {mins} मिनट तक, एक बार चलेगा।",
+                   "mr": "तो {mins} मिनिटे, एकदाच चालेल."},
+    "otp_warn": {"en": "Never share this code. AnnRakshak staff, KVK experts and officers will never ask for it. "
+                       "If you did not ask for it, ignore this email.",
+                 "hi": "यह कोड किसी को न बताएँ। AnnRakshak, KVK विशेषज्ञ या अधिकारी इसे कभी नहीं माँगेंगे। "
+                       "अगर आपने यह नहीं माँगा, तो इस ईमेल को अनदेखा करें।",
+                 "mr": "हा कोड कोणालाही सांगू नका. AnnRakshak, KVK तज्ज्ञ किंवा अधिकारी तो कधीही मागणार नाहीत. "
+                       "तुम्ही तो मागितला नसेल तर हा ईमेल दुर्लक्षित करा."},
 }
 
 
@@ -283,6 +298,17 @@ def test_message(d: dict, lang: str) -> tuple[str, str, str]:
     body = (f'<p style="margin:0 0 6px;font-size:15px">{_e(t("hello", lang, name=f["name"]))}</p>'
             f'<p style="margin:0;font-size:14px">{_e(msg)}</p>' + _button(d["app_url"], t("open_app", lang)))
     return subject, _plain([t("hello", lang, name=f["name"]), msg, "", d["app_url"]]), _shell(subject, body, _footer(d, lang), msg)
+
+
+def otp_message(code: str, purpose: str, mins: int, lang: str) -> tuple[str, str, str]:
+    """The one-time code email (sign-up or sign-in)."""
+    subject = t("otp_subject", lang, code=code)
+    lead, expiry, warn = t(f"otp_{purpose}", lang), t("otp_expiry", lang, mins=mins), t("otp_warn", lang)
+    body = (f'<p style="margin:0 0 14px;font-size:15px">{_e(lead)}</p>'
+            f'<p style="margin:0 0 14px;font-size:32px;letter-spacing:10px;font-weight:700;color:{LEAF};'
+            f'font-family:Menlo,Consolas,monospace">{_e(code)}</p>'
+            f'<p style="margin:0;font-size:13px;color:#6b5b4b">{_e(expiry)}</p>')
+    return subject, _plain([lead, "", code, "", expiry, "", warn]), _shell(subject, body, _e(warn), lead)
 
 
 # --------------------------------------------------------------------------

@@ -99,9 +99,10 @@ def main() -> None:
     for p in icar + extra:
         by_class[p.parent.name].append(p)
 
+    crops = sorted({cls.split("_")[0] for cls in by_class})  # every crop the model knows
     with TestClient(app) as c, SessionLocal() as db:
         farms = {}
-        for crop in ("rice", "maize"):
+        for crop in crops:
             f = Farm(farmer_name=f"eval-{crop}", crop=crop, sowing_date=date.today() - timedelta(days=60),
                      district="Pune", lat=18.52, lon=73.85, area_acres=2, lang="en")
             db.add(f)
@@ -127,7 +128,10 @@ def main() -> None:
         # ---------------- 2. live ---------------------------------------------------
         live = []
         rng = random.Random(11)
-        field = {crop: [p for p in icar if p.parent.name == f"{crop}_healthy"] for crop in ("rice", "maize")}
+        # Field frames for the walk: held-out healthy photos of that crop (ICAR's where
+        # there are any, otherwise the new field sets for cotton and soybean).
+        field = {crop: [p for p in icar if p.parent.name == f"{crop}_healthy"]
+                 or [p for p in extra if p.parent.name == f"{crop}_healthy"] for crop in crops}
         for cls, paths in sorted(by_class.items()):
             crop = cls.split("_")[0]
             # Close-ups: this class's held-out leaves; lab photos on plain paper are

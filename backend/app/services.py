@@ -91,6 +91,11 @@ MESSAGES = {
         "hi": "यह फसल की फोटो नहीं लगती। प्रभावित पत्ती की पास से, दिन की रोशनी में फोटो लें।",
         "mr": "हा पिकाचा फोटो वाटत नाही. बाधित पानाचा जवळून, दिवसाच्या उजेडात फोटो घ्या.",
     },
+    "UNFAMILIAR_PHOTO": {
+        "en": "This is a crop photo, but not like the ones I have been taught on, so I will not guess. An expert will look at it.",
+        "hi": "यह फसल की फोटो है, पर जिन फोटो पर मैंने सीखा है उनसे अलग है, इसलिए मैं अंदाज़ा नहीं लगाऊँगा। विशेषज्ञ इसे देखेंगे।",
+        "mr": "हा पिकाचा फोटो आहे, पण मी ज्या फोटोंवरून शिकलो त्यांच्यासारखा नाही, म्हणून मी अंदाज लावणार नाही. तज्ज्ञ तो पाहतील.",
+    },
     "CROP_MISMATCH": {
         "en": "This photo does not match the crop registered for your field. An expert will check it.",
         "hi": "यह फोटो आपके खेत की दर्ज फसल से मेल नहीं खाती। विशेषज्ञ जाँच करेंगे।",
@@ -152,10 +157,12 @@ def farm_view(kb: KB, farm: Farm, lang: str, today: date | None = None) -> dict:
         "crop_name": tr(kb.crops[farm.crop]["names"], lang),
         "photo_diagnosis": kb.crops[farm.crop]["photo_diagnosis"],
         "variety": farm.variety,
+        "state": farm.state,
         "district": farm.district,
         "village": farm.village,
         "lat": farm.lat,
         "lon": farm.lon,
+        "location_source": farm.location_source or "district",
         "area_acres": farm.area_acres,
         "sowing_date": farm.sowing_date.isoformat(),
         "stage": stage,
@@ -189,7 +196,7 @@ def alert_view(kb: KB, a: Alert, lang: str) -> dict:
         "tier": t["tier"],
         "trigger": a.trigger,
         "level": a.level,
-        "reason": tr(a.reason, lang),
+        "reason": risk.reason_text(a.reason, lang),
         "tasks": trl(a.tasks, lang),
         "issued_on": a.issued_on.isoformat(),
         "outcome": a.outcome,
@@ -358,6 +365,45 @@ def diagnose(
 
     db.commit()
     return result
+
+
+def result_view(db: Session, kb: KB, problem: Problem, lang: str) -> dict:
+    """A photo check's result again, in `lang` and as things stand now (the
+    question answered, or sent to an expert since). Same shape as diagnose()."""
+    diag = db.scalars(select(Diagnosis).where(Diagnosis.problem_id == problem.id).order_by(Diagnosis.id)).first()
+    if diag is None:
+        raise ValueError("no photo check on this problem")
+    preds = [gate.Prediction(p["target"], p["confidence"]) for p in diag.topk]
+    top = preds[0].target if preds else None
+    out = {
+        "problem_id": problem.id, "image_url": _image_url(diag.image_path), "diagnosis_id": diag.id,
+        "is_stub": diag.is_stub, "model_version": diag.model_version, "heatmap": diag.heatmap,
+        "gate": {"outcome": diag.gate_outcome, "reason": diag.gate_reason, "confidence": round(diag.confidence, 4),
+                 "threshold": gate.threshold_of(diag.gate_reason, top),
+                 "alternatives": [_pred_view(kb, p, lang) for p in preds]},
+        "message": msg(diag.gate_reason, lang),
+    }
+    case = db.scalars(select(Case).where(Case.problem_id == problem.id).order_by(Case.id.desc())).first()
+    advisory = db.scalars(select(Advisory).where(Advisory.problem_id == problem.id)
+                          .order_by(Advisory.id.desc())).first()
+    if case is not None:  # asked for an expert, or the answer didn't settle it
+        out["gate"] |= {"outcome": "escalate", "reason": case.reason}
+        out |= {"message": msg(case.reason, lang), "case": case_brief(db, case)}
+    elif advisory is not None:
+        fu = db.scalars(select(FollowUp).where(FollowUp.problem_id == problem.id).order_by(FollowUp.id.desc())).first()
+        out["gate"]["outcome"] = "advise"
+        out |= {"advisory": advisory_engine.compose(kb, advisory.target, lang, problem.farm.area_acres),
+                "followup": {"id": fu.id, "due_on": fu.due_on.isoformat()} if fu else None}
+        if advisory.source == "doubt_doctor":
+            out["resolved_target"] = advisory.target
+    elif diag.gate_outcome == "advise" and top and gate.is_healthy(top):
+        out["healthy_note"] = advisory_engine.healthy_note(lang)
+    elif diag.gate_outcome == "clarify" and len(preds) > 1:
+        cue = kb.cue_for(preds[0].target, preds[1].target)
+        if cue:
+            out["clarify"] = {"cue_id": cue["id"], "question": tr(cue["question"], lang),
+                              "candidates": [kb.target_view(preds[0].target, lang), kb.target_view(preds[1].target, lang)]}
+    return out
 
 
 def answer_clarify(db: Session, kb: KB, problem: Problem, cue_id: str, answer: str, lang: str) -> dict:

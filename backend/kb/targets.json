@@ -1,483 +1,638 @@
 [
-  {
-    "id": "rice_blast",
-    "crop": "rice",
-    "kind": "disease",
-    "tier": "diagnosable",
-    "agent": "Magnaporthe oryzae (fungus)",
-    "names": {
-      "en": "Rice blast",
-      "hi": "झोंका (ब्लास्ट) रोग",
-      "mr": "करपा (ब्लास्ट)"
-    },
-    "signature": {
-      "en": "Spindle-shaped spots pointed at both ends, grey-white centre, brown edge. Neck blast blackens the node below the panicle.",
-      "hi": "दोनों सिरों पर नुकीले, आँख जैसे धब्बे; बीच में राख जैसा सफेद, किनारा भूरा।",
-      "mr": "दोन्ही टोकांना टोकदार, डोळ्याच्या आकाराचे ठिपके; मध्यभागी राखाडी-पांढरा, कडा तपकिरी."
-    },
-    "note": "Photo model since v3 (2026-09-15): leaf and neck blast from the Crop Diseases compilation, trained with background randomisation; held-out recall 0.91 (leaf) and 1.00 (neck) on unseen field backgrounds. Lab-style source photos — expert confirmations are the field test."
+ {
+  "id": "rice_blast",
+  "crop": "rice",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Magnaporthe oryzae (fungus)",
+  "names": {
+   "en": "Rice blast",
+   "hi": "झोंका (ब्लास्ट) रोग",
+   "mr": "करपा (ब्लास्ट)"
   },
-  {
-    "id": "rice_brown_spot",
-    "crop": "rice",
-    "kind": "disease",
-    "tier": "diagnosable",
-    "agent": "Bipolaris oryzae (fungus)",
-    "names": {
-      "en": "Brown spot",
-      "hi": "भूरा धब्बा रोग",
-      "mr": "तपकिरी ठिपके"
-    },
-    "signature": {
-      "en": "Round to oval dark-brown spots, often with a yellow halo, scattered like sesame seeds.",
-      "hi": "गोल या अंडाकार गहरे भूरे धब्बे, चारों ओर पीला घेरा, तिल के दानों जैसे।",
-      "mr": "गोल किंवा अंडाकृती गडद तपकिरी ठिपके, भोवती पिवळी कडा, तिळासारखे विखुरलेले."
-    }
+  "signature": {
+   "en": "Spindle-shaped spots pointed at both ends, grey-white centre, brown edge. Neck blast blackens the node below the panicle.",
+   "hi": "दोनों सिरों पर नुकीले, आँख जैसे धब्बे; बीच में राख जैसा सफेद, किनारा भूरा।",
+   "mr": "दोन्ही टोकांना टोकदार, डोळ्याच्या आकाराचे ठिपके; मध्यभागी राखाडी-पांढरा, कडा तपकिरी."
   },
-  {
-    "id": "rice_bacterial_leaf_blight",
-    "crop": "rice",
-    "kind": "disease",
-    "tier": "diagnosable",
-    "agent": "Xanthomonas oryzae pv. oryzae (bacterium)",
-    "names": {
-      "en": "Bacterial leaf blight",
-      "hi": "जीवाणु पत्ती झुलसा",
-      "mr": "जिवाणूजन्य करपा"
-    },
-    "signature": {
-      "en": "Yellow-white stripes starting at the leaf tip or edge, running down with a wavy margin; milky droplets in the morning.",
-      "hi": "पत्ती की नोक या किनारे से शुरू होकर नीचे बढ़ती लहरदार पीली-सफेद पट्टी; सुबह दूधिया बूँदें।",
-      "mr": "पानाच्या टोकापासून किंवा कडेपासून खाली वाढणारी लहरी पिवळसर-पांढरी पट्टी; सकाळी दुधाळ थेंब."
-    }
+  "note": "Photo model since v3 (2026-09-15): leaf and neck blast from the Crop Diseases compilation, trained with background randomisation; held-out recall 0.91 (leaf) and 1.00 (neck) on unseen field backgrounds. Lab-style source photos — expert confirmations are the field test."
+ },
+ {
+  "id": "rice_brown_spot",
+  "crop": "rice",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Bipolaris oryzae (fungus)",
+  "names": {
+   "en": "Brown spot",
+   "hi": "भूरा धब्बा रोग",
+   "mr": "तपकिरी ठिपके"
   },
-  {
-    "id": "rice_sheath_blight",
-    "crop": "rice",
-    "kind": "disease",
-    "tier": "diagnosable",
-    "agent": "Rhizoctonia solani (fungus)",
-    "names": {
-      "en": "Sheath blight",
-      "hi": "शीथ ब्लाइट (पर्णच्छद झुलसा)",
-      "mr": "आवरण करपा"
-    },
-    "signature": {
-      "en": "Oval greenish-grey patches with brown borders on the leaf sheath near the water line, spreading upward like snake skin.",
-      "hi": "पानी की सतह के पास तने के आवरण पर भूरे किनारे वाले हरे-धूसर धब्बे, साँप की केंचुल जैसे।",
-      "mr": "पाण्याच्या पातळीजवळ खोडाच्या आवरणावर तपकिरी कडांचे हिरवट-राखाडी चट्टे, सापाच्या कातीसारखे."
-    }
-  },
-  {
-    "id": "rice_false_smut",
-    "crop": "rice",
-    "kind": "disease",
-    "tier": "diagnosable",
-    "agent": "Ustilaginoidea virens (fungus)",
-    "names": {
-      "en": "False smut",
-      "hi": "आभासी कंड (हल्दी रोग)",
-      "mr": "आभासी काजळी (हळद्या)"
-    },
-    "signature": {
-      "en": "Individual grains turn into velvety orange-yellow balls that later go greenish-black.",
-      "hi": "बाली के कुछ दाने नारंगी-पीली मखमली गेंदों में बदल जाते हैं, बाद में हरे-काले।",
-      "mr": "लोंबीतील काही दाणे नारिंगी-पिवळ्या मखमली गोळ्यांत बदलतात, नंतर हिरवट-काळे होतात."
-    }
-  },
-  {
-    "id": "rice_tungro",
-    "crop": "rice",
-    "kind": "virus",
-    "tier": "inspection",
-    "agent": "Rice tungro viruses, spread by green leafhopper",
-    "names": {
-      "en": "Rice tungro",
-      "hi": "टुंग्रो वायरस",
-      "mr": "टुंग्रो विषाणू"
-    },
-    "signature": {
-      "en": "Yellow-orange leaves from the tip down, stunted plants with fewer tillers, in patches across the field.",
-      "hi": "नोक से पीली-नारंगी पत्तियाँ, पौधे बौने और कम कल्ले, खेत में टुकड़ों में।",
-      "mr": "टोकापासून पिवळी-नारिंगी पाने, खुजी रोपे व कमी फुटवे, शेतात पट्ट्या-पट्ट्यांत."
-    },
-    "note": "Not in the ICAR training images, so a photo cannot settle it yet; handled by risk alerts, inspection tasks and expert review."
-  },
-  {
-    "id": "rice_leaf_folder",
-    "crop": "rice",
-    "kind": "pest",
-    "tier": "diagnosable",
-    "agent": "Cnaphalocrocis medinalis (moth larva)",
-    "names": {
-      "en": "Rice leaf folder",
-      "hi": "पत्ती लपेटक",
-      "mr": "पाने गुंडाळणारी अळी"
-    },
-    "signature": {
-      "en": "Leaves folded lengthwise into tubes; white papery streaks where the green was scraped off from inside.",
-      "hi": "पत्तियाँ लंबाई में नली जैसी मुड़ी; अंदर से हरा भाग खुरचने से सफेद धारियाँ।",
-      "mr": "पाने लांबीने नळीसारखी गुंडाळलेली; आतून हिरवा भाग खरवडल्याने पांढरे पट्टे."
-    }
-  },
-  {
-    "id": "rice_yellow_stem_borer",
-    "crop": "rice",
-    "kind": "pest",
-    "tier": "diagnosable",
-    "agent": "Scirpophaga incertulas (moth larva)",
-    "names": {
-      "en": "Yellow stem borer",
-      "hi": "पीला तना छेदक",
-      "mr": "पिवळा खोडकिडा"
-    },
-    "signature": {
-      "en": "Dead heart: the central shoot dries and pulls out easily. At heading, white empty panicles (white ear).",
-      "hi": "मृत गोभ: बीच की पत्ती सूखकर आसानी से खिंच जाती है। बाली के समय सफेद खाली बालियाँ।",
-      "mr": "मेलेला गाभा: मधला कोंब वाळून सहज उपसतो. लोंबीच्या वेळी पांढऱ्या पोकळ लोंब्या."
-    }
-  },
-  {
-    "id": "rice_brown_planthopper",
-    "crop": "rice",
-    "kind": "pest",
-    "tier": "inspection",
-    "agent": "Nilaparvata lugens (hopper)",
-    "names": {
-      "en": "Brown planthopper",
-      "hi": "भूरा फुदका",
-      "mr": "तपकिरी तुडतुडे"
-    },
-    "signature": {
-      "en": "Brown hoppers crowd the base of the plant; circular patches dry out suddenly (hopper burn).",
-      "hi": "पौधे के तने के निचले भाग पर भूरे फुदके; खेत में गोल घेरों में पौधे अचानक सूखते हैं।",
-      "mr": "खोडाच्या तळाशी तपकिरी तुडतुडे; शेतात गोलाकार पट्ट्यांत रोपे अचानक वाळतात."
-    }
-  },
-  {
-    "id": "maize_turcicum_leaf_blight",
-    "crop": "maize",
-    "kind": "disease",
-    "tier": "diagnosable",
-    "agent": "Exserohilum turcicum (fungus)",
-    "names": {
-      "en": "Turcicum leaf blight",
-      "hi": "टर्सिकम पत्ती झुलसा",
-      "mr": "टर्सिकम पानावरील करपा"
-    },
-    "signature": {
-      "en": "Long cigar-shaped grey-green to tan lesions, 3 to 15 cm, starting on the lower leaves.",
-      "hi": "निचली पत्तियों से शुरू, 3 से 15 सेमी लंबे सिगार जैसे धूसर-भूरे धब्बे।",
-      "mr": "खालच्या पानांपासून सुरू, 3 ते 15 सेमी लांब सिगारसारखे राखाडी-तपकिरी चट्टे."
-    }
-  },
-  {
-    "id": "maize_maydis_leaf_blight",
-    "crop": "maize",
-    "kind": "disease",
-    "tier": "diagnosable",
-    "agent": "Bipolaris maydis (fungus)",
-    "names": {
-      "en": "Maydis leaf blight",
-      "hi": "मेडिस पत्ती झुलसा",
-      "mr": "मेडिस पानावरील करपा"
-    },
-    "signature": {
-      "en": "Small tan rectangular lesions, 1 to 3 cm, boxed in between leaf veins, often many per leaf.",
-      "hi": "नसों के बीच सीमित 1 से 3 सेमी के छोटे आयताकार भूरे धब्बे, एक पत्ती पर कई।",
-      "mr": "शिरांच्या मध्ये मर्यादित 1 ते 3 सेमीचे लहान आयताकृती तपकिरी ठिपके, एका पानावर अनेक."
-    }
-  },
-  {
-    "id": "maize_common_rust",
-    "crop": "maize",
-    "kind": "disease",
-    "tier": "diagnosable",
-    "agent": "Puccinia sorghi (fungus)",
-    "names": {
-      "en": "Common rust",
-      "hi": "रतुआ (गेरुई)",
-      "mr": "तांबेरा"
-    },
-    "signature": {
-      "en": "Raised cinnamon-brown powdery pustules on both leaf surfaces that rub off on your finger.",
-      "hi": "पत्ती की दोनों सतहों पर उभरे दालचीनी रंग के चूर्णी दाने, उंगली पर रंग लग जाता है।",
-      "mr": "पानाच्या दोन्ही बाजूंवर उंचावलेले दालचिनी रंगाचे भुकटीदार फोड, बोटाला रंग लागतो."
-    },
-    "note": "Photo model since v3 (2026-09-15): PlantVillage common rust, trained with background randomisation; held-out recall 1.00 on unseen field backgrounds. Lab-style source photos — expert confirmations are the field test."
-  },
-  {
-    "id": "maize_banded_leaf_sheath_blight",
-    "crop": "maize",
-    "kind": "disease",
-    "tier": "inspection",
-    "agent": "Rhizoctonia solani f. sp. sasakii (fungus)",
-    "names": {
-      "en": "Banded leaf and sheath blight",
-      "hi": "पट्टीदार पत्ती एवं आवरण झुलसा",
-      "mr": "पट्टेदार पान व आवरण करपा"
-    },
-    "signature": {
-      "en": "Large patches with alternating light and dark brown bands on the lower leaf sheaths and leaves.",
-      "hi": "निचले आवरण और पत्तियों पर हल्की और गहरी भूरी पट्टियों वाले बड़े धब्बे।",
-      "mr": "खालच्या आवरणावर व पानांवर फिकट व गडद तपकिरी पट्ट्यांचे मोठे चट्टे."
-    },
-    "note": "Not in the ICAR training images, so a photo cannot settle it yet; handled by risk alerts, inspection tasks and expert review."
-  },
-  {
-    "id": "maize_downy_mildew",
-    "crop": "maize",
-    "kind": "disease",
-    "tier": "diagnosable",
-    "agent": "Peronosclerospora spp. (oomycete)",
-    "names": {
-      "en": "Downy mildew",
-      "hi": "मृदुरोमिल आसिता",
-      "mr": "केवडा"
-    },
-    "signature": {
-      "en": "Pale yellow stripes on young leaves with white downy growth underneath in the early morning; plants stunted.",
-      "hi": "नई पत्तियों पर हल्की पीली धारियाँ, सुबह नीचे की सतह पर सफेद रोएँदार परत; पौधे बौने।",
-      "mr": "कोवळ्या पानांवर फिकट पिवळे पट्टे, सकाळी खालच्या बाजूस पांढरी लवदार वाढ; रोपे खुजी."
-    }
-  },
-  {
-    "id": "maize_fall_armyworm",
-    "crop": "maize",
-    "kind": "pest",
-    "tier": "diagnosable",
-    "agent": "Spodoptera frugiperda (moth larva)",
-    "names": {
-      "en": "Fall armyworm",
-      "hi": "फॉल आर्मीवर्म",
-      "mr": "लष्करी अळी"
-    },
-    "signature": {
-      "en": "Ragged holes in whorl leaves and wet sawdust-like droppings packed in the whorl. Larva has an inverted Y on its head.",
-      "hi": "गोभ की पत्तियों में फटे-कटे छेद, गोभ में गीला बुरादे जैसा मल। इल्ली के सिर पर उल्टा Y।",
-      "mr": "पोंग्यातील पानांवर फाटकी छिद्रे, पोंग्यात ओला भुशासारखा विष्ठेचा ढीग. अळीच्या डोक्यावर उलटा Y."
-    }
-  },
-  {
-    "id": "maize_stem_borer",
-    "crop": "maize",
-    "kind": "pest",
-    "tier": "inspection",
-    "agent": "Chilo partellus (moth larva)",
-    "names": {
-      "en": "Maize stem borer",
-      "hi": "तना छेदक",
-      "mr": "खोडकिडा"
-    },
-    "signature": {
-      "en": "Rows of small shot holes across the leaf, then a dried central shoot (dead heart); tunnels in the stem.",
-      "hi": "पत्ती पर एक कतार में छोटे-छोटे छेद, फिर बीच की गोभ सूखना; तने में सुरंग।",
-      "mr": "पानावर एका रांगेत लहान छिद्रे, नंतर मधला कोंब वाळणे; खोडात बोगदे."
-    },
-    "note": "Not in the ICAR training images, so a photo cannot settle it yet; handled by risk alerts, inspection tasks and expert review."
-  },
-  {
-    "id": "cotton_pink_bollworm",
-    "crop": "cotton",
-    "kind": "pest",
-    "tier": "inspection",
-    "agent": "Pectinophora gossypiella (moth larva)",
-    "names": {
-      "en": "Pink bollworm",
-      "hi": "गुलाबी सुंडी",
-      "mr": "गुलाबी बोंडअळी"
-    },
-    "signature": {
-      "en": "Rosette flowers (petals webbed shut); pink larvae inside green bolls; stained, damaged lint.",
-      "hi": "गुलाब जैसे बंद फूल (पंखुड़ियाँ जाले से बंधी); हरे टिंडों में गुलाबी सुंडी।",
-      "mr": "गुलाबासारखी मिटलेली फुले (पाकळ्या जाळ्याने बांधलेल्या); हिरव्या बोंडांत गुलाबी अळी."
-    }
-  },
-  {
-    "id": "cotton_american_bollworm",
-    "crop": "cotton",
-    "kind": "pest",
-    "tier": "inspection",
-    "agent": "Helicoverpa armigera (moth larva)",
-    "names": {
-      "en": "American bollworm",
-      "hi": "अमेरिकन सुंडी",
-      "mr": "अमेरिकन बोंडअळी (घाटेअळी)"
-    },
-    "signature": {
-      "en": "Large round holes in squares and bolls with the larva's rear end hanging out; green-brown striped larvae.",
-      "hi": "पुड़ी और टिंडों में बड़े गोल छेद, इल्ली का पिछला भाग बाहर; हरी-भूरी धारीदार इल्लियाँ।",
-      "mr": "पाते व बोंडांवर मोठी गोल छिद्रे, अळीचा मागचा भाग बाहेर; हिरवट-तपकिरी पट्टेदार अळ्या."
-    }
-  },
-  {
-    "id": "cotton_whitefly",
-    "crop": "cotton",
-    "kind": "pest",
-    "tier": "inspection",
-    "agent": "Bemisia tabaci (sap-sucking insect)",
-    "names": {
-      "en": "Whitefly",
-      "hi": "सफेद मक्खी",
-      "mr": "पांढरी माशी"
-    },
-    "signature": {
-      "en": "Tiny white insects fly up when the leaf is tapped; sticky leaves turning black with sooty mould.",
-      "hi": "पत्ती थपथपाने पर छोटे सफेद कीट उड़ते हैं; चिपचिपी पत्तियाँ, काली फफूँद।",
-      "mr": "पान हलवताच लहान पांढरे कीटक उडतात; चिकट पाने, काळी बुरशी."
-    }
-  },
-  {
-    "id": "cotton_jassid",
-    "crop": "cotton",
-    "kind": "pest",
-    "tier": "inspection",
-    "agent": "Amrasca biguttula (leafhopper)",
-    "names": {
-      "en": "Jassid (leafhopper)",
-      "hi": "हरा तेला (जैसिड)",
-      "mr": "तुडतुडे"
-    },
-    "signature": {
-      "en": "Leaf edges curl down and turn yellow then reddish-brown (hopper burn); pale green nymphs walk sideways under leaves.",
-      "hi": "पत्तियों के किनारे नीचे मुड़कर पीले फिर लाल-भूरे; नीचे की सतह पर हरे शिशु तिरछे चलते हैं।",
-      "mr": "पानांच्या कडा खाली वळून पिवळ्या व नंतर लालसर-तपकिरी; खालच्या बाजूस हिरवी पिल्ले तिरपी चालतात."
-    }
-  },
-  {
-    "id": "soybean_yellow_mosaic",
-    "crop": "soybean",
-    "kind": "virus",
-    "tier": "inspection",
-    "agent": "Mungbean yellow mosaic India virus, spread by whitefly",
-    "names": {
-      "en": "Yellow mosaic virus",
-      "hi": "पीला मोज़ेक",
-      "mr": "पिवळा मोझॅक"
-    },
-    "signature": {
-      "en": "Bright yellow and green mosaic patches on young leaves; plants set few pods.",
-      "hi": "नई पत्तियों पर चमकीले पीले और हरे चितकबरे धब्बे; फलियाँ कम लगती हैं।",
-      "mr": "कोवळ्या पानांवर चमकदार पिवळे-हिरवे चट्टे; शेंगा कमी लागतात."
-    }
-  },
-  {
-    "id": "soybean_girdle_beetle",
-    "crop": "soybean",
-    "kind": "pest",
-    "tier": "inspection",
-    "agent": "Obereopsis brevis (beetle)",
-    "names": {
-      "en": "Girdle beetle",
-      "hi": "गर्डल बीटल (चक्र भृंग)",
-      "mr": "चक्री भुंगा"
-    },
-    "signature": {
-      "en": "Two neat ring cuts around the leaf stalk or stem; the part above wilts and hangs; larva tunnels inside the stem.",
-      "hi": "पत्ती के डंठल या तने पर दो गोल कटाव; ऊपर का भाग मुरझाकर लटकता है।",
-      "mr": "पानाच्या देठावर किंवा खोडावर दोन गोल काप; वरचा भाग सुकून लोंबकळतो."
-    }
-  },
-  {
-    "id": "soybean_tobacco_caterpillar",
-    "crop": "soybean",
-    "kind": "pest",
-    "tier": "inspection",
-    "agent": "Spodoptera litura (moth larva)",
-    "names": {
-      "en": "Tobacco caterpillar",
-      "hi": "तंबाकू इल्ली",
-      "mr": "तंबाखूवरील पाने खाणारी अळी"
-    },
-    "signature": {
-      "en": "Young larvae in groups scrape leaves to a papery net; older larvae eat whole leaves at night.",
-      "hi": "छोटी इल्लियाँ झुंड में पत्ती खुरचकर जाली बना देती हैं; बड़ी रात में पूरी पत्ती खाती हैं।",
-      "mr": "लहान अळ्या समूहाने पाने खरवडून जाळी करतात; मोठ्या रात्री संपूर्ण पाने खातात."
-    }
-  },
-  {
-    "id": "soybean_rust",
-    "crop": "soybean",
-    "kind": "disease",
-    "tier": "inspection",
-    "agent": "Phakopsora pachyrhizi (fungus)",
-    "names": {
-      "en": "Soybean rust",
-      "hi": "गेरुआ (रस्ट)",
-      "mr": "तांबेरा"
-    },
-    "signature": {
-      "en": "Small tan to reddish-brown spots on the underside of lower leaves with raised powdery pustules; early leaf drop.",
-      "hi": "निचली पत्तियों की निचली सतह पर छोटे भूरे-लाल धब्बे, उभरे चूर्णी दाने; पत्तियाँ जल्दी झड़ती हैं।",
-      "mr": "खालच्या पानांच्या खालच्या बाजूस लहान तपकिरी-लालसर ठिपके, उंचावलेले भुकटीदार फोड; पानगळ."
-    }
-  },
-  {
-    "id": "rice_skipper",
-    "crop": "rice",
-    "kind": "pest",
-    "tier": "diagnosable",
-    "agent": "Pelopidas mathias (butterfly larva)",
-    "names": {
-      "en": "Rice skipper",
-      "hi": "धान का स्किपर",
-      "mr": "भातावरील स्किपर"
-    },
-    "signature": {
-      "en": "Brown butterfly with small white spots, hooked antennae; green larva with a large head rolls and eats leaf tips.",
-      "hi": "छोटे सफेद धब्बों वाली भूरी तितली, मुड़े एंटीना; बड़े सिर वाली हरी इल्ली पत्ती की नोक मोड़कर खाती है।",
-      "mr": "लहान पांढऱ्या ठिपक्यांचे तपकिरी फुलपाखरू, वाकलेल्या मिश्या; मोठ्या डोक्याची हिरवी अळी पानाचे टोक गुंडाळून खाते."
-    }
-  },
-  {
-    "id": "rice_white_stem_borer",
-    "crop": "rice",
-    "kind": "pest",
-    "tier": "diagnosable",
-    "agent": "Scirpophaga innotata (moth larva)",
-    "names": {
-      "en": "White stem borer",
-      "hi": "सफेद तना छेदक",
-      "mr": "पांढरा खोडकिडा"
-    },
-    "signature": {
-      "en": "Pure white moth with no wing spots resting on leaves; larvae cause dead hearts and white ears like the yellow stem borer.",
-      "hi": "बिना धब्बों वाला शुद्ध सफेद पतंगा पत्तियों पर; इल्ली पीले तना छेदक जैसे मृत गोभ और सफेद बालियाँ करती है।",
-      "mr": "पंखांवर ठिपके नसलेला पूर्ण पांढरा पतंग पानांवर; अळ्यांमुळे पिवळ्या खोडकिड्यासारखे मेलेले गाभे व पांढऱ्या लोंब्या."
-    }
-  },
-  {
-    "id": "maize_curvularia_leaf_spot",
-    "crop": "maize",
-    "kind": "disease",
-    "tier": "diagnosable",
-    "agent": "Curvularia lunata (fungus)",
-    "names": {
-      "en": "Curvularia leaf spot",
-      "hi": "कर्वुलेरिया पत्ती धब्बा",
-      "mr": "कर्व्युलारिया पानावरील ठिपके"
-    },
-    "signature": {
-      "en": "Many small round spots with a pale centre, dark border and yellow halo scattered over the leaf.",
-      "hi": "पत्ती पर बिखरे कई छोटे गोल धब्बे, बीच में हल्का रंग, गहरा किनारा और पीला घेरा।",
-      "mr": "पानावर विखुरलेले अनेक लहान गोल ठिपके, मध्यभागी फिकट, गडद कडा व पिवळे वलय."
-    }
-  },
-  {
-    "id": "maize_aphid",
-    "crop": "maize",
-    "kind": "pest",
-    "tier": "diagnosable",
-    "agent": "Rhopalosiphum maidis (corn leaf aphid)",
-    "names": {
-      "en": "Corn leaf aphid",
-      "hi": "मक्का माहू (एफिड)",
-      "mr": "मक्यावरील मावा"
-    },
-    "signature": {
-      "en": "Colonies of small blue-green to black soft insects on tassels, whorl and upper leaves; sticky honeydew and sooty mould.",
-      "hi": "नर मंजरी, गोभ और ऊपरी पत्तियों पर छोटे नीले-हरे से काले मुलायम कीटों के झुंड; चिपचिपा रस और काली फफूँद।",
-      "mr": "तुरा, पोंगा व वरच्या पानांवर लहान निळसर-हिरव्या ते काळ्या मऊ किडींच्या वसाहती; चिकट स्राव व काळी बुरशी."
-    }
+  "signature": {
+   "en": "Round to oval dark-brown spots, often with a yellow halo, scattered like sesame seeds.",
+   "hi": "गोल या अंडाकार गहरे भूरे धब्बे, चारों ओर पीला घेरा, तिल के दानों जैसे।",
+   "mr": "गोल किंवा अंडाकृती गडद तपकिरी ठिपके, भोवती पिवळी कडा, तिळासारखे विखुरलेले."
   }
+ },
+ {
+  "id": "rice_bacterial_leaf_blight",
+  "crop": "rice",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Xanthomonas oryzae pv. oryzae (bacterium)",
+  "names": {
+   "en": "Bacterial leaf blight",
+   "hi": "जीवाणु पत्ती झुलसा",
+   "mr": "जिवाणूजन्य करपा"
+  },
+  "signature": {
+   "en": "Yellow-white stripes starting at the leaf tip or edge, running down with a wavy margin; milky droplets in the morning.",
+   "hi": "पत्ती की नोक या किनारे से शुरू होकर नीचे बढ़ती लहरदार पीली-सफेद पट्टी; सुबह दूधिया बूँदें।",
+   "mr": "पानाच्या टोकापासून किंवा कडेपासून खाली वाढणारी लहरी पिवळसर-पांढरी पट्टी; सकाळी दुधाळ थेंब."
+  }
+ },
+ {
+  "id": "rice_sheath_blight",
+  "crop": "rice",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Rhizoctonia solani (fungus)",
+  "names": {
+   "en": "Sheath blight",
+   "hi": "शीथ ब्लाइट (पर्णच्छद झुलसा)",
+   "mr": "आवरण करपा"
+  },
+  "signature": {
+   "en": "Oval greenish-grey patches with brown borders on the leaf sheath near the water line, spreading upward like snake skin.",
+   "hi": "पानी की सतह के पास तने के आवरण पर भूरे किनारे वाले हरे-धूसर धब्बे, साँप की केंचुल जैसे।",
+   "mr": "पाण्याच्या पातळीजवळ खोडाच्या आवरणावर तपकिरी कडांचे हिरवट-राखाडी चट्टे, सापाच्या कातीसारखे."
+  }
+ },
+ {
+  "id": "rice_false_smut",
+  "crop": "rice",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Ustilaginoidea virens (fungus)",
+  "names": {
+   "en": "False smut",
+   "hi": "आभासी कंड (हल्दी रोग)",
+   "mr": "आभासी काजळी (हळद्या)"
+  },
+  "signature": {
+   "en": "Individual grains turn into velvety orange-yellow balls that later go greenish-black.",
+   "hi": "बाली के कुछ दाने नारंगी-पीली मखमली गेंदों में बदल जाते हैं, बाद में हरे-काले।",
+   "mr": "लोंबीतील काही दाणे नारिंगी-पिवळ्या मखमली गोळ्यांत बदलतात, नंतर हिरवट-काळे होतात."
+  }
+ },
+ {
+  "id": "rice_tungro",
+  "crop": "rice",
+  "kind": "virus",
+  "tier": "diagnosable",
+  "agent": "Rice tungro viruses, spread by green leafhopper",
+  "names": {
+   "en": "Rice tungro",
+   "hi": "टुंग्रो वायरस",
+   "mr": "टुंग्रो विषाणू"
+  },
+  "signature": {
+   "en": "Yellow-orange leaves from the tip down, stunted plants with fewer tillers, in patches across the field.",
+   "hi": "नोक से पीली-नारंगी पत्तियाँ, पौधे बौने और कम कल्ले, खेत में टुकड़ों में।",
+   "mr": "टोकापासून पिवळी-नारिंगी पाने, खुजी रोपे व कमी फुटवे, शेतात पट्ट्या-पट्ट्यांत."
+  },
+  "note": "Not in the ICAR training images, so a photo cannot settle it yet; handled by risk alerts, inspection tasks and expert review."
+ },
+ {
+  "id": "rice_leaf_folder",
+  "crop": "rice",
+  "kind": "pest",
+  "tier": "diagnosable",
+  "agent": "Cnaphalocrocis medinalis (moth larva)",
+  "names": {
+   "en": "Rice leaf folder",
+   "hi": "पत्ती लपेटक",
+   "mr": "पाने गुंडाळणारी अळी"
+  },
+  "signature": {
+   "en": "Leaves folded lengthwise into tubes; white papery streaks where the green was scraped off from inside.",
+   "hi": "पत्तियाँ लंबाई में नली जैसी मुड़ी; अंदर से हरा भाग खुरचने से सफेद धारियाँ।",
+   "mr": "पाने लांबीने नळीसारखी गुंडाळलेली; आतून हिरवा भाग खरवडल्याने पांढरे पट्टे."
+  }
+ },
+ {
+  "id": "rice_yellow_stem_borer",
+  "crop": "rice",
+  "kind": "pest",
+  "tier": "diagnosable",
+  "agent": "Scirpophaga incertulas (moth larva)",
+  "names": {
+   "en": "Yellow stem borer",
+   "hi": "पीला तना छेदक",
+   "mr": "पिवळा खोडकिडा"
+  },
+  "signature": {
+   "en": "Dead heart: the central shoot dries and pulls out easily. At heading, white empty panicles (white ear).",
+   "hi": "मृत गोभ: बीच की पत्ती सूखकर आसानी से खिंच जाती है। बाली के समय सफेद खाली बालियाँ।",
+   "mr": "मेलेला गाभा: मधला कोंब वाळून सहज उपसतो. लोंबीच्या वेळी पांढऱ्या पोकळ लोंब्या."
+  }
+ },
+ {
+  "id": "rice_brown_planthopper",
+  "crop": "rice",
+  "kind": "pest",
+  "tier": "inspection",
+  "agent": "Nilaparvata lugens (hopper)",
+  "names": {
+   "en": "Brown planthopper",
+   "hi": "भूरा फुदका",
+   "mr": "तपकिरी तुडतुडे"
+  },
+  "signature": {
+   "en": "Brown hoppers crowd the base of the plant; circular patches dry out suddenly (hopper burn).",
+   "hi": "पौधे के तने के निचले भाग पर भूरे फुदके; खेत में गोल घेरों में पौधे अचानक सूखते हैं।",
+   "mr": "खोडाच्या तळाशी तपकिरी तुडतुडे; शेतात गोलाकार पट्ट्यांत रोपे अचानक वाळतात."
+  }
+ },
+ {
+  "id": "maize_turcicum_leaf_blight",
+  "crop": "maize",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Exserohilum turcicum (fungus)",
+  "names": {
+   "en": "Turcicum leaf blight",
+   "hi": "टर्सिकम पत्ती झुलसा",
+   "mr": "टर्सिकम पानावरील करपा"
+  },
+  "signature": {
+   "en": "Long cigar-shaped grey-green to tan lesions, 3 to 15 cm, starting on the lower leaves.",
+   "hi": "निचली पत्तियों से शुरू, 3 से 15 सेमी लंबे सिगार जैसे धूसर-भूरे धब्बे।",
+   "mr": "खालच्या पानांपासून सुरू, 3 ते 15 सेमी लांब सिगारसारखे राखाडी-तपकिरी चट्टे."
+  }
+ },
+ {
+  "id": "maize_maydis_leaf_blight",
+  "crop": "maize",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Bipolaris maydis (fungus)",
+  "names": {
+   "en": "Maydis leaf blight",
+   "hi": "मेडिस पत्ती झुलसा",
+   "mr": "मेडिस पानावरील करपा"
+  },
+  "signature": {
+   "en": "Small tan rectangular lesions, 1 to 3 cm, boxed in between leaf veins, often many per leaf.",
+   "hi": "नसों के बीच सीमित 1 से 3 सेमी के छोटे आयताकार भूरे धब्बे, एक पत्ती पर कई।",
+   "mr": "शिरांच्या मध्ये मर्यादित 1 ते 3 सेमीचे लहान आयताकृती तपकिरी ठिपके, एका पानावर अनेक."
+  }
+ },
+ {
+  "id": "maize_common_rust",
+  "crop": "maize",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Puccinia sorghi (fungus)",
+  "names": {
+   "en": "Common rust",
+   "hi": "रतुआ (गेरुई)",
+   "mr": "तांबेरा"
+  },
+  "signature": {
+   "en": "Raised cinnamon-brown powdery pustules on both leaf surfaces that rub off on your finger.",
+   "hi": "पत्ती की दोनों सतहों पर उभरे दालचीनी रंग के चूर्णी दाने, उंगली पर रंग लग जाता है।",
+   "mr": "पानाच्या दोन्ही बाजूंवर उंचावलेले दालचिनी रंगाचे भुकटीदार फोड, बोटाला रंग लागतो."
+  },
+  "note": "Photo model since v3 (2026-09-15): PlantVillage common rust, trained with background randomisation; held-out recall 1.00 on unseen field backgrounds. Lab-style source photos — expert confirmations are the field test."
+ },
+ {
+  "id": "maize_banded_leaf_sheath_blight",
+  "crop": "maize",
+  "kind": "disease",
+  "tier": "inspection",
+  "agent": "Rhizoctonia solani f. sp. sasakii (fungus)",
+  "names": {
+   "en": "Banded leaf and sheath blight",
+   "hi": "पट्टीदार पत्ती एवं आवरण झुलसा",
+   "mr": "पट्टेदार पान व आवरण करपा"
+  },
+  "signature": {
+   "en": "Large patches with alternating light and dark brown bands on the lower leaf sheaths and leaves.",
+   "hi": "निचले आवरण और पत्तियों पर हल्की और गहरी भूरी पट्टियों वाले बड़े धब्बे।",
+   "mr": "खालच्या आवरणावर व पानांवर फिकट व गडद तपकिरी पट्ट्यांचे मोठे चट्टे."
+  },
+  "note": "Not in the ICAR training images, so a photo cannot settle it yet; handled by risk alerts, inspection tasks and expert review."
+ },
+ {
+  "id": "maize_downy_mildew",
+  "crop": "maize",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Peronosclerospora spp. (oomycete)",
+  "names": {
+   "en": "Downy mildew",
+   "hi": "मृदुरोमिल आसिता",
+   "mr": "केवडा"
+  },
+  "signature": {
+   "en": "Pale yellow stripes on young leaves with white downy growth underneath in the early morning; plants stunted.",
+   "hi": "नई पत्तियों पर हल्की पीली धारियाँ, सुबह नीचे की सतह पर सफेद रोएँदार परत; पौधे बौने।",
+   "mr": "कोवळ्या पानांवर फिकट पिवळे पट्टे, सकाळी खालच्या बाजूस पांढरी लवदार वाढ; रोपे खुजी."
+  }
+ },
+ {
+  "id": "maize_fall_armyworm",
+  "crop": "maize",
+  "kind": "pest",
+  "tier": "diagnosable",
+  "agent": "Spodoptera frugiperda (moth larva)",
+  "names": {
+   "en": "Fall armyworm",
+   "hi": "फॉल आर्मीवर्म",
+   "mr": "लष्करी अळी"
+  },
+  "signature": {
+   "en": "Ragged holes in whorl leaves and wet sawdust-like droppings packed in the whorl. Larva has an inverted Y on its head.",
+   "hi": "गोभ की पत्तियों में फटे-कटे छेद, गोभ में गीला बुरादे जैसा मल। इल्ली के सिर पर उल्टा Y।",
+   "mr": "पोंग्यातील पानांवर फाटकी छिद्रे, पोंग्यात ओला भुशासारखा विष्ठेचा ढीग. अळीच्या डोक्यावर उलटा Y."
+  }
+ },
+ {
+  "id": "maize_stem_borer",
+  "crop": "maize",
+  "kind": "pest",
+  "tier": "inspection",
+  "agent": "Chilo partellus (moth larva)",
+  "names": {
+   "en": "Maize stem borer",
+   "hi": "तना छेदक",
+   "mr": "खोडकिडा"
+  },
+  "signature": {
+   "en": "Rows of small shot holes across the leaf, then a dried central shoot (dead heart); tunnels in the stem.",
+   "hi": "पत्ती पर एक कतार में छोटे-छोटे छेद, फिर बीच की गोभ सूखना; तने में सुरंग।",
+   "mr": "पानावर एका रांगेत लहान छिद्रे, नंतर मधला कोंब वाळणे; खोडात बोगदे."
+  },
+  "note": "Not in the ICAR training images, so a photo cannot settle it yet; handled by risk alerts, inspection tasks and expert review."
+ },
+ {
+  "id": "cotton_pink_bollworm",
+  "crop": "cotton",
+  "kind": "pest",
+  "tier": "inspection",
+  "agent": "Pectinophora gossypiella (moth larva)",
+  "names": {
+   "en": "Pink bollworm",
+   "hi": "गुलाबी सुंडी",
+   "mr": "गुलाबी बोंडअळी"
+  },
+  "signature": {
+   "en": "Rosette flowers (petals webbed shut); pink larvae inside green bolls; stained, damaged lint.",
+   "hi": "गुलाब जैसे बंद फूल (पंखुड़ियाँ जाले से बंधी); हरे टिंडों में गुलाबी सुंडी।",
+   "mr": "गुलाबासारखी मिटलेली फुले (पाकळ्या जाळ्याने बांधलेल्या); हिरव्या बोंडांत गुलाबी अळी."
+  }
+ },
+ {
+  "id": "cotton_american_bollworm",
+  "crop": "cotton",
+  "kind": "pest",
+  "tier": "inspection",
+  "agent": "Helicoverpa armigera (moth larva)",
+  "names": {
+   "en": "American bollworm",
+   "hi": "अमेरिकन सुंडी",
+   "mr": "अमेरिकन बोंडअळी (घाटेअळी)"
+  },
+  "signature": {
+   "en": "Large round holes in squares and bolls with the larva's rear end hanging out; green-brown striped larvae.",
+   "hi": "पुड़ी और टिंडों में बड़े गोल छेद, इल्ली का पिछला भाग बाहर; हरी-भूरी धारीदार इल्लियाँ।",
+   "mr": "पाते व बोंडांवर मोठी गोल छिद्रे, अळीचा मागचा भाग बाहेर; हिरवट-तपकिरी पट्टेदार अळ्या."
+  }
+ },
+ {
+  "id": "cotton_whitefly",
+  "crop": "cotton",
+  "kind": "pest",
+  "tier": "inspection",
+  "agent": "Bemisia tabaci (sap-sucking insect)",
+  "names": {
+   "en": "Whitefly",
+   "hi": "सफेद मक्खी",
+   "mr": "पांढरी माशी"
+  },
+  "signature": {
+   "en": "Tiny white insects fly up when the leaf is tapped; sticky leaves turning black with sooty mould.",
+   "hi": "पत्ती थपथपाने पर छोटे सफेद कीट उड़ते हैं; चिपचिपी पत्तियाँ, काली फफूँद।",
+   "mr": "पान हलवताच लहान पांढरे कीटक उडतात; चिकट पाने, काळी बुरशी."
+  }
+ },
+ {
+  "id": "cotton_jassid",
+  "crop": "cotton",
+  "kind": "pest",
+  "tier": "inspection",
+  "agent": "Amrasca biguttula (leafhopper)",
+  "names": {
+   "en": "Jassid (leafhopper)",
+   "hi": "हरा तेला (जैसिड)",
+   "mr": "तुडतुडे"
+  },
+  "signature": {
+   "en": "Leaf edges curl down and turn yellow then reddish-brown (hopper burn); pale green nymphs walk sideways under leaves.",
+   "hi": "पत्तियों के किनारे नीचे मुड़कर पीले फिर लाल-भूरे; नीचे की सतह पर हरे शिशु तिरछे चलते हैं।",
+   "mr": "पानांच्या कडा खाली वळून पिवळ्या व नंतर लालसर-तपकिरी; खालच्या बाजूस हिरवी पिल्ले तिरपी चालतात."
+  }
+ },
+ {
+  "id": "soybean_yellow_mosaic",
+  "crop": "soybean",
+  "kind": "virus",
+  "tier": "diagnosable",
+  "agent": "Mungbean yellow mosaic India virus, spread by whitefly",
+  "names": {
+   "en": "Yellow mosaic virus",
+   "hi": "पीला मोज़ेक",
+   "mr": "पिवळा मोझॅक"
+  },
+  "signature": {
+   "en": "Bright yellow and green mosaic patches on young leaves; plants set few pods.",
+   "hi": "नई पत्तियों पर चमकीले पीले और हरे चितकबरे धब्बे; फलियाँ कम लगती हैं।",
+   "mr": "कोवळ्या पानांवर चमकदार पिवळे-हिरवे चट्टे; शेंगा कमी लागतात."
+  }
+ },
+ {
+  "id": "soybean_girdle_beetle",
+  "crop": "soybean",
+  "kind": "pest",
+  "tier": "inspection",
+  "agent": "Obereopsis brevis (beetle)",
+  "names": {
+   "en": "Girdle beetle",
+   "hi": "गर्डल बीटल (चक्र भृंग)",
+   "mr": "चक्री भुंगा"
+  },
+  "signature": {
+   "en": "Two neat ring cuts around the leaf stalk or stem; the part above wilts and hangs; larva tunnels inside the stem.",
+   "hi": "पत्ती के डंठल या तने पर दो गोल कटाव; ऊपर का भाग मुरझाकर लटकता है।",
+   "mr": "पानाच्या देठावर किंवा खोडावर दोन गोल काप; वरचा भाग सुकून लोंबकळतो."
+  }
+ },
+ {
+  "id": "soybean_tobacco_caterpillar",
+  "crop": "soybean",
+  "kind": "pest",
+  "tier": "diagnosable",
+  "agent": "Spodoptera litura (moth larva)",
+  "names": {
+   "en": "Leaf-eating caterpillars (tobacco caterpillar, semilooper)",
+   "hi": "पत्ती खाने वाली इल्लियाँ (तंबाकू इल्ली, सेमीलूपर)",
+   "mr": "पाने खाणाऱ्या अळ्या (तंबाखूवरील अळी, उंटअळी)"
+  },
+  "signature": {
+   "en": "Young larvae in groups scrape leaves to a papery net; older larvae eat whole leaves at night.",
+   "hi": "छोटी इल्लियाँ झुंड में पत्ती खुरचकर जाली बना देती हैं; बड़ी रात में पूरी पत्ती खाती हैं।",
+   "mr": "लहान अळ्या समूहाने पाने खरवडून जाळी करतात; मोठ्या रात्री संपूर्ण पाने खातात."
+  }
+ },
+ {
+  "id": "soybean_rust",
+  "crop": "soybean",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Phakopsora pachyrhizi (fungus)",
+  "names": {
+   "en": "Soybean rust",
+   "hi": "गेरुआ (रस्ट)",
+   "mr": "तांबेरा"
+  },
+  "signature": {
+   "en": "Small tan to reddish-brown spots on the underside of lower leaves with raised powdery pustules; early leaf drop.",
+   "hi": "निचली पत्तियों की निचली सतह पर छोटे भूरे-लाल धब्बे, उभरे चूर्णी दाने; पत्तियाँ जल्दी झड़ती हैं।",
+   "mr": "खालच्या पानांच्या खालच्या बाजूस लहान तपकिरी-लालसर ठिपके, उंचावलेले भुकटीदार फोड; पानगळ."
+  }
+ },
+ {
+  "id": "rice_skipper",
+  "crop": "rice",
+  "kind": "pest",
+  "tier": "diagnosable",
+  "agent": "Pelopidas mathias (butterfly larva)",
+  "names": {
+   "en": "Rice skipper",
+   "hi": "धान का स्किपर",
+   "mr": "भातावरील स्किपर"
+  },
+  "signature": {
+   "en": "Brown butterfly with small white spots, hooked antennae; green larva with a large head rolls and eats leaf tips.",
+   "hi": "छोटे सफेद धब्बों वाली भूरी तितली, मुड़े एंटीना; बड़े सिर वाली हरी इल्ली पत्ती की नोक मोड़कर खाती है।",
+   "mr": "लहान पांढऱ्या ठिपक्यांचे तपकिरी फुलपाखरू, वाकलेल्या मिश्या; मोठ्या डोक्याची हिरवी अळी पानाचे टोक गुंडाळून खाते."
+  }
+ },
+ {
+  "id": "rice_white_stem_borer",
+  "crop": "rice",
+  "kind": "pest",
+  "tier": "diagnosable",
+  "agent": "Scirpophaga innotata (moth larva)",
+  "names": {
+   "en": "White stem borer",
+   "hi": "सफेद तना छेदक",
+   "mr": "पांढरा खोडकिडा"
+  },
+  "signature": {
+   "en": "Pure white moth with no wing spots resting on leaves; larvae cause dead hearts and white ears like the yellow stem borer.",
+   "hi": "बिना धब्बों वाला शुद्ध सफेद पतंगा पत्तियों पर; इल्ली पीले तना छेदक जैसे मृत गोभ और सफेद बालियाँ करती है।",
+   "mr": "पंखांवर ठिपके नसलेला पूर्ण पांढरा पतंग पानांवर; अळ्यांमुळे पिवळ्या खोडकिड्यासारखे मेलेले गाभे व पांढऱ्या लोंब्या."
+  }
+ },
+ {
+  "id": "maize_curvularia_leaf_spot",
+  "crop": "maize",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Curvularia lunata (fungus)",
+  "names": {
+   "en": "Curvularia leaf spot",
+   "hi": "कर्वुलेरिया पत्ती धब्बा",
+   "mr": "कर्व्युलारिया पानावरील ठिपके"
+  },
+  "signature": {
+   "en": "Many small round spots with a pale centre, dark border and yellow halo scattered over the leaf.",
+   "hi": "पत्ती पर बिखरे कई छोटे गोल धब्बे, बीच में हल्का रंग, गहरा किनारा और पीला घेरा।",
+   "mr": "पानावर विखुरलेले अनेक लहान गोल ठिपके, मध्यभागी फिकट, गडद कडा व पिवळे वलय."
+  }
+ },
+ {
+  "id": "maize_aphid",
+  "crop": "maize",
+  "kind": "pest",
+  "tier": "diagnosable",
+  "agent": "Rhopalosiphum maidis (corn leaf aphid)",
+  "names": {
+   "en": "Corn leaf aphid",
+   "hi": "मक्का माहू (एफिड)",
+   "mr": "मक्यावरील मावा"
+  },
+  "signature": {
+   "en": "Colonies of small blue-green to black soft insects on tassels, whorl and upper leaves; sticky honeydew and sooty mould.",
+   "hi": "नर मंजरी, गोभ और ऊपरी पत्तियों पर छोटे नीले-हरे से काले मुलायम कीटों के झुंड; चिपचिपा रस और काली फफूँद।",
+   "mr": "तुरा, पोंगा व वरच्या पानांवर लहान निळसर-हिरव्या ते काळ्या मऊ किडींच्या वसाहती; चिकट स्राव व काळी बुरशी."
+  }
+ },
+ {
+  "id": "cotton_bacterial_blight",
+  "crop": "cotton",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Xanthomonas citri pv. malvacearum (bacterium)",
+  "names": {
+   "en": "Bacterial blight (black arm)",
+   "hi": "कपास का जीवाणु झुलसा (ब्लैक आर्म)",
+   "mr": "कापसावरील जिवाणूजन्य करपा (ब्लॅक आर्म)"
+  },
+  "signature": {
+   "en": "Angular, water-soaked spots between leaf veins that turn brown-black; black streaks on stems and bolls.",
+   "hi": "पत्ती की शिराओं के बीच कोणीय, पानी-भीगे धब्बे जो भूरे-काले हो जाते हैं; तनों और टिंडों पर काली धारियाँ।",
+   "mr": "पानांच्या शिरांमध्ये कोनदार, पाणथळ ठिपके जे तपकिरी-काळे होतात; खोड व बोंडांवर काळ्या रेषा."
+  }
+ },
+ {
+  "id": "cotton_leaf_curl",
+  "crop": "cotton",
+  "kind": "virus",
+  "tier": "diagnosable",
+  "agent": "Cotton leaf curl virus (begomovirus, spread by whitefly)",
+  "names": {
+   "en": "Leaf curl virus",
+   "hi": "कपास पत्ती मरोड़ विषाणु",
+   "mr": "कापसाचे पान गुंडाळणारा विषाणू (लीफ कर्ल)"
+  },
+  "signature": {
+   "en": "Leaves curl upward or downward with thickened, dark veins and small leaf-like outgrowths under the leaf.",
+   "hi": "पत्तियाँ ऊपर या नीचे मुड़ती हैं, शिराएँ मोटी और गहरी, पत्ती के नीचे छोटी पत्ती जैसी बढ़वार।",
+   "mr": "पाने वर किंवा खाली गुंडाळतात, शिरा जाड व गडद होतात, पानाखाली लहान पानासारखी वाढ दिसते."
+  },
+  "note": "Mostly a north-Indian problem; in Maharashtra confirm with an expert before acting."
+ },
+ {
+  "id": "cotton_wilt",
+  "crop": "cotton",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Fusarium oxysporum f. sp. vasinfectum or Verticillium dahliae (soil fungi)",
+  "names": {
+   "en": "Wilt",
+   "hi": "कपास का उकठा (विल्ट)",
+   "mr": "कापसाची मर (विल्ट)"
+  },
+  "signature": {
+   "en": "Leaves yellow and droop from the bottom up, the plant wilts; a cut stem shows brown streaks inside.",
+   "hi": "पत्तियाँ नीचे से पीली होकर लटकती हैं, पौधा मुरझाता है; तना काटने पर अंदर भूरी धारियाँ दिखती हैं।",
+   "mr": "पाने खालून पिवळी होऊन लोंबतात, झाड मरगळते; खोड कापल्यास आत तपकिरी रेषा दिसतात."
+  },
+  "note": "Fusarium and Verticillium wilt are one target: both are soil-borne, both are managed the same way in the field, and they cannot be told apart from a photo."
+ },
+ {
+  "id": "cotton_alternaria_leaf_spot",
+  "crop": "cotton",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Alternaria macrospora (fungus)",
+  "names": {
+   "en": "Alternaria leaf spot",
+   "hi": "अल्टरनेरिया पत्ती धब्बा",
+   "mr": "अल्टरनेरिया पानावरील ठिपके"
+  },
+  "signature": {
+   "en": "Brown round spots with target-like rings, often with a yellow edge; the oldest leaves are hit first.",
+   "hi": "निशाने जैसे छल्लों वाले भूरे गोल धब्बे, अक्सर पीले किनारे के साथ; सबसे पुरानी पत्तियाँ पहले।",
+   "mr": "नेमबाजीच्या लक्ष्यासारख्या वलयांचे तपकिरी गोल ठिपके, अनेकदा पिवळ्या कडेसह; सर्वात जुनी पाने आधी."
+  }
+ },
+ {
+  "id": "cotton_aphid",
+  "crop": "cotton",
+  "kind": "pest",
+  "tier": "diagnosable",
+  "agent": "Aphis gossypii (sucking insect)",
+  "names": {
+   "en": "Aphids",
+   "hi": "कपास का माहू (एफिड)",
+   "mr": "कापसावरील मावा"
+  },
+  "signature": {
+   "en": "Clusters of small green-black insects under young leaves; leaves crinkle and curl down, and sticky honeydew turns black with sooty mould.",
+   "hi": "नई पत्तियों के नीचे छोटे हरे-काले कीटों के झुंड; पत्तियाँ सिकुड़कर नीचे मुड़ती हैं, चिपचिपा रस काली फफूँद से काला हो जाता है।",
+   "mr": "कोवळ्या पानांखाली लहान हिरव्या-काळ्या किडींचे थवे; पाने आकसून खाली वळतात, चिकट स्राव काळ्या बुरशीने काळा होतो."
+  }
+ },
+ {
+  "id": "soybean_frogeye_leaf_spot",
+  "crop": "soybean",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Cercospora sojina (fungus)",
+  "names": {
+   "en": "Frogeye leaf spot",
+   "hi": "फ्रॉगआई पत्ती धब्बा",
+   "mr": "फ्रॉगआय पानावरील ठिपके"
+  },
+  "signature": {
+   "en": "Small round spots with a grey-white centre and a narrow purple-red border, like a frog's eye, on upper leaves.",
+   "hi": "ऊपरी पत्तियों पर धूसर-सफ़ेद बीच और पतले बैंगनी-लाल किनारे वाले छोटे गोल धब्बे, मेंढक की आँख जैसे।",
+   "mr": "वरच्या पानांवर राखाडी-पांढरा मध्य व अरुंद जांभळट-लाल कडा असलेले लहान गोल ठिपके, बेडकाच्या डोळ्यासारखे."
+  }
+ },
+ {
+  "id": "soybean_septoria_brown_spot",
+  "crop": "soybean",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Septoria glycines (fungus)",
+  "names": {
+   "en": "Brown spot (Septoria)",
+   "hi": "सेप्टोरिया भूरा धब्बा",
+   "mr": "सेप्टोरिया तपकिरी ठिपके"
+  },
+  "signature": {
+   "en": "Small irregular dark-brown spots on the lower leaves, with yellowing around them; spreads upward.",
+   "hi": "निचली पत्तियों पर छोटे अनियमित गहरे भूरे धब्बे, आसपास पीलापन; ऊपर की ओर फैलता है।",
+   "mr": "खालच्या पानांवर लहान अनियमित गडद तपकिरी ठिपके, भोवती पिवळेपणा; वरच्या दिशेने पसरतो."
+  }
+ },
+ {
+  "id": "maize_gray_leaf_spot",
+  "crop": "maize",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Cercospora zeae-maydis (fungus)",
+  "names": {
+   "en": "Gray leaf spot",
+   "hi": "धूसर पत्ती धब्बा (ग्रे लीफ स्पॉट)",
+   "mr": "राखाडी पानावरील ठिपके (ग्रे लीफ स्पॉट)"
+  },
+  "signature": {
+   "en": "Long, narrow, rectangular grey-tan spots that stop at the leaf veins, starting on the lower leaves.",
+   "hi": "लंबे, पतले, आयताकार धूसर-भूरे धब्बे जो शिराओं पर रुक जाते हैं, निचली पत्तियों से शुरू।",
+   "mr": "लांब, अरुंद, आयताकृती राखाडी-तपकिरी ठिपके जे शिरांपाशी थांबतात, खालच्या पानांपासून सुरुवात."
+  }
+ },
+ {
+  "id": "maize_ear_rot",
+  "crop": "maize",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Fusarium, Aspergillus and other fungi",
+  "names": {
+   "en": "Ear rot",
+   "hi": "भुट्टा सड़न",
+   "mr": "कणीस कुजणे"
+  },
+  "signature": {
+   "en": "White, pink or green-yellow mould on the cob, starting at the tip or where insects have fed; grains rot.",
+   "hi": "भुट्टे पर सफ़ेद, गुलाबी या हरी-पीली फफूँद, सिरे से या कीट के खाए स्थान से शुरू; दाने सड़ते हैं।",
+   "mr": "कणसावर पांढरी, गुलाबी किंवा हिरवट-पिवळी बुरशी, टोकापासून किंवा किडींनी खाल्लेल्या जागेपासून सुरू; दाणे कुजतात."
+  }
+ }
 ]

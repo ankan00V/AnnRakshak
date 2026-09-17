@@ -117,7 +117,12 @@ def test_non_crop_photo_asks_retake_without_case(client):
     assert r["gate"]["outcome"] == "retake" and "case" not in r
 
 
-def test_crop_without_photo_model_goes_to_expert(client):
+def test_crop_without_photo_model_goes_to_expert(client, monkeypatch):
+    """A crop the app cannot check from a photo goes straight to an expert —
+    whichever crops ship with a model on the day."""
+    from app.kb import get_kb
+
+    monkeypatch.setitem(get_kb().crops["cotton"], "photo_diagnosis", False)
     r = diagnose(client, 4, "clear")
     assert r["gate"]["reason"] == "CROP_NOT_SUPPORTED" and r["case"]["id"]
 
@@ -218,3 +223,40 @@ def test_rate_limit_counts_per_window_without_redis():
     assert e.value.status_code == 429 and e.value.headers["Retry-After"] == "60"
     assert cache.leader("watch", 60)  # no Redis: this process is its own leader
     assert not cache.publish(1, {"type": "notice"})  # no Redis: caller delivers locally
+
+
+def test_result_reopens_in_another_language(client):
+    """Switching language on the result screen re-renders it from what was stored."""
+    r = client.post("/api/farms/1/diagnose", files={"image": ("x.jpg", _leaf_jpeg(), "image/jpeg")},
+                    data={"lang": "hi", "demo_scenario": "clear"}).json()
+    assert r["gate"]["outcome"] == "advise"
+    en = client.get(f"/api/problems/{r['problem_id']}/result?lang=en").json()
+    assert en["gate"] | {"alternatives": None} == r["gate"] | {"alternatives": None}
+    assert [a["id"] for a in en["gate"]["alternatives"]] == [a["id"] for a in r["gate"]["alternatives"]]
+    assert en["advisory"]["target"] == r["advisory"]["target"] and en["advisory"]["name"] != r["advisory"]["name"]
+    assert en["advisory"]["name"].isascii() and en["followup"] == r["followup"]
+
+
+def test_result_reopens_as_things_stand_now(client):
+    r = diagnose(client, 1, "torn")
+    first = client.get(f"/api/problems/{r['problem_id']}/result?lang=mr").json()
+    assert first["gate"]["outcome"] == "clarify" and first["clarify"]["cue_id"] == r["clarify"]["cue_id"]
+    client.post(f"/api/problems/{r['problem_id']}/clarify", json={"cue_id": r["clarify"]["cue_id"], "answer": "yes"})
+    after = client.get(f"/api/problems/{r['problem_id']}/result?lang=mr").json()
+    assert after["gate"]["outcome"] == "advise" and after["advisory"]["ladder"]
+    client.post(f"/api/problems/{r['problem_id']}/escalate?lang=mr")
+    asked = client.get(f"/api/problems/{r['problem_id']}/result?lang=en").json()
+    assert asked["gate"]["outcome"] == "escalate" and asked["case"]["id"]
+
+
+def test_field_location_is_recorded_and_used(client):
+    """Weather, the spray window and the 5 km outbreak radius are all read at
+    the field's spot, so the app tracks whether it has a real one."""
+    before = client.get("/api/farms/1?lang=en").json()
+    assert before["location_source"] == "district"  # seeded from the district headquarters
+    after = client.patch("/api/farms/1", json={"lat": 21.1809, "lon": 79.6612}).json()
+    assert after["location_source"] == "gps" and (after["lat"], after["lon"]) == (21.1809, 79.6612)
+    with SessionLocal() as db:
+        farm = db.get(Farm, 1)
+        assert farm.agro_polygon_id is None  # the satellite field polygon is redrawn there
+    assert client.patch("/api/farms/1", json={"lang": "mr"}).json()["location_source"] == "gps"

@@ -57,8 +57,10 @@ def get_db() -> Iterator[Session]:
 ADDED_COLUMNS = {
     "farm": {"soil_ph": "FLOAT", "soil_ph_on": "DATE", "email": "VARCHAR(200)",
              "email_pref": "VARCHAR(10) DEFAULT 'warnings'", "email_token": "VARCHAR(40)",
-             "agro_polygon_id": "VARCHAR(40)"},
+             "agro_polygon_id": "VARCHAR(40)", "user_id": "INTEGER REFERENCES app_user(id)",
+             "irrigation": "VARCHAR(20)", "location_source": "VARCHAR(10)", "state": "VARCHAR(60)", "taluka": "VARCHAR(80)"},
     "alert": {"notified_at": "DATETIME", "emailed_at": "DATETIME"},
+    "farmer_profile": {"state": "VARCHAR(60)"},
     "sensor_reading": {"soil_ph": "FLOAT", "soil_moisture_pct": "FLOAT"},
 }
 

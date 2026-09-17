@@ -12,6 +12,9 @@ import type {
   Hotspots,
   KccPanel,
   LabelVerdict,
+  LiveSummary,
+  KrishiAnswer,
+  KrishiChip,
   Lang,
   ModelCard,
   NoticeItem,
@@ -25,7 +28,16 @@ import type {
   SatelliteView,
   SprayHour,
   WeatherView,
+  Me,
+  OtpSent,
+  AuthOptions,
+  Role,
+  StatePlaces,
+  PlaceHit,
 } from './types'
+
+/** Fired when a signed-in call comes back 401 (session expired or revoked). */
+export const UNAUTHORIZED = 'ar:unauthorized'
 
 export class ApiError extends Error {
   status: number
@@ -50,6 +62,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       /* non-JSON error body */
     }
+    if (res.status === 401 && !path.startsWith('/api/auth/')) window.dispatchEvent(new Event(UNAUTHORIZED))
     throw new ApiError(res.status, detail)
   }
   return res.json() as Promise<T>
@@ -62,6 +75,28 @@ const json = (body: unknown): RequestInit => ({
 })
 
 export const api = {
+  me: () => req<Me>('/api/auth/me'),
+  places: () => req<{ states: StatePlaces[] }>('/api/geo/places'),
+  whereAmI: (lat: number, lon: number) =>
+    req<{ state: string | null; district: string | null; village: string | null }>(
+      `/api/geo/reverse?lat=${lat}&lon=${lon}`),
+  findPlace: (q: string) => req<{ results: PlaceHit[] }>(`/api/geo/search?q=${encodeURIComponent(q)}`),
+
+  authOptions: (lang: Lang) => req<AuthOptions>(`/api/auth/options?lang=${lang}`),
+  requestOtp: (body: { role: Role; purpose: 'signup' | 'login'; email?: string; phone?: string; identifier?: string; lang: Lang }) =>
+    req<OtpSent>('/api/auth/otp', json(body)),
+  login: (challengeId: string, code: string, role: Role, lang: Lang) =>
+    req<Me>('/api/auth/login', json({ challenge_id: challengeId, code, role, lang })),
+  signupFarmer: (body: Record<string, unknown>) => req<Me>('/api/auth/signup/farmer', json(body)),
+  signupExpert: (body: Record<string, unknown>) => req<Me>('/api/auth/signup/expert', json(body)),
+  demoLogin: (role: Role) => req<Me>('/api/auth/demo', json({ role })),
+  logout: () => req<{ signed_out: boolean }>('/api/auth/logout', { method: 'POST' }),
+
+  krishiHello: (lang: Lang, screen: string) =>
+    req<{ text: string; suggestions: KrishiChip[] }>(`/api/krishi/hello?lang=${lang}&screen=${screen}`),
+  krishiAsk: (body: { text?: string; topic?: string; lang: Lang; screen: string; farm_id?: number | null }) =>
+    req<KrishiAnswer>('/api/krishi/ask', json(body)),
+
   health: () => req<{ status: string; model: { is_stub: boolean }; voice: { configured: boolean } }>('/health'),
 
   crops: (lang: Lang) => req<CropInfo[]>(`/api/kb/crops?lang=${lang}`),
@@ -74,6 +109,8 @@ export const api = {
   createFarm: (body: Record<string, unknown>) => req<Farm>('/api/farms', json(body)),
   setFarmLang: (farmId: number, lang: Lang) =>
     req<Farm>(`/api/farms/${farmId}`, { ...json({ lang }), method: 'PATCH' }),
+  setFarmLocation: (farmId: number, lat: number, lon: number) =>
+    req<Farm>(`/api/farms/${farmId}`, { ...json({ lat, lon }), method: 'PATCH' }),
   home: (farmId: number, lang: Lang) => req<Home>(`/api/farms/${farmId}/home?lang=${lang}`),
 
   diagnose: (farmId: number, image: Blob, lang: Lang, scenario?: string) => {
@@ -90,6 +127,10 @@ export const api = {
       method: 'POST',
     }),
   problem: (problemId: number, lang: Lang) => req<ProblemView>(`/api/problems/${problemId}?lang=${lang}`),
+  problemResult: (problemId: number, lang: Lang) =>
+    req<DiagnoseResult>(`/api/problems/${problemId}/result?lang=${lang}`),
+  liveSummary: (farmId: number, scanId: number, lang: Lang) =>
+    req<LiveSummary>(`/api/farms/${farmId}/live/${scanId}?lang=${lang}`),
   followup: (id: number, response: 'improved' | 'no_change' | 'got_worse', lang: Lang) =>
     req<{ case?: CaseListItem; message?: string }>(`/api/followups/${id}`, json({ response, lang })),
 

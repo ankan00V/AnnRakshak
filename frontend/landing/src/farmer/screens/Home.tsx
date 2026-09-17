@@ -6,6 +6,7 @@ import type { CropInfo, Home as HomeData } from '../../api/types'
 import { useAsync } from '../../lib/hooks'
 import { Card, ErrorBox, SectionTitle, Spinner } from '../../ui/kit'
 import AlertCard from '../components/AlertCard'
+import LocationAsk from '../components/LocationAsk'
 import ProblemRow from '../components/ProblemRow'
 import WeatherStrip from '../components/WeatherStrip'
 import { WeatherNowCard } from './Weather'
@@ -13,8 +14,8 @@ import { useFarmer } from '../FarmerContext'
 
 export default function Home() {
   const { farmId, lang, t } = useFarmer()
-  const home = useAsync(() => api.home(farmId!, lang), [farmId, lang])
-  const crops = useAsync(() => api.crops(lang), [lang])
+  const home = useAsync(() => api.home(farmId!, lang), [farmId, lang], ['home', farmId!, lang].join(':'))
+  const crops = useAsync(() => api.crops(lang), [lang], ['crops', lang].join(':'))
 
   if (home.loading && !home.data) return <Spinner label={t('loading')} />
   if (home.error) return <ErrorBox error={home.error} onRetry={home.reload} retryLabel={t('retry')} />
@@ -25,6 +26,9 @@ export default function Home() {
   return (
     <div className="space-y-6">
       <FarmCard data={d} crop={crop} />
+
+      {/* Everything below is read at the field's spot, so ask for it until we have one. */}
+      <LocationAsk farm={d.farm} onUpdated={(farm) => home.setData({ ...d, farm })} />
 
       {d.followups_due.map((f) => (
         <FollowUp key={f.id} id={f.id} onDone={home.reload} />

@@ -111,6 +111,36 @@ def _fmt_date(d: date, lang: str) -> str:
     return d.strftime("%d %b") if lang == "en" else d.strftime("%d/%m")
 
 
+DATE_ARGS = ("first", "last")
+
+
+def _render_parts(parts: list[dict], lang: str) -> str:
+    out = ""
+    for p in parts:
+        args = {k: tr(v, lang) if isinstance(v, dict) else _fmt_date(date.fromisoformat(v), lang) if k in DATE_ARGS
+                else v for k, v in p.get("args", {}).items()}
+        tmpl = REASONS[p["key"]]
+        out += (_joined(tmpl, lang) if tmpl["en"][:1].isspace() else tr(tmpl, lang)).format(**args)
+    return out
+
+
+def reason_of(parts: list[dict]) -> dict:
+    """A reason in every language, plus the parts it was built from ('_parts':
+    template keys and values), so it can be rendered again in any language —
+    including one whose translation arrived after the alert was issued."""
+    return {lang: _render_parts(parts, lang) for lang in LANGS} | {"_parts": parts}
+
+
+def reason_text(reason: dict | None, lang: str) -> str:
+    """An alert's reason in `lang`: from its parts when stored, else the frozen text."""
+    if reason and reason.get("_parts"):
+        try:
+            return _render_parts(reason["_parts"], lang)
+        except (KeyError, ValueError):
+            pass
+    return tr(reason, lang)
+
+
 def score_rule(
     target: str,
     rule: dict,
@@ -148,35 +178,27 @@ def score_rule(
         includes_forecast = last is not None and last.on > today
         used_sensor = any(d.from_sensor for d in window.days)
         level = "high" if run >= w["days"] + 3 else "medium"
-        reason = {}
-        for lang in LANGS:
-            text = tr(REASONS["weather"], lang).format(
-                rh=w["rh_min"], tlo=w["t_min"], thi=w["t_max"], run=run,
-                first=_fmt_date(first.on, lang), last=_fmt_date(last.on, lang),
-                name=tr(target_name, lang),
-            )
-            if includes_forecast:
-                text += _joined(REASONS["forecast"], lang)
-            if used_sensor:
-                text += _joined(REASONS["sensor"], lang)
-            reason[lang] = text
+        parts = [{"key": "weather", "args": {"rh": w["rh_min"], "tlo": w["t_min"], "thi": w["t_max"], "run": run,
+                                             "first": first.on.isoformat(), "last": last.on.isoformat(),
+                                             "name": target_name}}]
+        if includes_forecast:
+            parts.append({"key": "forecast"})
+        if used_sensor:
+            parts.append({"key": "sensor"})
         detail |= {"first": first.on.isoformat(), "last": last.on.isoformat(),
                    "includes_forecast": includes_forecast, "used_sensor": used_sensor}
         trigger = "weather+phenology" if ph else "weather"
     else:
         level = "low"
-        reason = {
-            lang: tr(REASONS["phenology"], lang).format(das=das, stage=tr(stage_name, lang), name=tr(target_name, lang))
-            for lang in LANGS
-        }
+        parts = [{"key": "phenology", "args": {"das": das, "stage": stage_name, "name": target_name}}]
         trigger = "phenology"
 
     if has_history:
         level = _bump(level)
-        reason = {k: v + _joined(REASONS["history"], k) for k, v in reason.items()}
+        parts.append({"key": "history"})
         detail["history_bump"] = True
 
-    return Score(target, True, level, trigger, reason, detail)
+    return Score(target, True, level, trigger, reason_of(parts), detail)
 
 
 def score_traps(target: str, rule: dict, readings: list[dict], today: date | None = None) -> Score:
@@ -207,12 +229,9 @@ def score_traps(target: str, rule: dict, readings: list[dict], today: date | Non
     if streak < need:
         return Score(target, False, "low", "trap", detail=detail)
     rate = round(sum(rates[:need]) / need, 1)
-    reason = {lang: tr(REASONS["trap"], lang).format(rate=rate, n=streak, etl=etl) for lang in LANGS}
+    reason = reason_of([{"key": "trap", "args": {"rate": rate, "n": streak, "etl": etl}}])
     return Score(target, True, "high", "trap", reason, detail | {"rate": rate})
 
 
 def spread_reason(target_name: dict[str, str], crop_name: dict[str, str], km: float) -> dict[str, str]:
-    return {
-        lang: tr(REASONS["spread"], lang).format(name=tr(target_name, lang), crop=tr(crop_name, lang), km=f"{km:.1f}")
-        for lang in LANGS
-    }
+    return reason_of([{"key": "spread", "args": {"name": target_name, "crop": crop_name, "km": f"{km:.1f}"}}])

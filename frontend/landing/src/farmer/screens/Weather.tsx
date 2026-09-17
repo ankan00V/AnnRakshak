@@ -65,7 +65,7 @@ const hhmm = (iso: string) => iso.slice(11, 16)
 
 export default function Weather() {
   const { farmId, lang, t } = useFarmer()  // lang also feeds dates and the KCC month name
-  const w = useAsync(() => api.weather(farmId!, lang), [farmId, lang])
+  const w = useAsync(() => api.weather(farmId!, lang), [farmId, lang], ['weather', farmId!, lang].join(':'))
   if (w.loading && !w.data) return <Spinner label={t('loading')} />
   if (w.error) return <ErrorBox error={w.error} onRetry={w.reload} retryLabel={t('retry')} />
   const v = w.data!
@@ -335,6 +335,21 @@ function SoilWater({ v }: { v: WeatherView }) {
     <section>
       <SectionTitle sub={t('modelledNote')}>{t('soilWater')}</SectionTitle>
       <Card className="p-4 space-y-4">
+        {s?.ph && (
+          <div className="flex items-baseline gap-3 border-b border-soil-dark/10 pb-3">
+            <div>
+              <p className="text-xs text-soil-dark/60">{t('soilPh')}</p>
+              <p className="text-lg font-semibold">
+                {s.ph.value} <span className="text-sm font-normal text-soil-dark/70">{s.ph.band}</span>
+              </p>
+            </div>
+            {/* Where the number came from decides how much a farmer should lean
+                on it: their own sensor, the card they were given, or a map. */}
+            <p className="ml-auto text-right text-[11px] leading-tight text-soil-dark/50">
+              {t(`ph_${s.ph.how}`)}<br />{s.ph.source}
+            </p>
+          </div>
+        )}
         {s && (
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -381,7 +396,7 @@ function SoilWater({ v }: { v: WeatherView }) {
 /** Compact card for Home: now, the top advice, and the way in. */
 export function WeatherNowCard() {
   const { farmId, lang, t } = useFarmer()
-  const w = useAsync(() => api.weather(farmId!, lang), [farmId, lang])
+  const w = useAsync(() => api.weather(farmId!, lang), [farmId, lang], ['weather', farmId!, lang].join(':'))
   const v = w.data
   if (!v) return null
   const c = v.current
@@ -414,7 +429,7 @@ const NDVI_COLOR = { sparse: 'bg-ochre/20 text-[#8a5a17]', low: 'bg-lime-100 tex
 /** Greenness from clear Sentinel-2 / Landsat 8 images, and satellite soil data. */
 function SatelliteCard() {
   const { farmId, lang, t } = useFarmer()
-  const s = useAsync(() => api.satellite(farmId!), [farmId])
+  const s = useAsync(() => api.satellite(farmId!), [farmId], ['satellite', farmId!].join(':'))
   const d = s.data
   if (!d || !d.available || !d.latest) return null
   const date = (iso: string) => new Date(iso + 'T00:00:00').toLocaleDateString(bcp47(lang), { day: 'numeric', month: 'short' })

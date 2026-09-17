@@ -17,11 +17,12 @@ import itertools
 import threading
 import time
 
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from app import cache
+from app.auth import require_user
 from app.config import (
     DATA_DIR,
     SARVAM_API_KEYS,
@@ -151,7 +152,7 @@ def voice_status():
     return status()
 
 
-@router.post("/tts")
+@router.post("/tts", dependencies=[Depends(require_user)])
 def tts_endpoint(body: TTSIn, request: Request):
     from app.limits import client_ip, limit  # noqa: PLC0415
 
@@ -164,7 +165,7 @@ def tts_endpoint(body: TTSIn, request: Request):
         raise HTTPException(502, f"speech service failed: {type(exc).__name__}") from exc
 
 
-@router.post("/stt")
+@router.post("/stt", dependencies=[Depends(require_user)])
 async def stt_endpoint(request: Request, audio: UploadFile = File(...), lang: str | None = Form(None)):
     from app.limits import client_ip, limit  # noqa: PLC0415
 
@@ -188,7 +189,7 @@ class TranslateIn(BaseModel):
     target: str = Field(pattern="^(en|hi|mr)$")
 
 
-@router.post("/translate")
+@router.post("/translate", dependencies=[Depends(require_user)])
 def translate_endpoint(body: TranslateIn):
     try:
         return {"text": translate(body.text, body.source, body.target)}

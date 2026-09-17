@@ -1,1852 +1,2468 @@
 {
-  "_note": "One advisory per target. Ladder order is cultural -> biological -> chemical and the loader refuses any other order. Chemical rungs name an ingredient from pesticides.json; 'verified' flips to true only after a team member checks the ingredient/crop/target/dose against the CIB&RC major-uses list (see backend/kb/KB_REVIEW.md). Doses are per litre of water for a knapsack spray unless 'dose_basis' says otherwise; the printed label stays the authority on dose.",
-  "rice_blast": {
-    "what_to_check": {
-      "en": "Check the upper leaves of 10 plants along a diagonal, and the node just below the panicle.",
-      "hi": "खेत में तिरछी लाइन पर 10 पौधों की ऊपरी पत्तियाँ और बाली के नीचे की गाँठ देखें।",
-      "mr": "शेतात तिरक्या रेषेवर 10 रोपांची वरची पाने आणि लोंबीखालची गाठ तपासा."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not top-dress urea now — extra nitrogen feeds blast.",
-        "hi": "अभी यूरिया का ऊपरी छिड़काव न करें — ज़्यादा नाइट्रोजन से झोंका बढ़ता है।",
-        "mr": "आता युरियाचा वरखत देऊ नका — जास्त नत्राने करपा वाढतो."
-      },
-      {
-        "en": "Do not spray in the afternoon heat or before rain.",
-        "hi": "दोपहर की गर्मी में या बारिश से पहले छिड़काव न करें।",
-        "mr": "दुपारच्या उन्हात किंवा पावसापूर्वी फवारणी करू नका."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Split the remaining nitrogen into smaller doses; keep the field flooded rather than letting it dry and re-wet.",
-          "hi": "बची नाइट्रोजन छोटी किस्तों में दें; खेत में पानी लगातार भरा रखें।",
-          "mr": "उरलेले नत्र लहान हप्त्यांत द्या; शेतात पाणी सतत साचलेले ठेवा."
-        }
-      },
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Remove and destroy grassy weeds on bunds — they carry the fungus. Use resistant varieties next season.",
-          "hi": "मेड़ों की घास निकालकर नष्ट करें — इनमें फफूँद रहती है। अगले मौसम में रोगरोधी किस्म लें।",
-          "mr": "बांधावरील गवत काढून नष्ट करा — त्यात बुरशी राहते. पुढील हंगामात रोगप्रतिकारक वाण घ्या."
-        }
-      },
-      {
-        "tier": "biological",
-        "action": {
-          "en": "Spray Pseudomonas fluorescens 1% WP at 10 g per litre at first symptoms.",
-          "hi": "पहले लक्षण पर स्यूडोमोनास फ्लोरेसेंस 1% WP, 10 ग्राम प्रति लीटर छिड़कें।",
-          "mr": "पहिल्या लक्षणांवर स्युडोमोनास फ्लुरोसन्स 1% WP, 10 ग्रॅम प्रति लिटर फवारा."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "tricyclazole_75wp",
-        "dose_per_litre": 0.6,
-        "dose_unit": "g",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "At first leaf spots; repeat at 50% heading if neck blast risk continues.",
-          "hi": "पहले धब्बे दिखने पर; गर्दन झोंका का खतरा रहे तो 50% बाली आने पर दोहराएँ।",
-          "mr": "पहिले ठिपके दिसताच; मान करपा धोका असल्यास 50% लोंबी आल्यावर पुन्हा."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "isoprothiolane_40ec",
-        "dose_per_litre": 1.5,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Alternative to tricyclazole; do not use both in the same round.",
-          "hi": "ट्राइसाइक्लाजोल का विकल्प; एक ही बार में दोनों न मिलाएँ।",
-          "mr": "ट्रायसायक्लाझोलचा पर्याय; एकाच फवारणीत दोन्ही मिसळू नका."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if the node below the panicle turns black or spots reach the flag leaf.",
-      "hi": "बाली के नीचे की गाँठ काली हो या धब्बे ऊपर की पत्ती तक पहुँचें तो विशेषज्ञ को बुलाएँ।",
-      "mr": "लोंबीखालची गाठ काळी पडली किंवा ठिपके ध्वजपानापर्यंत पोहोचले तर तज्ज्ञांना बोलवा."
-    },
-    "citations": [
-      {
-        "title": "AESA-based IPM Package: Rice",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      },
-      {
-        "title": "Rice Knowledge Management Portal — Blast",
-        "publisher": "ICAR-Indian Institute of Rice Research",
-        "url": "https://www.rkmp.co.in"
-      },
-      {
-        "title": "Blast (leaf and collar) fact sheet",
-        "publisher": "IRRI Rice Knowledge Bank",
-        "url": "http://www.knowledgebank.irri.org"
-      }
-    ]
+ "_note": "One advisory per target. Ladder order is cultural -> biological -> chemical and the loader refuses any other order. Chemical rungs name an ingredient from pesticides.json; 'verified' flips to true only after a team member checks the ingredient/crop/target/dose against the CIB&RC major-uses list (see backend/kb/KB_REVIEW.md). Doses are per litre of water for a knapsack spray unless 'dose_basis' says otherwise; the printed label stays the authority on dose.",
+ "rice_blast": {
+  "what_to_check": {
+   "en": "Check the upper leaves of 10 plants along a diagonal, and the node just below the panicle.",
+   "hi": "खेत में तिरछी लाइन पर 10 पौधों की ऊपरी पत्तियाँ और बाली के नीचे की गाँठ देखें।",
+   "mr": "शेतात तिरक्या रेषेवर 10 रोपांची वरची पाने आणि लोंबीखालची गाठ तपासा."
   },
-  "rice_brown_spot": {
-    "what_to_check": {
-      "en": "Check older leaves and the grain husks; brown spot is worst on nutrient-starved, drought-stressed fields.",
-      "hi": "पुरानी पत्तियाँ और दानों के छिलके देखें; कमज़ोर, सूखाग्रस्त खेतों में भूरा धब्बा ज़्यादा होता है।",
-      "mr": "जुनी पाने व दाण्यांची टरफले तपासा; अन्नद्रव्यांची कमतरता व ताण असलेल्या शेतात रोग जास्त असतो."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not skip potash — brown spot follows poor soil nutrition.",
-        "hi": "पोटाश न छोड़ें — भूरा धब्बा कमज़ोर पोषण के बाद आता है।",
-        "mr": "पालाश टाळू नका — अन्नद्रव्यांच्या कमतरतेमुळे हा रोग येतो."
-      },
-      {
-        "en": "Do not save seed from infected fields for next season.",
-        "hi": "रोगग्रस्त खेत का बीज अगले मौसम के लिए न रखें।",
-        "mr": "रोगट शेतातील बियाणे पुढील हंगामासाठी ठेवू नका."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Apply the recommended potash and correct zinc deficiency; avoid water stress.",
-          "hi": "सिफारिश के अनुसार पोटाश दें और जिंक की कमी दूर करें; पानी की कमी न होने दें।",
-          "mr": "शिफारशीप्रमाणे पालाश द्या व जस्ताची कमतरता भरून काढा; पाण्याचा ताण टाळा."
-        }
-      },
-      {
-        "tier": "biological",
-        "action": {
-          "en": "Next season, treat seed with Trichoderma viride at 4 g per kg or Pseudomonas fluorescens at 10 g per kg.",
-          "hi": "अगले मौसम में बीज को ट्राइकोडर्मा विरिडी 4 ग्राम प्रति किलो या स्यूडोमोनास 10 ग्राम प्रति किलो से उपचारित करें।",
-          "mr": "पुढील हंगामात बियाण्यास ट्रायकोडर्मा व्हिरिडी 4 ग्रॅम प्रति किलो किंवा स्युडोमोनास 10 ग्रॅम प्रति किलो लावा."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "mancozeb_75wp",
-        "dose_per_litre": 2.5,
-        "dose_unit": "g",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "When spots appear on more than a few leaves; repeat after 10–15 days if needed.",
-          "hi": "कई पत्तियों पर धब्बे दिखें तब; ज़रूरत हो तो 10–15 दिन बाद दोहराएँ।",
-          "mr": "अनेक पानांवर ठिपके दिसल्यास; गरज असल्यास 10–15 दिवसांनी पुन्हा."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "propiconazole_25ec",
-        "dose_per_litre": 1.0,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Alternative when grain discolouration threatens at heading.",
-          "hi": "बाली के समय दानों के बदरंग होने का खतरा हो तो विकल्प।",
-          "mr": "लोंबी अवस्थेत दाणे काळवंडण्याचा धोका असल्यास पर्याय."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if spots cover most of the leaf area or grains turn dark.",
-      "hi": "धब्बे पत्ती का ज़्यादातर हिस्सा ढक लें या दाने काले पड़ें तो विशेषज्ञ को बुलाएँ।",
-      "mr": "ठिपक्यांनी पानाचा बहुतांश भाग व्यापला किंवा दाणे काळे पडले तर तज्ज्ञांना बोलवा."
-    },
-    "citations": [
-      {
-        "title": "AESA-based IPM Package: Rice",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      },
-      {
-        "title": "Rice Knowledge Management Portal — Brown spot",
-        "publisher": "ICAR-Indian Institute of Rice Research",
-        "url": "https://www.rkmp.co.in"
-      }
-    ]
+  "what_to_avoid": [
+   {
+    "en": "Do not top-dress urea now — extra nitrogen feeds blast.",
+    "hi": "अभी यूरिया का ऊपरी छिड़काव न करें — ज़्यादा नाइट्रोजन से झोंका बढ़ता है।",
+    "mr": "आता युरियाचा वरखत देऊ नका — जास्त नत्राने करपा वाढतो."
+   },
+   {
+    "en": "Do not spray in the afternoon heat or before rain.",
+    "hi": "दोपहर की गर्मी में या बारिश से पहले छिड़काव न करें।",
+    "mr": "दुपारच्या उन्हात किंवा पावसापूर्वी फवारणी करू नका."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Split the remaining nitrogen into smaller doses; keep the field flooded rather than letting it dry and re-wet.",
+     "hi": "बची नाइट्रोजन छोटी किस्तों में दें; खेत में पानी लगातार भरा रखें।",
+     "mr": "उरलेले नत्र लहान हप्त्यांत द्या; शेतात पाणी सतत साचलेले ठेवा."
+    }
+   },
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Remove and destroy grassy weeds on bunds — they carry the fungus. Use resistant varieties next season.",
+     "hi": "मेड़ों की घास निकालकर नष्ट करें — इनमें फफूँद रहती है। अगले मौसम में रोगरोधी किस्म लें।",
+     "mr": "बांधावरील गवत काढून नष्ट करा — त्यात बुरशी राहते. पुढील हंगामात रोगप्रतिकारक वाण घ्या."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Spray Pseudomonas fluorescens 1% WP at 10 g per litre at first symptoms.",
+     "hi": "पहले लक्षण पर स्यूडोमोनास फ्लोरेसेंस 1% WP, 10 ग्राम प्रति लीटर छिड़कें।",
+     "mr": "पहिल्या लक्षणांवर स्युडोमोनास फ्लुरोसन्स 1% WP, 10 ग्रॅम प्रति लिटर फवारा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "tricyclazole_75wp",
+    "dose_per_litre": 0.6,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "At first leaf spots; repeat at 50% heading if neck blast risk continues.",
+     "hi": "पहले धब्बे दिखने पर; गर्दन झोंका का खतरा रहे तो 50% बाली आने पर दोहराएँ।",
+     "mr": "पहिले ठिपके दिसताच; मान करपा धोका असल्यास 50% लोंबी आल्यावर पुन्हा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "isoprothiolane_40ec",
+    "dose_per_litre": 1.5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Alternative to tricyclazole; do not use both in the same round.",
+     "hi": "ट्राइसाइक्लाजोल का विकल्प; एक ही बार में दोनों न मिलाएँ।",
+     "mr": "ट्रायसायक्लाझोलचा पर्याय; एकाच फवारणीत दोन्ही मिसळू नका."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if the node below the panicle turns black or spots reach the flag leaf.",
+   "hi": "बाली के नीचे की गाँठ काली हो या धब्बे ऊपर की पत्ती तक पहुँचें तो विशेषज्ञ को बुलाएँ।",
+   "mr": "लोंबीखालची गाठ काळी पडली किंवा ठिपके ध्वजपानापर्यंत पोहोचले तर तज्ज्ञांना बोलवा."
   },
-  "rice_bacterial_leaf_blight": {
-    "what_to_check": {
-      "en": "Check leaf tips and edges early in the morning for yellow wavy stripes and milky droplets.",
-      "hi": "सुबह जल्दी पत्तियों की नोक और किनारों पर लहरदार पीली पट्टी और दूधिया बूँदें देखें।",
-      "mr": "सकाळी लवकर पानांची टोके व कडा यांवर लहरी पिवळी पट्टी व दुधाळ थेंब तपासा."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not apply more nitrogen until the blight stops spreading.",
-        "hi": "झुलसा फैलना रुकने तक और नाइट्रोजन न डालें।",
-        "mr": "करपा पसरणे थांबेपर्यंत अधिक नत्र देऊ नका."
-      },
-      {
-        "en": "Do not let water flow from an infected field into healthy ones — the bacteria travel in water.",
-        "hi": "रोगी खेत का पानी स्वस्थ खेत में न जाने दें — जीवाणु पानी से फैलते हैं।",
-        "mr": "रोगट शेतातील पाणी निरोगी शेतात जाऊ देऊ नका — जिवाणू पाण्याने पसरतात."
-      },
-      {
-        "en": "Do not spray antibiotic mixtures without an agriculture officer's advice.",
-        "hi": "कृषि अधिकारी की सलाह के बिना एंटीबायोटिक मिश्रण न छिड़कें।",
-        "mr": "कृषी अधिकाऱ्याच्या सल्ल्याशिवाय प्रतिजैविक मिश्रणे फवारू नका."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Drain the field for 3–4 days, then re-irrigate; hold back the next nitrogen dose.",
-          "hi": "खेत का पानी 3–4 दिन निकाल दें, फिर सिंचाई करें; अगली नाइट्रोजन रोकें।",
-          "mr": "शेतातील पाणी 3–4 दिवस काढून टाका, नंतर पाणी द्या; पुढचा नत्राचा हप्ता थांबवा."
-        }
-      },
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Remove weeds and stubble that harbour the bacteria; grow resistant varieties next season.",
-          "hi": "जीवाणु वाले खरपतवार और ठूँठ हटाएँ; अगले मौसम में रोगरोधी किस्म लगाएँ।",
-          "mr": "जिवाणू राहणारे तण व धसकटे काढा; पुढील हंगामात प्रतिकारक वाण लावा."
-        }
-      },
-      {
-        "tier": "biological",
-        "action": {
-          "en": "Spray Pseudomonas fluorescens 1% WP at 10 g per litre to slow the spread.",
-          "hi": "फैलाव धीमा करने के लिए स्यूडोमोनास फ्लोरेसेंस 1% WP, 10 ग्राम प्रति लीटर छिड़कें।",
-          "mr": "प्रसार कमी करण्यासाठी स्युडोमोनास फ्लुरोसन्स 1% WP, 10 ग्रॅम प्रति लिटर फवारा."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "copper_oxychloride_50wp",
-        "dose_per_litre": 2.5,
-        "dose_unit": "g",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Slows spread to new leaves; no spray cures leaves that are already infected.",
-          "hi": "नई पत्तियों पर फैलाव धीमा करता है; संक्रमित पत्तियाँ ठीक नहीं होतीं।",
-          "mr": "नव्या पानांवरचा प्रसार कमी करते; आधीच बाधित पाने बरी होत नाहीत."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if whole leaves turn white-grey (kresek) or seedlings wilt.",
-      "hi": "पूरी पत्तियाँ सफेद-धूसर हों या पौधे मुरझाएँ तो विशेषज्ञ को बुलाएँ।",
-      "mr": "संपूर्ण पाने पांढरट-राखाडी झाली किंवा रोपे मलूल झाली तर तज्ज्ञांना बोलवा."
-    },
-    "citations": [
-      {
-        "title": "AESA-based IPM Package: Rice",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      },
-      {
-        "title": "Bacterial blight fact sheet",
-        "publisher": "IRRI Rice Knowledge Bank",
-        "url": "http://www.knowledgebank.irri.org"
-      }
-    ]
+  "citations": [
+   {
+    "title": "AESA-based IPM Package: Rice",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   },
+   {
+    "title": "Rice Knowledge Management Portal — Blast",
+    "publisher": "ICAR-Indian Institute of Rice Research",
+    "url": "https://www.rkmp.co.in"
+   },
+   {
+    "title": "Blast (leaf and collar) fact sheet",
+    "publisher": "IRRI Rice Knowledge Bank",
+    "url": "http://www.knowledgebank.irri.org"
+   }
+  ]
+ },
+ "rice_brown_spot": {
+  "what_to_check": {
+   "en": "Check older leaves and the grain husks; brown spot is worst on nutrient-starved, drought-stressed fields.",
+   "hi": "पुरानी पत्तियाँ और दानों के छिलके देखें; कमज़ोर, सूखाग्रस्त खेतों में भूरा धब्बा ज़्यादा होता है।",
+   "mr": "जुनी पाने व दाण्यांची टरफले तपासा; अन्नद्रव्यांची कमतरता व ताण असलेल्या शेतात रोग जास्त असतो."
   },
-  "rice_sheath_blight": {
-    "what_to_check": {
-      "en": "Part the canopy and check stem sheaths just above the water line in the densest part of the field.",
-      "hi": "घने हिस्से में पौधों को हटाकर पानी की सतह के ठीक ऊपर तने के आवरण देखें।",
-      "mr": "दाट भागात रोपे बाजूला करून पाण्याच्या पातळीच्या थोडे वर खोडाचे आवरण तपासा."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not add more nitrogen — a dense, lush canopy spreads sheath blight.",
-        "hi": "और नाइट्रोजन न दें — घनी फसल में शीथ ब्लाइट फैलता है।",
-        "mr": "अधिक नत्र देऊ नका — दाट, हिरवीगार वाढ रोग पसरवते."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Drain standing water for a few days and remove weeds so air moves through the canopy.",
-          "hi": "कुछ दिन खड़ा पानी निकालें और खरपतवार हटाएँ ताकि हवा आर-पार जाए।",
-          "mr": "काही दिवस साचलेले पाणी काढा व तण काढा, जेणेकरून हवा खेळती राहील."
-        }
-      },
-      {
-        "tier": "biological",
-        "action": {
-          "en": "Apply Pseudomonas fluorescens or Trichoderma to soil and spray at 10 g per litre.",
-          "hi": "स्यूडोमोनास या ट्राइकोडर्मा मिट्टी में दें और 10 ग्राम प्रति लीटर छिड़कें।",
-          "mr": "स्युडोमोनास किंवा ट्रायकोडर्मा जमिनीत द्या व 10 ग्रॅम प्रति लिटर फवारा."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "hexaconazole_5ec",
-        "dose_per_litre": 2.0,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Direct the spray at the lower stems where the patches are.",
-          "hi": "छिड़काव नीचे तने पर करें जहाँ धब्बे हैं।",
-          "mr": "फवारणी खालच्या खोडावर, जिथे चट्टे आहेत तिथे करा."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "validamycin_3l",
-        "dose_per_litre": 2.5,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Alternative to hexaconazole.",
-          "hi": "हेक्साकोनाजोल का विकल्प।",
-          "mr": "हेक्झाकोनाझोलचा पर्याय."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if patches climb to the flag leaf.",
-      "hi": "धब्बे ऊपर की पत्ती तक पहुँचें तो विशेषज्ञ को बुलाएँ।",
-      "mr": "चट्टे ध्वजपानापर्यंत पोहोचले तर तज्ज्ञांना बोलवा."
-    },
-    "citations": [
-      {
-        "title": "AESA-based IPM Package: Rice",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      },
-      {
-        "title": "Rice Knowledge Management Portal — Sheath blight",
-        "publisher": "ICAR-Indian Institute of Rice Research",
-        "url": "https://www.rkmp.co.in"
-      }
-    ]
+  "what_to_avoid": [
+   {
+    "en": "Do not skip potash — brown spot follows poor soil nutrition.",
+    "hi": "पोटाश न छोड़ें — भूरा धब्बा कमज़ोर पोषण के बाद आता है।",
+    "mr": "पालाश टाळू नका — अन्नद्रव्यांच्या कमतरतेमुळे हा रोग येतो."
+   },
+   {
+    "en": "Do not save seed from infected fields for next season.",
+    "hi": "रोगग्रस्त खेत का बीज अगले मौसम के लिए न रखें।",
+    "mr": "रोगट शेतातील बियाणे पुढील हंगामासाठी ठेवू नका."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Apply the recommended potash and correct zinc deficiency; avoid water stress.",
+     "hi": "सिफारिश के अनुसार पोटाश दें और जिंक की कमी दूर करें; पानी की कमी न होने दें।",
+     "mr": "शिफारशीप्रमाणे पालाश द्या व जस्ताची कमतरता भरून काढा; पाण्याचा ताण टाळा."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Next season, treat seed with Trichoderma viride at 4 g per kg or Pseudomonas fluorescens at 10 g per kg.",
+     "hi": "अगले मौसम में बीज को ट्राइकोडर्मा विरिडी 4 ग्राम प्रति किलो या स्यूडोमोनास 10 ग्राम प्रति किलो से उपचारित करें।",
+     "mr": "पुढील हंगामात बियाण्यास ट्रायकोडर्मा व्हिरिडी 4 ग्रॅम प्रति किलो किंवा स्युडोमोनास 10 ग्रॅम प्रति किलो लावा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "mancozeb_75wp",
+    "dose_per_litre": 2.5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "When spots appear on more than a few leaves; repeat after 10–15 days if needed.",
+     "hi": "कई पत्तियों पर धब्बे दिखें तब; ज़रूरत हो तो 10–15 दिन बाद दोहराएँ।",
+     "mr": "अनेक पानांवर ठिपके दिसल्यास; गरज असल्यास 10–15 दिवसांनी पुन्हा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "propiconazole_25ec",
+    "dose_per_litre": 1.0,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Alternative when grain discolouration threatens at heading.",
+     "hi": "बाली के समय दानों के बदरंग होने का खतरा हो तो विकल्प।",
+     "mr": "लोंबी अवस्थेत दाणे काळवंडण्याचा धोका असल्यास पर्याय."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if spots cover most of the leaf area or grains turn dark.",
+   "hi": "धब्बे पत्ती का ज़्यादातर हिस्सा ढक लें या दाने काले पड़ें तो विशेषज्ञ को बुलाएँ।",
+   "mr": "ठिपक्यांनी पानाचा बहुतांश भाग व्यापला किंवा दाणे काळे पडले तर तज्ज्ञांना बोलवा."
   },
-  "rice_false_smut": {
-    "what_to_check": {
-      "en": "Check panicles at flowering and after for orange-yellow velvety balls replacing grains.",
-      "hi": "फूल आने पर और बाद में बालियों में दानों की जगह नारंगी-पीली गेंदें देखें।",
-      "mr": "फुलोऱ्यात व नंतर लोंबीत दाण्यांऐवजी नारिंगी-पिवळे गोळे आहेत का तपासा."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not use excess nitrogen at panicle initiation.",
-        "hi": "बाली बनते समय ज़्यादा नाइट्रोजन न दें।",
-        "mr": "लोंबी येताना जास्त नत्र देऊ नका."
-      },
-      {
-        "en": "Do not keep grain from smutted panicles as seed.",
-        "hi": "रोगी बालियों का दाना बीज के रूप में न रखें।",
-        "mr": "रोगट लोंब्यांचे दाणे बियाणे म्हणून ठेवू नका."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Pick and bury smut balls carefully in a bag so spores do not scatter.",
-          "hi": "कंड की गेंदें थैली में सावधानी से तोड़कर गाड़ दें ताकि बीजाणु न फैलें।",
-          "mr": "काजळीचे गोळे पिशवीत काळजीपूर्वक तोडून पुरा, बीजाणू पसरू देऊ नका."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "propiconazole_25ec",
-        "dose_per_litre": 1.0,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Preventive only: at boot-leaf stage, before panicles emerge. Too late once balls are visible.",
-          "hi": "केवल बचाव के लिए: बाली निकलने से पहले। गेंदें दिखने के बाद देर हो चुकी होती है।",
-          "mr": "फक्त प्रतिबंधासाठी: लोंबी बाहेर पडण्यापूर्वी. गोळे दिसल्यावर उशीर झालेला असतो."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "copper_hydroxide_77wp",
-        "dose_per_litre": 2.0,
-        "dose_unit": "g",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Alternative preventive spray at boot-leaf stage.",
-          "hi": "बाली निकलने से पहले का वैकल्पिक बचाव छिड़काव।",
-          "mr": "लोंबी येण्यापूर्वी पर्यायी प्रतिबंधक फवारणी."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if more than a few panicles per square metre are affected.",
-      "hi": "प्रति वर्ग मीटर कई बालियाँ प्रभावित हों तो विशेषज्ञ को बुलाएँ।",
-      "mr": "प्रति चौरस मीटर अनेक लोंब्या बाधित असतील तर तज्ज्ञांना बोलवा."
-    },
-    "citations": [
-      {
-        "title": "AESA-based IPM Package: Rice",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      },
-      {
-        "title": "False smut fact sheet",
-        "publisher": "IRRI Rice Knowledge Bank",
-        "url": "http://www.knowledgebank.irri.org"
-      }
-    ]
+  "citations": [
+   {
+    "title": "AESA-based IPM Package: Rice",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   },
+   {
+    "title": "Rice Knowledge Management Portal — Brown spot",
+    "publisher": "ICAR-Indian Institute of Rice Research",
+    "url": "https://www.rkmp.co.in"
+   }
+  ]
+ },
+ "rice_bacterial_leaf_blight": {
+  "what_to_check": {
+   "en": "Check leaf tips and edges early in the morning for yellow wavy stripes and milky droplets.",
+   "hi": "सुबह जल्दी पत्तियों की नोक और किनारों पर लहरदार पीली पट्टी और दूधिया बूँदें देखें।",
+   "mr": "सकाळी लवकर पानांची टोके व कडा यांवर लहरी पिवळी पट्टी व दुधाळ थेंब तपासा."
   },
-  "rice_tungro": {
-    "what_to_check": {
-      "en": "Look for patches of stunted yellow-orange plants and green leafhoppers on the leaves.",
-      "hi": "बौने पीले-नारंगी पौधों के टुकड़े और पत्तियों पर हरे फुदके देखें।",
-      "mr": "खुज्या पिवळ्या-नारिंगी रोपांचे पट्टे आणि पानांवर हिरवे तुडतुडे पाहा."
-    },
-    "what_to_avoid": [
-      {
-        "en": "No spray cures a virus-infected plant — do not waste money spraying fungicides.",
-        "hi": "कोई दवा वायरस वाले पौधे को ठीक नहीं करती — फफूँदनाशक पर पैसा बर्बाद न करें।",
-        "mr": "कोणतेही औषध विषाणूबाधित रोप बरे करत नाही — बुरशीनाशकांवर पैसा वाया घालवू नका."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Pull out and bury infected plants early; plant resistant varieties and keep a fallow gap between crops.",
-          "hi": "संक्रमित पौधे जल्दी उखाड़कर गाड़ दें; रोगरोधी किस्म और फसलों के बीच खाली अंतर रखें।",
-          "mr": "बाधित रोपे लवकर उपटून पुरा; प्रतिकारक वाण लावा व पिकांमध्ये खंड ठेवा."
-        }
-      },
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Use a light trap at night to monitor the green leafhopper vector.",
-          "hi": "हरे फुदके पर नज़र रखने के लिए रात में प्रकाश प्रपंच लगाएँ।",
-          "mr": "हिरव्या तुडतुड्यांवर लक्ष ठेवण्यासाठी रात्री प्रकाश सापळा लावा."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "imidacloprid_17_8sl",
-        "dose_per_litre": 0.2,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Only against the leafhopper vector, and only if leafhoppers are present in numbers.",
-          "hi": "केवल फुदके के विरुद्ध, और तभी जब फुदके ज़्यादा हों।",
-          "mr": "फक्त तुडतुड्यांविरुद्ध, आणि तुडतुडे जास्त असल्यासच."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if patches grow across the field within a week.",
-      "hi": "एक हफ्ते में धब्बे पूरे खेत में फैलें तो विशेषज्ञ को बुलाएँ।",
-      "mr": "आठवड्याभरात पट्टे संपूर्ण शेतात पसरले तर तज्ज्ञांना बोलवा."
-    },
-    "citations": [
-      {
-        "title": "AESA-based IPM Package: Rice",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      },
-      {
-        "title": "Tungro fact sheet",
-        "publisher": "IRRI Rice Knowledge Bank",
-        "url": "http://www.knowledgebank.irri.org"
-      }
-    ]
+  "what_to_avoid": [
+   {
+    "en": "Do not apply more nitrogen until the blight stops spreading.",
+    "hi": "झुलसा फैलना रुकने तक और नाइट्रोजन न डालें।",
+    "mr": "करपा पसरणे थांबेपर्यंत अधिक नत्र देऊ नका."
+   },
+   {
+    "en": "Do not let water flow from an infected field into healthy ones — the bacteria travel in water.",
+    "hi": "रोगी खेत का पानी स्वस्थ खेत में न जाने दें — जीवाणु पानी से फैलते हैं।",
+    "mr": "रोगट शेतातील पाणी निरोगी शेतात जाऊ देऊ नका — जिवाणू पाण्याने पसरतात."
+   },
+   {
+    "en": "Do not spray antibiotic mixtures without an agriculture officer's advice.",
+    "hi": "कृषि अधिकारी की सलाह के बिना एंटीबायोटिक मिश्रण न छिड़कें।",
+    "mr": "कृषी अधिकाऱ्याच्या सल्ल्याशिवाय प्रतिजैविक मिश्रणे फवारू नका."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Drain the field for 3–4 days, then re-irrigate; hold back the next nitrogen dose.",
+     "hi": "खेत का पानी 3–4 दिन निकाल दें, फिर सिंचाई करें; अगली नाइट्रोजन रोकें।",
+     "mr": "शेतातील पाणी 3–4 दिवस काढून टाका, नंतर पाणी द्या; पुढचा नत्राचा हप्ता थांबवा."
+    }
+   },
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Remove weeds and stubble that harbour the bacteria; grow resistant varieties next season.",
+     "hi": "जीवाणु वाले खरपतवार और ठूँठ हटाएँ; अगले मौसम में रोगरोधी किस्म लगाएँ।",
+     "mr": "जिवाणू राहणारे तण व धसकटे काढा; पुढील हंगामात प्रतिकारक वाण लावा."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Spray Pseudomonas fluorescens 1% WP at 10 g per litre to slow the spread.",
+     "hi": "फैलाव धीमा करने के लिए स्यूडोमोनास फ्लोरेसेंस 1% WP, 10 ग्राम प्रति लीटर छिड़कें।",
+     "mr": "प्रसार कमी करण्यासाठी स्युडोमोनास फ्लुरोसन्स 1% WP, 10 ग्रॅम प्रति लिटर फवारा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "copper_oxychloride_50wp",
+    "dose_per_litre": 2.5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Slows spread to new leaves; no spray cures leaves that are already infected.",
+     "hi": "नई पत्तियों पर फैलाव धीमा करता है; संक्रमित पत्तियाँ ठीक नहीं होतीं।",
+     "mr": "नव्या पानांवरचा प्रसार कमी करते; आधीच बाधित पाने बरी होत नाहीत."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if whole leaves turn white-grey (kresek) or seedlings wilt.",
+   "hi": "पूरी पत्तियाँ सफेद-धूसर हों या पौधे मुरझाएँ तो विशेषज्ञ को बुलाएँ।",
+   "mr": "संपूर्ण पाने पांढरट-राखाडी झाली किंवा रोपे मलूल झाली तर तज्ज्ञांना बोलवा."
   },
-  "rice_leaf_folder": {
-    "what_to_check": {
-      "en": "Count damaged (folded or scraped) leaves on 10 hills. Action threshold: about 2 freshly damaged leaves per hill.",
-      "hi": "10 पौधों पर मुड़ी या खुरची पत्तियाँ गिनें। कार्रवाई सीमा: प्रति पौधा लगभग 2 ताज़ा क्षतिग्रस्त पत्तियाँ।",
-      "mr": "10 चुडांवरील गुंडाळलेली किंवा खरवडलेली पाने मोजा. कृती मर्यादा: प्रति चूड सुमारे 2 ताजी बाधित पाने."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not spray in the first 40 days for a few folded leaves — the crop recovers and spraying kills spiders and wasps that eat the larvae.",
-        "hi": "पहले 40 दिनों में थोड़ी मुड़ी पत्तियों पर छिड़काव न करें — फसल सँभल जाती है और छिड़काव मित्र कीटों को मारता है।",
-        "mr": "पहिल्या 40 दिवसांत थोड्या गुंडाळलेल्या पानांसाठी फवारणी करू नका — पीक सावरते आणि फवारणीने मित्रकीटक मरतात."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Avoid excess nitrogen; pass a rope over the crop to dislodge larvae from folds.",
-          "hi": "ज़्यादा नाइट्रोजन से बचें; पत्तियों से इल्ली गिराने के लिए फसल पर रस्सी फिराएँ।",
-          "mr": "जास्त नत्र टाळा; गुंडाळीतून अळ्या पाडण्यासाठी पिकावरून दोरी फिरवा."
-        }
-      },
-      {
-        "tier": "biological",
-        "action": {
-          "en": "Release the egg parasitoid Trichogramma chilonis (cards at 50,000 per hectare), weekly for 4–6 weeks.",
-          "hi": "अंड परजीवी ट्राइकोग्रामा किलोनिस (50,000 प्रति हेक्टेयर कार्ड) हर हफ्ते 4–6 हफ्ते छोड़ें।",
-          "mr": "अंडी परोपजीवी ट्रायकोग्रामा चिलोनिस (हेक्टरी 50,000 कार्ड) दर आठवड्याला 4–6 आठवडे सोडा."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "chlorantraniliprole_18_5sc",
-        "dose_per_litre": 0.3,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Only after the threshold is crossed.",
-          "hi": "केवल कार्रवाई सीमा पार होने के बाद।",
-          "mr": "फक्त कृती मर्यादा ओलांडल्यानंतर."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if the flag leaf is being damaged at flowering.",
-      "hi": "फूल आने पर ऊपर की पत्ती क्षतिग्रस्त हो तो विशेषज्ञ को बुलाएँ।",
-      "mr": "फुलोऱ्यात ध्वजपान बाधित होत असेल तर तज्ज्ञांना बोलवा."
-    },
-    "citations": [
-      {
-        "title": "AESA-based IPM Package: Rice",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      },
-      {
-        "title": "Rice Knowledge Management Portal — Leaf folder",
-        "publisher": "ICAR-Indian Institute of Rice Research",
-        "url": "https://www.rkmp.co.in"
-      }
-    ]
+  "citations": [
+   {
+    "title": "AESA-based IPM Package: Rice",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   },
+   {
+    "title": "Bacterial blight fact sheet",
+    "publisher": "IRRI Rice Knowledge Bank",
+    "url": "http://www.knowledgebank.irri.org"
+   }
+  ]
+ },
+ "rice_sheath_blight": {
+  "what_to_check": {
+   "en": "Part the canopy and check stem sheaths just above the water line in the densest part of the field.",
+   "hi": "घने हिस्से में पौधों को हटाकर पानी की सतह के ठीक ऊपर तने के आवरण देखें।",
+   "mr": "दाट भागात रोपे बाजूला करून पाण्याच्या पातळीच्या थोडे वर खोडाचे आवरण तपासा."
   },
-  "rice_yellow_stem_borer": {
-    "what_to_check": {
-      "en": "Count dead hearts on 10 hills; pull the dried central shoot — it comes out easily if a borer is inside. Threshold: about 5% dead hearts.",
-      "hi": "10 पौधों पर मृत गोभ गिनें; सूखी बीच की पत्ती खींचें — छेदक हो तो आसानी से निकलती है। सीमा: लगभग 5% मृत गोभ।",
-      "mr": "10 चुडांवरील मेलेले गाभे मोजा; वाळलेला कोंब ओढा — आत अळी असल्यास सहज निघतो. मर्यादा: सुमारे 5% मेलेले गाभे."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not spray for white ears that are already visible — the larva has left; protect the next flush instead.",
-        "hi": "जो सफेद बालियाँ दिख चुकी हैं उन पर छिड़काव न करें — इल्ली निकल चुकी है।",
-        "mr": "आधीच दिसणाऱ्या पांढऱ्या लोंब्यांसाठी फवारणी करू नका — अळी निघून गेलेली असते."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Clip leaf tips of seedlings before transplanting to remove egg masses; after harvest, plough stubble in.",
-          "hi": "रोपाई से पहले पौध की नोक काटें ताकि अंडे हटें; कटाई के बाद ठूँठ जोत दें।",
-          "mr": "लावणीपूर्वी रोपांची टोके कापा म्हणजे अंडीपुंज निघतील; कापणीनंतर धसकटे नांगरून गाडा."
-        }
-      },
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Install pheromone traps (8 per hectare) to track moth flights.",
-          "hi": "पतंगों पर नज़र रखने के लिए फेरोमोन ट्रैप (8 प्रति हेक्टेयर) लगाएँ।",
-          "mr": "पतंगांवर लक्ष ठेवण्यासाठी कामगंध सापळे (हेक्टरी 8) लावा."
-        }
-      },
-      {
-        "tier": "biological",
-        "action": {
-          "en": "Release Trichogramma japonicum at 50,000 per hectare when moths are seen in traps.",
-          "hi": "ट्रैप में पतंगे दिखें तो ट्राइकोग्रामा जैपोनिकम 50,000 प्रति हेक्टेयर छोड़ें।",
-          "mr": "सापळ्यात पतंग दिसताच ट्रायकोग्रामा जॅपोनिकम हेक्टरी 50,000 सोडा."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "chlorantraniliprole_0_4gr",
-        "dose_per_litre": null,
-        "dose_basis": "4 kg granules per acre, broadcast in 3–5 cm of standing water",
-        "water_l_per_acre": null,
-        "verified": false,
-        "timing": {
-          "en": "Only after the dead-heart threshold is crossed.",
-          "hi": "केवल मृत गोभ सीमा पार होने के बाद।",
-          "mr": "फक्त मेलेल्या गाभ्यांची मर्यादा ओलांडल्यानंतर."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if dead hearts exceed 10% or white ears appear across the field.",
-      "hi": "मृत गोभ 10% से ज़्यादा हों या पूरे खेत में सफेद बालियाँ दिखें तो विशेषज्ञ को बुलाएँ।",
-      "mr": "मेलेले गाभे 10% पेक्षा जास्त किंवा सगळीकडे पांढऱ्या लोंब्या दिसल्यास तज्ज्ञांना बोलवा."
-    },
-    "citations": [
-      {
-        "title": "AESA-based IPM Package: Rice",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      },
-      {
-        "title": "Rice Knowledge Management Portal — Yellow stem borer",
-        "publisher": "ICAR-Indian Institute of Rice Research",
-        "url": "https://www.rkmp.co.in"
-      }
-    ]
+  "what_to_avoid": [
+   {
+    "en": "Do not add more nitrogen — a dense, lush canopy spreads sheath blight.",
+    "hi": "और नाइट्रोजन न दें — घनी फसल में शीथ ब्लाइट फैलता है।",
+    "mr": "अधिक नत्र देऊ नका — दाट, हिरवीगार वाढ रोग पसरवते."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Drain standing water for a few days and remove weeds so air moves through the canopy.",
+     "hi": "कुछ दिन खड़ा पानी निकालें और खरपतवार हटाएँ ताकि हवा आर-पार जाए।",
+     "mr": "काही दिवस साचलेले पाणी काढा व तण काढा, जेणेकरून हवा खेळती राहील."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Apply Pseudomonas fluorescens or Trichoderma to soil and spray at 10 g per litre.",
+     "hi": "स्यूडोमोनास या ट्राइकोडर्मा मिट्टी में दें और 10 ग्राम प्रति लीटर छिड़कें।",
+     "mr": "स्युडोमोनास किंवा ट्रायकोडर्मा जमिनीत द्या व 10 ग्रॅम प्रति लिटर फवारा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "hexaconazole_5ec",
+    "dose_per_litre": 2.0,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Direct the spray at the lower stems where the patches are.",
+     "hi": "छिड़काव नीचे तने पर करें जहाँ धब्बे हैं।",
+     "mr": "फवारणी खालच्या खोडावर, जिथे चट्टे आहेत तिथे करा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "validamycin_3l",
+    "dose_per_litre": 2.5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Alternative to hexaconazole.",
+     "hi": "हेक्साकोनाजोल का विकल्प।",
+     "mr": "हेक्झाकोनाझोलचा पर्याय."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if patches climb to the flag leaf.",
+   "hi": "धब्बे ऊपर की पत्ती तक पहुँचें तो विशेषज्ञ को बुलाएँ।",
+   "mr": "चट्टे ध्वजपानापर्यंत पोहोचले तर तज्ज्ञांना बोलवा."
   },
-  "rice_brown_planthopper": {
-    "what_to_check": {
-      "en": "Tap the base of 10 hills over water and count hoppers. Threshold: about 10 hoppers per hill.",
-      "hi": "10 पौधों के तने के निचले भाग को पानी के ऊपर थपथपाकर फुदके गिनें। सीमा: प्रति पौधा लगभग 10 फुदके।",
-      "mr": "10 चुडांचा तळ पाण्यावर हलवून तुडतुडे मोजा. मर्यादा: प्रति चूड सुमारे 10 तुडतुडे."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not spray synthetic pyrethroids (cypermethrin and similar) — they cause planthopper outbreaks.",
-        "hi": "सिंथेटिक पायरेथ्रॉइड (साइपरमेथ्रिन आदि) न छिड़कें — इनसे फुदके और बढ़ते हैं।",
-        "mr": "कृत्रिम पायरेथ्रॉइड (सायपरमेथ्रिन इ.) फवारू नका — त्यामुळे तुडतुडे वाढतात."
-      },
-      {
-        "en": "Do not add nitrogen while hoppers are present.",
-        "hi": "फुदके रहने तक नाइट्रोजन न दें।",
-        "mr": "तुडतुडे असेपर्यंत नत्र देऊ नका."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Drain the field for 3–4 days and open alleys every 2 metres so light reaches the base.",
-          "hi": "खेत का पानी 3–4 दिन निकालें और हर 2 मीटर पर गलियारे बनाएँ ताकि रोशनी नीचे पहुँचे।",
-          "mr": "शेतातील पाणी 3–4 दिवस काढा व दर 2 मीटरवर पट्टे मोकळे करा म्हणजे उजेड तळापर्यंत पोहोचेल."
-        }
-      },
-      {
-        "tier": "biological",
-        "action": {
-          "en": "Protect spiders, mirid bugs and water striders — avoid broad-spectrum sprays early in the season.",
-          "hi": "मकड़ी और मिरिड बग जैसे मित्र कीट बचाएँ — मौसम की शुरुआत में व्यापक दवाएँ न छिड़कें।",
-          "mr": "कोळी, मिरिड ढेकूण असे मित्रकीटक जपा — हंगामाच्या सुरुवातीला व्यापक औषधे फवारू नका."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "pymetrozine_50wg",
-        "dose_per_litre": 0.6,
-        "dose_unit": "g",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Aim the nozzle at the base of the plants, not the leaves.",
-          "hi": "नोज़ल पौधे के निचले भाग पर रखें, पत्तियों पर नहीं।",
-          "mr": "नोझल रोपांच्या तळाकडे ठेवा, पानांवर नव्हे."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "buprofezin_25sc",
-        "dose_per_litre": 1.6,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Alternative; acts on nymphs.",
-          "hi": "विकल्प; शिशुओं पर असर करता है।",
-          "mr": "पर्याय; पिल्लांवर परिणाम करते."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert immediately if circular dry patches (hopper burn) appear.",
-      "hi": "गोल सूखे घेरे दिखें तो तुरंत विशेषज्ञ को बुलाएँ।",
-      "mr": "गोल वाळलेले पट्टे दिसताच तात्काळ तज्ज्ञांना बोलवा."
-    },
-    "citations": [
-      {
-        "title": "AESA-based IPM Package: Rice",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      },
-      {
-        "title": "Planthopper fact sheet",
-        "publisher": "IRRI Rice Knowledge Bank",
-        "url": "http://www.knowledgebank.irri.org"
-      }
-    ]
+  "citations": [
+   {
+    "title": "AESA-based IPM Package: Rice",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   },
+   {
+    "title": "Rice Knowledge Management Portal — Sheath blight",
+    "publisher": "ICAR-Indian Institute of Rice Research",
+    "url": "https://www.rkmp.co.in"
+   }
+  ]
+ },
+ "rice_false_smut": {
+  "what_to_check": {
+   "en": "Check panicles at flowering and after for orange-yellow velvety balls replacing grains.",
+   "hi": "फूल आने पर और बाद में बालियों में दानों की जगह नारंगी-पीली गेंदें देखें।",
+   "mr": "फुलोऱ्यात व नंतर लोंबीत दाण्यांऐवजी नारिंगी-पिवळे गोळे आहेत का तपासा."
   },
-  "maize_turcicum_leaf_blight": {
-    "what_to_check": {
-      "en": "Check the lower leaves of 10 plants for long grey-green lesions; note if they reach the ear leaf.",
-      "hi": "10 पौधों की निचली पत्तियों पर लंबे धूसर-हरे धब्बे देखें; भुट्टे वाली पत्ती तक पहुँचे क्या।",
-      "mr": "10 झाडांच्या खालच्या पानांवर लांब राखाडी-हिरवे चट्टे पाहा; कणसाच्या पानापर्यंत पोहोचले का ते नोंदवा."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not leave infected crop residue on the field after harvest.",
-        "hi": "कटाई के बाद रोगी अवशेष खेत में न छोड़ें।",
-        "mr": "कापणीनंतर रोगट अवशेष शेतात ठेवू नका."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Remove and destroy the lowest infected leaves; rotate with a non-cereal crop and grow resistant hybrids.",
-          "hi": "सबसे नीचे की रोगी पत्तियाँ हटाकर नष्ट करें; गैर-अनाज फसल से फसल-चक्र और रोगरोधी संकर लें।",
-          "mr": "सर्वात खालची रोगट पाने काढून नष्ट करा; तृणधान्य नसलेल्या पिकाची फेरपालट व प्रतिकारक संकरित वाण घ्या."
-        }
-      },
-      {
-        "tier": "biological",
-        "action": {
-          "en": "Spray Trichoderma harzianum at 5 g per litre at first lesions.",
-          "hi": "पहले धब्बे पर ट्राइकोडर्मा हरजियानम 5 ग्राम प्रति लीटर छिड़कें।",
-          "mr": "पहिल्या चट्ट्यांवर ट्रायकोडर्मा हर्जियानम 5 ग्रॅम प्रति लिटर फवारा."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "mancozeb_75wp",
-        "dose_per_litre": 2.5,
-        "dose_unit": "g",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "At first lesions; repeat after 10–14 days if wet weather continues.",
-          "hi": "पहले धब्बे पर; नमी बनी रहे तो 10–14 दिन बाद दोहराएँ।",
-          "mr": "पहिल्या चट्ट्यांवर; ओलसर हवामान राहिल्यास 10–14 दिवसांनी पुन्हा."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "propiconazole_25ec",
-        "dose_per_litre": 1.0,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Alternative when lesions are spreading fast before tasseling.",
-          "hi": "नर मंजरी से पहले धब्बे तेज़ी से फैलें तो विकल्प।",
-          "mr": "तुरा येण्यापूर्वी चट्टे वेगाने पसरत असतील तर पर्याय."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if lesions reach the ear leaf before grain filling.",
-      "hi": "दाना भरने से पहले धब्बे भुट्टे वाली पत्ती तक पहुँचें तो विशेषज्ञ को बुलाएँ।",
-      "mr": "दाणे भरण्यापूर्वी चट्टे कणसाच्या पानापर्यंत पोहोचले तर तज्ज्ञांना बोलवा."
-    },
-    "citations": [
-      {
-        "title": "AESA-based IPM Package: Maize",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      },
-      {
-        "title": "Maize diseases — Turcicum leaf blight",
-        "publisher": "ICAR-Indian Institute of Maize Research",
-        "url": "https://iimr.icar.gov.in"
-      },
-      {
-        "title": "Maize Doctor — Northern corn leaf blight",
-        "publisher": "CIMMYT",
-        "url": "https://maizedoctor.org"
-      }
-    ]
+  "what_to_avoid": [
+   {
+    "en": "Do not use excess nitrogen at panicle initiation.",
+    "hi": "बाली बनते समय ज़्यादा नाइट्रोजन न दें।",
+    "mr": "लोंबी येताना जास्त नत्र देऊ नका."
+   },
+   {
+    "en": "Do not keep grain from smutted panicles as seed.",
+    "hi": "रोगी बालियों का दाना बीज के रूप में न रखें।",
+    "mr": "रोगट लोंब्यांचे दाणे बियाणे म्हणून ठेवू नका."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Pick and bury smut balls carefully in a bag so spores do not scatter.",
+     "hi": "कंड की गेंदें थैली में सावधानी से तोड़कर गाड़ दें ताकि बीजाणु न फैलें।",
+     "mr": "काजळीचे गोळे पिशवीत काळजीपूर्वक तोडून पुरा, बीजाणू पसरू देऊ नका."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "propiconazole_25ec",
+    "dose_per_litre": 1.0,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Preventive only: at boot-leaf stage, before panicles emerge. Too late once balls are visible.",
+     "hi": "केवल बचाव के लिए: बाली निकलने से पहले। गेंदें दिखने के बाद देर हो चुकी होती है।",
+     "mr": "फक्त प्रतिबंधासाठी: लोंबी बाहेर पडण्यापूर्वी. गोळे दिसल्यावर उशीर झालेला असतो."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "copper_hydroxide_77wp",
+    "dose_per_litre": 2.0,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Alternative preventive spray at boot-leaf stage.",
+     "hi": "बाली निकलने से पहले का वैकल्पिक बचाव छिड़काव।",
+     "mr": "लोंबी येण्यापूर्वी पर्यायी प्रतिबंधक फवारणी."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if more than a few panicles per square metre are affected.",
+   "hi": "प्रति वर्ग मीटर कई बालियाँ प्रभावित हों तो विशेषज्ञ को बुलाएँ।",
+   "mr": "प्रति चौरस मीटर अनेक लोंब्या बाधित असतील तर तज्ज्ञांना बोलवा."
   },
-  "maize_maydis_leaf_blight": {
-    "what_to_check": {
-      "en": "Check middle and lower leaves for small tan rectangular spots boxed between veins.",
-      "hi": "बीच और निचली पत्तियों पर नसों के बीच छोटे भूरे आयताकार धब्बे देखें।",
-      "mr": "मधल्या व खालच्या पानांवर शिरांच्या मध्ये लहान तपकिरी आयताकृती ठिपके पाहा."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not sow maize after maize on the same field if this disease was severe.",
-        "hi": "रोग ज़्यादा था तो उसी खेत में मक्का के बाद फिर मक्का न बोएँ।",
-        "mr": "रोग तीव्र असल्यास त्याच शेतात मक्यानंतर पुन्हा मका पेरू नका."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Destroy infected residue, rotate crops and use tolerant hybrids.",
-          "hi": "रोगी अवशेष नष्ट करें, फसल-चक्र अपनाएँ और सहनशील संकर लें।",
-          "mr": "रोगट अवशेष नष्ट करा, फेरपालट करा व सहनशील संकरित वाण वापरा."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "mancozeb_75wp",
-        "dose_per_litre": 2.5,
-        "dose_unit": "g",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "At first spots; repeat after 10–14 days if needed.",
-          "hi": "पहले धब्बे पर; ज़रूरत हो तो 10–14 दिन बाद दोहराएँ।",
-          "mr": "पहिल्या ठिपक्यांवर; गरज असल्यास 10–14 दिवसांनी पुन्हा."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if spots cover the upper leaves at silking.",
-      "hi": "भुट्टा रेशा के समय ऊपरी पत्तियों पर धब्बे फैलें तो विशेषज्ञ को बुलाएँ।",
-      "mr": "स्त्रीकेसर अवस्थेत वरच्या पानांवर ठिपके पसरले तर तज्ज्ञांना बोलवा."
-    },
-    "citations": [
-      {
-        "title": "AESA-based IPM Package: Maize",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      },
-      {
-        "title": "Maize diseases — Maydis leaf blight",
-        "publisher": "ICAR-Indian Institute of Maize Research",
-        "url": "https://iimr.icar.gov.in"
-      }
-    ]
+  "citations": [
+   {
+    "title": "AESA-based IPM Package: Rice",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   },
+   {
+    "title": "False smut fact sheet",
+    "publisher": "IRRI Rice Knowledge Bank",
+    "url": "http://www.knowledgebank.irri.org"
+   }
+  ]
+ },
+ "rice_tungro": {
+  "what_to_check": {
+   "en": "Look for patches of stunted yellow-orange plants and green leafhoppers on the leaves.",
+   "hi": "बौने पीले-नारंगी पौधों के टुकड़े और पत्तियों पर हरे फुदके देखें।",
+   "mr": "खुज्या पिवळ्या-नारिंगी रोपांचे पट्टे आणि पानांवर हिरवे तुडतुडे पाहा."
   },
-  "maize_common_rust": {
-    "what_to_check": {
-      "en": "Rub a spotted leaf between your fingers — rust leaves reddish-brown powder.",
-      "hi": "धब्बेदार पत्ती उंगलियों में रगड़ें — रतुआ से लाल-भूरा चूर्ण लगता है।",
-      "mr": "ठिपकेदार पान बोटांमध्ये चोळा — तांबेऱ्यात लालसर-तपकिरी भुकटी लागते."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not spray late in the season when the crop is already drying — it will not pay back.",
-        "hi": "फसल सूखने लगी हो तो देर से छिड़काव न करें — लागत नहीं निकलेगी।",
-        "mr": "पीक वाळू लागल्यावर उशिरा फवारणी करू नका — खर्च वसूल होणार नाही."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Grow resistant hybrids and sow on time; rust is worse on late-sown crops in cool humid weather.",
-          "hi": "रोगरोधी संकर लें और समय पर बोएँ; ठंडे-नम मौसम में देर से बोई फसल पर रतुआ ज़्यादा।",
-          "mr": "प्रतिकारक संकरित वाण घ्या व वेळेवर पेरा; थंड-दमट हवामानात उशिरा पेरलेल्या पिकावर तांबेरा जास्त."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "mancozeb_75wp",
-        "dose_per_litre": 2.5,
-        "dose_unit": "g",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "When pustules appear on the upper leaves before tasseling.",
-          "hi": "नर मंजरी से पहले ऊपरी पत्तियों पर दाने दिखें तब।",
-          "mr": "तुरा येण्यापूर्वी वरच्या पानांवर फोड दिसल्यास."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "propiconazole_25ec",
-        "dose_per_litre": 1.0,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Alternative to mancozeb.",
-          "hi": "मैंकोजेब का विकल्प।",
-          "mr": "मॅन्कोझेबचा पर्याय."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if pustules cover the ear leaf.",
-      "hi": "भुट्टे वाली पत्ती दानों से ढक जाए तो विशेषज्ञ को बुलाएँ।",
-      "mr": "कणसाचे पान फोडांनी भरले तर तज्ज्ञांना बोलवा."
-    },
-    "citations": [
-      {
-        "title": "AESA-based IPM Package: Maize",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      },
-      {
-        "title": "Maize Doctor — Common rust",
-        "publisher": "CIMMYT",
-        "url": "https://maizedoctor.org"
-      }
-    ]
+  "what_to_avoid": [
+   {
+    "en": "No spray cures a virus-infected plant — do not waste money spraying fungicides.",
+    "hi": "कोई दवा वायरस वाले पौधे को ठीक नहीं करती — फफूँदनाशक पर पैसा बर्बाद न करें।",
+    "mr": "कोणतेही औषध विषाणूबाधित रोप बरे करत नाही — बुरशीनाशकांवर पैसा वाया घालवू नका."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Pull out and bury infected plants early; plant resistant varieties and keep a fallow gap between crops.",
+     "hi": "संक्रमित पौधे जल्दी उखाड़कर गाड़ दें; रोगरोधी किस्म और फसलों के बीच खाली अंतर रखें।",
+     "mr": "बाधित रोपे लवकर उपटून पुरा; प्रतिकारक वाण लावा व पिकांमध्ये खंड ठेवा."
+    }
+   },
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Use a light trap at night to monitor the green leafhopper vector.",
+     "hi": "हरे फुदके पर नज़र रखने के लिए रात में प्रकाश प्रपंच लगाएँ।",
+     "mr": "हिरव्या तुडतुड्यांवर लक्ष ठेवण्यासाठी रात्री प्रकाश सापळा लावा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "imidacloprid_17_8sl",
+    "dose_per_litre": 0.2,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Only against the leafhopper vector, and only if leafhoppers are present in numbers.",
+     "hi": "केवल फुदके के विरुद्ध, और तभी जब फुदके ज़्यादा हों।",
+     "mr": "फक्त तुडतुड्यांविरुद्ध, आणि तुडतुडे जास्त असल्यासच."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if patches grow across the field within a week.",
+   "hi": "एक हफ्ते में धब्बे पूरे खेत में फैलें तो विशेषज्ञ को बुलाएँ।",
+   "mr": "आठवड्याभरात पट्टे संपूर्ण शेतात पसरले तर तज्ज्ञांना बोलवा."
   },
-  "maize_banded_leaf_sheath_blight": {
-    "what_to_check": {
-      "en": "Check lower leaf sheaths near the soil for banded brown patches, especially in dense, waterlogged patches of the field.",
-      "hi": "मिट्टी के पास निचले आवरणों पर पट्टीदार भूरे धब्बे देखें, खासकर घने और जलभराव वाले हिस्सों में।",
-      "mr": "जमिनीजवळ खालच्या आवरणांवर पट्टेदार तपकिरी चट्टे पाहा, विशेषतः दाट व पाणी साचणाऱ्या भागात."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not let water stand in the field.",
-        "hi": "खेत में पानी जमा न होने दें।",
-        "mr": "शेतात पाणी साचू देऊ नका."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Strip off the lower 2–3 infected leaves with their sheaths and destroy them; improve drainage.",
-          "hi": "नीचे की 2–3 रोगी पत्तियाँ आवरण सहित निकालकर नष्ट करें; जल निकास सुधारें।",
-          "mr": "खालची 2–3 रोगट पाने आवरणासह काढून नष्ट करा; निचरा सुधारा."
-        }
-      },
-      {
-        "tier": "biological",
-        "action": {
-          "en": "Apply Pseudomonas fluorescens or Trichoderma to soil at sowing next season.",
-          "hi": "अगले मौसम में बुवाई के समय स्यूडोमोनास या ट्राइकोडर्मा मिट्टी में दें।",
-          "mr": "पुढील हंगामात पेरणीवेळी स्युडोमोनास किंवा ट्रायकोडर्मा जमिनीत द्या."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "validamycin_3l",
-        "dose_per_litre": 2.5,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Direct the spray at the lower stem and sheaths.",
-          "hi": "छिड़काव निचले तने और आवरणों पर करें।",
-          "mr": "फवारणी खालच्या खोडावर व आवरणांवर करा."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if bands reach the ear or the ear husk rots.",
-      "hi": "पट्टियाँ भुट्टे तक पहुँचें या भुट्टे का छिलका सड़े तो विशेषज्ञ को बुलाएँ।",
-      "mr": "पट्टे कणसापर्यंत पोहोचले किंवा कणसाचे आवरण कुजले तर तज्ज्ञांना बोलवा."
-    },
-    "citations": [
-      {
-        "title": "AESA-based IPM Package: Maize",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      },
-      {
-        "title": "Maize diseases — Banded leaf and sheath blight",
-        "publisher": "ICAR-Indian Institute of Maize Research",
-        "url": "https://iimr.icar.gov.in"
-      }
-    ]
+  "citations": [
+   {
+    "title": "AESA-based IPM Package: Rice",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   },
+   {
+    "title": "Tungro fact sheet",
+    "publisher": "IRRI Rice Knowledge Bank",
+    "url": "http://www.knowledgebank.irri.org"
+   }
+  ]
+ },
+ "rice_leaf_folder": {
+  "what_to_check": {
+   "en": "Count damaged (folded or scraped) leaves on 10 hills. Action threshold: about 2 freshly damaged leaves per hill.",
+   "hi": "10 पौधों पर मुड़ी या खुरची पत्तियाँ गिनें। कार्रवाई सीमा: प्रति पौधा लगभग 2 ताज़ा क्षतिग्रस्त पत्तियाँ।",
+   "mr": "10 चुडांवरील गुंडाळलेली किंवा खरवडलेली पाने मोजा. कृती मर्यादा: प्रति चूड सुमारे 2 ताजी बाधित पाने."
   },
-  "maize_downy_mildew": {
-    "what_to_check": {
-      "en": "Check young plants early in the morning for yellow stripes with white downy growth underneath.",
-      "hi": "सुबह जल्दी छोटे पौधों पर पीली धारियाँ और नीचे सफेद रोएँदार परत देखें।",
-      "mr": "सकाळी लवकर लहान रोपांवर पिवळे पट्टे व खालच्या बाजूस पांढरी लवदार वाढ पाहा."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not leave infected plants standing — they release spores to healthy plants.",
-        "hi": "रोगी पौधे खड़े न छोड़ें — इनसे स्वस्थ पौधों पर बीजाणु जाते हैं।",
-        "mr": "रोगट रोपे उभी ठेवू नका — त्यातून निरोगी रोपांवर बीजाणू जातात."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Pull out and destroy infected plants as soon as you see them; next season, treat seed with metalaxyl.",
-          "hi": "रोगी पौधे दिखते ही उखाड़कर नष्ट करें; अगले मौसम में बीज का मेटालेक्सिल से उपचार करें।",
-          "mr": "रोगट रोपे दिसताच उपटून नष्ट करा; पुढील हंगामात बियाण्यास मेटॅलॅक्सिल लावा."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "metalaxyl_mancozeb_72wp",
-        "dose_per_litre": 2.5,
-        "dose_unit": "g",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "On young crops in the first 3–4 weeks when infection is spreading.",
-          "hi": "पहले 3–4 हफ्तों में जब संक्रमण फैल रहा हो।",
-          "mr": "पहिल्या 3–4 आठवड्यांत संसर्ग पसरत असताना."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if more than 1 in 10 plants show stripes.",
-      "hi": "10 में से 1 से ज़्यादा पौधों पर धारियाँ हों तो विशेषज्ञ को बुलाएँ।",
-      "mr": "10 पैकी 1 पेक्षा जास्त रोपांवर पट्टे असल्यास तज्ज्ञांना बोलवा."
-    },
-    "citations": [
-      {
-        "title": "AESA-based IPM Package: Maize",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      },
-      {
-        "title": "Maize diseases — Downy mildews",
-        "publisher": "ICAR-Indian Institute of Maize Research",
-        "url": "https://iimr.icar.gov.in"
-      }
-    ]
+  "what_to_avoid": [
+   {
+    "en": "Do not spray in the first 40 days for a few folded leaves — the crop recovers and spraying kills spiders and wasps that eat the larvae.",
+    "hi": "पहले 40 दिनों में थोड़ी मुड़ी पत्तियों पर छिड़काव न करें — फसल सँभल जाती है और छिड़काव मित्र कीटों को मारता है।",
+    "mr": "पहिल्या 40 दिवसांत थोड्या गुंडाळलेल्या पानांसाठी फवारणी करू नका — पीक सावरते आणि फवारणीने मित्रकीटक मरतात."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Avoid excess nitrogen; pass a rope over the crop to dislodge larvae from folds.",
+     "hi": "ज़्यादा नाइट्रोजन से बचें; पत्तियों से इल्ली गिराने के लिए फसल पर रस्सी फिराएँ।",
+     "mr": "जास्त नत्र टाळा; गुंडाळीतून अळ्या पाडण्यासाठी पिकावरून दोरी फिरवा."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Release the egg parasitoid Trichogramma chilonis (cards at 50,000 per hectare), weekly for 4–6 weeks.",
+     "hi": "अंड परजीवी ट्राइकोग्रामा किलोनिस (50,000 प्रति हेक्टेयर कार्ड) हर हफ्ते 4–6 हफ्ते छोड़ें।",
+     "mr": "अंडी परोपजीवी ट्रायकोग्रामा चिलोनिस (हेक्टरी 50,000 कार्ड) दर आठवड्याला 4–6 आठवडे सोडा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "chlorantraniliprole_18_5sc",
+    "dose_per_litre": 0.3,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Only after the threshold is crossed.",
+     "hi": "केवल कार्रवाई सीमा पार होने के बाद।",
+     "mr": "फक्त कृती मर्यादा ओलांडल्यानंतर."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if the flag leaf is being damaged at flowering.",
+   "hi": "फूल आने पर ऊपर की पत्ती क्षतिग्रस्त हो तो विशेषज्ञ को बुलाएँ।",
+   "mr": "फुलोऱ्यात ध्वजपान बाधित होत असेल तर तज्ज्ञांना बोलवा."
   },
-  "maize_fall_armyworm": {
-    "what_to_check": {
-      "en": "Walk a W pattern and check 20 plants: count those with fresh whorl damage. Threshold: 5% of plants at seedling, 10% at whorl stage.",
-      "hi": "W आकार में चलकर 20 पौधे देखें: ताज़ा गोभ क्षति वाले पौधे गिनें। सीमा: अंकुर अवस्था में 5%, गोभ अवस्था में 10% पौधे।",
-      "mr": "W आकारात चालत 20 झाडे तपासा: पोंग्यात ताजे नुकसान असलेली झाडे मोजा. मर्यादा: रोप अवस्थेत 5%, पोंगा अवस्थेत 10% झाडे."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not spray at midday — larvae hide deep in the whorl. Spray early morning or evening, into the whorl.",
-        "hi": "दोपहर में छिड़काव न करें — इल्ली गोभ में छिपी रहती है। सुबह या शाम गोभ में छिड़कें।",
-        "mr": "दुपारी फवारणी करू नका — अळी पोंग्यात खोल लपते. सकाळी किंवा संध्याकाळी पोंग्यात फवारा."
-      },
-      {
-        "en": "Do not mix two insecticides in one tank or repeat the same one back to back.",
-        "hi": "एक टंकी में दो कीटनाशक न मिलाएँ, न एक ही दवा बार-बार दोहराएँ।",
-        "mr": "एका टाकीत दोन कीटकनाशके मिसळू नका, तेच औषध लागोपाठ वापरू नका."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Put a pinch of sand mixed with lime into damaged whorls; hand-pick and crush egg masses and larvae.",
-          "hi": "क्षतिग्रस्त गोभ में चूना मिली रेत डालें; अंडे और इल्लियाँ हाथ से चुनकर नष्ट करें।",
-          "mr": "बाधित पोंग्यात चुना मिसळलेली वाळू टाका; अंडीपुंज व अळ्या हाताने वेचून नष्ट करा."
-        }
-      },
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Set up pheromone traps (5 per acre) to track moth arrival.",
-          "hi": "पतंगों के आगमन पर नज़र के लिए फेरोमोन ट्रैप (5 प्रति एकड़) लगाएँ।",
-          "mr": "पतंगांच्या आगमनावर लक्ष ठेवण्यासाठी कामगंध सापळे (एकरी 5) लावा."
-        }
-      },
-      {
-        "tier": "biological",
-        "action": {
-          "en": "Spray Metarhizium anisopliae at 5 g per litre, or neem (azadirachtin 1500 ppm) at 5 ml per litre, into the whorl.",
-          "hi": "मेटाराइजियम एनिसोप्ली 5 ग्राम प्रति लीटर, या नीम (एज़ाडिरेक्टिन 1500 ppm) 5 मिली प्रति लीटर गोभ में छिड़कें।",
-          "mr": "मेटारायझियम ॲनिसोप्ली 5 ग्रॅम प्रति लिटर, किंवा निंबोळी (ॲझाडिरॅक्टिन 1500 ppm) 5 मिली प्रति लिटर पोंग्यात फवारा."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "emamectin_benzoate_5sg",
-        "dose_per_litre": 0.4,
-        "dose_unit": "g",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Only after the threshold is crossed; into the whorl.",
-          "hi": "केवल सीमा पार होने पर; गोभ में।",
-          "mr": "फक्त मर्यादा ओलांडल्यावर; पोंग्यात."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "chlorantraniliprole_18_5sc",
-        "dose_per_litre": 0.4,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Rotate with emamectin; do not repeat the same ingredient.",
-          "hi": "इमामेक्टिन के साथ बदल-बदलकर; एक ही दवा न दोहराएँ।",
-          "mr": "इमामेक्टिनसोबत आलटून-पालटून; तेच औषध पुन्हा वापरू नका."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "spinetoram_11_7sc",
-        "dose_per_litre": 0.5,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Third option for rotation.",
-          "hi": "बदल-बदलकर उपयोग का तीसरा विकल्प।",
-          "mr": "आलटून-पालटून वापरासाठी तिसरा पर्याय."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if more than 20% of plants show fresh damage or larvae reach the cob.",
-      "hi": "20% से ज़्यादा पौधों पर ताज़ा क्षति हो या इल्ली भुट्टे तक पहुँचे तो विशेषज्ञ को बुलाएँ।",
-      "mr": "20% पेक्षा जास्त झाडांवर ताजे नुकसान असल्यास किंवा अळी कणसात पोहोचल्यास तज्ज्ञांना बोलवा."
-    },
-    "citations": [
-      {
-        "title": "Fall armyworm management advisory",
-        "publisher": "ICAR-Indian Institute of Maize Research",
-        "url": "https://iimr.icar.gov.in"
-      },
-      {
-        "title": "Fall armyworm: Integrated pest management",
-        "publisher": "Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://ppqs.gov.in"
-      }
-    ]
+  "citations": [
+   {
+    "title": "AESA-based IPM Package: Rice",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   },
+   {
+    "title": "Rice Knowledge Management Portal — Leaf folder",
+    "publisher": "ICAR-Indian Institute of Rice Research",
+    "url": "https://www.rkmp.co.in"
+   }
+  ]
+ },
+ "rice_yellow_stem_borer": {
+  "what_to_check": {
+   "en": "Count dead hearts on 10 hills; pull the dried central shoot — it comes out easily if a borer is inside. Threshold: about 5% dead hearts.",
+   "hi": "10 पौधों पर मृत गोभ गिनें; सूखी बीच की पत्ती खींचें — छेदक हो तो आसानी से निकलती है। सीमा: लगभग 5% मृत गोभ।",
+   "mr": "10 चुडांवरील मेलेले गाभे मोजा; वाळलेला कोंब ओढा — आत अळी असल्यास सहज निघतो. मर्यादा: सुमारे 5% मेलेले गाभे."
   },
-  "maize_stem_borer": {
-    "what_to_check": {
-      "en": "Count plants with shot-holed leaves or dead hearts among 20 plants. Threshold: about 10% of plants damaged.",
-      "hi": "20 पौधों में छेद वाली पत्तियाँ या मृत गोभ वाले पौधे गिनें। सीमा: लगभग 10% पौधे क्षतिग्रस्त।",
-      "mr": "20 झाडांपैकी छिद्रे असलेली पाने किंवा मेलेला गाभा असलेली झाडे मोजा. मर्यादा: सुमारे 10% झाडे बाधित."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not leave stubble and stalks in the field after harvest — larvae overwinter in them.",
-        "hi": "कटाई के बाद ठूँठ और डंठल खेत में न छोड़ें — इल्ली इनमें छिपी रहती है।",
-        "mr": "कापणीनंतर धसकटे व ताटे शेतात ठेवू नका — अळ्या त्यात राहतात."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Remove and destroy dead hearts; intercrop with cowpea or lablab to reduce borer attack.",
-          "hi": "मृत गोभ निकालकर नष्ट करें; लोबिया या सेम की अंतरफसल से छेदक कम होता है।",
-          "mr": "मेलेले गाभे काढून नष्ट करा; चवळी किंवा घेवड्याच्या आंतरपिकाने खोडकिडा कमी होतो."
-        }
-      },
-      {
-        "tier": "biological",
-        "action": {
-          "en": "Release Trichogramma chilonis cards (about 1 lakh per hectare) from 10 days after sowing.",
-          "hi": "बुवाई के 10 दिन बाद से ट्राइकोग्रामा किलोनिस कार्ड (लगभग 1 लाख प्रति हेक्टेयर) छोड़ें।",
-          "mr": "पेरणीनंतर 10 दिवसांपासून ट्रायकोग्रामा चिलोनिस कार्ड (हेक्टरी सुमारे 1 लाख) सोडा."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "chlorantraniliprole_18_5sc",
-        "dose_per_litre": 0.3,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Only after the threshold is crossed; into the whorl.",
-          "hi": "केवल सीमा पार होने पर; गोभ में।",
-          "mr": "फक्त मर्यादा ओलांडल्यावर; पोंग्यात."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if dead hearts exceed 20%.",
-      "hi": "मृत गोभ 20% से ज़्यादा हों तो विशेषज्ञ को बुलाएँ।",
-      "mr": "मेलेले गाभे 20% पेक्षा जास्त असल्यास तज्ज्ञांना बोलवा."
-    },
-    "citations": [
-      {
-        "title": "AESA-based IPM Package: Maize",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      },
-      {
-        "title": "Maize insect pests — Stem borer",
-        "publisher": "ICAR-Indian Institute of Maize Research",
-        "url": "https://iimr.icar.gov.in"
-      }
-    ]
+  "what_to_avoid": [
+   {
+    "en": "Do not spray for white ears that are already visible — the larva has left; protect the next flush instead.",
+    "hi": "जो सफेद बालियाँ दिख चुकी हैं उन पर छिड़काव न करें — इल्ली निकल चुकी है।",
+    "mr": "आधीच दिसणाऱ्या पांढऱ्या लोंब्यांसाठी फवारणी करू नका — अळी निघून गेलेली असते."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Clip leaf tips of seedlings before transplanting to remove egg masses; after harvest, plough stubble in.",
+     "hi": "रोपाई से पहले पौध की नोक काटें ताकि अंडे हटें; कटाई के बाद ठूँठ जोत दें।",
+     "mr": "लावणीपूर्वी रोपांची टोके कापा म्हणजे अंडीपुंज निघतील; कापणीनंतर धसकटे नांगरून गाडा."
+    }
+   },
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Install pheromone traps (8 per hectare) to track moth flights.",
+     "hi": "पतंगों पर नज़र रखने के लिए फेरोमोन ट्रैप (8 प्रति हेक्टेयर) लगाएँ।",
+     "mr": "पतंगांवर लक्ष ठेवण्यासाठी कामगंध सापळे (हेक्टरी 8) लावा."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Release Trichogramma japonicum at 50,000 per hectare when moths are seen in traps.",
+     "hi": "ट्रैप में पतंगे दिखें तो ट्राइकोग्रामा जैपोनिकम 50,000 प्रति हेक्टेयर छोड़ें।",
+     "mr": "सापळ्यात पतंग दिसताच ट्रायकोग्रामा जॅपोनिकम हेक्टरी 50,000 सोडा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "chlorantraniliprole_0_4gr",
+    "dose_per_litre": null,
+    "dose_basis": "4 kg granules per acre, broadcast in 3–5 cm of standing water",
+    "water_l_per_acre": null,
+    "verified": false,
+    "timing": {
+     "en": "Only after the dead-heart threshold is crossed.",
+     "hi": "केवल मृत गोभ सीमा पार होने के बाद।",
+     "mr": "फक्त मेलेल्या गाभ्यांची मर्यादा ओलांडल्यानंतर."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if dead hearts exceed 10% or white ears appear across the field.",
+   "hi": "मृत गोभ 10% से ज़्यादा हों या पूरे खेत में सफेद बालियाँ दिखें तो विशेषज्ञ को बुलाएँ।",
+   "mr": "मेलेले गाभे 10% पेक्षा जास्त किंवा सगळीकडे पांढऱ्या लोंब्या दिसल्यास तज्ज्ञांना बोलवा."
   },
-  "cotton_pink_bollworm": {
-    "what_to_check": {
-      "en": "Open 20 green bolls (10–15 days old) from different plants and count those with larvae. Threshold: 10% infested bolls, or 8 moths per trap per night for 3 nights.",
-      "hi": "अलग-अलग पौधों से 20 हरे टिंडे (10–15 दिन पुराने) खोलें और सुंडी वाले गिनें। सीमा: 10% ग्रसित टिंडे, या 3 रात लगातार 8 पतंगे प्रति ट्रैप।",
-      "mr": "वेगवेगळ्या झाडांवरील 20 हिरवी बोंडे (10–15 दिवसांची) फोडा व अळी असलेली मोजा. मर्यादा: 10% बाधित बोंडे, किंवा सलग 3 रात्री सापळ्यात 8 पतंग."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not extend the crop with late irrigation after the last picking — it feeds the next generation.",
-        "hi": "आखिरी चुनाई के बाद सिंचाई से फसल न खींचें — इससे अगली पीढ़ी पलती है।",
-        "mr": "शेवटच्या वेचणीनंतर पाणी देऊन पीक लांबवू नका — त्याने पुढची पिढी वाढते."
-      },
-      {
-        "en": "Do not spray synthetic pyrethroids before 90 days — they trigger whitefly outbreaks.",
-        "hi": "90 दिन से पहले सिंथेटिक पायरेथ्रॉइड न छिड़कें — सफेद मक्खी बढ़ती है।",
-        "mr": "90 दिवसांपूर्वी कृत्रिम पायरेथ्रॉइड फवारू नका — पांढरी माशी वाढते."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Pick and destroy rosette flowers every week; terminate the crop by December and graze or shred the stalks."
-        }
-      },
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Install pheromone traps at 5 per hectare from 45 days after sowing to watch moth numbers."
-        }
-      },
-      {
-        "tier": "biological",
-        "action": {
-          "en": "Release Trichogramma bactrae egg parasitoids at 1.5 lakh per hectare; use pheromone-based mating disruption where available."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "profenofos_50ec",
-        "dose_per_litre": 2.0,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Only after the threshold is crossed."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "thiodicarb_75wp",
-        "dose_per_litre": 2.0,
-        "dose_unit": "g",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Rotate with profenofos; do not repeat the same ingredient."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if more than 10% of green bolls carry larvae."
-    },
-    "citations": [
-      {
-        "title": "Pink bollworm management in cotton",
-        "publisher": "ICAR-Central Institute for Cotton Research, Nagpur",
-        "url": "https://cicr.org.in"
-      },
-      {
-        "title": "AESA-based IPM Package: Cotton",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      }
-    ]
+  "citations": [
+   {
+    "title": "AESA-based IPM Package: Rice",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   },
+   {
+    "title": "Rice Knowledge Management Portal — Yellow stem borer",
+    "publisher": "ICAR-Indian Institute of Rice Research",
+    "url": "https://www.rkmp.co.in"
+   }
+  ]
+ },
+ "rice_brown_planthopper": {
+  "what_to_check": {
+   "en": "Tap the base of 10 hills over water and count hoppers. Threshold: about 10 hoppers per hill.",
+   "hi": "10 पौधों के तने के निचले भाग को पानी के ऊपर थपथपाकर फुदके गिनें। सीमा: प्रति पौधा लगभग 10 फुदके।",
+   "mr": "10 चुडांचा तळ पाण्यावर हलवून तुडतुडे मोजा. मर्यादा: प्रति चूड सुमारे 10 तुडतुडे."
   },
-  "cotton_american_bollworm": {
-    "what_to_check": {
-      "en": "Check 20 plants for eggs and larvae on tender shoots and squares. Threshold: 1 larva per plant, or 8–10 moths per trap per night for 3 nights.",
-      "hi": "20 पौधों की कोमल टहनियों और पुड़ियों पर अंडे व इल्लियाँ देखें। सीमा: प्रति पौधा 1 इल्ली, या 3 रात 8–10 पतंगे प्रति ट्रैप।",
-      "mr": "20 झाडांच्या कोवळ्या शेंड्यांवर व पात्यांवर अंडी व अळ्या पाहा. मर्यादा: प्रति झाड 1 अळी, किंवा सलग 3 रात्री सापळ्यात 8–10 पतंग."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not spray against large larvae in bolls — they are protected; target young larvae.",
-        "hi": "टिंडों के अंदर बड़ी इल्लियों पर छिड़काव बेअसर है; छोटी इल्लियों को निशाना बनाएँ।",
-        "mr": "बोंडातील मोठ्या अळ्यांवर फवारणी निरुपयोगी; लहान अळ्यांना लक्ष्य करा."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Grow a border of marigold or maize as a trap crop; set bird perches (10 per acre)."
-        }
-      },
-      {
-        "tier": "biological",
-        "action": {
-          "en": "Spray HaNPV at 250 larval equivalents per hectare in the evening, or neem seed kernel extract 5%."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "emamectin_benzoate_5sg",
-        "dose_per_litre": 0.4,
-        "dose_unit": "g",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Only after the threshold is crossed."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "indoxacarb_14_5sc",
-        "dose_per_litre": 1.0,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Rotate with emamectin."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if more than 10% of squares and bolls are bored."
-    },
-    "citations": [
-      {
-        "title": "Integrated pest management in cotton",
-        "publisher": "ICAR-Central Institute for Cotton Research, Nagpur",
-        "url": "https://cicr.org.in"
-      },
-      {
-        "title": "AESA-based IPM Package: Cotton",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      }
-    ]
+  "what_to_avoid": [
+   {
+    "en": "Do not spray synthetic pyrethroids (cypermethrin and similar) — they cause planthopper outbreaks.",
+    "hi": "सिंथेटिक पायरेथ्रॉइड (साइपरमेथ्रिन आदि) न छिड़कें — इनसे फुदके और बढ़ते हैं।",
+    "mr": "कृत्रिम पायरेथ्रॉइड (सायपरमेथ्रिन इ.) फवारू नका — त्यामुळे तुडतुडे वाढतात."
+   },
+   {
+    "en": "Do not add nitrogen while hoppers are present.",
+    "hi": "फुदके रहने तक नाइट्रोजन न दें।",
+    "mr": "तुडतुडे असेपर्यंत नत्र देऊ नका."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Drain the field for 3–4 days and open alleys every 2 metres so light reaches the base.",
+     "hi": "खेत का पानी 3–4 दिन निकालें और हर 2 मीटर पर गलियारे बनाएँ ताकि रोशनी नीचे पहुँचे।",
+     "mr": "शेतातील पाणी 3–4 दिवस काढा व दर 2 मीटरवर पट्टे मोकळे करा म्हणजे उजेड तळापर्यंत पोहोचेल."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Protect spiders, mirid bugs and water striders — avoid broad-spectrum sprays early in the season.",
+     "hi": "मकड़ी और मिरिड बग जैसे मित्र कीट बचाएँ — मौसम की शुरुआत में व्यापक दवाएँ न छिड़कें।",
+     "mr": "कोळी, मिरिड ढेकूण असे मित्रकीटक जपा — हंगामाच्या सुरुवातीला व्यापक औषधे फवारू नका."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "pymetrozine_50wg",
+    "dose_per_litre": 0.6,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Aim the nozzle at the base of the plants, not the leaves.",
+     "hi": "नोज़ल पौधे के निचले भाग पर रखें, पत्तियों पर नहीं।",
+     "mr": "नोझल रोपांच्या तळाकडे ठेवा, पानांवर नव्हे."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "buprofezin_25sc",
+    "dose_per_litre": 1.6,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Alternative; acts on nymphs.",
+     "hi": "विकल्प; शिशुओं पर असर करता है।",
+     "mr": "पर्याय; पिल्लांवर परिणाम करते."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert immediately if circular dry patches (hopper burn) appear.",
+   "hi": "गोल सूखे घेरे दिखें तो तुरंत विशेषज्ञ को बुलाएँ।",
+   "mr": "गोल वाळलेले पट्टे दिसताच तात्काळ तज्ज्ञांना बोलवा."
   },
-  "cotton_whitefly": {
-    "what_to_check": {
-      "en": "Turn over one upper-canopy leaf on 20 plants and count adults. Threshold: 8–10 adults per leaf.",
-      "hi": "20 पौधों पर ऊपर की एक पत्ती पलटकर वयस्क गिनें। सीमा: प्रति पत्ती 8–10 वयस्क।",
-      "mr": "20 झाडांवर वरचे एक पान उलटून प्रौढ माशा मोजा. मर्यादा: प्रति पान 8–10 प्रौढ."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not spray pyrethroids or repeat neonicotinoids — whitefly resurges after both.",
-        "hi": "पायरेथ्रॉइड या बार-बार नियोनिकोटिनॉइड न छिड़कें — सफेद मक्खी और बढ़ती है।",
-        "mr": "पायरेथ्रॉइड किंवा वारंवार निओनिकोटिनॉइड फवारू नका — पांढरी माशी वाढते."
-      },
-      {
-        "en": "Do not over-apply nitrogen.",
-        "hi": "ज़्यादा नाइट्रोजन न दें।",
-        "mr": "जास्त नत्र देऊ नका."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Put up yellow sticky traps (10 per acre) at canopy height; remove weed hosts around the field."
-        }
-      },
-      {
-        "tier": "biological",
-        "action": {
-          "en": "Spray neem oil at 5 ml per litre, or Lecanicillium lecanii at 5 g per litre in humid weather."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "pyriproxyfen_10ec",
-        "dose_per_litre": 1.0,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Only after the threshold is crossed; acts on eggs and nymphs."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "diafenthiuron_50wp",
-        "dose_per_litre": 1.2,
-        "dose_unit": "g",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Alternative; rotate, never repeat back to back."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if leaves turn black with sooty mould or leaf curl spreads."
-    },
-    "citations": [
-      {
-        "title": "Whitefly management advisory",
-        "publisher": "ICAR-Central Institute for Cotton Research, Nagpur",
-        "url": "https://cicr.org.in"
-      }
-    ]
+  "citations": [
+   {
+    "title": "AESA-based IPM Package: Rice",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   },
+   {
+    "title": "Planthopper fact sheet",
+    "publisher": "IRRI Rice Knowledge Bank",
+    "url": "http://www.knowledgebank.irri.org"
+   }
+  ]
+ },
+ "maize_turcicum_leaf_blight": {
+  "what_to_check": {
+   "en": "Check the lower leaves of 10 plants for long grey-green lesions; note if they reach the ear leaf.",
+   "hi": "10 पौधों की निचली पत्तियों पर लंबे धूसर-हरे धब्बे देखें; भुट्टे वाली पत्ती तक पहुँचे क्या।",
+   "mr": "10 झाडांच्या खालच्या पानांवर लांब राखाडी-हिरवे चट्टे पाहा; कणसाच्या पानापर्यंत पोहोचले का ते नोंदवा."
   },
-  "cotton_jassid": {
-    "what_to_check": {
-      "en": "Count nymphs under 3 leaves (top, middle, bottom) on 20 plants. Threshold: 2 nymphs per leaf, or yellowing leaf edges.",
-      "hi": "20 पौधों पर 3 पत्तियों (ऊपर, बीच, नीचे) के नीचे शिशु गिनें। सीमा: प्रति पत्ती 2 शिशु, या पीले किनारे।",
-      "mr": "20 झाडांवर 3 पानांखाली (वर, मध्य, खाली) पिल्ले मोजा. मर्यादा: प्रति पान 2 पिल्ले, किंवा पिवळ्या कडा."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not spray on a calendar schedule — spray only after the threshold.",
-        "hi": "तारीख देखकर छिड़काव न करें — केवल सीमा पार होने पर।",
-        "mr": "तारखेनुसार फवारणी करू नका — फक्त मर्यादा ओलांडल्यावर."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Grow hairy-leaved, jassid-tolerant varieties; avoid excess nitrogen and close spacing."
-        }
-      },
-      {
-        "tier": "biological",
-        "action": {
-          "en": "Spray neem oil at 5 ml per litre; conserve lacewings and ladybird beetles."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "flonicamid_50wg",
-        "dose_per_litre": 0.3,
-        "dose_unit": "g",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Only after the threshold is crossed."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if leaves turn reddish-brown and dry across the field."
-    },
-    "citations": [
-      {
-        "title": "Sucking pest management in cotton",
-        "publisher": "ICAR-Central Institute for Cotton Research, Nagpur",
-        "url": "https://cicr.org.in"
-      }
-    ]
+  "what_to_avoid": [
+   {
+    "en": "Do not leave infected crop residue on the field after harvest.",
+    "hi": "कटाई के बाद रोगी अवशेष खेत में न छोड़ें।",
+    "mr": "कापणीनंतर रोगट अवशेष शेतात ठेवू नका."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Remove and destroy the lowest infected leaves; rotate with a non-cereal crop and grow resistant hybrids.",
+     "hi": "सबसे नीचे की रोगी पत्तियाँ हटाकर नष्ट करें; गैर-अनाज फसल से फसल-चक्र और रोगरोधी संकर लें।",
+     "mr": "सर्वात खालची रोगट पाने काढून नष्ट करा; तृणधान्य नसलेल्या पिकाची फेरपालट व प्रतिकारक संकरित वाण घ्या."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Spray Trichoderma harzianum at 5 g per litre at first lesions.",
+     "hi": "पहले धब्बे पर ट्राइकोडर्मा हरजियानम 5 ग्राम प्रति लीटर छिड़कें।",
+     "mr": "पहिल्या चट्ट्यांवर ट्रायकोडर्मा हर्जियानम 5 ग्रॅम प्रति लिटर फवारा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "mancozeb_75wp",
+    "dose_per_litre": 2.5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "At first lesions; repeat after 10–14 days if wet weather continues.",
+     "hi": "पहले धब्बे पर; नमी बनी रहे तो 10–14 दिन बाद दोहराएँ।",
+     "mr": "पहिल्या चट्ट्यांवर; ओलसर हवामान राहिल्यास 10–14 दिवसांनी पुन्हा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "propiconazole_25ec",
+    "dose_per_litre": 1.0,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Alternative when lesions are spreading fast before tasseling.",
+     "hi": "नर मंजरी से पहले धब्बे तेज़ी से फैलें तो विकल्प।",
+     "mr": "तुरा येण्यापूर्वी चट्टे वेगाने पसरत असतील तर पर्याय."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if lesions reach the ear leaf before grain filling.",
+   "hi": "दाना भरने से पहले धब्बे भुट्टे वाली पत्ती तक पहुँचें तो विशेषज्ञ को बुलाएँ।",
+   "mr": "दाणे भरण्यापूर्वी चट्टे कणसाच्या पानापर्यंत पोहोचले तर तज्ज्ञांना बोलवा."
   },
-  "soybean_yellow_mosaic": {
-    "what_to_check": {
-      "en": "Count plants with yellow mosaic leaves in 5 spots of 1 square metre; check leaf undersides for whitefly.",
-      "hi": "1 वर्ग मीटर के 5 स्थानों पर पीले चितकबरे पौधे गिनें; पत्तियों के नीचे सफेद मक्खी देखें।",
-      "mr": "1 चौरस मीटरच्या 5 ठिकाणी पिवळ्या चट्ट्यांची झाडे मोजा; पानांखाली पांढरी माशी पाहा."
-    },
-    "what_to_avoid": [
-      {
-        "en": "No spray cures the virus — spend only on controlling the whitefly that spreads it.",
-        "hi": "कोई दवा वायरस ठीक नहीं करती — खर्च केवल सफेद मक्खी पर करें।",
-        "mr": "कोणतेही औषध विषाणू बरा करत नाही — खर्च फक्त पांढऱ्या माशीवर करा."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Pull out and bury infected plants early; put up yellow sticky traps; grow YMV-resistant varieties next season."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "thiamethoxam_25wg",
-        "dose_per_litre": 0.2,
-        "dose_unit": "g",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Against the whitefly vector only, when whiteflies are seen."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if more than 5% of plants show mosaic before flowering."
-    },
-    "citations": [
-      {
-        "title": "Soybean: Package of practices",
-        "publisher": "ICAR-Indian Institute of Soybean Research, Indore",
-        "url": "https://iisrindore.icar.gov.in"
-      },
-      {
-        "title": "AESA-based IPM Package: Soybean",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      }
-    ]
+  "citations": [
+   {
+    "title": "AESA-based IPM Package: Maize",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   },
+   {
+    "title": "Maize diseases — Turcicum leaf blight",
+    "publisher": "ICAR-Indian Institute of Maize Research",
+    "url": "https://iimr.icar.gov.in"
+   },
+   {
+    "title": "Maize Doctor — Northern corn leaf blight",
+    "publisher": "CIMMYT",
+    "url": "https://maizedoctor.org"
+   }
+  ]
+ },
+ "maize_maydis_leaf_blight": {
+  "what_to_check": {
+   "en": "Check middle and lower leaves for small tan rectangular spots boxed between veins.",
+   "hi": "बीच और निचली पत्तियों पर नसों के बीच छोटे भूरे आयताकार धब्बे देखें।",
+   "mr": "मधल्या व खालच्या पानांवर शिरांच्या मध्ये लहान तपकिरी आयताकृती ठिपके पाहा."
   },
-  "soybean_girdle_beetle": {
-    "what_to_check": {
-      "en": "Look for wilted, hanging leaves and stems with two ring cuts in 5 spots across the field.",
-      "hi": "खेत के 5 स्थानों पर लटकी मुरझाई पत्तियाँ और दो गोल कटाव वाले तने देखें।",
-      "mr": "शेतात 5 ठिकाणी लोंबकळणारी सुकलेली पाने व दोन गोल काप असलेली खोडे पाहा."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not sow too densely — crowding favours girdle beetle.",
-        "hi": "बहुत घना न बोएँ — घनी फसल में चक्र भृंग बढ़ता है।",
-        "mr": "खूप दाट पेरू नका — दाट पिकात चक्री भुंगा वाढतो."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Cut and destroy girdled plant parts every few days; plough deep in summer."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "thiacloprid_21_7sc",
-        "dose_per_litre": 1.5,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "At first girdling, before flowering."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "chlorantraniliprole_18_5sc",
-        "dose_per_litre": 0.3,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Alternative; also controls defoliating caterpillars."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if more than 10% of plants are girdled."
-    },
-    "citations": [
-      {
-        "title": "Soybean: Package of practices",
-        "publisher": "ICAR-Indian Institute of Soybean Research, Indore",
-        "url": "https://iisrindore.icar.gov.in"
-      }
-    ]
+  "what_to_avoid": [
+   {
+    "en": "Do not sow maize after maize on the same field if this disease was severe.",
+    "hi": "रोग ज़्यादा था तो उसी खेत में मक्का के बाद फिर मक्का न बोएँ।",
+    "mr": "रोग तीव्र असल्यास त्याच शेतात मक्यानंतर पुन्हा मका पेरू नका."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Destroy infected residue, rotate crops and use tolerant hybrids.",
+     "hi": "रोगी अवशेष नष्ट करें, फसल-चक्र अपनाएँ और सहनशील संकर लें।",
+     "mr": "रोगट अवशेष नष्ट करा, फेरपालट करा व सहनशील संकरित वाण वापरा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "mancozeb_75wp",
+    "dose_per_litre": 2.5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "At first spots; repeat after 10–14 days if needed.",
+     "hi": "पहले धब्बे पर; ज़रूरत हो तो 10–14 दिन बाद दोहराएँ।",
+     "mr": "पहिल्या ठिपक्यांवर; गरज असल्यास 10–14 दिवसांनी पुन्हा."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if spots cover the upper leaves at silking.",
+   "hi": "भुट्टा रेशा के समय ऊपरी पत्तियों पर धब्बे फैलें तो विशेषज्ञ को बुलाएँ।",
+   "mr": "स्त्रीकेसर अवस्थेत वरच्या पानांवर ठिपके पसरले तर तज्ज्ञांना बोलवा."
   },
-  "soybean_tobacco_caterpillar": {
-    "what_to_check": {
-      "en": "Look for papery, net-like leaves with groups of young larvae underneath; count larvae per metre of row.",
-      "hi": "जाली जैसी पत्तियाँ और नीचे झुंड में छोटी इल्लियाँ देखें; प्रति मीटर कतार में इल्लियाँ गिनें।",
-      "mr": "जाळीदार पाने व खाली समूहातील लहान अळ्या पाहा; प्रति मीटर ओळीत अळ्या मोजा."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not wait for large larvae — young larvae in groups are far easier to control.",
-        "hi": "बड़ी इल्लियों का इंतज़ार न करें — झुंड वाली छोटी इल्लियाँ आसानी से नियंत्रित होती हैं।",
-        "mr": "मोठ्या अळ्यांची वाट पाहू नका — समूहातील लहान अळ्या सहज नियंत्रित होतात."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Pluck and destroy leaves carrying egg masses or larval groups; set pheromone traps at 5 per acre."
-        }
-      },
-      {
-        "tier": "biological",
-        "action": {
-          "en": "Spray SlNPV at 250 larval equivalents per hectare or Bacillus thuringiensis in the evening."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "chlorantraniliprole_18_5sc",
-        "dose_per_litre": 0.3,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "When larvae exceed about 4 per metre of row."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if defoliation passes 30% before pod filling."
-    },
-    "citations": [
-      {
-        "title": "Soybean: Package of practices",
-        "publisher": "ICAR-Indian Institute of Soybean Research, Indore",
-        "url": "https://iisrindore.icar.gov.in"
-      }
-    ]
+  "citations": [
+   {
+    "title": "AESA-based IPM Package: Maize",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   },
+   {
+    "title": "Maize diseases — Maydis leaf blight",
+    "publisher": "ICAR-Indian Institute of Maize Research",
+    "url": "https://iimr.icar.gov.in"
+   }
+  ]
+ },
+ "maize_common_rust": {
+  "what_to_check": {
+   "en": "Rub a spotted leaf between your fingers — rust leaves reddish-brown powder.",
+   "hi": "धब्बेदार पत्ती उंगलियों में रगड़ें — रतुआ से लाल-भूरा चूर्ण लगता है।",
+   "mr": "ठिपकेदार पान बोटांमध्ये चोळा — तांबेऱ्यात लालसर-तपकिरी भुकटी लागते."
   },
-  "soybean_rust": {
-    "what_to_check": {
-      "en": "Turn over lower leaves and look with a hand lens for raised tan pustules.",
-      "hi": "निचली पत्तियाँ पलटकर लेंस से उभरे भूरे दाने देखें।",
-      "mr": "खालची पाने उलटून भिंगाने उंचावलेले तपकिरी फोड पाहा."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not wait until leaves drop — rust spreads fast in cool, wet weather.",
-        "hi": "पत्तियाँ झड़ने तक इंतज़ार न करें — ठंडे-नम मौसम में रस्ट तेज़ी से फैलता है।",
-        "mr": "पाने गळेपर्यंत थांबू नका — थंड-ओलसर हवामानात तांबेरा वेगाने पसरतो."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Grow rust-tolerant varieties and sow early to escape late-season rust."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "propiconazole_25ec",
-        "dose_per_litre": 1.0,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "At first pustules; repeat after 15 days if weather stays wet."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "hexaconazole_5ec",
-        "dose_per_litre": 1.6,
-        "dose_unit": "ml",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Alternative to propiconazole."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if pustules reach the upper canopy at pod filling."
-    },
-    "citations": [
-      {
-        "title": "Soybean: Package of practices",
-        "publisher": "ICAR-Indian Institute of Soybean Research, Indore",
-        "url": "https://iisrindore.icar.gov.in"
-      }
-    ]
+  "what_to_avoid": [
+   {
+    "en": "Do not spray late in the season when the crop is already drying — it will not pay back.",
+    "hi": "फसल सूखने लगी हो तो देर से छिड़काव न करें — लागत नहीं निकलेगी।",
+    "mr": "पीक वाळू लागल्यावर उशिरा फवारणी करू नका — खर्च वसूल होणार नाही."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Grow resistant hybrids and sow on time; rust is worse on late-sown crops in cool humid weather.",
+     "hi": "रोगरोधी संकर लें और समय पर बोएँ; ठंडे-नम मौसम में देर से बोई फसल पर रतुआ ज़्यादा।",
+     "mr": "प्रतिकारक संकरित वाण घ्या व वेळेवर पेरा; थंड-दमट हवामानात उशिरा पेरलेल्या पिकावर तांबेरा जास्त."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "mancozeb_75wp",
+    "dose_per_litre": 2.5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "When pustules appear on the upper leaves before tasseling.",
+     "hi": "नर मंजरी से पहले ऊपरी पत्तियों पर दाने दिखें तब।",
+     "mr": "तुरा येण्यापूर्वी वरच्या पानांवर फोड दिसल्यास."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "propiconazole_25ec",
+    "dose_per_litre": 1.0,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Alternative to mancozeb.",
+     "hi": "मैंकोजेब का विकल्प।",
+     "mr": "मॅन्कोझेबचा पर्याय."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if pustules cover the ear leaf.",
+   "hi": "भुट्टे वाली पत्ती दानों से ढक जाए तो विशेषज्ञ को बुलाएँ।",
+   "mr": "कणसाचे पान फोडांनी भरले तर तज्ज्ञांना बोलवा."
   },
-  "rice_skipper": {
-    "what_to_check": {
-      "en": "Count rolled or chewed leaf tips on 10 hills and look for green larvae with a big head inside.",
-      "hi": "10 पौधों पर मुड़ी या कुतरी पत्ती की नोक गिनें और अंदर बड़े सिर वाली हरी इल्ली देखें।",
-      "mr": "10 चुडांवर गुंडाळलेली किंवा कुरतडलेली पानांची टोके मोजा व आत मोठ्या डोक्याची हिरवी अळी पाहा."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not spray for skippers — spiders and wasps usually keep them below damaging numbers, and a spray kills those allies.",
-        "hi": "स्किपर के लिए छिड़काव न करें — मकड़ी और ततैया इन्हें नियंत्रित रखते हैं, छिड़काव से ये मित्र मरते हैं।",
-        "mr": "स्किपरसाठी फवारणी करू नका — कोळी व गांधीलमाश्या त्यांना नियंत्रणात ठेवतात, फवारणीने हे मित्र मरतात."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Hand-pick larvae from rolled leaf tips; keep bunds free of grassy weeds where they breed.",
-          "hi": "मुड़ी नोकों से इल्लियाँ हाथ से चुनें; मेड़ों पर घास न रहने दें जहाँ ये पनपती हैं।",
-          "mr": "गुंडाळलेल्या टोकांतून अळ्या हाताने वेचा; बांधावर गवत ठेवू नका जिथे त्या वाढतात."
-        }
-      },
-      {
-        "tier": "biological",
-        "action": {
-          "en": "Protect natural enemies: avoid broad-spectrum sprays early in the season.",
-          "hi": "मित्र कीट बचाएँ: मौसम की शुरुआत में व्यापक दवाएँ न छिड़कें।",
-          "mr": "मित्रकीटक जपा: हंगामाच्या सुरुवातीला व्यापक औषधे फवारू नका."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if more than a quarter of the leaf area is eaten at booting.",
-      "hi": "बाली निकलते समय एक-चौथाई से ज़्यादा पत्तियाँ खा ली गई हों तो विशेषज्ञ को बुलाएँ।",
-      "mr": "लोंबी येताना पानांचा एक-चतुर्थांशाहून अधिक भाग खाल्ला असल्यास तज्ज्ञांना बोलवा."
-    },
-    "citations": [
-      {
-        "title": "Rice Knowledge Management Portal",
-        "publisher": "ICAR-Indian Institute of Rice Research",
-        "url": "https://www.rkmp.co.in"
-      },
-      {
-        "title": "AESA-based IPM Package: Rice",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      }
-    ]
+  "citations": [
+   {
+    "title": "AESA-based IPM Package: Maize",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   },
+   {
+    "title": "Maize Doctor — Common rust",
+    "publisher": "CIMMYT",
+    "url": "https://maizedoctor.org"
+   }
+  ]
+ },
+ "maize_banded_leaf_sheath_blight": {
+  "what_to_check": {
+   "en": "Check lower leaf sheaths near the soil for banded brown patches, especially in dense, waterlogged patches of the field.",
+   "hi": "मिट्टी के पास निचले आवरणों पर पट्टीदार भूरे धब्बे देखें, खासकर घने और जलभराव वाले हिस्सों में।",
+   "mr": "जमिनीजवळ खालच्या आवरणांवर पट्टेदार तपकिरी चट्टे पाहा, विशेषतः दाट व पाणी साचणाऱ्या भागात."
   },
-  "rice_white_stem_borer": {
-    "what_to_check": {
-      "en": "Count dead hearts on 10 hills; pull the dried central shoot — it comes out easily if a borer is inside. Threshold: about 5% dead hearts.",
-      "hi": "10 पौधों पर मृत गोभ गिनें; सूखी बीच की पत्ती खींचें — छेदक हो तो आसानी से निकलती है। सीमा: लगभग 5% मृत गोभ।",
-      "mr": "10 चुडांवरील मेलेले गाभे मोजा; वाळलेला कोंब ओढा — आत अळी असल्यास सहज निघतो. मर्यादा: सुमारे 5% मेलेले गाभे."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not spray for white ears that are already visible — the larva has left; protect the next flush instead.",
-        "hi": "जो सफेद बालियाँ दिख चुकी हैं उन पर छिड़काव न करें — इल्ली निकल चुकी है।",
-        "mr": "आधीच दिसणाऱ्या पांढऱ्या लोंब्यांसाठी फवारणी करू नका — अळी निघून गेलेली असते."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Clip leaf tips of seedlings before transplanting to remove egg masses; after harvest, plough stubble in.",
-          "hi": "रोपाई से पहले पौध की नोक काटें ताकि अंडे हटें; कटाई के बाद ठूँठ जोत दें।",
-          "mr": "लावणीपूर्वी रोपांची टोके कापा म्हणजे अंडीपुंज निघतील; कापणीनंतर धसकटे नांगरून गाडा."
-        }
-      },
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Use a light trap at night to monitor moth flights; pheromone lures for the yellow stem borer do not attract this species.",
-          "hi": "पतंगों पर नज़र रखने के लिए रात में प्रकाश प्रपंच लगाएँ; पीले तना छेदक का फेरोमोन इस प्रजाति को नहीं खींचता।",
-          "mr": "पतंगांवर लक्ष ठेवण्यासाठी रात्री प्रकाश सापळा लावा; पिवळ्या खोडकिड्याचा कामगंध या प्रजातीला आकर्षित करत नाही."
-        }
-      },
-      {
-        "tier": "biological",
-        "action": {
-          "en": "Release Trichogramma japonicum at 50,000 per hectare when moths are seen in traps.",
-          "hi": "ट्रैप में पतंगे दिखें तो ट्राइकोग्रामा जैपोनिकम 50,000 प्रति हेक्टेयर छोड़ें।",
-          "mr": "सापळ्यात पतंग दिसताच ट्रायकोग्रामा जॅपोनिकम हेक्टरी 50,000 सोडा."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "chlorantraniliprole_0_4gr",
-        "dose_per_litre": null,
-        "dose_basis": "4 kg granules per acre, broadcast in 3–5 cm of standing water",
-        "water_l_per_acre": null,
-        "verified": false,
-        "timing": {
-          "en": "Only after the dead-heart threshold is crossed.",
-          "hi": "केवल मृत गोभ सीमा पार होने के बाद।",
-          "mr": "फक्त मेलेल्या गाभ्यांची मर्यादा ओलांडल्यानंतर."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if dead hearts exceed 10% or white ears appear across the field.",
-      "hi": "मृत गोभ 10% से ज़्यादा हों या पूरे खेत में सफेद बालियाँ दिखें तो विशेषज्ञ को बुलाएँ।",
-      "mr": "मेलेले गाभे 10% पेक्षा जास्त किंवा सगळीकडे पांढऱ्या लोंब्या दिसल्यास तज्ज्ञांना बोलवा."
-    },
-    "citations": [
-      {
-        "title": "Rice Knowledge Management Portal",
-        "publisher": "ICAR-Indian Institute of Rice Research",
-        "url": "https://www.rkmp.co.in"
-      },
-      {
-        "title": "AESA-based IPM Package: Rice",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      }
-    ]
+  "what_to_avoid": [
+   {
+    "en": "Do not let water stand in the field.",
+    "hi": "खेत में पानी जमा न होने दें।",
+    "mr": "शेतात पाणी साचू देऊ नका."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Strip off the lower 2–3 infected leaves with their sheaths and destroy them; improve drainage.",
+     "hi": "नीचे की 2–3 रोगी पत्तियाँ आवरण सहित निकालकर नष्ट करें; जल निकास सुधारें।",
+     "mr": "खालची 2–3 रोगट पाने आवरणासह काढून नष्ट करा; निचरा सुधारा."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Apply Pseudomonas fluorescens or Trichoderma to soil at sowing next season.",
+     "hi": "अगले मौसम में बुवाई के समय स्यूडोमोनास या ट्राइकोडर्मा मिट्टी में दें।",
+     "mr": "पुढील हंगामात पेरणीवेळी स्युडोमोनास किंवा ट्रायकोडर्मा जमिनीत द्या."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "validamycin_3l",
+    "dose_per_litre": 2.5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Direct the spray at the lower stem and sheaths.",
+     "hi": "छिड़काव निचले तने और आवरणों पर करें।",
+     "mr": "फवारणी खालच्या खोडावर व आवरणांवर करा."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if bands reach the ear or the ear husk rots.",
+   "hi": "पट्टियाँ भुट्टे तक पहुँचें या भुट्टे का छिलका सड़े तो विशेषज्ञ को बुलाएँ।",
+   "mr": "पट्टे कणसापर्यंत पोहोचले किंवा कणसाचे आवरण कुजले तर तज्ज्ञांना बोलवा."
   },
-  "maize_curvularia_leaf_spot": {
-    "what_to_check": {
-      "en": "Check middle leaves of 10 plants for many small round spots with a yellow ring.",
-      "hi": "10 पौधों की बीच की पत्तियों पर पीले घेरे वाले कई छोटे गोल धब्बे देखें।",
-      "mr": "10 झाडांच्या मधल्या पानांवर पिवळ्या वलयाचे अनेक लहान गोल ठिपके पाहा."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not leave infected residue on the field after harvest.",
-        "hi": "कटाई के बाद रोगी अवशेष खेत में न छोड़ें।",
-        "mr": "कापणीनंतर रोगट अवशेष शेतात ठेवू नका."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Destroy infected residue, rotate with a non-cereal crop and keep balanced nitrogen and potash.",
-          "hi": "रोगी अवशेष नष्ट करें, गैर-अनाज फसल से फसल-चक्र करें और संतुलित नाइट्रोजन-पोटाश दें।",
-          "mr": "रोगट अवशेष नष्ट करा, तृणधान्य नसलेल्या पिकाची फेरपालट करा व संतुलित नत्र-पालाश द्या."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "mancozeb_75wp",
-        "dose_per_litre": 2.5,
-        "dose_unit": "g",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "When spots spread to the upper leaves before tasseling.",
-          "hi": "नर मंजरी से पहले धब्बे ऊपरी पत्तियों तक फैलें तब।",
-          "mr": "तुरा येण्यापूर्वी ठिपके वरच्या पानांवर पसरल्यास."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if spots merge into large dead patches.",
-      "hi": "धब्बे मिलकर बड़े सूखे भाग बनाएँ तो विशेषज्ञ को बुलाएँ।",
-      "mr": "ठिपके एकत्र होऊन मोठे वाळलेले चट्टे झाल्यास तज्ज्ञांना बोलवा."
-    },
-    "citations": [
-      {
-        "title": "Maize diseases and insect pests",
-        "publisher": "ICAR-Indian Institute of Maize Research",
-        "url": "https://iimr.icar.gov.in"
-      },
-      {
-        "title": "AESA-based IPM Package: Maize",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      }
-    ]
+  "citations": [
+   {
+    "title": "AESA-based IPM Package: Maize",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   },
+   {
+    "title": "Maize diseases — Banded leaf and sheath blight",
+    "publisher": "ICAR-Indian Institute of Maize Research",
+    "url": "https://iimr.icar.gov.in"
+   }
+  ]
+ },
+ "maize_downy_mildew": {
+  "what_to_check": {
+   "en": "Check young plants early in the morning for yellow stripes with white downy growth underneath.",
+   "hi": "सुबह जल्दी छोटे पौधों पर पीली धारियाँ और नीचे सफेद रोएँदार परत देखें।",
+   "mr": "सकाळी लवकर लहान रोपांवर पिवळे पट्टे व खालच्या बाजूस पांढरी लवदार वाढ पाहा."
   },
-  "maize_aphid": {
-    "what_to_check": {
-      "en": "Check tassels and the upper whorl of 20 plants and count plants with large aphid colonies.",
-      "hi": "20 पौधों की नर मंजरी और ऊपरी गोभ देखें और बड़े माहू झुंड वाले पौधे गिनें।",
-      "mr": "20 झाडांचे तुरे व वरचा पोंगा तपासा व मोठ्या माव्याच्या वसाहती असलेली झाडे मोजा."
-    },
-    "what_to_avoid": [
-      {
-        "en": "Do not spray just because you see a few aphids — ladybird beetles and hoverfly larvae usually clear them within days.",
-        "hi": "थोड़े माहू देखकर छिड़काव न करें — लेडीबर्ड भृंग और होवरफ्लाई की इल्लियाँ कुछ दिनों में इन्हें खत्म कर देती हैं।",
-        "mr": "थोडा मावा पाहून फवारणी करू नका — लेडीबर्ड भुंगे व होवरफ्लायच्या अळ्या काही दिवसांत त्याचा नाश करतात."
-      }
-    ],
-    "ladder": [
-      {
-        "tier": "cultural",
-        "action": {
-          "en": "Avoid excess nitrogen and water stress; keep the field free of grassy weeds.",
-          "hi": "ज़्यादा नाइट्रोजन और पानी की कमी से बचें; खेत को घास से मुक्त रखें।",
-          "mr": "जास्त नत्र व पाण्याचा ताण टाळा; शेत गवतमुक्त ठेवा."
-        }
-      },
-      {
-        "tier": "biological",
-        "action": {
-          "en": "Spray neem oil at 5 ml per litre on heavy colonies; conserve ladybird beetles.",
-          "hi": "घने झुंडों पर नीम तेल 5 मिली प्रति लीटर छिड़कें; लेडीबर्ड भृंग बचाएँ।",
-          "mr": "दाट वसाहतींवर निंबोळी तेल 5 मिली प्रति लिटर फवारा; लेडीबर्ड भुंगे जपा."
-        }
-      },
-      {
-        "tier": "chemical",
-        "ingredient": "thiamethoxam_25wg",
-        "dose_per_litre": 0.2,
-        "dose_unit": "g",
-        "water_l_per_acre": 200,
-        "verified": false,
-        "timing": {
-          "en": "Only if colonies cover tassels on more than 1 in 5 plants before pollen shed.",
-          "hi": "केवल तब जब परागण से पहले 5 में से 1 से ज़्यादा पौधों की नर मंजरी झुंडों से ढकी हो।",
-          "mr": "फक्त परागीभवनापूर्वी 5 पैकी 1 पेक्षा जास्त झाडांचे तुरे वसाहतींनी झाकलेले असल्यास."
-        }
-      }
-    ],
-    "expert_trigger": {
-      "en": "Call an expert if tassels are blackened with sooty mould and pollen shed fails.",
-      "hi": "नर मंजरी काली फफूँद से ढक जाए और पराग न झड़े तो विशेषज्ञ को बुलाएँ।",
-      "mr": "तुरे काळ्या बुरशीने झाकले व परागकण पडत नसतील तर तज्ज्ञांना बोलवा."
-    },
-    "citations": [
-      {
-        "title": "Maize diseases and insect pests",
-        "publisher": "ICAR-Indian Institute of Maize Research",
-        "url": "https://iimr.icar.gov.in"
-      },
-      {
-        "title": "AESA-based IPM Package: Maize",
-        "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
-        "url": "https://niphm.gov.in"
-      }
-    ]
-  }
+  "what_to_avoid": [
+   {
+    "en": "Do not leave infected plants standing — they release spores to healthy plants.",
+    "hi": "रोगी पौधे खड़े न छोड़ें — इनसे स्वस्थ पौधों पर बीजाणु जाते हैं।",
+    "mr": "रोगट रोपे उभी ठेवू नका — त्यातून निरोगी रोपांवर बीजाणू जातात."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Pull out and destroy infected plants as soon as you see them; next season, treat seed with metalaxyl.",
+     "hi": "रोगी पौधे दिखते ही उखाड़कर नष्ट करें; अगले मौसम में बीज का मेटालेक्सिल से उपचार करें।",
+     "mr": "रोगट रोपे दिसताच उपटून नष्ट करा; पुढील हंगामात बियाण्यास मेटॅलॅक्सिल लावा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "metalaxyl_mancozeb_72wp",
+    "dose_per_litre": 2.5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "On young crops in the first 3–4 weeks when infection is spreading.",
+     "hi": "पहले 3–4 हफ्तों में जब संक्रमण फैल रहा हो।",
+     "mr": "पहिल्या 3–4 आठवड्यांत संसर्ग पसरत असताना."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if more than 1 in 10 plants show stripes.",
+   "hi": "10 में से 1 से ज़्यादा पौधों पर धारियाँ हों तो विशेषज्ञ को बुलाएँ।",
+   "mr": "10 पैकी 1 पेक्षा जास्त रोपांवर पट्टे असल्यास तज्ज्ञांना बोलवा."
+  },
+  "citations": [
+   {
+    "title": "AESA-based IPM Package: Maize",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   },
+   {
+    "title": "Maize diseases — Downy mildews",
+    "publisher": "ICAR-Indian Institute of Maize Research",
+    "url": "https://iimr.icar.gov.in"
+   }
+  ]
+ },
+ "maize_fall_armyworm": {
+  "what_to_check": {
+   "en": "Walk a W pattern and check 20 plants: count those with fresh whorl damage. Threshold: 5% of plants at seedling, 10% at whorl stage.",
+   "hi": "W आकार में चलकर 20 पौधे देखें: ताज़ा गोभ क्षति वाले पौधे गिनें। सीमा: अंकुर अवस्था में 5%, गोभ अवस्था में 10% पौधे।",
+   "mr": "W आकारात चालत 20 झाडे तपासा: पोंग्यात ताजे नुकसान असलेली झाडे मोजा. मर्यादा: रोप अवस्थेत 5%, पोंगा अवस्थेत 10% झाडे."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not spray at midday — larvae hide deep in the whorl. Spray early morning or evening, into the whorl.",
+    "hi": "दोपहर में छिड़काव न करें — इल्ली गोभ में छिपी रहती है। सुबह या शाम गोभ में छिड़कें।",
+    "mr": "दुपारी फवारणी करू नका — अळी पोंग्यात खोल लपते. सकाळी किंवा संध्याकाळी पोंग्यात फवारा."
+   },
+   {
+    "en": "Do not mix two insecticides in one tank or repeat the same one back to back.",
+    "hi": "एक टंकी में दो कीटनाशक न मिलाएँ, न एक ही दवा बार-बार दोहराएँ।",
+    "mr": "एका टाकीत दोन कीटकनाशके मिसळू नका, तेच औषध लागोपाठ वापरू नका."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Put a pinch of sand mixed with lime into damaged whorls; hand-pick and crush egg masses and larvae.",
+     "hi": "क्षतिग्रस्त गोभ में चूना मिली रेत डालें; अंडे और इल्लियाँ हाथ से चुनकर नष्ट करें।",
+     "mr": "बाधित पोंग्यात चुना मिसळलेली वाळू टाका; अंडीपुंज व अळ्या हाताने वेचून नष्ट करा."
+    }
+   },
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Set up pheromone traps (5 per acre) to track moth arrival.",
+     "hi": "पतंगों के आगमन पर नज़र के लिए फेरोमोन ट्रैप (5 प्रति एकड़) लगाएँ।",
+     "mr": "पतंगांच्या आगमनावर लक्ष ठेवण्यासाठी कामगंध सापळे (एकरी 5) लावा."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Spray Metarhizium anisopliae at 5 g per litre, or neem (azadirachtin 1500 ppm) at 5 ml per litre, into the whorl.",
+     "hi": "मेटाराइजियम एनिसोप्ली 5 ग्राम प्रति लीटर, या नीम (एज़ाडिरेक्टिन 1500 ppm) 5 मिली प्रति लीटर गोभ में छिड़कें।",
+     "mr": "मेटारायझियम ॲनिसोप्ली 5 ग्रॅम प्रति लिटर, किंवा निंबोळी (ॲझाडिरॅक्टिन 1500 ppm) 5 मिली प्रति लिटर पोंग्यात फवारा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "emamectin_benzoate_5sg",
+    "dose_per_litre": 0.4,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Only after the threshold is crossed; into the whorl.",
+     "hi": "केवल सीमा पार होने पर; गोभ में।",
+     "mr": "फक्त मर्यादा ओलांडल्यावर; पोंग्यात."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "chlorantraniliprole_18_5sc",
+    "dose_per_litre": 0.4,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Rotate with emamectin; do not repeat the same ingredient.",
+     "hi": "इमामेक्टिन के साथ बदल-बदलकर; एक ही दवा न दोहराएँ।",
+     "mr": "इमामेक्टिनसोबत आलटून-पालटून; तेच औषध पुन्हा वापरू नका."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "spinetoram_11_7sc",
+    "dose_per_litre": 0.5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Third option for rotation.",
+     "hi": "बदल-बदलकर उपयोग का तीसरा विकल्प।",
+     "mr": "आलटून-पालटून वापरासाठी तिसरा पर्याय."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if more than 20% of plants show fresh damage or larvae reach the cob.",
+   "hi": "20% से ज़्यादा पौधों पर ताज़ा क्षति हो या इल्ली भुट्टे तक पहुँचे तो विशेषज्ञ को बुलाएँ।",
+   "mr": "20% पेक्षा जास्त झाडांवर ताजे नुकसान असल्यास किंवा अळी कणसात पोहोचल्यास तज्ज्ञांना बोलवा."
+  },
+  "citations": [
+   {
+    "title": "Fall armyworm management advisory",
+    "publisher": "ICAR-Indian Institute of Maize Research",
+    "url": "https://iimr.icar.gov.in"
+   },
+   {
+    "title": "Fall armyworm: Integrated pest management",
+    "publisher": "Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://ppqs.gov.in"
+   }
+  ]
+ },
+ "maize_stem_borer": {
+  "what_to_check": {
+   "en": "Count plants with shot-holed leaves or dead hearts among 20 plants. Threshold: about 10% of plants damaged.",
+   "hi": "20 पौधों में छेद वाली पत्तियाँ या मृत गोभ वाले पौधे गिनें। सीमा: लगभग 10% पौधे क्षतिग्रस्त।",
+   "mr": "20 झाडांपैकी छिद्रे असलेली पाने किंवा मेलेला गाभा असलेली झाडे मोजा. मर्यादा: सुमारे 10% झाडे बाधित."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not leave stubble and stalks in the field after harvest — larvae overwinter in them.",
+    "hi": "कटाई के बाद ठूँठ और डंठल खेत में न छोड़ें — इल्ली इनमें छिपी रहती है।",
+    "mr": "कापणीनंतर धसकटे व ताटे शेतात ठेवू नका — अळ्या त्यात राहतात."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Remove and destroy dead hearts; intercrop with cowpea or lablab to reduce borer attack.",
+     "hi": "मृत गोभ निकालकर नष्ट करें; लोबिया या सेम की अंतरफसल से छेदक कम होता है।",
+     "mr": "मेलेले गाभे काढून नष्ट करा; चवळी किंवा घेवड्याच्या आंतरपिकाने खोडकिडा कमी होतो."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Release Trichogramma chilonis cards (about 1 lakh per hectare) from 10 days after sowing.",
+     "hi": "बुवाई के 10 दिन बाद से ट्राइकोग्रामा किलोनिस कार्ड (लगभग 1 लाख प्रति हेक्टेयर) छोड़ें।",
+     "mr": "पेरणीनंतर 10 दिवसांपासून ट्रायकोग्रामा चिलोनिस कार्ड (हेक्टरी सुमारे 1 लाख) सोडा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "chlorantraniliprole_18_5sc",
+    "dose_per_litre": 0.3,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Only after the threshold is crossed; into the whorl.",
+     "hi": "केवल सीमा पार होने पर; गोभ में।",
+     "mr": "फक्त मर्यादा ओलांडल्यावर; पोंग्यात."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if dead hearts exceed 20%.",
+   "hi": "मृत गोभ 20% से ज़्यादा हों तो विशेषज्ञ को बुलाएँ।",
+   "mr": "मेलेले गाभे 20% पेक्षा जास्त असल्यास तज्ज्ञांना बोलवा."
+  },
+  "citations": [
+   {
+    "title": "AESA-based IPM Package: Maize",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   },
+   {
+    "title": "Maize insect pests — Stem borer",
+    "publisher": "ICAR-Indian Institute of Maize Research",
+    "url": "https://iimr.icar.gov.in"
+   }
+  ]
+ },
+ "cotton_pink_bollworm": {
+  "what_to_check": {
+   "en": "Open 20 green bolls (10–15 days old) from different plants and count those with larvae. Threshold: 10% infested bolls, or 8 moths per trap per night for 3 nights.",
+   "hi": "अलग-अलग पौधों से 20 हरे टिंडे (10–15 दिन पुराने) खोलें और सुंडी वाले गिनें। सीमा: 10% ग्रसित टिंडे, या 3 रात लगातार 8 पतंगे प्रति ट्रैप।",
+   "mr": "वेगवेगळ्या झाडांवरील 20 हिरवी बोंडे (10–15 दिवसांची) फोडा व अळी असलेली मोजा. मर्यादा: 10% बाधित बोंडे, किंवा सलग 3 रात्री सापळ्यात 8 पतंग."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not extend the crop with late irrigation after the last picking — it feeds the next generation.",
+    "hi": "आखिरी चुनाई के बाद सिंचाई से फसल न खींचें — इससे अगली पीढ़ी पलती है।",
+    "mr": "शेवटच्या वेचणीनंतर पाणी देऊन पीक लांबवू नका — त्याने पुढची पिढी वाढते."
+   },
+   {
+    "en": "Do not spray synthetic pyrethroids before 90 days — they trigger whitefly outbreaks.",
+    "hi": "90 दिन से पहले सिंथेटिक पायरेथ्रॉइड न छिड़कें — सफेद मक्खी बढ़ती है।",
+    "mr": "90 दिवसांपूर्वी कृत्रिम पायरेथ्रॉइड फवारू नका — पांढरी माशी वाढते."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Pick and destroy rosette flowers every week; terminate the crop by December and graze or shred the stalks."
+    }
+   },
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Install pheromone traps at 5 per hectare from 45 days after sowing to watch moth numbers."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Release Trichogramma bactrae egg parasitoids at 1.5 lakh per hectare; use pheromone-based mating disruption where available."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "profenofos_50ec",
+    "dose_per_litre": 2.0,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Only after the threshold is crossed."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "thiodicarb_75wp",
+    "dose_per_litre": 2.0,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Rotate with profenofos; do not repeat the same ingredient."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if more than 10% of green bolls carry larvae."
+  },
+  "citations": [
+   {
+    "title": "Pink bollworm management in cotton",
+    "publisher": "ICAR-Central Institute for Cotton Research, Nagpur",
+    "url": "https://cicr.org.in"
+   },
+   {
+    "title": "AESA-based IPM Package: Cotton",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   }
+  ]
+ },
+ "cotton_american_bollworm": {
+  "what_to_check": {
+   "en": "Check 20 plants for eggs and larvae on tender shoots and squares. Threshold: 1 larva per plant, or 8–10 moths per trap per night for 3 nights.",
+   "hi": "20 पौधों की कोमल टहनियों और पुड़ियों पर अंडे व इल्लियाँ देखें। सीमा: प्रति पौधा 1 इल्ली, या 3 रात 8–10 पतंगे प्रति ट्रैप।",
+   "mr": "20 झाडांच्या कोवळ्या शेंड्यांवर व पात्यांवर अंडी व अळ्या पाहा. मर्यादा: प्रति झाड 1 अळी, किंवा सलग 3 रात्री सापळ्यात 8–10 पतंग."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not spray against large larvae in bolls — they are protected; target young larvae.",
+    "hi": "टिंडों के अंदर बड़ी इल्लियों पर छिड़काव बेअसर है; छोटी इल्लियों को निशाना बनाएँ।",
+    "mr": "बोंडातील मोठ्या अळ्यांवर फवारणी निरुपयोगी; लहान अळ्यांना लक्ष्य करा."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Grow a border of marigold or maize as a trap crop; set bird perches (10 per acre)."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Spray HaNPV at 250 larval equivalents per hectare in the evening, or neem seed kernel extract 5%."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "emamectin_benzoate_5sg",
+    "dose_per_litre": 0.4,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Only after the threshold is crossed."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "indoxacarb_14_5sc",
+    "dose_per_litre": 1.0,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Rotate with emamectin."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if more than 10% of squares and bolls are bored."
+  },
+  "citations": [
+   {
+    "title": "Integrated pest management in cotton",
+    "publisher": "ICAR-Central Institute for Cotton Research, Nagpur",
+    "url": "https://cicr.org.in"
+   },
+   {
+    "title": "AESA-based IPM Package: Cotton",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   }
+  ]
+ },
+ "cotton_whitefly": {
+  "what_to_check": {
+   "en": "Turn over one upper-canopy leaf on 20 plants and count adults. Threshold: 8–10 adults per leaf.",
+   "hi": "20 पौधों पर ऊपर की एक पत्ती पलटकर वयस्क गिनें। सीमा: प्रति पत्ती 8–10 वयस्क।",
+   "mr": "20 झाडांवर वरचे एक पान उलटून प्रौढ माशा मोजा. मर्यादा: प्रति पान 8–10 प्रौढ."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not spray pyrethroids or repeat neonicotinoids — whitefly resurges after both.",
+    "hi": "पायरेथ्रॉइड या बार-बार नियोनिकोटिनॉइड न छिड़कें — सफेद मक्खी और बढ़ती है।",
+    "mr": "पायरेथ्रॉइड किंवा वारंवार निओनिकोटिनॉइड फवारू नका — पांढरी माशी वाढते."
+   },
+   {
+    "en": "Do not over-apply nitrogen.",
+    "hi": "ज़्यादा नाइट्रोजन न दें।",
+    "mr": "जास्त नत्र देऊ नका."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Put up yellow sticky traps (10 per acre) at canopy height; remove weed hosts around the field."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Spray neem oil at 5 ml per litre, or Lecanicillium lecanii at 5 g per litre in humid weather."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "pyriproxyfen_10ec",
+    "dose_per_litre": 1.0,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Only after the threshold is crossed; acts on eggs and nymphs."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "diafenthiuron_50wp",
+    "dose_per_litre": 1.2,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Alternative; rotate, never repeat back to back."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if leaves turn black with sooty mould or leaf curl spreads."
+  },
+  "citations": [
+   {
+    "title": "Whitefly management advisory",
+    "publisher": "ICAR-Central Institute for Cotton Research, Nagpur",
+    "url": "https://cicr.org.in"
+   }
+  ]
+ },
+ "cotton_jassid": {
+  "what_to_check": {
+   "en": "Count nymphs under 3 leaves (top, middle, bottom) on 20 plants. Threshold: 2 nymphs per leaf, or yellowing leaf edges.",
+   "hi": "20 पौधों पर 3 पत्तियों (ऊपर, बीच, नीचे) के नीचे शिशु गिनें। सीमा: प्रति पत्ती 2 शिशु, या पीले किनारे।",
+   "mr": "20 झाडांवर 3 पानांखाली (वर, मध्य, खाली) पिल्ले मोजा. मर्यादा: प्रति पान 2 पिल्ले, किंवा पिवळ्या कडा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not spray on a calendar schedule — spray only after the threshold.",
+    "hi": "तारीख देखकर छिड़काव न करें — केवल सीमा पार होने पर।",
+    "mr": "तारखेनुसार फवारणी करू नका — फक्त मर्यादा ओलांडल्यावर."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Grow hairy-leaved, jassid-tolerant varieties; avoid excess nitrogen and close spacing."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Spray neem oil at 5 ml per litre; conserve lacewings and ladybird beetles."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "flonicamid_50wg",
+    "dose_per_litre": 0.3,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Only after the threshold is crossed."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if leaves turn reddish-brown and dry across the field."
+  },
+  "citations": [
+   {
+    "title": "Sucking pest management in cotton",
+    "publisher": "ICAR-Central Institute for Cotton Research, Nagpur",
+    "url": "https://cicr.org.in"
+   }
+  ]
+ },
+ "soybean_yellow_mosaic": {
+  "what_to_check": {
+   "en": "Count plants with yellow mosaic leaves in 5 spots of 1 square metre; check leaf undersides for whitefly.",
+   "hi": "1 वर्ग मीटर के 5 स्थानों पर पीले चितकबरे पौधे गिनें; पत्तियों के नीचे सफेद मक्खी देखें।",
+   "mr": "1 चौरस मीटरच्या 5 ठिकाणी पिवळ्या चट्ट्यांची झाडे मोजा; पानांखाली पांढरी माशी पाहा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "No spray cures the virus — spend only on controlling the whitefly that spreads it.",
+    "hi": "कोई दवा वायरस ठीक नहीं करती — खर्च केवल सफेद मक्खी पर करें।",
+    "mr": "कोणतेही औषध विषाणू बरा करत नाही — खर्च फक्त पांढऱ्या माशीवर करा."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Pull out and bury infected plants early; put up yellow sticky traps; grow YMV-resistant varieties next season."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "thiamethoxam_25wg",
+    "dose_per_litre": 0.2,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Against the whitefly vector only, when whiteflies are seen."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if more than 5% of plants show mosaic before flowering."
+  },
+  "citations": [
+   {
+    "title": "Soybean: Package of practices",
+    "publisher": "ICAR-Indian Institute of Soybean Research, Indore",
+    "url": "https://iisrindore.icar.gov.in"
+   },
+   {
+    "title": "AESA-based IPM Package: Soybean",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   }
+  ]
+ },
+ "soybean_girdle_beetle": {
+  "what_to_check": {
+   "en": "Look for wilted, hanging leaves and stems with two ring cuts in 5 spots across the field.",
+   "hi": "खेत के 5 स्थानों पर लटकी मुरझाई पत्तियाँ और दो गोल कटाव वाले तने देखें।",
+   "mr": "शेतात 5 ठिकाणी लोंबकळणारी सुकलेली पाने व दोन गोल काप असलेली खोडे पाहा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not sow too densely — crowding favours girdle beetle.",
+    "hi": "बहुत घना न बोएँ — घनी फसल में चक्र भृंग बढ़ता है।",
+    "mr": "खूप दाट पेरू नका — दाट पिकात चक्री भुंगा वाढतो."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Cut and destroy girdled plant parts every few days; plough deep in summer."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "thiacloprid_21_7sc",
+    "dose_per_litre": 1.5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "At first girdling, before flowering."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "chlorantraniliprole_18_5sc",
+    "dose_per_litre": 0.3,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Alternative; also controls defoliating caterpillars."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if more than 10% of plants are girdled."
+  },
+  "citations": [
+   {
+    "title": "Soybean: Package of practices",
+    "publisher": "ICAR-Indian Institute of Soybean Research, Indore",
+    "url": "https://iisrindore.icar.gov.in"
+   }
+  ]
+ },
+ "soybean_tobacco_caterpillar": {
+  "what_to_check": {
+   "en": "Look for papery, net-like leaves with groups of young larvae underneath; count larvae per metre of row.",
+   "hi": "जाली जैसी पत्तियाँ और नीचे झुंड में छोटी इल्लियाँ देखें; प्रति मीटर कतार में इल्लियाँ गिनें।",
+   "mr": "जाळीदार पाने व खाली समूहातील लहान अळ्या पाहा; प्रति मीटर ओळीत अळ्या मोजा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not wait for large larvae — young larvae in groups are far easier to control.",
+    "hi": "बड़ी इल्लियों का इंतज़ार न करें — झुंड वाली छोटी इल्लियाँ आसानी से नियंत्रित होती हैं।",
+    "mr": "मोठ्या अळ्यांची वाट पाहू नका — समूहातील लहान अळ्या सहज नियंत्रित होतात."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Pluck and destroy leaves carrying egg masses or larval groups; set pheromone traps at 5 per acre."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Spray SlNPV at 250 larval equivalents per hectare or Bacillus thuringiensis in the evening."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "chlorantraniliprole_18_5sc",
+    "dose_per_litre": 0.3,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "When larvae exceed about 4 per metre of row."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if defoliation passes 30% before pod filling."
+  },
+  "citations": [
+   {
+    "title": "Soybean: Package of practices",
+    "publisher": "ICAR-Indian Institute of Soybean Research, Indore",
+    "url": "https://iisrindore.icar.gov.in"
+   }
+  ]
+ },
+ "soybean_rust": {
+  "what_to_check": {
+   "en": "Turn over lower leaves and look with a hand lens for raised tan pustules.",
+   "hi": "निचली पत्तियाँ पलटकर लेंस से उभरे भूरे दाने देखें।",
+   "mr": "खालची पाने उलटून भिंगाने उंचावलेले तपकिरी फोड पाहा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not wait until leaves drop — rust spreads fast in cool, wet weather.",
+    "hi": "पत्तियाँ झड़ने तक इंतज़ार न करें — ठंडे-नम मौसम में रस्ट तेज़ी से फैलता है।",
+    "mr": "पाने गळेपर्यंत थांबू नका — थंड-ओलसर हवामानात तांबेरा वेगाने पसरतो."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Grow rust-tolerant varieties and sow early to escape late-season rust."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "propiconazole_25ec",
+    "dose_per_litre": 1.0,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "At first pustules; repeat after 15 days if weather stays wet."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "hexaconazole_5ec",
+    "dose_per_litre": 1.6,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Alternative to propiconazole."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if pustules reach the upper canopy at pod filling."
+  },
+  "citations": [
+   {
+    "title": "Soybean: Package of practices",
+    "publisher": "ICAR-Indian Institute of Soybean Research, Indore",
+    "url": "https://iisrindore.icar.gov.in"
+   }
+  ]
+ },
+ "rice_skipper": {
+  "what_to_check": {
+   "en": "Count rolled or chewed leaf tips on 10 hills and look for green larvae with a big head inside.",
+   "hi": "10 पौधों पर मुड़ी या कुतरी पत्ती की नोक गिनें और अंदर बड़े सिर वाली हरी इल्ली देखें।",
+   "mr": "10 चुडांवर गुंडाळलेली किंवा कुरतडलेली पानांची टोके मोजा व आत मोठ्या डोक्याची हिरवी अळी पाहा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not spray for skippers — spiders and wasps usually keep them below damaging numbers, and a spray kills those allies.",
+    "hi": "स्किपर के लिए छिड़काव न करें — मकड़ी और ततैया इन्हें नियंत्रित रखते हैं, छिड़काव से ये मित्र मरते हैं।",
+    "mr": "स्किपरसाठी फवारणी करू नका — कोळी व गांधीलमाश्या त्यांना नियंत्रणात ठेवतात, फवारणीने हे मित्र मरतात."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Hand-pick larvae from rolled leaf tips; keep bunds free of grassy weeds where they breed.",
+     "hi": "मुड़ी नोकों से इल्लियाँ हाथ से चुनें; मेड़ों पर घास न रहने दें जहाँ ये पनपती हैं।",
+     "mr": "गुंडाळलेल्या टोकांतून अळ्या हाताने वेचा; बांधावर गवत ठेवू नका जिथे त्या वाढतात."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Protect natural enemies: avoid broad-spectrum sprays early in the season.",
+     "hi": "मित्र कीट बचाएँ: मौसम की शुरुआत में व्यापक दवाएँ न छिड़कें।",
+     "mr": "मित्रकीटक जपा: हंगामाच्या सुरुवातीला व्यापक औषधे फवारू नका."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if more than a quarter of the leaf area is eaten at booting.",
+   "hi": "बाली निकलते समय एक-चौथाई से ज़्यादा पत्तियाँ खा ली गई हों तो विशेषज्ञ को बुलाएँ।",
+   "mr": "लोंबी येताना पानांचा एक-चतुर्थांशाहून अधिक भाग खाल्ला असल्यास तज्ज्ञांना बोलवा."
+  },
+  "citations": [
+   {
+    "title": "Rice Knowledge Management Portal",
+    "publisher": "ICAR-Indian Institute of Rice Research",
+    "url": "https://www.rkmp.co.in"
+   },
+   {
+    "title": "AESA-based IPM Package: Rice",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   }
+  ]
+ },
+ "rice_white_stem_borer": {
+  "what_to_check": {
+   "en": "Count dead hearts on 10 hills; pull the dried central shoot — it comes out easily if a borer is inside. Threshold: about 5% dead hearts.",
+   "hi": "10 पौधों पर मृत गोभ गिनें; सूखी बीच की पत्ती खींचें — छेदक हो तो आसानी से निकलती है। सीमा: लगभग 5% मृत गोभ।",
+   "mr": "10 चुडांवरील मेलेले गाभे मोजा; वाळलेला कोंब ओढा — आत अळी असल्यास सहज निघतो. मर्यादा: सुमारे 5% मेलेले गाभे."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not spray for white ears that are already visible — the larva has left; protect the next flush instead.",
+    "hi": "जो सफेद बालियाँ दिख चुकी हैं उन पर छिड़काव न करें — इल्ली निकल चुकी है।",
+    "mr": "आधीच दिसणाऱ्या पांढऱ्या लोंब्यांसाठी फवारणी करू नका — अळी निघून गेलेली असते."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Clip leaf tips of seedlings before transplanting to remove egg masses; after harvest, plough stubble in.",
+     "hi": "रोपाई से पहले पौध की नोक काटें ताकि अंडे हटें; कटाई के बाद ठूँठ जोत दें।",
+     "mr": "लावणीपूर्वी रोपांची टोके कापा म्हणजे अंडीपुंज निघतील; कापणीनंतर धसकटे नांगरून गाडा."
+    }
+   },
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Use a light trap at night to monitor moth flights; pheromone lures for the yellow stem borer do not attract this species.",
+     "hi": "पतंगों पर नज़र रखने के लिए रात में प्रकाश प्रपंच लगाएँ; पीले तना छेदक का फेरोमोन इस प्रजाति को नहीं खींचता।",
+     "mr": "पतंगांवर लक्ष ठेवण्यासाठी रात्री प्रकाश सापळा लावा; पिवळ्या खोडकिड्याचा कामगंध या प्रजातीला आकर्षित करत नाही."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Release Trichogramma japonicum at 50,000 per hectare when moths are seen in traps.",
+     "hi": "ट्रैप में पतंगे दिखें तो ट्राइकोग्रामा जैपोनिकम 50,000 प्रति हेक्टेयर छोड़ें।",
+     "mr": "सापळ्यात पतंग दिसताच ट्रायकोग्रामा जॅपोनिकम हेक्टरी 50,000 सोडा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "chlorantraniliprole_0_4gr",
+    "dose_per_litre": null,
+    "dose_basis": "4 kg granules per acre, broadcast in 3–5 cm of standing water",
+    "water_l_per_acre": null,
+    "verified": false,
+    "timing": {
+     "en": "Only after the dead-heart threshold is crossed.",
+     "hi": "केवल मृत गोभ सीमा पार होने के बाद।",
+     "mr": "फक्त मेलेल्या गाभ्यांची मर्यादा ओलांडल्यानंतर."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if dead hearts exceed 10% or white ears appear across the field.",
+   "hi": "मृत गोभ 10% से ज़्यादा हों या पूरे खेत में सफेद बालियाँ दिखें तो विशेषज्ञ को बुलाएँ।",
+   "mr": "मेलेले गाभे 10% पेक्षा जास्त किंवा सगळीकडे पांढऱ्या लोंब्या दिसल्यास तज्ज्ञांना बोलवा."
+  },
+  "citations": [
+   {
+    "title": "Rice Knowledge Management Portal",
+    "publisher": "ICAR-Indian Institute of Rice Research",
+    "url": "https://www.rkmp.co.in"
+   },
+   {
+    "title": "AESA-based IPM Package: Rice",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   }
+  ]
+ },
+ "maize_curvularia_leaf_spot": {
+  "what_to_check": {
+   "en": "Check middle leaves of 10 plants for many small round spots with a yellow ring.",
+   "hi": "10 पौधों की बीच की पत्तियों पर पीले घेरे वाले कई छोटे गोल धब्बे देखें।",
+   "mr": "10 झाडांच्या मधल्या पानांवर पिवळ्या वलयाचे अनेक लहान गोल ठिपके पाहा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not leave infected residue on the field after harvest.",
+    "hi": "कटाई के बाद रोगी अवशेष खेत में न छोड़ें।",
+    "mr": "कापणीनंतर रोगट अवशेष शेतात ठेवू नका."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Destroy infected residue, rotate with a non-cereal crop and keep balanced nitrogen and potash.",
+     "hi": "रोगी अवशेष नष्ट करें, गैर-अनाज फसल से फसल-चक्र करें और संतुलित नाइट्रोजन-पोटाश दें।",
+     "mr": "रोगट अवशेष नष्ट करा, तृणधान्य नसलेल्या पिकाची फेरपालट करा व संतुलित नत्र-पालाश द्या."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "mancozeb_75wp",
+    "dose_per_litre": 2.5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "When spots spread to the upper leaves before tasseling.",
+     "hi": "नर मंजरी से पहले धब्बे ऊपरी पत्तियों तक फैलें तब।",
+     "mr": "तुरा येण्यापूर्वी ठिपके वरच्या पानांवर पसरल्यास."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if spots merge into large dead patches.",
+   "hi": "धब्बे मिलकर बड़े सूखे भाग बनाएँ तो विशेषज्ञ को बुलाएँ।",
+   "mr": "ठिपके एकत्र होऊन मोठे वाळलेले चट्टे झाल्यास तज्ज्ञांना बोलवा."
+  },
+  "citations": [
+   {
+    "title": "Maize diseases and insect pests",
+    "publisher": "ICAR-Indian Institute of Maize Research",
+    "url": "https://iimr.icar.gov.in"
+   },
+   {
+    "title": "AESA-based IPM Package: Maize",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   }
+  ]
+ },
+ "maize_aphid": {
+  "what_to_check": {
+   "en": "Check tassels and the upper whorl of 20 plants and count plants with large aphid colonies.",
+   "hi": "20 पौधों की नर मंजरी और ऊपरी गोभ देखें और बड़े माहू झुंड वाले पौधे गिनें।",
+   "mr": "20 झाडांचे तुरे व वरचा पोंगा तपासा व मोठ्या माव्याच्या वसाहती असलेली झाडे मोजा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not spray just because you see a few aphids — ladybird beetles and hoverfly larvae usually clear them within days.",
+    "hi": "थोड़े माहू देखकर छिड़काव न करें — लेडीबर्ड भृंग और होवरफ्लाई की इल्लियाँ कुछ दिनों में इन्हें खत्म कर देती हैं।",
+    "mr": "थोडा मावा पाहून फवारणी करू नका — लेडीबर्ड भुंगे व होवरफ्लायच्या अळ्या काही दिवसांत त्याचा नाश करतात."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Avoid excess nitrogen and water stress; keep the field free of grassy weeds.",
+     "hi": "ज़्यादा नाइट्रोजन और पानी की कमी से बचें; खेत को घास से मुक्त रखें।",
+     "mr": "जास्त नत्र व पाण्याचा ताण टाळा; शेत गवतमुक्त ठेवा."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Spray neem oil at 5 ml per litre on heavy colonies; conserve ladybird beetles.",
+     "hi": "घने झुंडों पर नीम तेल 5 मिली प्रति लीटर छिड़कें; लेडीबर्ड भृंग बचाएँ।",
+     "mr": "दाट वसाहतींवर निंबोळी तेल 5 मिली प्रति लिटर फवारा; लेडीबर्ड भुंगे जपा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "thiamethoxam_25wg",
+    "dose_per_litre": 0.2,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Only if colonies cover tassels on more than 1 in 5 plants before pollen shed.",
+     "hi": "केवल तब जब परागण से पहले 5 में से 1 से ज़्यादा पौधों की नर मंजरी झुंडों से ढकी हो।",
+     "mr": "फक्त परागीभवनापूर्वी 5 पैकी 1 पेक्षा जास्त झाडांचे तुरे वसाहतींनी झाकलेले असल्यास."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if tassels are blackened with sooty mould and pollen shed fails.",
+   "hi": "नर मंजरी काली फफूँद से ढक जाए और पराग न झड़े तो विशेषज्ञ को बुलाएँ।",
+   "mr": "तुरे काळ्या बुरशीने झाकले व परागकण पडत नसतील तर तज्ज्ञांना बोलवा."
+  },
+  "citations": [
+   {
+    "title": "Maize diseases and insect pests",
+    "publisher": "ICAR-Indian Institute of Maize Research",
+    "url": "https://iimr.icar.gov.in"
+   },
+   {
+    "title": "AESA-based IPM Package: Maize",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   }
+  ]
+ },
+ "cotton_bacterial_blight": {
+  "what_to_check": {
+   "en": "Check 10 plants for angular, water-soaked spots bounded by veins, and black streaks on the stems.",
+   "hi": "10 पौधों पर शिराओं से घिरे कोणीय पानी-भीगे धब्बे और तनों पर काली धारियाँ देखें।",
+   "mr": "10 झाडांवर शिरांनी वेढलेले कोनदार पाणथळ ठिपके व खोडावर काळ्या रेषा पाहा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not use streptomycin or tetracycline (streptocycline): antibiotics are no longer permitted on crops in India.",
+    "hi": "स्ट्रेप्टोमाइसिन या टेट्रासाइक्लिन (स्ट्रेप्टोसाइक्लिन) न डालें: भारत में फसलों पर एंटीबायोटिक की अनुमति अब नहीं है।",
+    "mr": "स्ट्रेप्टोमायसिन किंवा टेट्रासायक्लिन (स्ट्रेप्टोसायक्लिन) वापरू नका: भारतात पिकांवर प्रतिजैविकांना आता परवानगी नाही."
+   },
+   {
+    "en": "Do not work in the crop while leaves are wet — it spreads the bacteria.",
+    "hi": "पत्तियाँ गीली हों तब खेत में काम न करें — इससे जीवाणु फैलते हैं।",
+    "mr": "पाने ओली असताना शेतात काम करू नका — त्याने जिवाणू पसरतात."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Sow acid-delinted or treated seed of a tolerant variety; remove and burn infected leaves and last season's debris.",
+     "hi": "सहनशील किस्म का अम्ल-उपचारित या उपचारित बीज बोएँ; रोगी पत्तियाँ और पिछले मौसम के अवशेष हटाकर जलाएँ।",
+     "mr": "सहनशील वाणाचे आम्ल-प्रक्रिया केलेले किंवा प्रक्रिया केलेले बियाणे पेरा; रोगट पाने व मागील हंगामाचे अवशेष काढून जाळा."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Spray Pseudomonas fluorescens at 5 g per litre at the first spots.",
+     "hi": "पहले धब्बे दिखते ही स्यूडोमोनास फ्लोरेसेंस 5 ग्राम प्रति लीटर छिड़कें।",
+     "mr": "पहिले ठिपके दिसताच स्यूडोमोनास फ्लुरोसन्स 5 ग्रॅम प्रति लिटर फवारा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "copper_oxychloride_50wp",
+    "dose_per_litre": 2.5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "At first spots in wet weather; repeat after 10–15 days if it keeps spreading.",
+     "hi": "नम मौसम में पहले धब्बों पर; फैलता रहे तो 10–15 दिन बाद दोहराएँ।",
+     "mr": "ओलसर हवामानात पहिल्या ठिपक्यांवर; पसरत राहिल्यास 10–15 दिवसांनी पुन्हा."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if black streaks appear on stems or bolls.",
+   "hi": "तनों या टिंडों पर काली धारियाँ दिखें तो विशेषज्ञ को बुलाएँ।",
+   "mr": "खोडावर किंवा बोंडांवर काळ्या रेषा दिसल्या तर तज्ज्ञांना बोलवा."
+  },
+  "citations": [
+   {
+    "title": "Cotton disease and pest management",
+    "publisher": "ICAR-Central Institute for Cotton Research",
+    "url": "https://cicr.org.in"
+   },
+   {
+    "title": "AESA-based IPM Package: Cotton",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   },
+   {
+    "title": "Crop protection — Cotton",
+    "publisher": "TNAU Agritech Portal",
+    "url": "https://agritech.tnau.ac.in"
+   }
+  ]
+ },
+ "cotton_leaf_curl": {
+  "what_to_check": {
+   "en": "Check the undersides of curled leaves for thick dark veins and small cup-like outgrowths, and count whiteflies.",
+   "hi": "मुड़ी पत्तियों के नीचे मोटी गहरी शिराएँ और छोटी कप जैसी बढ़वार देखें, और सफ़ेद मक्खियाँ गिनें।",
+   "mr": "गुंडाळलेल्या पानांच्या खाली जाड गडद शिरा व लहान कपासारखी वाढ पाहा, आणि पांढऱ्या माशा मोजा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "No spray cures a virus-infected plant — do not spray the plant for the virus; control the whitefly that spreads it.",
+    "hi": "कोई भी दवा विषाणु वाले पौधे को ठीक नहीं करती — विषाणु के लिए छिड़काव न करें; उसे फैलाने वाली सफ़ेद मक्खी को रोकें।",
+    "mr": "कोणतेही औषध विषाणूग्रस्त झाड बरे करत नाही — विषाणूसाठी फवारणी करू नका; तो पसरवणाऱ्या पांढऱ्या माशीला रोखा."
+   },
+   {
+    "en": "Do not repeat the same insecticide against whitefly — it builds resistance quickly.",
+    "hi": "सफ़ेद मक्खी पर एक ही कीटनाशक बार-बार न डालें — जल्दी प्रतिरोध बनता है।",
+    "mr": "पांढऱ्या माशीवर तेच कीटकनाशक पुन्हा पुन्हा वापरू नका — लवकर प्रतिकारशक्ती तयार होते."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Pull out and destroy infected plants early; remove weed hosts; grow a tolerant hybrid; put up 10 yellow sticky traps per acre.",
+     "hi": "रोगी पौधे जल्दी उखाड़कर नष्ट करें; खरपतवार हटाएँ; सहनशील संकर लें; प्रति एकड़ 10 पीले चिपचिपे ट्रैप लगाएँ।",
+     "mr": "रोगट झाडे लवकर उपटून नष्ट करा; तण काढा; सहनशील संकरित वाण घ्या; एकरी 10 पिवळे चिकट सापळे लावा."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Spray neem oil 1500 ppm at 5 ml per litre against whitefly.",
+     "hi": "सफ़ेद मक्खी पर नीम तेल 1500 ppm 5 मिली प्रति लीटर छिड़कें।",
+     "mr": "पांढऱ्या माशीवर कडुनिंब तेल 1500 ppm 5 मिली प्रति लिटर फवारा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "pyriproxyfen_10ec",
+    "dose_per_litre": 1.0,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Only when whiteflies exceed 8–10 adults per leaf; against the whitefly, not the virus.",
+     "hi": "सफ़ेद मक्खी प्रति पत्ती 8–10 से ज़्यादा हो तभी; सफ़ेद मक्खी के लिए, विषाणु के लिए नहीं।",
+     "mr": "पांढऱ्या माशा प्रति पान 8–10 पेक्षा जास्त असतील तेव्हाच; पांढऱ्या माशीसाठी, विषाणूसाठी नाही."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "diafenthiuron_50wp",
+    "dose_per_litre": 1.2,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Alternative to rotate with; not on consecutive sprays.",
+     "hi": "बदल-बदल कर डालने का विकल्प; लगातार दो छिड़काव में नहीं।",
+     "mr": "आलटून-पालटून वापरायचा पर्याय; लागोपाठ दोन फवारण्यांत नाही."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert to confirm — in Maharashtra leaf curl is uncommon and can be confused with sucking-pest damage.",
+   "hi": "पुष्टि के लिए विशेषज्ञ को बुलाएँ — महाराष्ट्र में पत्ती मरोड़ कम होता है और रस चूसने वाले कीटों के नुकसान से भ्रम हो सकता है।",
+   "mr": "खात्रीसाठी तज्ज्ञांना बोलवा — महाराष्ट्रात लीफ कर्ल कमी आढळतो आणि रस शोषणाऱ्या किडींच्या नुकसानाशी गल्लत होऊ शकते."
+  },
+  "citations": [
+   {
+    "title": "Cotton disease and pest management",
+    "publisher": "ICAR-Central Institute for Cotton Research",
+    "url": "https://cicr.org.in"
+   },
+   {
+    "title": "AESA-based IPM Package: Cotton",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   }
+  ]
+ },
+ "cotton_wilt": {
+  "what_to_check": {
+   "en": "Cut the stem of a wilting plant near the ground: brown streaks inside mean Fusarium wilt; a clean stem after heavy rain points to parawilt.",
+   "hi": "मुरझाते पौधे का तना ज़मीन के पास काटें: अंदर भूरी धारियाँ हों तो फ्यूज़ेरियम उकठा; भारी बारिश के बाद साफ़ तना हो तो पैरा-विल्ट।",
+   "mr": "मरगळलेल्या झाडाचे खोड जमिनीजवळ कापा: आत तपकिरी रेषा असतील तर फ्युजेरियम मर; जोरदार पावसानंतर खोड स्वच्छ असेल तर पॅरा-विल्ट."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not let water stand in the field; do not flood-irrigate a wilting patch.",
+    "hi": "खेत में पानी जमा न होने दें; मुरझाते हिस्से में भर-भर पानी न दें।",
+    "mr": "शेतात पाणी साचू देऊ नका; मरगळलेल्या भागाला भरपूर पाणी देऊ नका."
+   },
+   {
+    "en": "Do not move soil or water from a wilt patch to healthy parts of the field.",
+    "hi": "उकठा वाले हिस्से की मिट्टी या पानी खेत के स्वस्थ हिस्से में न ले जाएँ।",
+    "mr": "मर लागलेल्या भागातील माती किंवा पाणी शेताच्या निरोगी भागात नेऊ नका."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Pull out and destroy wilted plants with their roots; drain standing water; grow a resistant variety and rotate with sorghum or another non-host next season.",
+     "hi": "मुरझाए पौधे जड़ सहित उखाड़कर नष्ट करें; जमा पानी निकालें; रोगरोधी किस्म लें और अगले मौसम ज्वार या दूसरी फसल से फसल-चक्र करें।",
+     "mr": "मरगळलेली झाडे मुळासकट उपटून नष्ट करा; साचलेले पाणी काढा; प्रतिकारक वाण घ्या आणि पुढील हंगामात ज्वारी किंवा दुसऱ्या पिकाची फेरपालट करा."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Drench the soil around nearby plants with Trichoderma viride at 5 g per litre; treat next season's seed with 4 g per kg.",
+     "hi": "आसपास के पौधों की जड़ों में ट्राइकोडर्मा विरिडी 5 ग्राम प्रति लीटर डालें; अगले मौसम के बीज को 4 ग्राम प्रति किलो से उपचारित करें।",
+     "mr": "जवळच्या झाडांच्या मुळांशी ट्रायकोडर्मा व्हिरिडी 5 ग्रॅम प्रति लिटर ओता; पुढील हंगामाच्या बियाण्यास 4 ग्रॅम प्रति किलो प्रक्रिया करा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "carbendazim_50wp",
+    "dose_per_litre": 1.0,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "As a root-zone drench around plants next to the wilted ones, not as a leaf spray.",
+     "hi": "मुरझाए पौधों के पास के पौधों की जड़ों में डालें, पत्तियों पर छिड़काव नहीं।",
+     "mr": "मरगळलेल्या झाडांशेजारील झाडांच्या मुळांशी ओता, पानांवर फवारणी नाही."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if plants wilt suddenly across the field after heavy rain following a dry spell — that is parawilt and needs different, urgent care.",
+   "hi": "सूखे के बाद भारी बारिश होने पर पूरे खेत में पौधे अचानक मुरझाएँ तो विशेषज्ञ को बुलाएँ — यह पैरा-विल्ट है और इसका इलाज अलग व तुरंत है।",
+   "mr": "कोरड्या काळानंतर जोरदार पावसाने संपूर्ण शेतात झाडे अचानक मरगळली तर तज्ज्ञांना बोलवा — हे पॅरा-विल्ट असून त्याचा उपाय वेगळा व तातडीचा आहे."
+  },
+  "citations": [
+   {
+    "title": "Cotton disease and pest management",
+    "publisher": "ICAR-Central Institute for Cotton Research",
+    "url": "https://cicr.org.in"
+   },
+   {
+    "title": "Crop protection — Cotton",
+    "publisher": "TNAU Agritech Portal",
+    "url": "https://agritech.tnau.ac.in"
+   }
+  ]
+ },
+ "cotton_alternaria_leaf_spot": {
+  "what_to_check": {
+   "en": "Check the lower leaves of 10 plants for brown spots with rings, and count how many leaves have them.",
+   "hi": "10 पौधों की निचली पत्तियों पर छल्लेदार भूरे धब्बे देखें और गिनें कितनी पत्तियों पर हैं।",
+   "mr": "10 झाडांच्या खालच्या पानांवर वलयांचे तपकिरी ठिपके पाहा आणि किती पानांवर आहेत ते मोजा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not give extra urea to a spotted crop — lush growth and potash shortage make it worse.",
+    "hi": "धब्बे वाली फसल को अतिरिक्त यूरिया न दें — ज़्यादा हरी बढ़वार और पोटाश की कमी से रोग बढ़ता है।",
+    "mr": "ठिपके असलेल्या पिकाला जास्त युरिया देऊ नका — जास्त हिरवी वाढ व पोटॅशची कमतरता रोग वाढवते."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Pick and destroy the spotted lower leaves; give balanced fertilizer with enough potash; keep good spacing for air.",
+     "hi": "धब्बेदार निचली पत्तियाँ तोड़कर नष्ट करें; पर्याप्त पोटाश के साथ संतुलित खाद दें; हवा के लिए उचित दूरी रखें।",
+     "mr": "ठिपके असलेली खालची पाने तोडून नष्ट करा; पुरेशा पोटॅशसह संतुलित खत द्या; हवेसाठी योग्य अंतर ठेवा."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Spray Pseudomonas fluorescens at 5 g per litre when the first spots appear.",
+     "hi": "पहले धब्बे दिखते ही स्यूडोमोनास फ्लोरेसेंस 5 ग्राम प्रति लीटर छिड़कें।",
+     "mr": "पहिले ठिपके दिसताच स्यूडोमोनास फ्लुरोसन्स 5 ग्रॅम प्रति लिटर फवारा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "mancozeb_75wp",
+    "dose_per_litre": 2.5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "When spots spread to the middle leaves; repeat after 15 days if wet weather continues.",
+     "hi": "धब्बे बीच की पत्तियों तक फैलें तब; नमी बनी रहे तो 15 दिन बाद दोहराएँ।",
+     "mr": "ठिपके मधल्या पानांपर्यंत पसरल्यावर; ओलसर हवामान राहिल्यास 15 दिवसांनी पुन्हा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "propiconazole_25ec",
+    "dose_per_litre": 1.0,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Alternative if spots keep spreading after mancozeb.",
+     "hi": "मैंकोज़ेब के बाद भी धब्बे फैलते रहें तो विकल्प।",
+     "mr": "मॅन्कोझेबनंतरही ठिपके पसरत राहिल्यास पर्याय."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if leaves start dropping early or spots appear on bolls.",
+   "hi": "पत्तियाँ जल्दी झड़ने लगें या टिंडों पर धब्बे दिखें तो विशेषज्ञ को बुलाएँ।",
+   "mr": "पाने लवकर गळू लागली किंवा बोंडांवर ठिपके दिसले तर तज्ज्ञांना बोलवा."
+  },
+  "citations": [
+   {
+    "title": "Cotton disease and pest management",
+    "publisher": "ICAR-Central Institute for Cotton Research",
+    "url": "https://cicr.org.in"
+   },
+   {
+    "title": "AESA-based IPM Package: Cotton",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   },
+   {
+    "title": "Crop protection — Cotton",
+    "publisher": "TNAU Agritech Portal",
+    "url": "https://agritech.tnau.ac.in"
+   }
+  ]
+ },
+ "cotton_aphid": {
+  "what_to_check": {
+   "en": "Turn over the top leaves of 20 plants: count how many plants have aphid clusters, and look for ladybird beetles.",
+   "hi": "20 पौधों की ऊपरी पत्तियाँ पलटें: गिनें कितने पौधों पर माहू के झुंड हैं, और लेडीबर्ड भृंग देखें।",
+   "mr": "20 झाडांची वरची पाने उलटा: किती झाडांवर माव्याचे थवे आहेत ते मोजा, आणि लेडीबर्ड भुंगेरे पाहा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not spray if ladybird beetles and their larvae are already eating the aphids — they will clear them.",
+    "hi": "अगर लेडीबर्ड भृंग और उनके बच्चे पहले से माहू खा रहे हैं तो छिड़काव न करें — वे उन्हें साफ़ कर देंगे।",
+    "mr": "लेडीबर्ड भुंगेरे व त्यांच्या अळ्या आधीच मावा खात असतील तर फवारणी करू नका — ते मावा संपवतील."
+   },
+   {
+    "en": "Do not give extra urea — soft, lush growth feeds aphids.",
+    "hi": "अतिरिक्त यूरिया न दें — नरम, हरी बढ़वार माहू को बढ़ाती है।",
+    "mr": "जास्त युरिया देऊ नका — कोवळी, हिरवी वाढ माव्याला पोषक ठरते."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Keep urea to the recommended dose; keep field borders weed-free; protect ladybird beetles and lacewings by not spraying early.",
+     "hi": "यूरिया सिफ़ारिश के अनुसार ही दें; मेड़ें खरपतवार-मुक्त रखें; जल्दी छिड़काव न करके लेडीबर्ड और लेसविंग को बचाएँ।",
+     "mr": "युरिया शिफारशीनुसारच द्या; बांध तणमुक्त ठेवा; लवकर फवारणी न करता लेडीबर्ड व लेसविंगचे संरक्षण करा."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Spray neem seed kernel extract 5% or Lecanicillium lecanii at 5 g per litre.",
+     "hi": "नीम बीज अर्क 5% या लेकानिसिलियम लेकानी 5 ग्राम प्रति लीटर छिड़कें।",
+     "mr": "निंबोळी अर्क 5% किंवा लेकॅनिसिलियम लेकॅनी 5 ग्रॅम प्रति लिटर फवारा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "flonicamid_50wg",
+    "dose_per_litre": 0.3,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Only when more than 1 in 10 plants have aphid clusters and natural enemies are few.",
+     "hi": "जब 10 में से 1 से ज़्यादा पौधों पर माहू के झुंड हों और मित्र कीट कम हों तभी।",
+     "mr": "10 पैकी 1 पेक्षा जास्त झाडांवर माव्याचे थवे असतील व मित्रकीटक कमी असतील तेव्हाच."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if aphids persist after two sprays or leaves turn black with sooty mould.",
+   "hi": "दो छिड़काव के बाद भी माहू रहें या पत्तियाँ काली फफूँद से काली हों तो विशेषज्ञ को बुलाएँ।",
+   "mr": "दोन फवारण्यांनंतरही मावा राहिला किंवा पाने काळ्या बुरशीने काळी झाली तर तज्ज्ञांना बोलवा."
+  },
+  "citations": [
+   {
+    "title": "Cotton disease and pest management",
+    "publisher": "ICAR-Central Institute for Cotton Research",
+    "url": "https://cicr.org.in"
+   },
+   {
+    "title": "AESA-based IPM Package: Cotton",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   }
+  ]
+ },
+ "soybean_frogeye_leaf_spot": {
+  "what_to_check": {
+   "en": "Check the upper leaves of 10 plants for round grey spots with a purple-red border.",
+   "hi": "10 पौधों की ऊपरी पत्तियों पर बैंगनी-लाल किनारे वाले गोल धूसर धब्बे देखें।",
+   "mr": "10 झाडांच्या वरच्या पानांवर जांभळट-लाल कडेचे गोल राखाडी ठिपके पाहा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not save seed from an affected field — the fungus carries over on seed.",
+    "hi": "प्रभावित खेत का बीज न रखें — फफूँद बीज के साथ अगले साल जाती है।",
+    "mr": "बाधित शेतातील बियाणे ठेवू नका — बुरशी बियाण्यासोबत पुढील वर्षी जाते."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Grow a resistant variety; rotate with a cereal next season; bury or remove crop residue after harvest.",
+     "hi": "रोगरोधी किस्म लें; अगले मौसम अनाज फसल से फसल-चक्र करें; कटाई के बाद अवशेष दबाएँ या हटाएँ।",
+     "mr": "प्रतिकारक वाण घ्या; पुढील हंगामात तृणधान्याची फेरपालट करा; काढणीनंतर अवशेष गाडा किंवा काढा."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Treat next season's seed with Trichoderma viride at 5 g per kg.",
+     "hi": "अगले मौसम के बीज को ट्राइकोडर्मा विरिडी 5 ग्राम प्रति किलो से उपचारित करें।",
+     "mr": "पुढील हंगामाच्या बियाण्यास ट्रायकोडर्मा व्हिरिडी 5 ग्रॅम प्रति किलो प्रक्रिया करा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "hexaconazole_5ec",
+    "dose_per_litre": 2.0,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "When spots appear on upper leaves before pod filling.",
+     "hi": "दाना भरने से पहले ऊपरी पत्तियों पर धब्बे दिखें तब।",
+     "mr": "दाणे भरण्यापूर्वी वरच्या पानांवर ठिपके दिसल्यावर."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if spots appear on pods or leaves drop before pod filling.",
+   "hi": "फलियों पर धब्बे दिखें या दाना भरने से पहले पत्तियाँ झड़ें तो विशेषज्ञ को बुलाएँ।",
+   "mr": "शेंगांवर ठिपके दिसले किंवा दाणे भरण्यापूर्वी पाने गळली तर तज्ज्ञांना बोलवा."
+  },
+  "citations": [
+   {
+    "title": "Soybean disease and insect-pest management",
+    "publisher": "ICAR-Indian Institute of Soybean Research",
+    "url": "https://iisrindore.icar.gov.in"
+   },
+   {
+    "title": "AESA-based IPM Package: Soybean",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   }
+  ]
+ },
+ "soybean_septoria_brown_spot": {
+  "what_to_check": {
+   "en": "Check the lower leaves of 10 plants for small dark-brown spots with yellowing, and how far up they have spread.",
+   "hi": "10 पौधों की निचली पत्तियों पर पीलेपन वाले छोटे गहरे भूरे धब्बे देखें, और कितना ऊपर तक फैले हैं।",
+   "mr": "10 झाडांच्या खालच्या पानांवर पिवळेपणासह लहान गडद तपकिरी ठिपके पाहा, आणि किती वरपर्यंत पसरले ते पाहा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not sow soybean after soybean in the same field — the fungus lives on the old residue.",
+    "hi": "एक ही खेत में सोयाबीन के बाद फिर सोयाबीन न बोएँ — फफूँद पुराने अवशेष पर रहती है।",
+    "mr": "एकाच शेतात सोयाबीननंतर पुन्हा सोयाबीन पेरू नका — बुरशी जुन्या अवशेषांवर राहते."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Rotate with a cereal; bury crop residue after harvest; keep recommended spacing.",
+     "hi": "अनाज फसल से फसल-चक्र करें; कटाई के बाद अवशेष दबाएँ; सिफ़ारिशी दूरी रखें।",
+     "mr": "तृणधान्याची फेरपालट करा; काढणीनंतर अवशेष गाडा; शिफारशीत अंतर ठेवा."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Treat seed with Trichoderma viride at 5 g per kg before sowing.",
+     "hi": "बुवाई से पहले बीज को ट्राइकोडर्मा विरिडी 5 ग्राम प्रति किलो से उपचारित करें।",
+     "mr": "पेरणीपूर्वी बियाण्यास ट्रायकोडर्मा व्हिरिडी 5 ग्रॅम प्रति किलो प्रक्रिया करा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "carbendazim_50wp",
+    "dose_per_litre": 1.0,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "If spots climb past the middle of the plant before pod filling.",
+     "hi": "दाना भरने से पहले धब्बे पौधे के बीच से ऊपर चढ़ें तो।",
+     "mr": "दाणे भरण्यापूर्वी ठिपके झाडाच्या मध्यापेक्षा वर चढल्यास."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if the upper leaves are spotted and yellowing during pod filling.",
+   "hi": "दाना भरते समय ऊपरी पत्तियों पर धब्बे और पीलापन हो तो विशेषज्ञ को बुलाएँ।",
+   "mr": "दाणे भरताना वरच्या पानांवर ठिपके व पिवळेपणा असेल तर तज्ज्ञांना बोलवा."
+  },
+  "citations": [
+   {
+    "title": "Soybean disease and insect-pest management",
+    "publisher": "ICAR-Indian Institute of Soybean Research",
+    "url": "https://iisrindore.icar.gov.in"
+   },
+   {
+    "title": "AESA-based IPM Package: Soybean",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   }
+  ]
+ },
+ "maize_gray_leaf_spot": {
+  "what_to_check": {
+   "en": "Check the lower leaves of 10 plants for narrow rectangular grey spots bounded by the veins.",
+   "hi": "10 पौधों की निचली पत्तियों पर शिराओं से घिरे पतले आयताकार धूसर धब्बे देखें।",
+   "mr": "10 झाडांच्या खालच्या पानांवर शिरांनी वेढलेले अरुंद आयताकृती राखाडी ठिपके पाहा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not leave maize residue on the surface when maize follows maize — the fungus survives on it.",
+    "hi": "मक्का के बाद मक्का हो तो अवशेष ऊपर न छोड़ें — फफूँद उस पर बची रहती है।",
+    "mr": "मक्यानंतर मका घेत असाल तर अवशेष वर ठेवू नका — बुरशी त्यावर टिकते."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Grow a tolerant hybrid; rotate with a legume; plough in residue; avoid very dense planting.",
+     "hi": "सहनशील संकर लें; दलहन से फसल-चक्र करें; अवशेष जुताई से दबाएँ; बहुत घनी बुवाई न करें।",
+     "mr": "सहनशील संकरित वाण घ्या; कडधान्याची फेरपालट करा; अवशेष नांगरून गाडा; खूप दाट पेरणी टाळा."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Spray Trichoderma harzianum at 5 g per litre at the first spots.",
+     "hi": "पहले धब्बों पर ट्राइकोडर्मा हरजियानम 5 ग्राम प्रति लीटर छिड़कें।",
+     "mr": "पहिल्या ठिपक्यांवर ट्रायकोडर्मा हर्जियानम 5 ग्रॅम प्रति लिटर फवारा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "propiconazole_25ec",
+    "dose_per_litre": 1.0,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "When spots reach the leaves just below the ear before tasseling.",
+     "hi": "नर मंजरी से पहले धब्बे भुट्टे के नीचे की पत्तियों तक पहुँचें तब।",
+     "mr": "तुरा येण्यापूर्वी ठिपके कणसाखालच्या पानांपर्यंत पोहोचल्यावर."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "mancozeb_75wp",
+    "dose_per_litre": 2.5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Alternative; repeat after 10–14 days in wet weather.",
+     "hi": "विकल्प; नम मौसम में 10–14 दिन बाद दोहराएँ।",
+     "mr": "पर्याय; ओलसर हवामानात 10–14 दिवसांनी पुन्हा."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if spots reach the ear leaf before grain filling.",
+   "hi": "दाना भरने से पहले धब्बे भुट्टे वाली पत्ती तक पहुँचें तो विशेषज्ञ को बुलाएँ।",
+   "mr": "दाणे भरण्यापूर्वी ठिपके कणसाच्या पानापर्यंत पोहोचले तर तज्ज्ञांना बोलवा."
+  },
+  "citations": [
+   {
+    "title": "Maize diseases and their management",
+    "publisher": "ICAR-Indian Institute of Maize Research",
+    "url": "https://iimr.icar.gov.in"
+   },
+   {
+    "title": "Maize Doctor",
+    "publisher": "CIMMYT",
+    "url": "https://maizedoctor.org"
+   },
+   {
+    "title": "AESA-based IPM Package: Maize",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   }
+  ]
+ },
+ "maize_ear_rot": {
+  "what_to_check": {
+   "en": "Peel back the husk of 10 cobs and look for mould at the tip or around insect holes.",
+   "hi": "10 भुट्टों का छिलका हटाकर सिरे पर या कीट के छेदों के आसपास फफूँद देखें।",
+   "mr": "10 कणसांचे आवरण मागे करून टोकावर किंवा किडींच्या छिद्रांभोवती बुरशी पाहा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not feed visibly mouldy grain to people or animals — it can carry aflatoxin and other poisons.",
+    "hi": "दिखने में फफूँदी वाला अनाज इंसानों या पशुओं को न खिलाएँ — उसमें एफ्लाटॉक्सिन जैसे ज़हर हो सकते हैं।",
+    "mr": "बुरशी दिसणारे धान्य माणसांना किंवा जनावरांना खाऊ घालू नका — त्यात अफलाटॉक्सिनसारखी विषे असू शकतात."
+   },
+   {
+    "en": "Do not store cobs or grain damp, or in heaps on the ground.",
+    "hi": "भुट्टे या अनाज को गीला या ज़मीन पर ढेर में न रखें।",
+    "mr": "कणसे किंवा धान्य ओले किंवा जमिनीवर ढिगात साठवू नका."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Harvest on time; sort out rotten cobs; dry cobs and grain in the sun to below 14% moisture before storing; control fall armyworm and stem borer, which open the way in.",
+     "hi": "समय पर कटाई करें; सड़े भुट्टे अलग करें; भंडारण से पहले भुट्टे और दाने धूप में 14% से कम नमी तक सुखाएँ; फॉल आर्मीवर्म और तना छेदक को रोकें जो रास्ता खोलते हैं।",
+     "mr": "वेळेवर काढणी करा; कुजलेली कणसे वेगळी करा; साठवण्यापूर्वी कणसे व दाणे उन्हात 14% पेक्षा कमी ओलाव्यापर्यंत वाळवा; लष्करी अळी व खोडकिडीचे नियंत्रण करा, जे बुरशीला वाट मोकळी करतात."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if more than a few cobs in ten are mouldy — the harvest may need testing before sale or feeding.",
+   "hi": "दस में से कुछ से ज़्यादा भुट्टों पर फफूँद हो तो विशेषज्ञ को बुलाएँ — बेचने या खिलाने से पहले जाँच की ज़रूरत हो सकती है।",
+   "mr": "दहा पैकी काहीपेक्षा जास्त कणसांवर बुरशी असेल तर तज्ज्ञांना बोलवा — विक्री किंवा खाऊ घालण्यापूर्वी तपासणी लागू शकते."
+  },
+  "citations": [
+   {
+    "title": "Maize diseases and their management",
+    "publisher": "ICAR-Indian Institute of Maize Research",
+    "url": "https://iimr.icar.gov.in"
+   },
+   {
+    "title": "Maize Doctor",
+    "publisher": "CIMMYT",
+    "url": "https://maizedoctor.org"
+   }
+  ]
+ }
 }

@@ -1,5 +1,11 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { smoothScrollTo } from './smoothScroll'
+import BrandMark from './ui/BrandMark'
+import { useAuth } from './auth/AuthContext'
+import { homeOf } from './auth/helpers'
+import LanguagePicker from './farmer/components/LanguagePicker'
+import { useFarmer } from './farmer/FarmerContext'
 
 const EASE = 'ease-[cubic-bezier(0.76,0,0.24,1)]'
 
@@ -30,6 +36,11 @@ function Hamburger({ open, onClick }: { open: boolean; onClick: () => void }) {
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
+  const { me } = useAuth()
+  const { t, setLang } = useFarmer()
+  const account = me
+    ? { to: homeOf(me.role), label: t(me.role === 'expert' ? 'landOpenConsole' : 'landOpenApp') }
+    : { to: '/login', label: t('authLogin') }
 
   const go = (id: string) => {
     setOpen(false)
@@ -40,7 +51,8 @@ export default function Navbar() {
     <>
       <nav className="flex items-center justify-between px-6 md:px-12 lg:px-16 py-5 md:py-6">
         <div className="flex items-center gap-8 lg:gap-12">
-          <span className="text-white font-semibold text-lg tracking-tight font-sans">
+          <span className="flex items-center gap-2.5 text-white font-semibold text-lg tracking-tight font-sans">
+            <BrandMark size={36} />
             AnnRakshak
           </span>
           <div className="hidden md:flex items-center gap-8">
@@ -62,12 +74,23 @@ export default function Navbar() {
           >
             Contact
           </button>
-          <button
-            onClick={() => smoothScrollTo('cta')}
-            className="hidden md:inline-block bg-white text-black rounded-full px-5 py-2 text-sm font-medium"
+          <span className="text-white [&_button]:bg-white/15 [&_button]:hover:bg-white/25">
+            <LanguagePicker onPick={setLang} />
+          </span>
+          <Link
+            to={account.to}
+            className="hidden md:block text-white/80 hover:text-white text-sm font-light transition-colors duration-200"
           >
-            Get Started
-          </button>
+            {account.label}
+          </Link>
+          {!me && (
+            <Link
+              to="/signup"
+              className="hidden md:inline-block bg-white text-black rounded-full px-5 py-2 text-sm font-medium"
+            >
+              {t('authCreateAccount')}
+            </Link>
+          )}
           <Hamburger open={open} onClick={() => setOpen(true)} />
         </div>
       </nav>
@@ -85,7 +108,8 @@ export default function Navbar() {
           }`}
         >
           <div className="flex items-center justify-between px-6 py-5">
-            <span className="text-white font-semibold text-lg tracking-tight font-sans">
+            <span className="flex items-center gap-2.5 text-white font-semibold text-lg tracking-tight font-sans">
+              <BrandMark size={36} />
               AnnRakshak
             </span>
             <button
@@ -117,16 +141,27 @@ export default function Navbar() {
             ))}
           </nav>
 
-          <div className="px-6 pb-10">
-            <button
-              onClick={() => go('cta')}
+          <div className="px-6 pb-10 space-y-3">
+            <Link
+              to={me ? account.to : '/signup'}
               style={{ transitionDelay: open ? '550ms' : '0ms' }}
               className={`block w-full bg-white text-black text-center rounded-full py-4 text-sm font-medium transition-opacity duration-700 ${EASE} ${
                 open ? 'opacity-100' : 'opacity-0'
               }`}
             >
-              Get Started
-            </button>
+              {me ? account.label : t('authCreateAccount')}
+            </Link>
+            {!me && (
+              <Link
+                to="/login"
+                style={{ transitionDelay: open ? '600ms' : '0ms' }}
+                className={`block w-full border border-white/40 text-white text-center rounded-full py-4 text-sm font-medium transition-opacity duration-700 ${EASE} ${
+                  open ? 'opacity-100' : 'opacity-0'
+                }`}
+              >
+                {t('authLogin')}
+              </Link>
+            )}
           </div>
         </div>
       </div>

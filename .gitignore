@@ -32,3 +32,6 @@ backend/.data/
 .vscode/
 .idea/
 skills-lock.json
+
+# Translation review CSVs, exported per language for a native speaker
+backend/reviews/

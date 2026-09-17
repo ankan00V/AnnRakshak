@@ -9,7 +9,7 @@ import { useFarmer } from '../FarmerContext'
 
 export default function History() {
   const { farmId, lang, t } = useFarmer()
-  const home = useAsync(() => api.home(farmId!, lang), [farmId, lang])
+  const home = useAsync(() => api.home(farmId!, lang), [farmId, lang], ['home', farmId!, lang].join(':'))
   if (home.loading && !home.data) return <Spinner label={t('loading')} />
   if (home.error) return <ErrorBox error={home.error} onRetry={home.reload} />
   const problems = home.data!.problems.filter((p) => p.gate_outcome !== 'retake')

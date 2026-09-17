@@ -102,8 +102,8 @@ export function ListenButton({ text, lang, label, stopLabel, compact = false, to
 }
 
 /** Push-to-talk with Sarvam Saaras via the backend. */
-export function VoiceButton({ lang, onText, label, recordingLabel }: {
-  lang: Lang; onText: (t: string) => void; label: string; recordingLabel: string
+export function VoiceButton({ lang, onText, label, recordingLabel, compact = false }: {
+  lang: Lang; onText: (t: string) => void; label: string; recordingLabel: string; compact?: boolean
 }) {
   const [state, setState] = useState<'idle' | 'recording' | 'busy' | 'error'>('idle')
   const rec = useRef<MediaRecorder | null>(null)
@@ -140,12 +140,14 @@ export function VoiceButton({ lang, onText, label, recordingLabel }: {
     <button
       type="button"
       onClick={() => (state === 'recording' ? rec.current?.stop() : state === 'idle' && start())}
-      className={`inline-flex items-center gap-1.5 min-h-[48px] px-4 rounded-xl text-sm font-medium border transition-colors ${
+      aria-label={state === 'recording' ? recordingLabel : label}
+      className={`inline-flex items-center justify-center gap-1.5 rounded-xl text-sm font-medium border transition-colors ${
+        compact ? 'w-11 h-11 shrink-0' : 'min-h-[48px] px-4'} ${
         state === 'recording' ? 'bg-ember text-cream border-ember animate-pulse' : 'bg-white border-soil-dark/20 text-soil-dark'
       }`}
     >
       {state === 'busy' ? <Loader2 className="w-4 h-4 animate-spin" /> : state === 'recording' ? <Square className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-      {state === 'recording' ? recordingLabel : label}
+      {!compact && (state === 'recording' ? recordingLabel : label)}
     </button>
   )
 }

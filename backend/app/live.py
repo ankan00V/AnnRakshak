@@ -5,6 +5,7 @@ touches the database, the weather/soil services and the photo model.
 
 from __future__ import annotations
 
+import copy
 from datetime import date, timedelta
 
 from sqlalchemy import select
@@ -12,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app import services
 from app.engine import advisory as advisory_engine
-from app.engine import fieldnow, vision
+from app.engine import fieldnow, risk, vision
 from app.engine.livescan import LiveSession
 from app.kb import KB, tr, trl
 from app.models import Diagnosis, Farm, LiveScan, Problem, SensorReading
@@ -66,6 +67,15 @@ def prevention_for(kb: KB, target: str, lang: str) -> dict:
     }
 
 
+def risk_view(kb: KB, r: dict, lang: str) -> dict:
+    """One forecast risk in `lang`, from its stored form (target, level, trigger,
+    the reason in every language)."""
+    t = r["target"]
+    return {"target": t, "name": tr(kb.targets[t]["names"], lang), "level": r["level"], "trigger": r["trigger"],
+            "reason": risk.reason_text(r.get("reason_i18n"), lang), "reason_i18n": r.get("reason_i18n") or {},
+            "check": trl(kb.rules[t]["tasks"], lang)[:2], "prevention": prevention_for(kb, t, lang)}
+
+
 def context(db: Session, kb: KB, farm: Farm, lat: float | None, lon: float | None,
             accuracy_m: float | None, lang: str) -> dict:
     gps = lat is not None and lon is not None
@@ -88,12 +98,8 @@ def context(db: Session, kb: KB, farm: Farm, lat: float | None, lon: float | Non
             }
     risks = []
     for s in services.risk_scores(db, kb, farm, today, window):
-        risks.append({
-            "target": s.target, "name": tr(kb.targets[s.target]["names"], lang), "level": s.level,
-            "trigger": s.trigger, "reason": tr(s.reason, lang),
-            "check": trl(kb.rules[s.target]["tasks"], lang)[:2],
-            "prevention": prevention_for(kb, s.target, lang),
-        })
+        risks.append(risk_view(kb, {"target": s.target, "level": s.level, "trigger": s.trigger,
+                                    "reason_i18n": s.reason}, lang))
     stage, das = kb.stage_for(farm.crop, farm.sowing_date, today)
     return {
         "location": {"lat": round(lat, 5), "lon": round(lon, 5), "source": "gps" if gps else "farm",
@@ -113,9 +119,7 @@ def context(db: Session, kb: KB, farm: Farm, lat: float | None, lon: float | Non
 # The walk itself
 # --------------------------------------------------------------------------
 
-def new_session(kb: KB, farm: Farm, lang: str) -> LiveSession:
-    can = kb.crops[farm.crop]["photo_diagnosis"] and not vision.model_status()["is_stub"]
-
+def _namer(kb: KB, lang: str):
     def name(t: str) -> str:
         if t in kb.targets:
             return tr(kb.targets[t]["names"], lang)
@@ -125,7 +129,18 @@ def new_session(kb: KB, farm: Farm, lang: str) -> LiveSession:
                 crop=tr(kb.crops[crop]["names"], lang))
         return t.replace("_", " ")
 
-    return LiveSession(crop=farm.crop, lang=lang, can_classify=can, target_name=name)
+    return name
+
+
+def new_session(kb: KB, farm: Farm, lang: str) -> LiveSession:
+    can = kb.crops[farm.crop]["photo_diagnosis"] and not vision.model_status()["is_stub"]
+    return LiveSession(crop=farm.crop, lang=lang, can_classify=can, target_name=_namer(kb, lang))
+
+
+def relang(kb: KB, sess: LiveSession, lang: str) -> None:
+    """The farmer switched language mid-call: guidance from now on is in `lang`."""
+    sess.lang = lang
+    sess.target_name = _namer(kb, lang)
 
 
 def classify(img) -> list[tuple[str, float]]:
@@ -204,7 +219,7 @@ def finish(db: Session, kb: KB, farm: Farm, sess: LiveSession, ctx: dict, lang: 
                   "possible": possible_out, "healthy_views": f["healthy_views"],
                   "other_crop_views": f["other_crop_views"], "answer": f["answer"]},
         context={k: ctx[k] for k in ("location", "weather_now", "forecast", "soil", "crop")}
-        | {"risks": [{k: r[k] for k in ("target", "level", "trigger")} for r in ctx["risks"]]},
+        | {"risks": [{k: r[k] for k in ("target", "level", "trigger", "reason_i18n")} for r in ctx["risks"]]},
         problem_ids=problem_ids, model_version=model_version,
     )
     db.add(scan)
@@ -216,6 +231,49 @@ def finish(db: Session, kb: KB, farm: Farm, sess: LiveSession, ctx: dict, lang: 
                   "classified_views": f["classified_views"], "healthy_views": f["healthy_views"],
                   "other_crop_views": f["other_crop_views"]},
         "model_version": model_version, "photo_model": sess.can_classify,
+    }
+    summary["speech"] = speech(summary, lang)
+    return summary
+
+
+def localize_context(kb: KB, context: dict, lang: str) -> dict:
+    """The walk's context (weather now, soil, crop, risks) in `lang`, from the
+    stored numbers and codes."""
+    ctx = copy.deepcopy(context)
+    if ctx.get("weather_now"):
+        ctx["weather_now"]["text"] = fieldnow.weather_text(ctx["weather_now"], lang)
+    ph = (ctx.get("soil") or {}).get("ph")
+    if ph and ph.get("value") is not None:
+        ph["band"] = fieldnow.ph_band(ph["value"], lang)
+    crop = ctx["crop"]
+    crop["name"] = tr(kb.crops[crop["id"]]["names"], lang)
+    crop["stage_name"] = kb.stage_name(crop["id"], crop["stage"], lang)
+    ctx["risks"] = [risk_view(kb, r, lang) for r in ctx.get("risks", []) if r["target"] in kb.targets]
+    return ctx
+
+
+def render(db: Session, kb: KB, farm: Farm, scan: LiveScan, lang: str) -> dict:
+    """A finished walk's summary again, in another language — the farmer
+    switched language on the summary screen. Built from what was stored; no
+    new weather call, nothing re-diagnosed."""
+    ctx = localize_context(kb, scan.context, lang)
+    f = scan.findings or {}
+    views = {p["id"]: p for p in services.problem_views(
+        db, kb, [p for p in (db.get(Problem, i) for i in scan.problem_ids or []) if p], lang)}
+    seen = []
+    for x in f.get("seen", []):
+        pv = views.get(x.get("problem_id")) or {}
+        seen.append(x | {"name": tr(kb.targets[x["target"]]["names"], lang), "advisory": pv.get("advisory"),
+                         "followup": pv.get("followup")})
+    possible = [x | {"name": tr(kb.targets[x["target"]]["names"], lang)} for x in f.get("possible", [])]
+    expert_case = next((views[i]["case"] for i in scan.problem_ids or []
+                        if i in views and views[i]["case"] and not views[i]["target"]), None)
+    summary = {
+        "scan_id": scan.id, "verdict": scan.verdict, "context": ctx, "seen": seen, "possible": possible,
+        "expert_case": expert_case,
+        "stats": {"frames": scan.frames, "good_frames": scan.good_frames, "classified_views": scan.classified_views,
+                  "healthy_views": f.get("healthy_views", 0), "other_crop_views": f.get("other_crop_views", 0)},
+        "model_version": scan.model_version, "photo_model": scan.model_version != "none",
     }
     summary["speech"] = speech(summary, lang)
     return summary

@@ -49,14 +49,25 @@ def _wmo_text(code: int | None, lang: str) -> str | None:
     return None
 
 
+def owm_to_wmo(cid: int | None) -> int | None:
+    """OpenWeather condition id -> the nearest WMO weather code."""
+    if cid is None:
+        return None
+    return (95 if 200 <= cid < 300 else 53 if 300 <= cid < 400 else 63 if 500 <= cid < 700
+            else 45 if 700 <= cid < 800 else 0 if cid == 800 else 2 if cid in (801, 802) else 3)
+
+
 def _owm_text(cid: int | None, lang: str, fallback: str | None) -> str | None:
     """OpenWeather condition id -> our wording. OWM translates Hindi but not
     Marathi, so both Indian languages use our own words for consistency."""
     if lang == "en" or cid is None:
         return fallback
-    code = (95 if 200 <= cid < 300 else 53 if 300 <= cid < 400 else 63 if 500 <= cid < 700
-            else 45 if 700 <= cid < 800 else 0 if cid == 800 else 2 if cid in (801, 802) else 3)
-    return _wmo_text(code, lang) or fallback
+    return _wmo_text(owm_to_wmo(cid), lang) or fallback
+
+
+def weather_text(weather: dict, lang: str) -> str | None:
+    """The sky in words, in any language, from a stored reading ('wmo' code)."""
+    return _wmo_text(weather.get("wmo"), lang) or weather.get("text")
 
 
 def _open_meteo(lat: float, lon: float, client: httpx.Client) -> dict:
@@ -105,6 +116,7 @@ def conditions_now(lat: float, lon: float, lang: str, *, client: httpx.Client | 
                         "wind_kmh": round(j["wind"]["speed"] * 3.6, 1),
                         "text": _owm_text((j.get("weather") or [{}])[0].get("id"), lang,
                                           (j.get("weather") or [{}])[0].get("description")),
+                        "wmo": owm_to_wmo((j.get("weather") or [{}])[0].get("id")),
                         "station": j.get("name") or None,
                         "source": "OpenWeather (current)", "observed_at": datetime.fromtimestamp(j["dt"]).isoformat(),
                     }
@@ -115,7 +127,7 @@ def conditions_now(lat: float, lon: float, lang: str, *, client: httpx.Client | 
             weather = {
                 "temp_c": c.get("temperature_2m"), "rh_pct": c.get("relative_humidity_2m"),
                 "rain_mm_1h": c.get("precipitation"), "wind_kmh": c.get("wind_speed_10m"),
-                "text": _wmo_text(c.get("weather_code"), lang), "station": None,
+                "text": _wmo_text(c.get("weather_code"), lang), "wmo": c.get("weather_code"), "station": None,
                 "source": "Open-Meteo (current, modelled)", "observed_at": c.get("time"),
             }
         if om:

@@ -97,6 +97,52 @@ Maharashtra = four IMD subdivisions — Konkan & Goa, Madhya Maharashtra, Marath
   - The NCIPM email is published as `dirctor.ncipm@icar.gov.in`, which looks like a typo. It is kept as published and flagged in the UI.
   - The repository text is double-encoded in places (`Â“`, `Â•`, `&#8722;`). This was cleaned in the KB, and ingest compares names on plain words only.
 
+## 5. Second wave of image sources — cotton, soybean, more maize and rice (September 2026)
+
+Ingested by `data/ingest_more.py` into `data/processed/more_640/` with
+`data/processed/more_images.csv` (path, training class, KB target, crop, source,
+backdrop, perceptual hash). **10,174 unique images over 22 classes** after
+de-duplication. Each image is compared (dHash, Hamming ≤ 3) against everything
+already in `icar_640` and `extra_640`, and against the other new images
+(≤ 4), so no photo can sit in a training split and a test split at once;
+4,807 near-duplicates were dropped, 851 of them copies of ICAR images we
+already had.
+
+| Source id | What it is | Classes kept | Backdrop |
+|---|---|---|---|
+| `mh_soya` | MH-SoyaHealthVision — Indian (Maharashtra) soybean leaf photos; the UAV half of the set is **not** used, a drone view is not what a farmer's phone sees | 2,782 over 6: rust, yellow mosaic, caterpillar damage, frogeye leaf spot, Septoria brown spot, healthy | field |
+| `crops_mix` | A mixed crop-disease compilation (rice, cotton, maize; its wheat and sugarcane folders skipped) | 5,782 over 14: cotton bacterial blight, leaf curl, wilt, aphid, healthy; maize rust, gray leaf spot, ear rot, fall armyworm, healthy; rice blast, brown spot, bacterial leaf blight, tungro | mostly field |
+| `cotton_orig` | A cotton leaf set photographed against plain backdrops (Fusarium and Verticillium wilt folders merged, see below) | 1,043 over 4: bacterial blight, Alternaria leaf spot, wilt, healthy | mostly lab/plain |
+| `idadp` | IDADP maize set (Chinese field station photos) | 399 over 4: ear rot, common rust, maydis leaf blight, healthy | field |
+| `soy_leaves` | A second, smaller soybean leaf set (segmented leaves, Brazilian origin) | 168 over 3: rust, Septoria brown spot, yellow mosaic | plain |
+
+Classes with fewer than 100 unique images after de-duplication are recorded in
+the CSV but **not trained**: cotton mealybug (83), American bollworm (50),
+whitefly (46), pink bollworm (28), maize stem borer (92) and turcicum leaf
+blight from this wave (92). They stay knowledge-base inspection targets with
+weather and trap rules, exactly as before.
+
+What this data is **not**, and what we do about it:
+- **Fusarium and Verticillium wilt are merged** into one `cotton_wilt` target.
+  They cannot be told apart from a leaf photo, and the field response is the
+  same. The advisory says so, and sends sudden field-wide wilting after heavy
+  rain (parawilt) to an expert instead.
+- **Cotton leaf curl** is mainly a north-Indian disease; the photos come from
+  there. On a Maharashtra farm the advisory asks for expert confirmation before
+  anything is done.
+- **Two sources are not Indian** (`idadp`, `soy_leaves`). They are used only for
+  classes where Indian photos are thin, and never as the only source for a class
+  the app advises on.
+- **`cotton_orig` and parts of `crops_mix` are lab/plain backdrops.** They are
+  trained with background randomisation (a leaf pasted onto a held-out healthy
+  field photo of the same crop) and the deploy gate checks that each new class
+  still survives a background swap, so the model cannot pass by learning the
+  backdrop.
+- Provenance is recorded per image in the CSV; the archives were downloaded by
+  the team from public dataset repositories. Where an archive carried no
+  licence file, the images are used for training only and none are redistributed
+  in this repository (`data/processed/` is gitignored).
+
 ## Still to come (see MANUAL_DOWNLOADS.md)
 
 District-wise crop production (APY), temperature series, Kisan Call Centre queries, district rainfall normals 1951-2000, and the ICAR technology CSV file (for the cross-check).

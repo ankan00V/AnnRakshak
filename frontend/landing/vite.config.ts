@@ -10,6 +10,9 @@ export default defineConfig({
   base: './',
   plugins: [react()],
   server: {
+    // slim.sh maps https://annrakshak.test → localhost:5173; Vite 8 refuses
+    // requests whose Host header isn't localhost unless it is allow-listed.
+    allowedHosts: ['annrakshak.test', '.slim.show'],
     proxy: {
       '/api': { target: API, ws: true }, // ws: the live field walk streams frames over a WebSocket
       '/media': API,

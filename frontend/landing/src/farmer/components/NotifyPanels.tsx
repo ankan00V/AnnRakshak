@@ -11,7 +11,7 @@ import { Advisories } from '../screens/Weather'
 /** The weather notices issued to this farm, newest first; opening marks them read. */
 export function NoticeInbox() {
   const { farmId, lang, t, setUnread } = useFarmer()
-  const n = useAsync(() => api.notices(farmId!, lang), [farmId, lang])
+  const n = useAsync(() => api.notices(farmId!, lang), [farmId, lang], ['notices', farmId!, lang].join(':'))
   useEffect(() => {
     if (!n.data || n.data.unread === 0) return
     api.markRead(farmId!).then(() => setUnread(0)).catch(() => undefined)

@@ -12,13 +12,13 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
-from app import services
+from app import auth, services
 from app.db import get_db
 from app.engine import vision
 from app.kb import KB, get_kb, tr
 from app.models import Advisory, Alert, Case, Confirmation, Diagnosis, Farm, Problem
 
-router = APIRouter(prefix="/api/officials", tags=["officials"])
+router = APIRouter(prefix="/api/officials", tags=["officials"], dependencies=[Depends(auth.require("expert"))])
 
 # One representative point per Maharashtra IMD subdivision for the rainfall panel.
 SUBDIVISION_POINTS = {

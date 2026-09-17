@@ -26,7 +26,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageOps
 
-from app.config import BACKEND_DIR, MIN_VEGETATION_FRACTION
+from app.config import BACKEND_DIR, CLEARLY_VEGETATION, MIN_VEGETATION_FRACTION
 from app.engine.gate import Prediction, TopK
 
 ARTIFACTS = BACKEND_DIR.parent / "ml" / "artifacts"
@@ -107,9 +107,19 @@ def classify(image_bytes: bytes, farm_crop: str, scenario: str | None = None) ->
     if model is not None:
         preds, heatmap, fam = model.analyse(img)
         topk = TopK([Prediction(t, c) for t, c in preds], model.version, is_stub=False, heatmap=heatmap)
-        if not model.is_familiar(fam):  # a face, a room, a document: nothing like a crop photo
+        if not model.is_familiar(fam):
+            # Two very different photos score low here, and they need different
+            # answers. A face, a room, a document is not a crop photo and the
+            # farmer should take another. A photo that is mostly plant is a crop
+            # photo unlike the ones the model was trained on — a wide phone shot
+            # of a chewed whorl, say — and sending that farmer back to retake it
+            # is wrong, so an expert looks at it instead. The heatmap is kept in
+            # that case because the expert can use it.
+            if veg < CLEARLY_VEGETATION:
+                return TopK(topk.predictions, topk.model_version, False,
+                            out_of_scope=True, oos_reason="NOT_A_CROP_PHOTO", heatmap=None)
             return TopK(topk.predictions, topk.model_version, False,
-                        out_of_scope=True, oos_reason="NOT_A_CROP_PHOTO", heatmap=None)
+                        out_of_scope=True, oos_reason="UNFAMILIAR_PHOTO", heatmap=heatmap)
     else:
         crop = farm_crop if farm_crop in STUB_SCENARIOS else "rice"
         if scenario not in SCENARIO_ORDER:

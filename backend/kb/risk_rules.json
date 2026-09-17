@@ -1,791 +1,1050 @@
 {
-  "_note": "Starting favourability rules from the plant-pathology literature, to be calibrated against confirmed field cases and Kisan Call Centre query peaks. A weather rule fires when the daily window has `days` consecutive favourable days: RH max >= rh_min, rh_max_cap not exceeded (if set), daily mean temperature inside [t_min, t_max], rain >= rain_min (if set) and rain <= rain_max (if set). Phenology rules read days after sowing. If both are present both must hold. Trap rules compare moths per trap per night against the economic threshold level (ETL) for `nights` consecutive nights. Every rule carries at least two inspection tasks — an alert without a task is noise.",
-  "rules": {
-    "rice_blast": {
-      "stages": [
-        "tillering",
-        "panicle_initiation",
-        "flowering"
-      ],
-      "weather": {
-        "rh_min": 90,
-        "t_min": 22,
-        "t_max": 28,
-        "days": 3
-      },
-      "source": "Leaf wetness with night temperatures of 20–26 °C and RH above 90% drives blast (IRRI; ICAR-IIRR).",
-      "tasks": {
-        "en": [
-          "Walk a diagonal line today and check the upper leaves of 10 plants for eye-shaped grey spots.",
-          "Check the node just below the panicle on 5 plants — a black node needs an expert now."
-        ],
-        "hi": [
-          "आज तिरछी लाइन में चलें और 10 पौधों की ऊपरी पत्तियों पर आँख जैसे धूसर धब्बे देखें।",
-          "5 पौधों पर बाली के नीचे की गाँठ देखें — काली गाँठ हो तो तुरंत विशेषज्ञ को दिखाएँ।"
-        ],
-        "mr": [
-          "आज तिरक्या रेषेत चाला व 10 रोपांच्या वरच्या पानांवर डोळ्यासारखे राखाडी ठिपके पाहा.",
-          "5 रोपांवर लोंबीखालची गाठ तपासा — गाठ काळी असल्यास लगेच तज्ज्ञांना दाखवा."
-        ]
-      }
-    },
-    "rice_brown_spot": {
-      "stages": [
-        "tillering",
-        "panicle_initiation",
-        "flowering",
-        "grain_filling"
-      ],
-      "weather": {
-        "rh_min": 86,
-        "t_min": 25,
-        "t_max": 30,
-        "days": 4
-      },
-      "source": "Brown spot favours 25–30 °C with RH above 86%, worst on nutrient-poor soils (ICAR-IIRR).",
-      "tasks": {
-        "en": [
-          "Check the older lower leaves of 10 plants for round brown spots with a yellow ring.",
-          "Note which part of the field is worst — poor-soil patches show it first."
-        ],
-        "hi": [
-          "10 पौधों की पुरानी निचली पत्तियों पर पीले घेरे वाले गोल भूरे धब्बे देखें।",
-          "देखें खेत का कौन सा हिस्सा सबसे ज़्यादा प्रभावित है — कमज़ोर मिट्टी वाला भाग पहले दिखता है।"
-        ],
-        "mr": [
-          "10 रोपांच्या जुन्या खालच्या पानांवर पिवळ्या कडेचे गोल तपकिरी ठिपके पाहा.",
-          "शेताचा कोणता भाग जास्त बाधित आहे ते पाहा — कमकुवत जमिनीचा भाग आधी दिसतो."
-        ]
-      }
-    },
-    "rice_bacterial_leaf_blight": {
-      "stages": [
-        "tillering",
-        "panicle_initiation"
-      ],
-      "weather": {
-        "rh_min": 80,
-        "t_min": 25,
-        "t_max": 34,
-        "rain_min": 5,
-        "days": 3
-      },
-      "source": "Wind-driven rain with warm (25–34 °C) humid weather spreads Xanthomonas through leaf wounds (IRRI).",
-      "tasks": {
-        "en": [
-          "Early tomorrow morning, check leaf tips on 10 plants for yellow wavy stripes and milky droplets.",
-          "Check the corner where water enters the field first — the bacteria arrive with the water."
-        ],
-        "hi": [
-          "कल सुबह जल्दी 10 पौधों की पत्तियों की नोक पर लहरदार पीली पट्टी और दूधिया बूँदें देखें।",
-          "जहाँ से पानी खेत में आता है वह कोना पहले देखें — जीवाणु पानी के साथ आते हैं।"
-        ],
-        "mr": [
-          "उद्या सकाळी लवकर 10 रोपांच्या पानांच्या टोकांवर लहरी पिवळी पट्टी व दुधाळ थेंब पाहा.",
-          "जिथून पाणी शेतात येते तो कोपरा आधी तपासा — जिवाणू पाण्यासोबत येतात."
-        ]
-      }
-    },
-    "rice_sheath_blight": {
-      "stages": [
-        "tillering",
-        "panicle_initiation",
-        "flowering"
-      ],
-      "weather": {
-        "rh_min": 90,
-        "t_min": 27,
-        "t_max": 32,
-        "days": 4
-      },
-      "source": "Sheath blight spreads in dense canopies at 28–32 °C with RH above 95% (ICAR-IIRR).",
-      "tasks": {
-        "en": [
-          "Part the plants in the densest area and check stem sheaths just above the water for grey-green patches.",
-          "Check 10 hills and count how many have patches."
-        ],
-        "hi": [
-          "सबसे घने हिस्से में पौधे हटाकर पानी के ठीक ऊपर तने के आवरण पर धूसर-हरे धब्बे देखें।",
-          "10 पौधे देखें और गिनें कितनों पर धब्बे हैं।"
-        ],
-        "mr": [
-          "सर्वात दाट भागात रोपे बाजूला करून पाण्याच्या वर खोडाच्या आवरणावर राखाडी-हिरवे चट्टे पाहा.",
-          "10 चुडे तपासा व किती चुडांवर चट्टे आहेत ते मोजा."
-        ]
-      }
-    },
-    "rice_false_smut": {
-      "stages": [
-        "panicle_initiation",
-        "flowering"
-      ],
-      "weather": {
-        "rh_min": 90,
-        "t_min": 25,
-        "t_max": 30,
-        "rain_min": 2,
-        "days": 3
-      },
-      "source": "Rain and RH above 90% around booting and flowering favour false smut infection (IRRI).",
-      "tasks": {
-        "en": [
-          "If panicles have not emerged yet, ask your officer about a preventive spray this week.",
-          "If panicles are out, check 10 panicles for orange-yellow balls replacing grains."
-        ],
-        "hi": [
-          "बालियाँ अभी नहीं निकलीं तो इस हफ्ते बचाव छिड़काव के बारे में अधिकारी से पूछें।",
-          "बालियाँ निकल गई हों तो 10 बालियों में दानों की जगह नारंगी-पीली गेंदें देखें।"
-        ],
-        "mr": [
-          "लोंब्या अजून बाहेर आल्या नसतील तर या आठवड्यात प्रतिबंधक फवारणीबद्दल अधिकाऱ्यांना विचारा.",
-          "लोंब्या बाहेर आल्या असतील तर 10 लोंब्यांत दाण्यांऐवजी नारिंगी-पिवळे गोळे पाहा."
-        ]
-      }
-    },
-    "rice_tungro": {
-      "stages": [
-        "tillering"
-      ],
-      "phenology": {
-        "das_min": 15,
-        "das_max": 45
-      },
-      "source": "Young rice (first 45 days) is most susceptible; the green leafhopper vector peaks in tillering (IRRI).",
-      "tasks": {
-        "en": [
-          "Look across the field for patches of short, yellow-orange plants.",
-          "Sweep a cloth over the plants and count green leafhoppers."
-        ],
-        "hi": [
-          "खेत में छोटे, पीले-नारंगी पौधों के टुकड़े देखें।",
-          "पौधों पर कपड़ा फिराकर हरे फुदके गिनें।"
-        ],
-        "mr": [
-          "शेतात खुज्या, पिवळ्या-नारिंगी रोपांचे पट्टे पाहा.",
-          "रोपांवरून कापड फिरवून हिरवे तुडतुडे मोजा."
-        ]
-      }
-    },
-    "rice_leaf_folder": {
-      "stages": [
-        "tillering",
-        "panicle_initiation",
-        "flowering"
-      ],
-      "weather": {
-        "rh_min": 80,
-        "t_min": 25,
-        "t_max": 30,
-        "days": 5
-      },
-      "source": "Leaf folder builds up in warm humid weather in well-fertilised fields (ICAR-IIRR).",
-      "tasks": {
-        "en": [
-          "Count folded or white-streaked leaves on 10 hills; act only above 2 fresh ones per hill.",
-          "Open a few folds and check for a green caterpillar inside."
-        ],
-        "hi": [
-          "10 पौधों पर मुड़ी या सफेद धारियों वाली पत्तियाँ गिनें; प्रति पौधा 2 से ज़्यादा ताज़ा हों तभी कार्रवाई करें।",
-          "कुछ मुड़ी पत्तियाँ खोलकर अंदर हरी इल्ली देखें।"
-        ],
-        "mr": [
-          "10 चुडांवर गुंडाळलेली किंवा पांढऱ्या पट्ट्यांची पाने मोजा; प्रति चूड 2 पेक्षा जास्त ताजी असतील तरच कृती करा.",
-          "काही गुंडाळ्या उघडून आत हिरवी अळी आहे का पाहा."
-        ]
-      }
-    },
-    "rice_yellow_stem_borer": {
-      "stages": [
-        "tillering",
-        "panicle_initiation",
-        "flowering"
-      ],
-      "phenology": {
-        "das_min": 25,
-        "das_max": 90
-      },
-      "source": "Dead hearts appear in tillering; white ears at heading (ICAR-IIRR).",
-      "tasks": {
-        "en": [
-          "Count dried central shoots on 10 hills and tug one — if it pulls out easily, a borer is inside.",
-          "Check pheromone traps if installed and note the moth count."
-        ],
-        "hi": [
-          "10 पौधों पर सूखी बीच की पत्तियाँ गिनें और एक खींचें — आसानी से निकले तो अंदर छेदक है।",
-          "फेरोमोन ट्रैप लगे हों तो पतंगों की गिनती लिखें।"
-        ],
-        "mr": [
-          "10 चुडांवरील वाळलेले मधले कोंब मोजा व एक ओढा — सहज निघाल्यास आत खोडकिडा आहे.",
-          "कामगंध सापळे लावले असल्यास पतंगांची संख्या नोंदवा."
-        ]
-      }
-    },
-    "rice_brown_planthopper": {
-      "stages": [
-        "tillering",
-        "panicle_initiation",
-        "flowering",
-        "grain_filling"
-      ],
-      "weather": {
-        "rh_min": 80,
-        "t_min": 25,
-        "t_max": 30,
-        "days": 5
-      },
-      "phenology": {
-        "das_min": 40,
-        "das_max": 110
-      },
-      "source": "Planthoppers multiply in warm humid weather in dense, nitrogen-rich crops from mid-tillering (IRRI).",
-      "tasks": {
-        "en": [
-          "Tap the base of 10 hills over the water and count brown hoppers; act above about 10 per hill.",
-          "Look for circular patches of drying plants — hopper burn needs an expert immediately."
-        ],
-        "hi": [
-          "10 पौधों के निचले भाग को पानी के ऊपर थपथपाकर भूरे फुदके गिनें; प्रति पौधा लगभग 10 से ज़्यादा हों तो कार्रवाई करें।",
-          "सूखते पौधों के गोल घेरे देखें — ऐसा हो तो तुरंत विशेषज्ञ को बुलाएँ।"
-        ],
-        "mr": [
-          "10 चुडांचा तळ पाण्यावर हलवून तपकिरी तुडतुडे मोजा; प्रति चूड सुमारे 10 पेक्षा जास्त असल्यास कृती करा.",
-          "वाळणाऱ्या रोपांचे गोल पट्टे पाहा — असे दिसल्यास लगेच तज्ज्ञांना बोलवा."
-        ]
-      }
-    },
-    "maize_turcicum_leaf_blight": {
-      "stages": [
-        "whorl",
-        "tasseling",
-        "silking"
-      ],
-      "weather": {
-        "rh_min": 90,
-        "t_min": 18,
-        "t_max": 27,
-        "days": 4
-      },
-      "source": "Turcicum blight favours moderate temperatures (18–27 °C) with heavy dew (CIMMYT; ICAR-IIMR).",
-      "tasks": {
-        "en": [
-          "Check the lowest 3 leaves of 10 plants for long grey-green cigar-shaped lesions.",
-          "Note whether lesions have reached the leaf above the ear."
-        ],
-        "hi": [
-          "10 पौधों की सबसे नीचे की 3 पत्तियों पर लंबे धूसर-हरे सिगार जैसे धब्बे देखें।",
-          "देखें धब्बे भुट्टे के ऊपर वाली पत्ती तक पहुँचे क्या।"
-        ],
-        "mr": [
-          "10 झाडांच्या सर्वात खालच्या 3 पानांवर लांब राखाडी-हिरवे सिगारसारखे चट्टे पाहा.",
-          "चट्टे कणसावरच्या पानापर्यंत पोहोचले का ते नोंदवा."
-        ]
-      }
-    },
-    "maize_maydis_leaf_blight": {
-      "stages": [
-        "whorl",
-        "tasseling",
-        "silking",
-        "grain_filling"
-      ],
-      "weather": {
-        "rh_min": 85,
-        "t_min": 22,
-        "t_max": 30,
-        "days": 4
-      },
-      "source": "Maydis blight prefers warmer humid weather than turcicum (ICAR-IIMR).",
-      "tasks": {
-        "en": [
-          "Check middle leaves of 10 plants for small tan boxes between the veins.",
-          "Count how many plants have more than 5 spots per leaf."
-        ],
-        "hi": [
-          "10 पौधों की बीच की पत्तियों पर नसों के बीच छोटे भूरे आयताकार धब्बे देखें।",
-          "गिनें कितने पौधों की पत्ती पर 5 से ज़्यादा धब्बे हैं।"
-        ],
-        "mr": [
-          "10 झाडांच्या मधल्या पानांवर शिरांमध्ये लहान तपकिरी चौकटी पाहा.",
-          "किती झाडांच्या पानावर 5 पेक्षा जास्त ठिपके आहेत ते मोजा."
-        ]
-      }
-    },
-    "maize_common_rust": {
-      "stages": [
-        "whorl",
-        "tasseling"
-      ],
-      "weather": {
-        "rh_min": 90,
-        "t_min": 16,
-        "t_max": 23,
-        "days": 3
-      },
-      "source": "Common rust favours cool (16–23 °C), humid conditions (CIMMYT).",
-      "tasks": {
-        "en": [
-          "Rub spotted leaves on 10 plants — reddish-brown powder on your finger means rust.",
-          "Check whether pustules are on the upper leaves."
-        ],
-        "hi": [
-          "10 पौधों की धब्बेदार पत्तियाँ रगड़ें — उंगली पर लाल-भूरा चूर्ण लगे तो रतुआ है।",
-          "देखें दाने ऊपर की पत्तियों पर हैं क्या।"
-        ],
-        "mr": [
-          "10 झाडांची ठिपकेदार पाने चोळा — बोटाला लालसर-तपकिरी भुकटी लागल्यास तांबेरा आहे.",
-          "फोड वरच्या पानांवर आहेत का ते पाहा."
-        ]
-      }
-    },
-    "maize_banded_leaf_sheath_blight": {
-      "stages": [
-        "whorl",
-        "tasseling"
-      ],
-      "weather": {
-        "rh_min": 90,
-        "t_min": 25,
-        "t_max": 32,
-        "rain_min": 5,
-        "days": 3
-      },
-      "source": "BLSB spreads in hot, humid, rainy weather in dense stands (ICAR-IIMR).",
-      "tasks": {
-        "en": [
-          "Check the lowest leaf sheaths of 10 plants for banded brown patches near the soil.",
-          "Check low-lying parts of the field where water collects."
-        ],
-        "hi": [
-          "10 पौधों के सबसे निचले आवरणों पर मिट्टी के पास पट्टीदार भूरे धब्बे देखें।",
-          "खेत के निचले हिस्से देखें जहाँ पानी जमा होता है।"
-        ],
-        "mr": [
-          "10 झाडांच्या सर्वात खालच्या आवरणांवर जमिनीजवळ पट्टेदार तपकिरी चट्टे पाहा.",
-          "शेताचा सखल भाग तपासा जिथे पाणी साचते."
-        ]
-      }
-    },
-    "maize_downy_mildew": {
-      "stages": [
-        "seedling",
-        "whorl"
-      ],
-      "weather": {
-        "rh_min": 90,
-        "t_min": 20,
-        "t_max": 26,
-        "rain_min": 2,
-        "days": 3
-      },
-      "phenology": {
-        "das_min": 0,
-        "das_max": 30
-      },
-      "source": "Downy mildew infects young maize in cool, wet, humid spells (ICAR-IIMR).",
-      "tasks": {
-        "en": [
-          "Early morning, check 20 young plants for yellow stripes with white down underneath.",
-          "Pull out and bury any striped plant you find today."
-        ],
-        "hi": [
-          "सुबह जल्दी 20 छोटे पौधों पर पीली धारियाँ और नीचे सफेद रोएँ देखें।",
-          "आज जो धारीदार पौधा मिले उसे उखाड़कर गाड़ दें।"
-        ],
-        "mr": [
-          "सकाळी लवकर 20 लहान रोपांवर पिवळे पट्टे व खाली पांढरी लव पाहा.",
-          "आज आढळलेले पट्टेदार रोप उपटून पुरा."
-        ]
-      }
-    },
-    "maize_fall_armyworm": {
-      "stages": [
-        "seedling",
-        "whorl",
-        "tasseling"
-      ],
-      "phenology": {
-        "das_min": 7,
-        "das_max": 60
-      },
-      "source": "Fall armyworm damages maize from emergence through late whorl; scouting twice a week is advised (ICAR-IIMR).",
-      "tasks": {
-        "en": [
-          "Walk a W pattern, check 20 plants, and count those with fresh holes and wet droppings in the whorl.",
-          "Check the underside of leaves for egg masses covered in grey hair and crush them."
-        ],
-        "hi": [
-          "W आकार में चलकर 20 पौधे देखें और गोभ में ताज़ा छेद और गीला मल वाले पौधे गिनें।",
-          "पत्तियों के नीचे धूसर रोएँ से ढके अंडों के गुच्छे देखें और नष्ट करें।"
-        ],
-        "mr": [
-          "W आकारात चालत 20 झाडे पाहा व पोंग्यात ताजी छिद्रे आणि ओली विष्ठा असलेली झाडे मोजा.",
-          "पानांखाली राखाडी केसांनी झाकलेले अंडीपुंज शोधून नष्ट करा."
-        ]
-      }
-    },
-    "maize_stem_borer": {
-      "stages": [
-        "whorl"
-      ],
-      "phenology": {
-        "das_min": 15,
-        "das_max": 45
-      },
-      "source": "Chilo partellus attacks from 2–4 weeks after emergence (ICAR-IIMR).",
-      "tasks": {
-        "en": [
-          "Check 20 plants for rows of small shot holes across the leaves.",
-          "Count dried central shoots and pull them out to destroy the larvae."
-        ],
-        "hi": [
-          "20 पौधों की पत्तियों पर कतार में छोटे छेद देखें।",
-          "सूखी बीच की पत्तियाँ गिनें और इल्ली नष्ट करने के लिए उखाड़ दें।"
-        ],
-        "mr": [
-          "20 झाडांच्या पानांवर रांगेत लहान छिद्रे पाहा.",
-          "वाळलेले मधले कोंब मोजा व अळ्या नष्ट करण्यासाठी उपटा."
-        ]
-      }
-    },
-    "cotton_pink_bollworm": {
-      "stages": [
-        "flowering",
-        "boll_development"
-      ],
-      "phenology": {
-        "das_min": 60,
-        "das_max": 160
-      },
-      "source": "Pink bollworm attacks flowers and green bolls from about 60 days; ETL 8 moths/trap/night for 3 nights or 10% infested bolls (ICAR-CICR).",
-      "tasks": {
-        "en": [
-          "Count rosette (webbed-shut) flowers on 20 plants and pick them off.",
-          "Open 20 green bolls from different plants and count those with pink larvae; above 2 means act."
-        ],
-        "hi": [
-          "20 पौधों पर गुलाब जैसे बंद फूल गिनें और तोड़ दें।",
-          "अलग-अलग पौधों से 20 हरे टिंडे खोलें और गुलाबी सुंडी वाले गिनें; 2 से ज़्यादा हों तो कार्रवाई करें।"
-        ],
-        "mr": [
-          "20 झाडांवरील गुलाबासारखी मिटलेली फुले मोजा व तोडा.",
-          "वेगवेगळ्या झाडांवरील 20 हिरवी बोंडे फोडा व गुलाबी अळी असलेली मोजा; 2 पेक्षा जास्त असल्यास कृती करा."
-        ]
-      },
-      "trap": {
-        "etl_per_trap_night": 8,
-        "nights": 3,
-        "trap_type": "pheromone"
-      }
-    },
-    "cotton_american_bollworm": {
-      "stages": [
-        "squaring",
-        "flowering",
-        "boll_development"
-      ],
-      "phenology": {
-        "das_min": 50,
-        "das_max": 140
-      },
-      "source": "Helicoverpa lays eggs on tender parts from squaring; ETL 8–10 moths/trap/night for 3 nights or 1 larva per plant (ICAR-CICR).",
-      "tasks": {
-        "en": [
-          "Check tender shoots and squares of 20 plants for eggs and small larvae.",
-          "Count bored squares and bolls with round holes."
-        ],
-        "hi": [
-          "20 पौधों की कोमल टहनियों और पुड़ियों पर अंडे और छोटी इल्लियाँ देखें।",
-          "गोल छेद वाली पुड़ियाँ और टिंडे गिनें।"
-        ],
-        "mr": [
-          "20 झाडांच्या कोवळ्या शेंड्यांवर व पात्यांवर अंडी आणि लहान अळ्या पाहा.",
-          "गोल छिद्रे असलेली पाती व बोंडे मोजा."
-        ]
-      },
-      "trap": {
-        "etl_per_trap_night": 8,
-        "nights": 3,
-        "trap_type": "pheromone"
-      }
-    },
-    "cotton_whitefly": {
-      "stages": [
-        "vegetative",
-        "squaring",
-        "flowering",
-        "boll_development"
-      ],
-      "weather": {
-        "rh_min": 60,
-        "t_min": 28,
-        "t_max": 34,
-        "rain_max": 2,
-        "days": 5
-      },
-      "source": "Whitefly builds up in hot spells with little rain; ETL 8–10 adults per leaf (ICAR-CICR).",
-      "tasks": {
-        "en": [
-          "Turn over one upper leaf on 20 plants and count whiteflies; act above 8–10 per leaf.",
-          "Check for sticky leaves or black sooty mould."
-        ],
-        "hi": [
-          "20 पौधों पर ऊपर की एक पत्ती पलटकर सफेद मक्खी गिनें; प्रति पत्ती 8–10 से ज़्यादा हों तो कार्रवाई करें।",
-          "चिपचिपी पत्तियाँ या काली फफूँद देखें।"
-        ],
-        "mr": [
-          "20 झाडांवर वरचे एक पान उलटून पांढऱ्या माशा मोजा; प्रति पान 8–10 पेक्षा जास्त असल्यास कृती करा.",
-          "चिकट पाने किंवा काळी बुरशी आहे का पाहा."
-        ]
-      }
-    },
-    "cotton_jassid": {
-      "stages": [
-        "vegetative",
-        "squaring"
-      ],
-      "weather": {
-        "rh_min": 70,
-        "t_min": 25,
-        "t_max": 33,
-        "days": 4
-      },
-      "source": "Jassids multiply in warm humid weather in early crop stages; ETL 2 nymphs per leaf (ICAR-CICR).",
-      "tasks": {
-        "en": [
-          "Count jassid nymphs under 3 leaves on 20 plants; act above 2 per leaf.",
-          "Look for leaf edges curling down and turning yellow or red."
-        ],
-        "hi": [
-          "20 पौधों पर 3 पत्तियों के नीचे हरे तेले के शिशु गिनें; प्रति पत्ती 2 से ज़्यादा हों तो कार्रवाई करें।",
-          "नीचे मुड़ते और पीले-लाल होते पत्तियों के किनारे देखें।"
-        ],
-        "mr": [
-          "20 झाडांवर 3 पानांखाली तुडतुड्यांची पिल्ले मोजा; प्रति पान 2 पेक्षा जास्त असल्यास कृती करा.",
-          "खाली वळणाऱ्या व पिवळ्या-लाल होणाऱ्या पानांच्या कडा पाहा."
-        ]
-      }
-    },
-    "soybean_yellow_mosaic": {
-      "stages": [
-        "emergence",
-        "vegetative",
-        "flowering"
-      ],
-      "weather": {
-        "rh_min": 70,
-        "t_min": 25,
-        "t_max": 32,
-        "rain_max": 2,
-        "days": 4
-      },
-      "phenology": {
-        "das_min": 10,
-        "das_max": 55
-      },
-      "source": "Whitefly-borne YMV spreads in dry warm spells in young soybean (ICAR-IISR).",
-      "tasks": {
-        "en": [
-          "Check 5 spots of 1 square metre for plants with yellow-green mosaic leaves; pull and bury them.",
-          "Turn over leaves and look for whiteflies."
-        ],
-        "hi": [
-          "1 वर्ग मीटर के 5 स्थानों पर पीले-हरे चितकबरे पौधे देखें; उखाड़कर गाड़ दें।",
-          "पत्तियाँ पलटकर सफेद मक्खी देखें।"
-        ],
-        "mr": [
-          "1 चौरस मीटरच्या 5 ठिकाणी पिवळ्या-हिरव्या चट्ट्यांची झाडे पाहा; उपटून पुरा.",
-          "पाने उलटून पांढरी माशी पाहा."
-        ]
-      }
-    },
-    "soybean_girdle_beetle": {
-      "stages": [
-        "vegetative",
-        "flowering"
-      ],
-      "phenology": {
-        "das_min": 20,
-        "das_max": 60
-      },
-      "source": "Girdle beetle attacks from about 3 weeks after sowing through flowering (ICAR-IISR).",
-      "tasks": {
-        "en": [
-          "Look for wilting hanging leaves and check their stalks for two ring cuts.",
-          "Cut off and destroy girdled parts today."
-        ],
-        "hi": [
-          "लटकती मुरझाई पत्तियाँ देखें और उनके डंठल पर दो गोल कटाव जाँचें।",
-          "आज ही कटे हुए भाग तोड़कर नष्ट करें।"
-        ],
-        "mr": [
-          "लोंबकळणारी सुकलेली पाने पाहा व त्यांच्या देठावर दोन गोल काप तपासा.",
-          "आजच काप असलेले भाग तोडून नष्ट करा."
-        ]
-      }
-    },
-    "soybean_tobacco_caterpillar": {
-      "stages": [
-        "vegetative",
-        "flowering",
-        "pod_formation"
-      ],
-      "weather": {
-        "rh_min": 85,
-        "t_min": 25,
-        "t_max": 30,
-        "days": 4
-      },
-      "source": "Spodoptera litura outbreaks follow warm humid spells in soybean (ICAR-IISR).",
-      "tasks": {
-        "en": [
-          "Look for papery net-like leaves and pluck those with groups of young larvae underneath.",
-          "Count larvae along 1 metre of row in 5 places."
-        ],
-        "hi": [
-          "जाली जैसी पत्तियाँ देखें और नीचे झुंड वाली छोटी इल्लियों सहित तोड़ें।",
-          "5 जगह 1 मीटर कतार में इल्लियाँ गिनें।"
-        ],
-        "mr": [
-          "जाळीदार पाने पाहा व खाली समूहातील लहान अळ्यांसह तोडा.",
-          "5 ठिकाणी 1 मीटर ओळीत अळ्या मोजा."
-        ]
-      }
-    },
-    "soybean_rust": {
-      "stages": [
-        "flowering",
-        "pod_formation",
-        "pod_filling"
-      ],
-      "weather": {
-        "rh_min": 90,
-        "t_min": 18,
-        "t_max": 26,
-        "rain_min": 2,
-        "days": 4
-      },
-      "source": "Soybean rust spreads in cool (18–26 °C), wet weather with long leaf wetness (ICAR-IISR).",
-      "tasks": {
-        "en": [
-          "Turn over lower leaves of 10 plants and look for raised tan pustules.",
-          "Note any early yellowing and leaf drop from the bottom."
-        ],
-        "hi": [
-          "10 पौधों की निचली पत्तियाँ पलटकर उभरे भूरे दाने देखें।",
-          "नीचे से जल्दी पीलापन और पत्ती गिरना नोट करें।"
-        ],
-        "mr": [
-          "10 झाडांची खालची पाने उलटून उंचावलेले तपकिरी फोड पाहा.",
-          "खालून लवकर पिवळेपणा व पानगळ होत आहे का नोंदवा."
-        ]
-      }
-    },
-    "rice_skipper": {
-      "stages": [
-        "tillering",
-        "panicle_initiation"
-      ],
-      "phenology": {
-        "das_min": 30,
-        "das_max": 80
-      },
-      "source": "Skipper larvae feed on leaves from tillering to booting; usually a minor pest (ICAR-IIRR).",
-      "tasks": {
-        "en": [
-          "Look for rolled leaf tips on 10 hills and open a few to find green larvae with a large head.",
-          "Note brown butterflies with white spots resting on leaves in the morning."
-        ],
-        "hi": [
-          "10 पौधों पर मुड़ी पत्ती की नोकें देखें और कुछ खोलकर बड़े सिर वाली हरी इल्ली खोजें।",
-          "सुबह पत्तियों पर बैठी सफेद धब्बों वाली भूरी तितलियाँ नोट करें।"
-        ],
-        "mr": [
-          "10 चुडांवर गुंडाळलेली पानांची टोके पाहा व काही उघडून मोठ्या डोक्याची हिरवी अळी शोधा.",
-          "सकाळी पानांवर बसलेली पांढऱ्या ठिपक्यांची तपकिरी फुलपाखरे नोंदवा."
-        ]
-      }
-    },
-    "rice_white_stem_borer": {
-      "stages": [
-        "tillering",
-        "panicle_initiation",
-        "flowering"
-      ],
-      "phenology": {
-        "das_min": 25,
-        "das_max": 90
-      },
-      "source": "Stem borer dead hearts appear in tillering and white ears at heading (ICAR-IIRR).",
-      "tasks": {
-        "en": [
-          "Count dried central shoots on 10 hills and tug one — if it pulls out easily, a borer is inside.",
-          "Check a light trap or the leaves at dawn for pure white moths."
-        ],
-        "hi": [
-          "10 पौधों पर सूखी बीच की पत्तियाँ गिनें और एक खींचें — आसानी से निकले तो अंदर छेदक है।",
-          "सुबह प्रकाश प्रपंच या पत्तियों पर शुद्ध सफेद पतंगे देखें।"
-        ],
-        "mr": [
-          "10 चुडांवरील वाळलेले मधले कोंब मोजा व एक ओढा — सहज निघाल्यास आत खोडकिडा आहे.",
-          "पहाटे प्रकाश सापळा किंवा पानांवर पूर्ण पांढरे पतंग पाहा."
-        ]
-      }
-    },
-    "maize_curvularia_leaf_spot": {
-      "stages": [
-        "whorl",
-        "tasseling",
-        "silking"
-      ],
-      "weather": {
-        "rh_min": 85,
-        "t_min": 24,
-        "t_max": 32,
-        "days": 4
-      },
-      "source": "Curvularia leaf spot favours hot, humid weather (ICAR-IIMR).",
-      "tasks": {
-        "en": [
-          "Check middle leaves of 10 plants for many small round spots with a yellow ring.",
-          "Note whether spots are reaching the leaves above the ear."
-        ],
-        "hi": [
-          "10 पौधों की बीच की पत्तियों पर पीले घेरे वाले कई छोटे गोल धब्बे देखें।",
-          "देखें धब्बे भुट्टे के ऊपर की पत्तियों तक पहुँचे क्या।"
-        ],
-        "mr": [
-          "10 झाडांच्या मधल्या पानांवर पिवळ्या वलयाचे अनेक लहान गोल ठिपके पाहा.",
-          "ठिपके कणसावरच्या पानांपर्यंत पोहोचले का ते नोंदवा."
-        ]
-      }
-    },
-    "maize_aphid": {
-      "stages": [
-        "tasseling",
-        "silking"
-      ],
-      "weather": {
-        "rh_min": 50,
-        "t_min": 22,
-        "t_max": 30,
-        "rain_max": 1,
-        "days": 5
-      },
-      "source": "Corn leaf aphid colonies build up in dry spells around tasseling (ICAR-IIMR).",
-      "tasks": {
-        "en": [
-          "Check tassels and upper whorls of 20 plants and count those with large aphid colonies.",
-          "Look for ladybird beetles among the aphids — if many, they will likely clear the colonies."
-        ],
-        "hi": [
-          "20 पौधों की नर मंजरी और ऊपरी गोभ देखें और बड़े माहू झुंड वाले पौधे गिनें।",
-          "माहू के बीच लेडीबर्ड भृंग देखें — ज़्यादा हों तो ये झुंड खत्म कर देंगे।"
-        ],
-        "mr": [
-          "20 झाडांचे तुरे व वरचे पोंगे तपासा व मोठ्या माव्याच्या वसाहती असलेली झाडे मोजा.",
-          "माव्यामध्ये लेडीबर्ड भुंगे पाहा — जास्त असल्यास ते वसाहती नष्ट करतील."
-        ]
-      }
-    }
+ "_note": "Starting favourability rules from the plant-pathology literature, to be calibrated against confirmed field cases and Kisan Call Centre query peaks. A weather rule fires when the daily window has `days` consecutive favourable days: RH max >= rh_min, rh_max_cap not exceeded (if set), daily mean temperature inside [t_min, t_max], rain >= rain_min (if set) and rain <= rain_max (if set). Phenology rules read days after sowing. If both are present both must hold. Trap rules compare moths per trap per night against the economic threshold level (ETL) for `nights` consecutive nights. Every rule carries at least two inspection tasks — an alert without a task is noise.",
+ "rules": {
+  "rice_blast": {
+   "stages": [
+    "tillering",
+    "panicle_initiation",
+    "flowering"
+   ],
+   "weather": {
+    "rh_min": 90,
+    "t_min": 22,
+    "t_max": 28,
+    "days": 3
+   },
+   "source": "Leaf wetness with night temperatures of 20–26 °C and RH above 90% drives blast (IRRI; ICAR-IIRR).",
+   "tasks": {
+    "en": [
+     "Walk a diagonal line today and check the upper leaves of 10 plants for eye-shaped grey spots.",
+     "Check the node just below the panicle on 5 plants — a black node needs an expert now."
+    ],
+    "hi": [
+     "आज तिरछी लाइन में चलें और 10 पौधों की ऊपरी पत्तियों पर आँख जैसे धूसर धब्बे देखें।",
+     "5 पौधों पर बाली के नीचे की गाँठ देखें — काली गाँठ हो तो तुरंत विशेषज्ञ को दिखाएँ।"
+    ],
+    "mr": [
+     "आज तिरक्या रेषेत चाला व 10 रोपांच्या वरच्या पानांवर डोळ्यासारखे राखाडी ठिपके पाहा.",
+     "5 रोपांवर लोंबीखालची गाठ तपासा — गाठ काळी असल्यास लगेच तज्ज्ञांना दाखवा."
+    ]
+   }
+  },
+  "rice_brown_spot": {
+   "stages": [
+    "tillering",
+    "panicle_initiation",
+    "flowering",
+    "grain_filling"
+   ],
+   "weather": {
+    "rh_min": 86,
+    "t_min": 25,
+    "t_max": 30,
+    "days": 4
+   },
+   "source": "Brown spot favours 25–30 °C with RH above 86%, worst on nutrient-poor soils (ICAR-IIRR).",
+   "tasks": {
+    "en": [
+     "Check the older lower leaves of 10 plants for round brown spots with a yellow ring.",
+     "Note which part of the field is worst — poor-soil patches show it first."
+    ],
+    "hi": [
+     "10 पौधों की पुरानी निचली पत्तियों पर पीले घेरे वाले गोल भूरे धब्बे देखें।",
+     "देखें खेत का कौन सा हिस्सा सबसे ज़्यादा प्रभावित है — कमज़ोर मिट्टी वाला भाग पहले दिखता है।"
+    ],
+    "mr": [
+     "10 रोपांच्या जुन्या खालच्या पानांवर पिवळ्या कडेचे गोल तपकिरी ठिपके पाहा.",
+     "शेताचा कोणता भाग जास्त बाधित आहे ते पाहा — कमकुवत जमिनीचा भाग आधी दिसतो."
+    ]
+   }
+  },
+  "rice_bacterial_leaf_blight": {
+   "stages": [
+    "tillering",
+    "panicle_initiation"
+   ],
+   "weather": {
+    "rh_min": 80,
+    "t_min": 25,
+    "t_max": 34,
+    "rain_min": 5,
+    "days": 3
+   },
+   "source": "Wind-driven rain with warm (25–34 °C) humid weather spreads Xanthomonas through leaf wounds (IRRI).",
+   "tasks": {
+    "en": [
+     "Early tomorrow morning, check leaf tips on 10 plants for yellow wavy stripes and milky droplets.",
+     "Check the corner where water enters the field first — the bacteria arrive with the water."
+    ],
+    "hi": [
+     "कल सुबह जल्दी 10 पौधों की पत्तियों की नोक पर लहरदार पीली पट्टी और दूधिया बूँदें देखें।",
+     "जहाँ से पानी खेत में आता है वह कोना पहले देखें — जीवाणु पानी के साथ आते हैं।"
+    ],
+    "mr": [
+     "उद्या सकाळी लवकर 10 रोपांच्या पानांच्या टोकांवर लहरी पिवळी पट्टी व दुधाळ थेंब पाहा.",
+     "जिथून पाणी शेतात येते तो कोपरा आधी तपासा — जिवाणू पाण्यासोबत येतात."
+    ]
+   }
+  },
+  "rice_sheath_blight": {
+   "stages": [
+    "tillering",
+    "panicle_initiation",
+    "flowering"
+   ],
+   "weather": {
+    "rh_min": 90,
+    "t_min": 27,
+    "t_max": 32,
+    "days": 4
+   },
+   "source": "Sheath blight spreads in dense canopies at 28–32 °C with RH above 95% (ICAR-IIRR).",
+   "tasks": {
+    "en": [
+     "Part the plants in the densest area and check stem sheaths just above the water for grey-green patches.",
+     "Check 10 hills and count how many have patches."
+    ],
+    "hi": [
+     "सबसे घने हिस्से में पौधे हटाकर पानी के ठीक ऊपर तने के आवरण पर धूसर-हरे धब्बे देखें।",
+     "10 पौधे देखें और गिनें कितनों पर धब्बे हैं।"
+    ],
+    "mr": [
+     "सर्वात दाट भागात रोपे बाजूला करून पाण्याच्या वर खोडाच्या आवरणावर राखाडी-हिरवे चट्टे पाहा.",
+     "10 चुडे तपासा व किती चुडांवर चट्टे आहेत ते मोजा."
+    ]
+   }
+  },
+  "rice_false_smut": {
+   "stages": [
+    "panicle_initiation",
+    "flowering"
+   ],
+   "weather": {
+    "rh_min": 90,
+    "t_min": 25,
+    "t_max": 30,
+    "rain_min": 2,
+    "days": 3
+   },
+   "source": "Rain and RH above 90% around booting and flowering favour false smut infection (IRRI).",
+   "tasks": {
+    "en": [
+     "If panicles have not emerged yet, ask your officer about a preventive spray this week.",
+     "If panicles are out, check 10 panicles for orange-yellow balls replacing grains."
+    ],
+    "hi": [
+     "बालियाँ अभी नहीं निकलीं तो इस हफ्ते बचाव छिड़काव के बारे में अधिकारी से पूछें।",
+     "बालियाँ निकल गई हों तो 10 बालियों में दानों की जगह नारंगी-पीली गेंदें देखें।"
+    ],
+    "mr": [
+     "लोंब्या अजून बाहेर आल्या नसतील तर या आठवड्यात प्रतिबंधक फवारणीबद्दल अधिकाऱ्यांना विचारा.",
+     "लोंब्या बाहेर आल्या असतील तर 10 लोंब्यांत दाण्यांऐवजी नारिंगी-पिवळे गोळे पाहा."
+    ]
+   }
+  },
+  "rice_tungro": {
+   "stages": [
+    "tillering"
+   ],
+   "phenology": {
+    "das_min": 15,
+    "das_max": 45
+   },
+   "source": "Young rice (first 45 days) is most susceptible; the green leafhopper vector peaks in tillering (IRRI).",
+   "tasks": {
+    "en": [
+     "Look across the field for patches of short, yellow-orange plants.",
+     "Sweep a cloth over the plants and count green leafhoppers."
+    ],
+    "hi": [
+     "खेत में छोटे, पीले-नारंगी पौधों के टुकड़े देखें।",
+     "पौधों पर कपड़ा फिराकर हरे फुदके गिनें।"
+    ],
+    "mr": [
+     "शेतात खुज्या, पिवळ्या-नारिंगी रोपांचे पट्टे पाहा.",
+     "रोपांवरून कापड फिरवून हिरवे तुडतुडे मोजा."
+    ]
+   }
+  },
+  "rice_leaf_folder": {
+   "stages": [
+    "tillering",
+    "panicle_initiation",
+    "flowering"
+   ],
+   "weather": {
+    "rh_min": 80,
+    "t_min": 25,
+    "t_max": 30,
+    "days": 5
+   },
+   "source": "Leaf folder builds up in warm humid weather in well-fertilised fields (ICAR-IIRR).",
+   "tasks": {
+    "en": [
+     "Count folded or white-streaked leaves on 10 hills; act only above 2 fresh ones per hill.",
+     "Open a few folds and check for a green caterpillar inside."
+    ],
+    "hi": [
+     "10 पौधों पर मुड़ी या सफेद धारियों वाली पत्तियाँ गिनें; प्रति पौधा 2 से ज़्यादा ताज़ा हों तभी कार्रवाई करें।",
+     "कुछ मुड़ी पत्तियाँ खोलकर अंदर हरी इल्ली देखें।"
+    ],
+    "mr": [
+     "10 चुडांवर गुंडाळलेली किंवा पांढऱ्या पट्ट्यांची पाने मोजा; प्रति चूड 2 पेक्षा जास्त ताजी असतील तरच कृती करा.",
+     "काही गुंडाळ्या उघडून आत हिरवी अळी आहे का पाहा."
+    ]
+   }
+  },
+  "rice_yellow_stem_borer": {
+   "stages": [
+    "tillering",
+    "panicle_initiation",
+    "flowering"
+   ],
+   "phenology": {
+    "das_min": 25,
+    "das_max": 90
+   },
+   "source": "Dead hearts appear in tillering; white ears at heading (ICAR-IIRR).",
+   "tasks": {
+    "en": [
+     "Count dried central shoots on 10 hills and tug one — if it pulls out easily, a borer is inside.",
+     "Check pheromone traps if installed and note the moth count."
+    ],
+    "hi": [
+     "10 पौधों पर सूखी बीच की पत्तियाँ गिनें और एक खींचें — आसानी से निकले तो अंदर छेदक है।",
+     "फेरोमोन ट्रैप लगे हों तो पतंगों की गिनती लिखें।"
+    ],
+    "mr": [
+     "10 चुडांवरील वाळलेले मधले कोंब मोजा व एक ओढा — सहज निघाल्यास आत खोडकिडा आहे.",
+     "कामगंध सापळे लावले असल्यास पतंगांची संख्या नोंदवा."
+    ]
+   }
+  },
+  "rice_brown_planthopper": {
+   "stages": [
+    "tillering",
+    "panicle_initiation",
+    "flowering",
+    "grain_filling"
+   ],
+   "weather": {
+    "rh_min": 80,
+    "t_min": 25,
+    "t_max": 30,
+    "days": 5
+   },
+   "phenology": {
+    "das_min": 40,
+    "das_max": 110
+   },
+   "source": "Planthoppers multiply in warm humid weather in dense, nitrogen-rich crops from mid-tillering (IRRI).",
+   "tasks": {
+    "en": [
+     "Tap the base of 10 hills over the water and count brown hoppers; act above about 10 per hill.",
+     "Look for circular patches of drying plants — hopper burn needs an expert immediately."
+    ],
+    "hi": [
+     "10 पौधों के निचले भाग को पानी के ऊपर थपथपाकर भूरे फुदके गिनें; प्रति पौधा लगभग 10 से ज़्यादा हों तो कार्रवाई करें।",
+     "सूखते पौधों के गोल घेरे देखें — ऐसा हो तो तुरंत विशेषज्ञ को बुलाएँ।"
+    ],
+    "mr": [
+     "10 चुडांचा तळ पाण्यावर हलवून तपकिरी तुडतुडे मोजा; प्रति चूड सुमारे 10 पेक्षा जास्त असल्यास कृती करा.",
+     "वाळणाऱ्या रोपांचे गोल पट्टे पाहा — असे दिसल्यास लगेच तज्ज्ञांना बोलवा."
+    ]
+   }
+  },
+  "maize_turcicum_leaf_blight": {
+   "stages": [
+    "whorl",
+    "tasseling",
+    "silking"
+   ],
+   "weather": {
+    "rh_min": 90,
+    "t_min": 18,
+    "t_max": 27,
+    "days": 4
+   },
+   "source": "Turcicum blight favours moderate temperatures (18–27 °C) with heavy dew (CIMMYT; ICAR-IIMR).",
+   "tasks": {
+    "en": [
+     "Check the lowest 3 leaves of 10 plants for long grey-green cigar-shaped lesions.",
+     "Note whether lesions have reached the leaf above the ear."
+    ],
+    "hi": [
+     "10 पौधों की सबसे नीचे की 3 पत्तियों पर लंबे धूसर-हरे सिगार जैसे धब्बे देखें।",
+     "देखें धब्बे भुट्टे के ऊपर वाली पत्ती तक पहुँचे क्या।"
+    ],
+    "mr": [
+     "10 झाडांच्या सर्वात खालच्या 3 पानांवर लांब राखाडी-हिरवे सिगारसारखे चट्टे पाहा.",
+     "चट्टे कणसावरच्या पानापर्यंत पोहोचले का ते नोंदवा."
+    ]
+   }
+  },
+  "maize_maydis_leaf_blight": {
+   "stages": [
+    "whorl",
+    "tasseling",
+    "silking",
+    "grain_filling"
+   ],
+   "weather": {
+    "rh_min": 85,
+    "t_min": 22,
+    "t_max": 30,
+    "days": 4
+   },
+   "source": "Maydis blight prefers warmer humid weather than turcicum (ICAR-IIMR).",
+   "tasks": {
+    "en": [
+     "Check middle leaves of 10 plants for small tan boxes between the veins.",
+     "Count how many plants have more than 5 spots per leaf."
+    ],
+    "hi": [
+     "10 पौधों की बीच की पत्तियों पर नसों के बीच छोटे भूरे आयताकार धब्बे देखें।",
+     "गिनें कितने पौधों की पत्ती पर 5 से ज़्यादा धब्बे हैं।"
+    ],
+    "mr": [
+     "10 झाडांच्या मधल्या पानांवर शिरांमध्ये लहान तपकिरी चौकटी पाहा.",
+     "किती झाडांच्या पानावर 5 पेक्षा जास्त ठिपके आहेत ते मोजा."
+    ]
+   }
+  },
+  "maize_common_rust": {
+   "stages": [
+    "whorl",
+    "tasseling"
+   ],
+   "weather": {
+    "rh_min": 90,
+    "t_min": 16,
+    "t_max": 23,
+    "days": 3
+   },
+   "source": "Common rust favours cool (16–23 °C), humid conditions (CIMMYT).",
+   "tasks": {
+    "en": [
+     "Rub spotted leaves on 10 plants — reddish-brown powder on your finger means rust.",
+     "Check whether pustules are on the upper leaves."
+    ],
+    "hi": [
+     "10 पौधों की धब्बेदार पत्तियाँ रगड़ें — उंगली पर लाल-भूरा चूर्ण लगे तो रतुआ है।",
+     "देखें दाने ऊपर की पत्तियों पर हैं क्या।"
+    ],
+    "mr": [
+     "10 झाडांची ठिपकेदार पाने चोळा — बोटाला लालसर-तपकिरी भुकटी लागल्यास तांबेरा आहे.",
+     "फोड वरच्या पानांवर आहेत का ते पाहा."
+    ]
+   }
+  },
+  "maize_banded_leaf_sheath_blight": {
+   "stages": [
+    "whorl",
+    "tasseling"
+   ],
+   "weather": {
+    "rh_min": 90,
+    "t_min": 25,
+    "t_max": 32,
+    "rain_min": 5,
+    "days": 3
+   },
+   "source": "BLSB spreads in hot, humid, rainy weather in dense stands (ICAR-IIMR).",
+   "tasks": {
+    "en": [
+     "Check the lowest leaf sheaths of 10 plants for banded brown patches near the soil.",
+     "Check low-lying parts of the field where water collects."
+    ],
+    "hi": [
+     "10 पौधों के सबसे निचले आवरणों पर मिट्टी के पास पट्टीदार भूरे धब्बे देखें।",
+     "खेत के निचले हिस्से देखें जहाँ पानी जमा होता है।"
+    ],
+    "mr": [
+     "10 झाडांच्या सर्वात खालच्या आवरणांवर जमिनीजवळ पट्टेदार तपकिरी चट्टे पाहा.",
+     "शेताचा सखल भाग तपासा जिथे पाणी साचते."
+    ]
+   }
+  },
+  "maize_downy_mildew": {
+   "stages": [
+    "seedling",
+    "whorl"
+   ],
+   "weather": {
+    "rh_min": 90,
+    "t_min": 20,
+    "t_max": 26,
+    "rain_min": 2,
+    "days": 3
+   },
+   "phenology": {
+    "das_min": 0,
+    "das_max": 30
+   },
+   "source": "Downy mildew infects young maize in cool, wet, humid spells (ICAR-IIMR).",
+   "tasks": {
+    "en": [
+     "Early morning, check 20 young plants for yellow stripes with white down underneath.",
+     "Pull out and bury any striped plant you find today."
+    ],
+    "hi": [
+     "सुबह जल्दी 20 छोटे पौधों पर पीली धारियाँ और नीचे सफेद रोएँ देखें।",
+     "आज जो धारीदार पौधा मिले उसे उखाड़कर गाड़ दें।"
+    ],
+    "mr": [
+     "सकाळी लवकर 20 लहान रोपांवर पिवळे पट्टे व खाली पांढरी लव पाहा.",
+     "आज आढळलेले पट्टेदार रोप उपटून पुरा."
+    ]
+   }
+  },
+  "maize_fall_armyworm": {
+   "stages": [
+    "seedling",
+    "whorl",
+    "tasseling"
+   ],
+   "phenology": {
+    "das_min": 7,
+    "das_max": 60
+   },
+   "source": "Fall armyworm damages maize from emergence through late whorl; scouting twice a week is advised (ICAR-IIMR).",
+   "tasks": {
+    "en": [
+     "Walk a W pattern, check 20 plants, and count those with fresh holes and wet droppings in the whorl.",
+     "Check the underside of leaves for egg masses covered in grey hair and crush them."
+    ],
+    "hi": [
+     "W आकार में चलकर 20 पौधे देखें और गोभ में ताज़ा छेद और गीला मल वाले पौधे गिनें।",
+     "पत्तियों के नीचे धूसर रोएँ से ढके अंडों के गुच्छे देखें और नष्ट करें।"
+    ],
+    "mr": [
+     "W आकारात चालत 20 झाडे पाहा व पोंग्यात ताजी छिद्रे आणि ओली विष्ठा असलेली झाडे मोजा.",
+     "पानांखाली राखाडी केसांनी झाकलेले अंडीपुंज शोधून नष्ट करा."
+    ]
+   }
+  },
+  "maize_stem_borer": {
+   "stages": [
+    "whorl"
+   ],
+   "phenology": {
+    "das_min": 15,
+    "das_max": 45
+   },
+   "source": "Chilo partellus attacks from 2–4 weeks after emergence (ICAR-IIMR).",
+   "tasks": {
+    "en": [
+     "Check 20 plants for rows of small shot holes across the leaves.",
+     "Count dried central shoots and pull them out to destroy the larvae."
+    ],
+    "hi": [
+     "20 पौधों की पत्तियों पर कतार में छोटे छेद देखें।",
+     "सूखी बीच की पत्तियाँ गिनें और इल्ली नष्ट करने के लिए उखाड़ दें।"
+    ],
+    "mr": [
+     "20 झाडांच्या पानांवर रांगेत लहान छिद्रे पाहा.",
+     "वाळलेले मधले कोंब मोजा व अळ्या नष्ट करण्यासाठी उपटा."
+    ]
+   }
+  },
+  "cotton_pink_bollworm": {
+   "stages": [
+    "flowering",
+    "boll_development"
+   ],
+   "phenology": {
+    "das_min": 60,
+    "das_max": 160
+   },
+   "source": "Pink bollworm attacks flowers and green bolls from about 60 days; ETL 8 moths/trap/night for 3 nights or 10% infested bolls (ICAR-CICR).",
+   "tasks": {
+    "en": [
+     "Count rosette (webbed-shut) flowers on 20 plants and pick them off.",
+     "Open 20 green bolls from different plants and count those with pink larvae; above 2 means act."
+    ],
+    "hi": [
+     "20 पौधों पर गुलाब जैसे बंद फूल गिनें और तोड़ दें।",
+     "अलग-अलग पौधों से 20 हरे टिंडे खोलें और गुलाबी सुंडी वाले गिनें; 2 से ज़्यादा हों तो कार्रवाई करें।"
+    ],
+    "mr": [
+     "20 झाडांवरील गुलाबासारखी मिटलेली फुले मोजा व तोडा.",
+     "वेगवेगळ्या झाडांवरील 20 हिरवी बोंडे फोडा व गुलाबी अळी असलेली मोजा; 2 पेक्षा जास्त असल्यास कृती करा."
+    ]
+   },
+   "trap": {
+    "etl_per_trap_night": 8,
+    "nights": 3,
+    "trap_type": "pheromone"
+   }
+  },
+  "cotton_american_bollworm": {
+   "stages": [
+    "squaring",
+    "flowering",
+    "boll_development"
+   ],
+   "phenology": {
+    "das_min": 50,
+    "das_max": 140
+   },
+   "source": "Helicoverpa lays eggs on tender parts from squaring; ETL 8–10 moths/trap/night for 3 nights or 1 larva per plant (ICAR-CICR).",
+   "tasks": {
+    "en": [
+     "Check tender shoots and squares of 20 plants for eggs and small larvae.",
+     "Count bored squares and bolls with round holes."
+    ],
+    "hi": [
+     "20 पौधों की कोमल टहनियों और पुड़ियों पर अंडे और छोटी इल्लियाँ देखें।",
+     "गोल छेद वाली पुड़ियाँ और टिंडे गिनें।"
+    ],
+    "mr": [
+     "20 झाडांच्या कोवळ्या शेंड्यांवर व पात्यांवर अंडी आणि लहान अळ्या पाहा.",
+     "गोल छिद्रे असलेली पाती व बोंडे मोजा."
+    ]
+   },
+   "trap": {
+    "etl_per_trap_night": 8,
+    "nights": 3,
+    "trap_type": "pheromone"
+   }
+  },
+  "cotton_whitefly": {
+   "stages": [
+    "vegetative",
+    "squaring",
+    "flowering",
+    "boll_development"
+   ],
+   "weather": {
+    "rh_min": 60,
+    "t_min": 28,
+    "t_max": 34,
+    "rain_max": 2,
+    "days": 5
+   },
+   "source": "Whitefly builds up in hot spells with little rain; ETL 8–10 adults per leaf (ICAR-CICR).",
+   "tasks": {
+    "en": [
+     "Turn over one upper leaf on 20 plants and count whiteflies; act above 8–10 per leaf.",
+     "Check for sticky leaves or black sooty mould."
+    ],
+    "hi": [
+     "20 पौधों पर ऊपर की एक पत्ती पलटकर सफेद मक्खी गिनें; प्रति पत्ती 8–10 से ज़्यादा हों तो कार्रवाई करें।",
+     "चिपचिपी पत्तियाँ या काली फफूँद देखें।"
+    ],
+    "mr": [
+     "20 झाडांवर वरचे एक पान उलटून पांढऱ्या माशा मोजा; प्रति पान 8–10 पेक्षा जास्त असल्यास कृती करा.",
+     "चिकट पाने किंवा काळी बुरशी आहे का पाहा."
+    ]
+   }
+  },
+  "cotton_jassid": {
+   "stages": [
+    "vegetative",
+    "squaring"
+   ],
+   "weather": {
+    "rh_min": 70,
+    "t_min": 25,
+    "t_max": 33,
+    "days": 4
+   },
+   "source": "Jassids multiply in warm humid weather in early crop stages; ETL 2 nymphs per leaf (ICAR-CICR).",
+   "tasks": {
+    "en": [
+     "Count jassid nymphs under 3 leaves on 20 plants; act above 2 per leaf.",
+     "Look for leaf edges curling down and turning yellow or red."
+    ],
+    "hi": [
+     "20 पौधों पर 3 पत्तियों के नीचे हरे तेले के शिशु गिनें; प्रति पत्ती 2 से ज़्यादा हों तो कार्रवाई करें।",
+     "नीचे मुड़ते और पीले-लाल होते पत्तियों के किनारे देखें।"
+    ],
+    "mr": [
+     "20 झाडांवर 3 पानांखाली तुडतुड्यांची पिल्ले मोजा; प्रति पान 2 पेक्षा जास्त असल्यास कृती करा.",
+     "खाली वळणाऱ्या व पिवळ्या-लाल होणाऱ्या पानांच्या कडा पाहा."
+    ]
+   }
+  },
+  "soybean_yellow_mosaic": {
+   "stages": [
+    "emergence",
+    "vegetative",
+    "flowering"
+   ],
+   "weather": {
+    "rh_min": 70,
+    "t_min": 25,
+    "t_max": 32,
+    "rain_max": 2,
+    "days": 4
+   },
+   "phenology": {
+    "das_min": 10,
+    "das_max": 55
+   },
+   "source": "Whitefly-borne YMV spreads in dry warm spells in young soybean (ICAR-IISR).",
+   "tasks": {
+    "en": [
+     "Check 5 spots of 1 square metre for plants with yellow-green mosaic leaves; pull and bury them.",
+     "Turn over leaves and look for whiteflies."
+    ],
+    "hi": [
+     "1 वर्ग मीटर के 5 स्थानों पर पीले-हरे चितकबरे पौधे देखें; उखाड़कर गाड़ दें।",
+     "पत्तियाँ पलटकर सफेद मक्खी देखें।"
+    ],
+    "mr": [
+     "1 चौरस मीटरच्या 5 ठिकाणी पिवळ्या-हिरव्या चट्ट्यांची झाडे पाहा; उपटून पुरा.",
+     "पाने उलटून पांढरी माशी पाहा."
+    ]
+   }
+  },
+  "soybean_girdle_beetle": {
+   "stages": [
+    "vegetative",
+    "flowering"
+   ],
+   "phenology": {
+    "das_min": 20,
+    "das_max": 60
+   },
+   "source": "Girdle beetle attacks from about 3 weeks after sowing through flowering (ICAR-IISR).",
+   "tasks": {
+    "en": [
+     "Look for wilting hanging leaves and check their stalks for two ring cuts.",
+     "Cut off and destroy girdled parts today."
+    ],
+    "hi": [
+     "लटकती मुरझाई पत्तियाँ देखें और उनके डंठल पर दो गोल कटाव जाँचें।",
+     "आज ही कटे हुए भाग तोड़कर नष्ट करें।"
+    ],
+    "mr": [
+     "लोंबकळणारी सुकलेली पाने पाहा व त्यांच्या देठावर दोन गोल काप तपासा.",
+     "आजच काप असलेले भाग तोडून नष्ट करा."
+    ]
+   }
+  },
+  "soybean_tobacco_caterpillar": {
+   "stages": [
+    "vegetative",
+    "flowering",
+    "pod_formation"
+   ],
+   "weather": {
+    "rh_min": 85,
+    "t_min": 25,
+    "t_max": 30,
+    "days": 4
+   },
+   "source": "Spodoptera litura outbreaks follow warm humid spells in soybean (ICAR-IISR).",
+   "tasks": {
+    "en": [
+     "Look for papery net-like leaves and pluck those with groups of young larvae underneath.",
+     "Count larvae along 1 metre of row in 5 places."
+    ],
+    "hi": [
+     "जाली जैसी पत्तियाँ देखें और नीचे झुंड वाली छोटी इल्लियों सहित तोड़ें।",
+     "5 जगह 1 मीटर कतार में इल्लियाँ गिनें।"
+    ],
+    "mr": [
+     "जाळीदार पाने पाहा व खाली समूहातील लहान अळ्यांसह तोडा.",
+     "5 ठिकाणी 1 मीटर ओळीत अळ्या मोजा."
+    ]
+   }
+  },
+  "soybean_rust": {
+   "stages": [
+    "flowering",
+    "pod_formation",
+    "pod_filling"
+   ],
+   "weather": {
+    "rh_min": 90,
+    "t_min": 18,
+    "t_max": 26,
+    "rain_min": 2,
+    "days": 4
+   },
+   "source": "Soybean rust spreads in cool (18–26 °C), wet weather with long leaf wetness (ICAR-IISR).",
+   "tasks": {
+    "en": [
+     "Turn over lower leaves of 10 plants and look for raised tan pustules.",
+     "Note any early yellowing and leaf drop from the bottom."
+    ],
+    "hi": [
+     "10 पौधों की निचली पत्तियाँ पलटकर उभरे भूरे दाने देखें।",
+     "नीचे से जल्दी पीलापन और पत्ती गिरना नोट करें।"
+    ],
+    "mr": [
+     "10 झाडांची खालची पाने उलटून उंचावलेले तपकिरी फोड पाहा.",
+     "खालून लवकर पिवळेपणा व पानगळ होत आहे का नोंदवा."
+    ]
+   }
+  },
+  "rice_skipper": {
+   "stages": [
+    "tillering",
+    "panicle_initiation"
+   ],
+   "phenology": {
+    "das_min": 30,
+    "das_max": 80
+   },
+   "source": "Skipper larvae feed on leaves from tillering to booting; usually a minor pest (ICAR-IIRR).",
+   "tasks": {
+    "en": [
+     "Look for rolled leaf tips on 10 hills and open a few to find green larvae with a large head.",
+     "Note brown butterflies with white spots resting on leaves in the morning."
+    ],
+    "hi": [
+     "10 पौधों पर मुड़ी पत्ती की नोकें देखें और कुछ खोलकर बड़े सिर वाली हरी इल्ली खोजें।",
+     "सुबह पत्तियों पर बैठी सफेद धब्बों वाली भूरी तितलियाँ नोट करें।"
+    ],
+    "mr": [
+     "10 चुडांवर गुंडाळलेली पानांची टोके पाहा व काही उघडून मोठ्या डोक्याची हिरवी अळी शोधा.",
+     "सकाळी पानांवर बसलेली पांढऱ्या ठिपक्यांची तपकिरी फुलपाखरे नोंदवा."
+    ]
+   }
+  },
+  "rice_white_stem_borer": {
+   "stages": [
+    "tillering",
+    "panicle_initiation",
+    "flowering"
+   ],
+   "phenology": {
+    "das_min": 25,
+    "das_max": 90
+   },
+   "source": "Stem borer dead hearts appear in tillering and white ears at heading (ICAR-IIRR).",
+   "tasks": {
+    "en": [
+     "Count dried central shoots on 10 hills and tug one — if it pulls out easily, a borer is inside.",
+     "Check a light trap or the leaves at dawn for pure white moths."
+    ],
+    "hi": [
+     "10 पौधों पर सूखी बीच की पत्तियाँ गिनें और एक खींचें — आसानी से निकले तो अंदर छेदक है।",
+     "सुबह प्रकाश प्रपंच या पत्तियों पर शुद्ध सफेद पतंगे देखें।"
+    ],
+    "mr": [
+     "10 चुडांवरील वाळलेले मधले कोंब मोजा व एक ओढा — सहज निघाल्यास आत खोडकिडा आहे.",
+     "पहाटे प्रकाश सापळा किंवा पानांवर पूर्ण पांढरे पतंग पाहा."
+    ]
+   }
+  },
+  "maize_curvularia_leaf_spot": {
+   "stages": [
+    "whorl",
+    "tasseling",
+    "silking"
+   ],
+   "weather": {
+    "rh_min": 85,
+    "t_min": 24,
+    "t_max": 32,
+    "days": 4
+   },
+   "source": "Curvularia leaf spot favours hot, humid weather (ICAR-IIMR).",
+   "tasks": {
+    "en": [
+     "Check middle leaves of 10 plants for many small round spots with a yellow ring.",
+     "Note whether spots are reaching the leaves above the ear."
+    ],
+    "hi": [
+     "10 पौधों की बीच की पत्तियों पर पीले घेरे वाले कई छोटे गोल धब्बे देखें।",
+     "देखें धब्बे भुट्टे के ऊपर की पत्तियों तक पहुँचे क्या।"
+    ],
+    "mr": [
+     "10 झाडांच्या मधल्या पानांवर पिवळ्या वलयाचे अनेक लहान गोल ठिपके पाहा.",
+     "ठिपके कणसावरच्या पानांपर्यंत पोहोचले का ते नोंदवा."
+    ]
+   }
+  },
+  "maize_aphid": {
+   "stages": [
+    "tasseling",
+    "silking"
+   ],
+   "weather": {
+    "rh_min": 50,
+    "t_min": 22,
+    "t_max": 30,
+    "rain_max": 1,
+    "days": 5
+   },
+   "source": "Corn leaf aphid colonies build up in dry spells around tasseling (ICAR-IIMR).",
+   "tasks": {
+    "en": [
+     "Check tassels and upper whorls of 20 plants and count those with large aphid colonies.",
+     "Look for ladybird beetles among the aphids — if many, they will likely clear the colonies."
+    ],
+    "hi": [
+     "20 पौधों की नर मंजरी और ऊपरी गोभ देखें और बड़े माहू झुंड वाले पौधे गिनें।",
+     "माहू के बीच लेडीबर्ड भृंग देखें — ज़्यादा हों तो ये झुंड खत्म कर देंगे।"
+    ],
+    "mr": [
+     "20 झाडांचे तुरे व वरचे पोंगे तपासा व मोठ्या माव्याच्या वसाहती असलेली झाडे मोजा.",
+     "माव्यामध्ये लेडीबर्ड भुंगे पाहा — जास्त असल्यास ते वसाहती नष्ट करतील."
+    ]
+   }
+  },
+  "cotton_bacterial_blight": {
+   "stages": [
+    "vegetative",
+    "squaring",
+    "flowering",
+    "boll_development"
+   ],
+   "weather": {
+    "rh_min": 85,
+    "t_min": 25,
+    "t_max": 35,
+    "days": 3
+   },
+   "source": "Bacterial blight spreads with rain splash in warm (25–35 °C), humid weather (ICAR-CICR; TNAU).",
+   "tasks": {
+    "en": [
+     "Look at 10 plants for angular water-soaked spots between the leaf veins.",
+     "Check stems and young bolls for black streaks or cankers."
+    ],
+    "hi": [
+     "10 पौधों पर पत्ती की शिराओं के बीच कोणीय पानी-भीगे धब्बे देखें।",
+     "तनों और छोटे टिंडों पर काली धारियाँ या घाव देखें।"
+    ],
+    "mr": [
+     "10 झाडांवर पानांच्या शिरांमधील कोनदार पाणथळ ठिपके पाहा.",
+     "खोड व लहान बोंडांवर काळ्या रेषा किंवा जखमा पाहा."
+    ]
+   }
+  },
+  "cotton_leaf_curl": {
+   "stages": [
+    "emergence",
+    "vegetative",
+    "squaring",
+    "flowering"
+   ],
+   "weather": {
+    "rh_min": 40,
+    "rh_max_cap": 75,
+    "t_min": 28,
+    "t_max": 38,
+    "days": 5
+   },
+   "source": "Whitefly, which spreads leaf curl, multiplies in hot (28–38 °C), drier weather (ICAR-CICR).",
+   "tasks": {
+    "en": [
+     "Turn over 5 leaves on 10 plants and count whitefly adults.",
+     "Look for curled leaves with thick dark veins at the top of the plant."
+    ],
+    "hi": [
+     "10 पौधों की 5-5 पत्तियाँ पलटकर सफ़ेद मक्खियाँ गिनें।",
+     "पौधे के ऊपर मोटी गहरी शिराओं वाली मुड़ी पत्तियाँ देखें।"
+    ],
+    "mr": [
+     "10 झाडांची 5-5 पाने उलटून पांढऱ्या माशा मोजा.",
+     "झाडाच्या शेंड्यावर जाड गडद शिरांची गुंडाळलेली पाने पाहा."
+    ]
+   }
+  },
+  "cotton_wilt": {
+   "stages": [
+    "vegetative",
+    "squaring",
+    "flowering",
+    "boll_development"
+   ],
+   "weather": {
+    "rh_min": 85,
+    "t_min": 22,
+    "t_max": 32,
+    "rain_min": 5,
+    "days": 3
+   },
+   "source": "Fusarium wilt rises in warm, wet soils; a heavy rain after a dry spell also brings parawilt (ICAR-CICR).",
+   "tasks": {
+    "en": [
+     "Walk the low, wet parts of the field and count wilting plants.",
+     "Cut the stem of one wilting plant near the ground and look for brown streaks inside."
+    ],
+    "hi": [
+     "खेत के नीचे वाले, गीले हिस्से में घूमकर मुरझाते पौधे गिनें।",
+     "एक मुरझाते पौधे का तना ज़मीन के पास काटकर अंदर भूरी धारियाँ देखें।"
+    ],
+    "mr": [
+     "शेताच्या सखल, ओल्या भागात फिरून मरगळलेली झाडे मोजा.",
+     "एका मरगळलेल्या झाडाचे खोड जमिनीजवळ कापून आत तपकिरी रेषा पाहा."
+    ]
+   }
+  },
+  "cotton_alternaria_leaf_spot": {
+   "stages": [
+    "squaring",
+    "flowering",
+    "boll_development",
+    "boll_opening"
+   ],
+   "weather": {
+    "rh_min": 85,
+    "t_min": 22,
+    "t_max": 30,
+    "days": 4
+   },
+   "source": "Alternaria leaf spot favours humid spells at 22–30 °C on older leaves (ICAR-CICR).",
+   "tasks": {
+    "en": [
+     "Check the 3 lowest leaves of 10 plants for brown spots with rings.",
+     "Note whether spotted leaves are yellowing or dropping."
+    ],
+    "hi": [
+     "10 पौधों की सबसे नीचे की 3 पत्तियों पर छल्लेदार भूरे धब्बे देखें।",
+     "देखें धब्बेदार पत्तियाँ पीली पड़ रही हैं या झड़ रही हैं।"
+    ],
+    "mr": [
+     "10 झाडांच्या सर्वात खालच्या 3 पानांवर वलयांचे तपकिरी ठिपके पाहा.",
+     "ठिपके असलेली पाने पिवळी पडत आहेत का गळत आहेत ते नोंदवा."
+    ]
+   }
+  },
+  "cotton_aphid": {
+   "stages": [
+    "emergence",
+    "vegetative",
+    "squaring"
+   ],
+   "weather": {
+    "rh_min": 70,
+    "t_min": 20,
+    "t_max": 30,
+    "days": 5
+   },
+   "source": "Cotton aphid builds up in mild, humid and cloudy spells in the early crop (ICAR-CICR; NIPHM).",
+   "tasks": {
+    "en": [
+     "Turn over the top 3 leaves of 20 plants and count plants with aphid clusters.",
+     "Look for ladybird beetles or their larvae before deciding to spray."
+    ],
+    "hi": [
+     "20 पौधों की ऊपरी 3 पत्तियाँ पलटकर माहू वाले पौधे गिनें।",
+     "छिड़काव तय करने से पहले लेडीबर्ड भृंग या उनके बच्चे देखें।"
+    ],
+    "mr": [
+     "20 झाडांची वरची 3 पाने उलटून मावा असलेली झाडे मोजा.",
+     "फवारणी ठरवण्यापूर्वी लेडीबर्ड भुंगेरे किंवा त्यांच्या अळ्या पाहा."
+    ]
+   }
+  },
+  "soybean_frogeye_leaf_spot": {
+   "stages": [
+    "flowering",
+    "pod_formation",
+    "pod_filling"
+   ],
+   "weather": {
+    "rh_min": 90,
+    "t_min": 25,
+    "t_max": 30,
+    "days": 4
+   },
+   "source": "Frogeye leaf spot favours warm (25–30 °C), humid weather with long leaf wetness (ICAR-IISR).",
+   "tasks": {
+    "en": [
+     "Check the top leaves of 10 plants for round grey spots with a purple border.",
+     "Look at a few pods for sunken reddish spots."
+    ],
+    "hi": [
+     "10 पौधों की ऊपरी पत्तियों पर बैंगनी किनारे वाले गोल धूसर धब्बे देखें।",
+     "कुछ फलियों पर धँसे लाल धब्बे देखें।"
+    ],
+    "mr": [
+     "10 झाडांच्या वरच्या पानांवर जांभळ्या कडेचे गोल राखाडी ठिपके पाहा.",
+     "काही शेंगांवर खोलगट लालसर ठिपके पाहा."
+    ]
+   }
+  },
+  "soybean_septoria_brown_spot": {
+   "stages": [
+    "vegetative",
+    "flowering",
+    "pod_formation"
+   ],
+   "weather": {
+    "rh_min": 90,
+    "t_min": 20,
+    "t_max": 28,
+    "days": 3
+   },
+   "source": "Septoria brown spot starts on lower leaves in wet, mild weather (20–28 °C) and climbs with rain splash (ICAR-IISR).",
+   "tasks": {
+    "en": [
+     "Check the lowest leaves of 10 plants for small dark-brown spots with yellowing.",
+     "Note how many leaf layers up the spots have reached."
+    ],
+    "hi": [
+     "10 पौधों की सबसे निचली पत्तियों पर पीलेपन वाले छोटे गहरे भूरे धब्बे देखें।",
+     "देखें धब्बे कितनी परत ऊपर तक पहुँचे हैं।"
+    ],
+    "mr": [
+     "10 झाडांच्या सर्वात खालच्या पानांवर पिवळेपणासह लहान गडद तपकिरी ठिपके पाहा.",
+     "ठिपके किती थर वरपर्यंत पोहोचले ते नोंदवा."
+    ]
+   }
+  },
+  "maize_gray_leaf_spot": {
+   "stages": [
+    "whorl",
+    "tasseling",
+    "silking"
+   ],
+   "weather": {
+    "rh_min": 92,
+    "t_min": 22,
+    "t_max": 30,
+    "days": 4
+   },
+   "source": "Gray leaf spot needs long leaf wetness and high humidity at 22–30 °C (CIMMYT; ICAR-IIMR).",
+   "tasks": {
+    "en": [
+     "Check the lowest 4 leaves of 10 plants for narrow grey rectangular spots.",
+     "Note whether spots have reached the leaf below the ear."
+    ],
+    "hi": [
+     "10 पौधों की सबसे निचली 4 पत्तियों पर पतले धूसर आयताकार धब्बे देखें।",
+     "देखें धब्बे भुट्टे के नीचे वाली पत्ती तक पहुँचे क्या।"
+    ],
+    "mr": [
+     "10 झाडांच्या सर्वात खालच्या 4 पानांवर अरुंद राखाडी आयताकृती ठिपके पाहा.",
+     "ठिपके कणसाखालच्या पानापर्यंत पोहोचले का ते नोंदवा."
+    ]
+   }
+  },
+  "maize_ear_rot": {
+   "stages": [
+    "silking",
+    "grain_filling",
+    "maturity"
+   ],
+   "weather": {
+    "rh_min": 85,
+    "t_min": 24,
+    "t_max": 32,
+    "rain_min": 2,
+    "days": 3
+   },
+   "source": "Ear rots follow warm, wet weather from silking to harvest, especially on insect-damaged cobs (ICAR-IIMR; CIMMYT).",
+   "tasks": {
+    "en": [
+     "Peel back the husk on 10 cobs and look for mould at the tip.",
+     "Check cobs with insect holes first — that is where rot starts."
+    ],
+    "hi": [
+     "10 भुट्टों का छिलका हटाकर सिरे पर फफूँद देखें।",
+     "कीट के छेद वाले भुट्टे पहले देखें — सड़न वहीं से शुरू होती है।"
+    ],
+    "mr": [
+     "10 कणसांचे आवरण मागे करून टोकावर बुरशी पाहा.",
+     "किडींची छिद्रे असलेली कणसे आधी पाहा — कुजणे तिथूनच सुरू होते."
+    ]
+   }
   }
+ }
 }

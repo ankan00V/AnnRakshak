@@ -1,6 +1,7 @@
 """Live field walk: frame quality, guidance, evidence rules and the WebSocket flow."""
 
 import base64
+import re
 import io
 from datetime import date, timedelta
 
@@ -195,6 +196,15 @@ def test_live_walk_end_to_end(client):
         assert scan.verdict == "found" and scan.problem_ids
         p = db.get(Problem, scan.problem_ids[0])
         assert p.target == "rice_brown_spot" and p.diagnoses[0].gate_reason == "LIVE_MULTI_VIEW"
+    # The farmer switches to English on the summary screen: same findings, English words.
+    en = client.get(f"/api/farms/1/live/{s['scan_id']}?lang=en").json()
+    assert en["verdict"] == s["verdict"] and [x["target"] for x in en["seen"]] == ["rice_brown_spot"]
+    assert en["seen"][0]["name"].isascii() and en["seen"][0]["name"] != s["seen"][0]["name"]
+    assert en["context"]["crop"]["name"].isascii() and en["seen"][0]["advisory"]["ladder"]
+    assert [r["target"] for r in en["context"]["risks"]] == [r["target"] for r in s["context"]["risks"]]
+    assert not any(re.search("[\u0900-\u097f]", r["reason"]) for r in en["context"]["risks"])  # no Devanagari left
+    assert "pH" in en["speech"] and "सामू" not in en["speech"]
+    assert client.get(f"/api/farms/2/live/{s['scan_id']}?lang=en").status_code == 404
 
 
 def test_disconnect_before_finish_saves_nothing(client):
@@ -304,3 +314,14 @@ def test_a_frame_the_model_does_not_recognise_as_a_crop_never_counts():
     out = s.on_frame(leaf(4242), b"face", lambda img: [])  # e.g. a person in front of plants
     assert not out["counted"] and out["quality"]["hint"] == "show_crop"
     assert s.steps[s.idx].got == need_before and s.classified == 0
+
+
+def test_language_switch_mid_call(client):
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "mr", "lat": 21.171, "lon": 79.651})
+        ready = ws.receive_json()
+        assert re.search("[ऀ-ॿ]", ready["guide"]["text"])
+        ws.send_json({"type": "lang", "lang": "en"})
+        m = ws.receive_json()
+        assert m["type"] == "lang" and m["guide"]["step"] == ready["guide"]["step"]
+        assert not re.search("[ऀ-ॿ]", m["guide"]["text"] + m["context"]["crop"]["name"])

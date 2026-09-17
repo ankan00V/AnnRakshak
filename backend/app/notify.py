@@ -36,7 +36,7 @@ from app.config import (
     VAPID_PRIVATE_KEY,
     VAPID_SUBJECT,
 )
-from app.engine import agromet
+from app.engine import agromet, risk
 from app.kb import KB, tr, trl
 from app.models import Alert, EmailLog, Farm, Notice, Problem, PushSubscription, SprayLog
 
@@ -167,7 +167,7 @@ def alert_card(kb: KB, a: Alert, lang: str) -> dict:
     name = tr(kb.targets[a.target]["names"], lang)
     level = tr(LEVEL_LABEL.get(a.level, LEVEL_LABEL["medium"]), lang)
     prev = live.prevention_for(kb, a.target, lang)
-    return {"title": tr(ALERT_TITLE, lang).format(name=name, level=level), "text": tr(a.reason, lang),
+    return {"title": tr(ALERT_TITLE, lang).format(name=name, level=level), "text": risk.reason_text(a.reason, lang),
             "do": trl(a.tasks, lang)[:2] + prev["do"][:1], "severity": "warning" if a.level == "high" else "advice"}
 
 
@@ -267,7 +267,7 @@ def digest_data(db: Session, kb: KB, farm: Farm, bundle: dict, now: datetime) ->
     window = services.weather_for(db, farm)
     for s in services.risk_scores(db, kb, farm, now.date(), window)[:3]:
         risks.append({"name": tr(kb.targets[s.target]["names"], lang), "level": s.level,
-                      "level_label": tr(LEVEL_LABEL[s.level], lang), "reason": tr(s.reason, lang),
+                      "level_label": tr(LEVEL_LABEL[s.level], lang), "reason": risk.reason_text(s.reason, lang),
                       "prevention": live.prevention_for(kb, s.target, lang)})
     ensure_token(farm)
     return {

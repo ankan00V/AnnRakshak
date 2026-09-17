@@ -5,8 +5,11 @@ import {
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import type { CaseBundle, CaseListItem } from '../api/types'
-import { useAsync, usePersistent } from '../lib/hooks'
+import { useAsync } from '../lib/hooks'
+import { useAuth } from '../auth/AuthContext'
 import { Card, ErrorBox, GradCamOverlay, Pill, Spinner } from '../ui/kit'
+import AccountMenu from '../auth/AccountMenu'
+import BrandMark from '../ui/BrandMark'
 
 const REASON_LABEL: Record<string, string> = {
   BELOW_FLOOR: 'Model unsure',
@@ -32,13 +35,13 @@ export default function ExpertConsole() {
       <header className="bg-soil-dark text-cream">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to="/" className="font-semibold tracking-tight">AnnRakshak</Link>
+            <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight"><BrandMark size={30} />AnnRakshak</Link>
             <span className="text-cream/40">/</span>
             <span className="flex items-center gap-1.5 text-sm"><UserCheck className="w-4 h-4 text-ochre" /> Expert validation</span>
           </div>
-          <nav className="flex gap-4 text-sm text-cream/70">
+          <nav className="flex items-center gap-4 text-sm text-cream/70">
             <Link to="/officer" className="hover:text-cream">Officials' dashboard</Link>
-            <Link to="/app" className="hover:text-cream">Farmer app</Link>
+            <AccountMenu />
           </nav>
         </div>
       </header>
@@ -268,7 +271,8 @@ function CaseDetail({ b, onBack, onResolved }: { b: CaseBundle; onBack: () => vo
 }
 
 function Decision({ b, top, elapsed, onResolved }: { b: CaseBundle; top?: string; elapsed: number; onResolved: () => void }) {
-  const [name, setName] = usePersistent('ar.expert', 'Dr. KVK Officer')
+  // The verdict is recorded under the signed-in expert (the server takes the name from the session).
+  const name = useAuth().me?.name ?? ''
   // No default beyond the model's own guess: pre-filling some other label would nudge the reviewer.
   const [label, setLabel] = useState(top && b.candidate_labels.some((c) => c.id === top) ? top : '')
   const [notes, setNotes] = useState('')
@@ -329,7 +333,7 @@ function Decision({ b, top, elapsed, onResolved }: { b: CaseBundle; top?: string
         </label>
         <label className="block text-xs text-soil-dark/60">
           Reviewing expert
-          <input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 w-full min-h-[44px] rounded-xl border border-soil-dark/20 px-3 bg-cream/50 text-sm" />
+          <input value={name} readOnly aria-readonly className="mt-1 w-full min-h-[44px] rounded-xl border border-soil-dark/10 px-3 bg-soil-dark/5 text-sm" />
         </label>
       </div>
       <label className="block text-xs text-soil-dark/60">

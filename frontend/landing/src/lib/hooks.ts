@@ -1,17 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-export function useAsync<T>(fn: () => Promise<T>, deps: unknown[]) {
-  const [data, setData] = useState<T | null>(null)
+// The last answer per request, so going back to a screen or a language shows
+// at once while it refreshes. Cleared on sign-in and sign-out.
+const CACHE = new Map<string, unknown>()
+export const clearCache = () => CACHE.clear()
+
+/** `key` (optional) names the request, e.g. ['home', farmId, lang].join(':'). */
+export function useAsync<T>(fn: () => Promise<T>, deps: unknown[], key?: string) {
+  const [data, setData] = useState<T | null>(() => (key && CACHE.has(key) ? (CACHE.get(key) as T) : null))
   const [error, setError] = useState<Error | null>(null)
   const [loading, setLoading] = useState(true)
   const seq = useRef(0)
 
   const run = useCallback(() => {
     const id = ++seq.current
-    setLoading(true)
+    const cached = key !== undefined && CACHE.has(key)
+    if (cached) setData(CACHE.get(key!) as T)
+    setLoading(!cached)
     setError(null)
     fn()
-      .then((d) => id === seq.current && setData(d))
+      .then((d) => {
+        if (key !== undefined) CACHE.set(key, d)
+        if (id === seq.current) setData(d)
+      })
       .catch((e) => id === seq.current && setError(e))
       .finally(() => id === seq.current && setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps

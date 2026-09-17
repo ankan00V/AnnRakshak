@@ -33,15 +33,24 @@ ENGLISH_NAMES = {
     "kn": "Kannada", "ml": "Malayalam", "gu": "Gujarati", "pa": "Punjabi", "od": "Odia",
 }
 MEMORY_DIR = KB_DIR / "i18n"
-PLACEHOLDER = re.compile(r"\{(\w*)\}")
+PLACEHOLDER = re.compile(r"\{([^{}]*)\}")
+"""{crop}, and {dep:+.0f} with a format spec — both must survive translation untouched."""
+
+
+def same_placeholders(source: str, translated: str) -> bool:
+    return sorted(PLACEHOLDER.findall(source)) == sorted(PLACEHOLDER.findall(translated))
 
 
 @lru_cache
 def memory(lang: str) -> dict[str, str]:
+    """English -> translation. An entry whose placeholders don't match the
+    English is dropped (the English shows instead): a mangled {name} would
+    otherwise break the sentence, or the request that formats it."""
     f = MEMORY_DIR / f"{lang}.json"
     if lang in AUTHORED or not f.exists():
         return {}
-    return json.loads(f.read_text(encoding="utf-8")).get("strings", {})
+    strings = json.loads(f.read_text(encoding="utf-8")).get("strings", {})
+    return {en: t for en, t in strings.items() if isinstance(t, str) and same_placeholders(en, t)}
 
 
 def lookup(english: str, lang: str) -> str | None:

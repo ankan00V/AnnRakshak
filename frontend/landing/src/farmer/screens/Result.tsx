@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
-  ArrowLeft, ArrowRightLeft, Camera, CheckCircle2, Clock, FlaskConical, HelpCircle, Loader2, PhoneCall, RefreshCw, ShieldQuestion, UserRound,
+  ArrowLeft, ArrowRightLeft, Camera, CheckCircle2, Clock, FlaskConical, HelpCircle, Loader2, PhoneCall, Plus, RefreshCw, ShieldQuestion, UserRound,
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../../api/client'
@@ -33,6 +33,18 @@ function ResultView({ r }: { r: DiagnoseResult }) {
   const outcome = r.gate.outcome
   const top = r.gate.alternatives[0]
   const [escalating, setEscalating] = useState(false)
+
+  // Language switched on this screen: the same result, re-rendered in the new language.
+  const langSeen = useRef(lang)
+  useEffect(() => {
+    if (langSeen.current === lang) return
+    langSeen.current = lang
+    let on = true
+    api.problemResult(r.problem_id, lang).then((fresh) => on && setResult({ ...r, ...fresh })).catch(() => undefined)
+    return () => {
+      on = false
+    }
+  }, [lang, r, setResult])
 
   const askExpert = async () => {
     setEscalating(true)
@@ -279,14 +291,38 @@ function Escalated({ message, kase, alternatives }: { message: string; kase?: Ca
 /** The photo shows another crop than the farm is registered for. Say what the
  *  model sees, and let the farmer re-check the same photo on a farm of that crop. */
 function CropMismatch({ r, top }: { r: DiagnoseResult; top: TargetView }) {
-  const { t, lang, setFarmId, setResult } = useFarmer()
+  const { t, lang, farmId, setFarmId, setResult } = useFarmer()
   const navigate = useNavigate()
-  const farms = useAsync(() => api.farms(lang), [lang])
-  const crops = useAsync(() => api.crops(lang), [lang])
+  const farms = useAsync(() => api.farms(lang), [lang], ['farms', lang].join(':'))
+  const crops = useAsync(() => api.crops(lang), [lang], ['crops', lang].join(':'))
   const [busy, setBusy] = useState<number | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const cropName = crops.data?.find((c) => c.id === top.crop)?.name ?? top.crop
   const others: Farm[] = (farms.data ?? []).filter((f) => f.crop === top.crop).slice(0, 4)
+  const mine = (farms.data ?? []).find((x) => x.id === farmId) ?? farms.data?.[0]
+  const [adding, setAdding] = useState(false)
+  const [sowing, setSowing] = useState(() => new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10))
+  const [area, setArea] = useState('1')
+
+  /** The farmer grows this crop too, on another plot: register it from here,
+   *  copying the village and language from the field they are standing in, and
+   *  check the same photo on it straight away. */
+  const addAndCheck = async () => {
+    if (!mine || !r.image_url) return
+    setBusy(-1)
+    setErr(null)
+    try {
+      const farm = await api.createFarm({
+        farmer_name: mine.farmer_name, lang: mine.lang, crop: top.crop, sowing_date: sowing,
+        district: mine.district, village: mine.village, lat: mine.lat, lon: mine.lon,
+        area_acres: parseFloat(area) || 1,
+      })
+      await recheck(farm)
+    } catch (e) {
+      setErr((e as Error).message)
+      setBusy(null)
+    }
+  }
 
   const recheck = async (f: Farm) => {
     if (!r.image_url) return
@@ -326,6 +362,35 @@ function CropMismatch({ r, top }: { r: DiagnoseResult; top: TargetView }) {
             ))}
           </div>
         </>
+      )}
+      {others.length === 0 && !adding && (
+        <button onClick={() => setAdding(true)}
+          className="mt-3 w-full min-h-[48px] rounded-full bg-leaf-deep text-cream text-sm font-semibold flex items-center justify-center gap-2">
+          <Plus className="w-4 h-4" />
+          {t('mismatchAddField').replace('{crop}', cropName)}
+        </button>
+      )}
+      {adding && (
+        <div className="mt-3 rounded-2xl bg-white border border-soil-dark/10 p-3 space-y-3">
+          <p className="text-[13px] font-semibold">{t('mismatchNewField').replace('{crop}', cropName)}</p>
+          <label className="block text-xs text-soil-dark/60">
+            {t('sowingDate')}
+            <input type="date" value={sowing} max={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setSowing(e.target.value)}
+              className="mt-1 w-full min-h-[44px] rounded-xl border border-soil-dark/20 px-3 bg-cream/50 text-sm" />
+          </label>
+          <label className="block text-xs text-soil-dark/60">
+            {t('area')}
+            <input type="number" inputMode="decimal" min="0.1" step="0.1" value={area}
+              onChange={(e) => setArea(e.target.value)}
+              className="mt-1 w-full min-h-[44px] rounded-xl border border-soil-dark/20 px-3 bg-cream/50 text-sm" />
+          </label>
+          <button onClick={addAndCheck} disabled={busy !== null || !(parseFloat(area) > 0)}
+            className="w-full min-h-[48px] rounded-full bg-leaf-deep text-cream text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+            {busy !== null ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+            {t('mismatchAddAndCheck')}
+          </button>
+        </div>
       )}
       {err && <p className="mt-2 text-xs text-ember">{err}</p>}
     </section>

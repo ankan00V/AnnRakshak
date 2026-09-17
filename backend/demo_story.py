@@ -5,8 +5,8 @@
 
 What it does, through the public API only:
   1. seeds the demo farms (backend/seed.py) and runs a live risk sweep;
-  2. for each rice/maize farm, uploads held-out ICAR TEST photos of that crop
-     (never seen in training, from ml/artifacts/split.json) to /diagnose;
+  2. for each farm, uploads held-out TEST photos of that crop (never seen in
+     training, from ml/artifacts/split.json) to /diagnose;
   3. answers any Doubt Doctor question the way a farmer who knows the truth
      would (the ICAR label says which lesion it is);
   4. resolves escalated cases with the ICAR ground-truth label, under a

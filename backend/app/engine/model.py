@@ -94,6 +94,41 @@ def best_device() -> torch.device:
     return torch.device("cpu")
 
 
+def _normalise(cam: torch.Tensor) -> np.ndarray:
+    """A heatmap scaled to [0, 1]. Dividing by (max + eps) instead would make
+    the result depend on the map's absolute scale, and the two ways of
+    computing the same map differ by a constant factor."""
+    cam = (cam - cam.min()).detach().cpu()
+    top = float(cam.max())
+    return (cam / top).numpy() if top > 0 else cam.numpy()
+
+
+def linear_head_weights(model: Net) -> torch.Tensor | None:
+    """The class-by-feature weight matrix, when the head is one Linear layer on
+    the pooled features (the "finetune" head). None for the deep "ann" head."""
+    linear = [m for m in model.head if isinstance(m, nn.Linear)]
+    return linear[0].weight if len(linear) == 1 else None
+
+
+def cam_from_map(model: Net, fmap: torch.Tensor, class_idx: int) -> np.ndarray | None:
+    """Grad-CAM without the backward pass.
+
+    Grad-CAM weights each feature channel by the mean gradient of the class
+    logit with respect to it. When the head is a single Linear layer on global
+    average pooling, that gradient is a constant: d logit_c / d fmap[k] is
+    W[c, k] / (H*W) everywhere. So the gradient-weighted sum is just the class's
+    own weight row — the identical map, up to the scale that normalising
+    removes. The backward pass was 93% of the time a scan took (2845 ms of
+    3116 ms), and it was recomputing the forward pass to get there.
+
+    Returns None when the head is not linear, and the caller falls back.
+    """
+    w = linear_head_weights(model)
+    if w is None:
+        return None
+    return _normalise(F.relu((w[class_idx].view(-1, 1, 1) * fmap[0]).sum(0)))
+
+
 def gradcam(model: Net, x: torch.Tensor, class_idx: int) -> np.ndarray:
     """Grad-CAM on the last feature map: which regions pushed the score for
     `class_idx` up. Returns an HxW array in [0, 1]."""
@@ -103,10 +138,7 @@ def gradcam(model: Net, x: torch.Tensor, class_idx: int) -> np.ndarray:
     logits = model.head(torch.flatten(F.adaptive_avg_pool2d(fmap, 1), 1))
     logits[0, class_idx].backward()
     weights = fmap.grad.mean(dim=(2, 3), keepdim=True)
-    cam = F.relu((weights * fmap).sum(dim=1))[0]
-    cam = cam - cam.min()
-    cam = cam / (cam.max() + 1e-8)
-    return cam.detach().cpu().numpy()
+    return _normalise(F.relu((weights * fmap).sum(dim=1))[0])
 
 
 class Classifier:
@@ -162,7 +194,8 @@ class Classifier:
         """(top-k targets, Grad-CAM grid or None, familiarity or None) from one forward pass."""
         x = self.tf(img.convert("RGB")).unsqueeze(0)
         with torch.no_grad():
-            feat = self.model.pooled(x)
+            fmap = self.model.feature_map(x)
+            feat = torch.flatten(F.adaptive_avg_pool2d(fmap, 1), 1)
             logits = self.model.head(feat)[0]
         fam = self.familiarity(feat[0])
         probs = torch.softmax(logits / self.temperature, dim=0).numpy()
@@ -172,10 +205,12 @@ class Classifier:
             by_target[t] = by_target.get(t, 0.0) + float(p)
         ranked = sorted(by_target.items(), key=lambda kv: kv[1], reverse=True)[:k]
         top_class = int(np.argmax(probs))
-        if not with_heatmap:  # live frames: ~3x faster without the backward pass
+        if not with_heatmap:  # live frames: the heatmap is never shown
             return [(t, round(c, 4)) for t, c in ranked], None, fam
-        with torch.enable_grad():
-            cam = gradcam(self.model, x.requires_grad_(True), top_class)
+        cam = cam_from_map(self.model, fmap, top_class)
+        if cam is None:  # the deep "ann" head has no closed form
+            with torch.enable_grad():
+                cam = gradcam(self.model, x.requires_grad_(True), top_class)
         return [(t, round(c, 4)) for t, c in ranked], {
             "grid": np.round(cam, 3).tolist(),
             "rows": cam.shape[0],

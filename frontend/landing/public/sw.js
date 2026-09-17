@@ -18,8 +18,8 @@ self.addEventListener('push', (event) => {
     if (visible && data.tag !== 'test') return
     await self.registration.showNotification(data.title || 'AnnRakshak', {
       body: data.body || '',
-      icon: '/icon.svg',
-      badge: '/icon.svg',
+      icon: '/icon-192.png',
+      badge: '/favicon-64.png',
       tag: data.tag || undefined,
       renotify: data.severity === 'warning',
       requireInteraction: data.severity === 'warning',
