@@ -20,7 +20,7 @@ from app.models import Alert, Farm, FollowUp, Problem, SensorReading, TrapReadin
 # Every /farms/{farm_id}, /problems/{id}, /alerts/{id} and /followups/{id} URL is
 # checked against the signed-in farmer (app.auth.guard); experts may open any farm.
 router = APIRouter(prefix="/api", tags=["farmer"], dependencies=[Depends(auth.require())])
-Lang = Literal["en", "hi", "mr", "bn", "ta", "te", "kn", "ml", "gu", "pa", "od"]
+Lang = Literal["en", "hi", "mr", "bn", "ta", "te", "kn", "ml", "gu", "pa"]  # Odia off for now: app/i18n.py
 MAX_UPLOAD_BYTES = 12 * 1024 * 1024
 
 

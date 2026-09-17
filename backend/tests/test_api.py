@@ -260,3 +260,73 @@ def test_field_location_is_recorded_and_used(client):
         farm = db.get(Farm, 1)
         assert farm.agro_polygon_id is None  # the satellite field polygon is redrawn there
     assert client.patch("/api/farms/1", json={"lang": "mr"}).json()["location_source"] == "gps"
+
+
+# --------------------------------------------------------------------------
+# Voice providers: Bhashini first, Sarvam behind it
+# --------------------------------------------------------------------------
+
+def _float_wav(seconds=0.1, rate=16000):
+    import io, struct
+    import numpy as np
+    x = (np.sin(np.linspace(0, 50, int(seconds * rate))) * 0.5).astype("<f4").tobytes()
+    fmt = struct.pack("<HHIIHH", 3, 1, rate, rate * 4, 4, 32)
+    body = b"WAVE" + b"fmt " + struct.pack("<I", 16) + fmt + b"data" + struct.pack("<I", len(x)) + x
+    return b"RIFF" + struct.pack("<I", len(body)) + body
+
+
+def test_bhashini_float_speech_becomes_pcm_every_browser_plays():
+    import io, wave
+    from app import bhashini
+    with wave.open(io.BytesIO(bhashini.pcm16(_float_wav()))) as w:  # the wave module rejects float WAV
+        assert (w.getsampwidth(), w.getframerate(), w.getnchannels()) == (2, 16000, 1)
+
+
+def test_voice_falls_back_to_sarvam_when_bhashini_fails(monkeypatch):
+    from app import bhashini, voice
+    monkeypatch.setattr(bhashini, "enabled", lambda: True)
+    monkeypatch.setattr(voice.pool, "keys", ["k"])
+    def broken(*a, **k):
+        raise bhashini.BhashiniError("down")
+    monkeypatch.setattr(bhashini, "translate", broken)
+    monkeypatch.setattr(voice, "_sarvam_translate", lambda t, s, g: "सरवम")
+    assert voice.translate("hello", "en", "hi") == "सरवम"
+
+
+def test_voice_prefers_bhashini_and_never_calls_sarvam_when_it_works(monkeypatch):
+    from app import bhashini, voice
+    monkeypatch.setattr(bhashini, "enabled", lambda: True)
+    monkeypatch.setattr(voice.pool, "keys", ["k"])
+    monkeypatch.setattr(bhashini, "translate", lambda t, s, g: "भाषिणी")
+    def must_not_run(*a, **k):
+        raise AssertionError("Sarvam was called although Bhashini answered")
+    monkeypatch.setattr(voice, "_sarvam_translate", must_not_run)
+    assert voice.translate("hello", "en", "hi") == "भाषिणी"
+
+
+def test_no_voice_provider_is_a_clear_503(monkeypatch):
+    from app import bhashini, voice
+    monkeypatch.setattr(bhashini, "enabled", lambda: False)
+    monkeypatch.setattr(voice.pool, "keys", [])
+    with pytest.raises(voice.VoiceUnavailable):
+        voice.translate("hello", "en", "hi")
+
+
+def test_a_language_bhashini_just_failed_on_is_skipped_for_a_while(monkeypatch):
+    import httpx
+    from app import bhashini
+    monkeypatch.setattr(bhashini, "BHASHINI_INFERENCE_KEY", "test-key")
+    calls = []
+    def slow(*a, **k):
+        calls.append(1)
+        raise httpx.ReadTimeout("hung")
+    monkeypatch.setattr(bhashini.httpx, "post", slow)
+    for _ in range(3):
+        with pytest.raises(bhashini.BhashiniError):
+            bhashini.tts("ନମସ୍କାର", "gu")
+    assert len(calls) == 1  # one farmer waited; the next two were not made to
+
+
+def test_bhashini_is_asked_for_odia_by_its_iso_code(monkeypatch):
+    from app import bhashini
+    assert bhashini._code("od") == "or" and bhashini._code("hi") == "hi"

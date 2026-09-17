@@ -21,7 +21,12 @@ from functools import lru_cache
 
 from app.config import KB_DIR
 
-LANGS = ("en", "hi", "mr", "bn", "ta", "te", "kn", "ml", "gu", "pa", "od")
+# Odia ("od") is switched off for now: Bhashini, the voice provider, does not
+# answer Odia speech requests (every attempt hung past 60 s), and a language the
+# app cannot read aloud should not be offered. Its translations stay in
+# kb/i18n/od.json and frontend/landing/src/locales/od.json; adding "od" back
+# here and in frontend/landing/src/lib/i18n.ts restores it.
+LANGS = ("en", "hi", "mr", "bn", "ta", "te", "kn", "ml", "gu", "pa")
 AUTHORED = ("en", "hi", "mr")
 MACHINE = tuple(x for x in LANGS if x not in AUTHORED)
 NATIVE_NAMES = {

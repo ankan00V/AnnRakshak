@@ -19,6 +19,21 @@ SARVAM_API_KEY = os.environ.get("SARVAM_API_KEY")
 SARVAM_API_KEYS = list(dict.fromkeys(
     k.strip() for k in [*(os.environ.get("SARVAM_API_KEYS") or "").split(","), SARVAM_API_KEY or ""] if k.strip()))
 """Every Sarvam key we may use, rotated; one out of credits is benched and the next takes over."""
+BHASHINI_INFERENCE_KEY = os.environ.get("BHASHINI_INFERENCE_KEY")
+"""MeitY Bhashini: the first choice for translation, speech and transcription
+(app/bhashini.py). Sarvam, when its keys are set, is the fallback."""
+BHASHINI_COMPUTE_URL = os.environ.get(
+    "BHASHINI_COMPUTE_URL", "https://dhruva-api.bhashini.gov.in/services/inference/pipeline")
+BHASHINI_TRANSLATE_SERVICE = "ai4bharat/indictrans-v2-all-gpu--t4"
+_IA, _DR = "ai4bharat/indic-tts-coqui-indo_aryan-gpu--t4", "ai4bharat/indic-tts-coqui-dravidian-gpu--t4"
+BHASHINI_TTS_SERVICE = {"en": "ai4bharat/indic-tts-coqui-misc-gpu--t4",
+                        "hi": _IA, "mr": _IA, "bn": _IA, "gu": _IA, "pa": _IA, "od": _IA,
+                        "ta": _DR, "te": _DR, "kn": _DR, "ml": _DR}
+_ASR_IA, _ASR_DR = ("ai4bharat/conformer-multilingual-indo_aryan-gpu--t4",
+                    "ai4bharat/conformer-multilingual-dravidian-gpu--t4")
+BHASHINI_ASR_SERVICE = {"en": "ai4bharat/whisper-medium-en--gpu--t4", "hi": "ai4bharat/conformer-hi-gpu--t4",
+                        "mr": _ASR_IA, "bn": _ASR_IA, "gu": _ASR_IA, "pa": _ASR_IA, "od": _ASR_IA,
+                        "ta": _ASR_DR, "te": _ASR_DR, "kn": _ASR_DR, "ml": _ASR_DR}
 NVIDIA_API_KEY = os.environ.get("NVIDIA_API_KEY") if os.environ.get("ANNRAKSHAK_NIM") != "off" else None
 """NVIDIA NIM, used by Krishi to understand a question — never to answer one.
 Absent, Krishi falls back to its own matcher and loses nothing it can promise."""

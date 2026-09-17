@@ -3,7 +3,7 @@ import type { Lang } from '../api/types'
 
 const BCP47: Record<Lang, string> = {
   en: 'en-IN', hi: 'hi-IN', mr: 'mr-IN', bn: 'bn-IN', ta: 'ta-IN', te: 'te-IN', kn: 'kn-IN', ml: 'ml-IN',
-  gu: 'gu-IN', pa: 'pa-IN', od: 'or-IN',
+  gu: 'gu-IN', pa: 'pa-IN',
 }
 
 export function browserVoice(lang: Lang): SpeechSynthesisVoice | null {

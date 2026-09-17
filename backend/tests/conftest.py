@@ -10,6 +10,7 @@ os.environ["ANNRAKSHAK_DATA_DIR"] = _tmp
 # override an already-set variable, so an empty value wins over .env).
 os.environ["SARVAM_API_KEY"] = ""
 os.environ["SARVAM_API_KEYS"] = ""
+os.environ["BHASHINI_INFERENCE_KEY"] = ""  # same for Bhashini: tests never call the platform
 # Deterministic stub scenarios, even when a trained model sits in ml/artifacts.
 os.environ["ANNRAKSHAK_VISION"] = "stub"
 # Krishi's matcher and its fallbacks are what the tests pin down; the model that

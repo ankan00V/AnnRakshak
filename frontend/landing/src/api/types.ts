@@ -1,4 +1,4 @@
-export type Lang = 'en' | 'hi' | 'mr' | 'bn' | 'ta' | 'te' | 'kn' | 'ml' | 'gu' | 'pa' | 'od'
+export type Lang = 'en' | 'hi' | 'mr' | 'bn' | 'ta' | 'te' | 'kn' | 'ml' | 'gu' | 'pa'
 export type GateOutcome = 'advise' | 'clarify' | 'escalate' | 'retake'
 
 export interface Farm {

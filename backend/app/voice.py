@@ -1,6 +1,13 @@
-"""Sarvam AI voice layer: Bulbul TTS (read advisories aloud), Saaras STT
-(speak instead of type) and Sarvam-Translate (expert notes → farmer's
-language). Server-side only — the API key never reaches the browser.
+"""Voice layer: read advisories aloud, speak instead of type, and translate
+expert notes into the farmer's language. Server-side only — no key ever
+reaches the browser.
+
+Two providers, tried in order:
+  1. Bhashini (MeitY) — app/bhashini.py
+  2. Sarvam AI (Bulbul TTS, Saaras STT, Sarvam-Translate) — when its keys are set
+
+A provider that fails hands the request to the next, so a slow or missing
+language on one platform does not silence the Listen button.
 
 TTS audio is cached on disk by (text, language): advisories repeat, and every
 repeat would otherwise cost a paid call and a network round trip in the field.
@@ -21,7 +28,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Uplo
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
-from app import cache
+from app import bhashini, cache
 from app.auth import require_user
 from app.config import (
     DATA_DIR,
@@ -100,12 +107,30 @@ class KeyPool:
 pool = KeyPool(SARVAM_API_KEYS)
 
 
-def tts(text: str, lang: str, pace: float = 0.95) -> bytes:
-    text = " ".join(text.split())[:MAX_TTS_CHARS]
-    key = hashlib.sha256(f"{SARVAM_TTS_MODEL}|{SARVAM_SPEAKER}|{lang}|{pace}|{text}".encode()).hexdigest()
-    path = TTS_CACHE / f"{key}.wav"
-    if path.exists():
-        return path.read_bytes()
+def _cached(tag: str, lang: str, pace: float, text: str):
+    return TTS_CACHE / (hashlib.sha256(f"{tag}|{lang}|{pace}|{text}".encode()).hexdigest() + ".wav")
+
+
+def _providers():
+    """The configured providers, in the order they are tried."""
+    return [name for name, on in (("bhashini", bhashini.enabled()), ("sarvam", bool(pool.keys))) if on]
+
+
+def _first(calls: list) -> object:
+    """Run each (name, fn) until one works. No provider at all is a 503; every
+    provider failing re-raises the last failure (a 502 upstream)."""
+    if not calls:
+        raise VoiceUnavailable("no voice provider is configured (Bhashini or Sarvam)")
+    last = None
+    for _name, fn in calls:
+        try:
+            return fn()
+        except Exception as e:  # noqa: BLE001  try the next provider
+            last = e
+    raise last
+
+
+def _sarvam_tts(text: str, lang: str, pace: float) -> bytes:
     from app.limits import limit  # noqa: PLC0415
 
     limit("sarvam:tts:paid", PAID_TTS_PER_MINUTE, 60)  # platform-wide cap on paid synthesis
@@ -113,13 +138,31 @@ def tts(text: str, lang: str, pace: float = 0.95) -> bytes:
         text=text, language_code=SARVAM_LANG[lang], model=SARVAM_TTS_MODEL,
         speaker=SARVAM_SPEAKER, pace=pace,
     ))
-    audio = base64.b64decode("".join(resp.audios))
-    TTS_CACHE.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(audio)
-    return audio
+    return base64.b64decode("".join(resp.audios))
 
 
-def stt(audio: bytes, filename: str, lang: str | None) -> dict:
+def tts(text: str, lang: str, pace: float = 0.95) -> bytes:
+    text = " ".join(text.split())[:MAX_TTS_CHARS]
+    makers = {"bhashini": lambda: bhashini.tts(text, lang),
+              "sarvam": lambda: _sarvam_tts(text, lang, pace)}
+    tags = {"bhashini": "bhashini", "sarvam": f"{SARVAM_TTS_MODEL}|{SARVAM_SPEAKER}"}
+    for name in _providers():  # audio already made by any provider is free to replay
+        path = _cached(tags[name], lang, pace, text)
+        if path.exists():
+            return path.read_bytes()
+
+    def make(name):
+        def run():
+            audio = makers[name]()
+            TTS_CACHE.mkdir(parents=True, exist_ok=True)
+            _cached(tags[name], lang, pace, text).write_bytes(audio)
+            return audio
+        return run
+
+    return _first([(n, make(n)) for n in _providers()])
+
+
+def _sarvam_stt(audio: bytes, filename: str, lang: str | None) -> dict:
     kwargs = {"model": SARVAM_STT_MODEL, "mode": "transcribe"}
     if lang:
         kwargs["language_code"] = SARVAM_LANG[lang]
@@ -127,9 +170,16 @@ def stt(audio: bytes, filename: str, lang: str | None) -> dict:
     return {"transcript": resp.transcript, "language_code": getattr(resp, "language_code", None)}
 
 
-def translate(text: str, source: str, target: str) -> str:
-    if source == target or not text.strip():
-        return text
+def stt(audio: bytes, filename: str, lang: str | None) -> dict:
+    calls = []
+    if bhashini.enabled() and lang:  # Bhashini needs the language; it does not detect it
+        calls.append(("bhashini", lambda: {"transcript": bhashini.asr(audio, lang), "language_code": lang}))
+    if pool.keys:
+        calls.append(("sarvam", lambda: _sarvam_stt(audio, filename, lang)))
+    return _first(calls)
+
+
+def _sarvam_translate(text: str, source: str, target: str) -> str:
     resp = pool.call(lambda c: c.text.translate(
         input=text[:1900], source_language_code=SARVAM_LANG[source],
         target_language_code=SARVAM_LANG[target], model=SARVAM_TRANSLATE_MODEL, mode="formal",
@@ -137,14 +187,25 @@ def translate(text: str, source: str, target: str) -> str:
     return resp.translated_text
 
 
+def translate(text: str, source: str, target: str) -> str:
+    if source == target or not text.strip():
+        return text
+    makers = {"bhashini": lambda: bhashini.translate(text[:1900], source, target),
+              "sarvam": lambda: _sarvam_translate(text, source, target)}
+    return _first([(n, makers[n]) for n in _providers()])
+
+
 def status() -> dict:
-    return {"configured": bool(pool.keys), "key_pool": pool.status(), "tts": SARVAM_TTS_MODEL, "stt": SARVAM_STT_MODEL,
-            "translate": SARVAM_TRANSLATE_MODEL}
+    providers = _providers()
+    return {"configured": bool(providers), "providers": providers,
+            "sarvam": {"key_pool": pool.status(), "tts": SARVAM_TTS_MODEL, "stt": SARVAM_STT_MODEL,
+                       "translate": SARVAM_TRANSLATE_MODEL},
+            "bhashini": {"configured": bhashini.enabled()}}
 
 
 class TTSIn(BaseModel):
     text: str = Field(min_length=1, max_length=4000)
-    lang: str = Field(pattern="^(en|hi|mr|bn|ta|te|kn|ml|gu|pa|od)$")
+    lang: str = Field(pattern="^(en|hi|mr|bn|ta|te|kn|ml|gu|pa)$")
 
 
 @router.get("/status")

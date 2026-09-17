@@ -1463,10 +1463,12 @@ export function makeT(lang: Lang) {
     ((TABLES[lang] ?? {}) as Record<string, string>)[key] ?? (en as Record<string, string>)[key] ?? key
 }
 
-/** Browser locale for dates and speech (Odia is 'or' in BCP 47, 'od' in Sarvam). */
-export const bcp47 = (lang: Lang): string => (lang === 'od' ? 'or-IN' : `${lang}-IN`)
+/** Browser locale for dates and speech. */
+export const bcp47 = (lang: Lang): string => `${lang}-IN`
 
-/** Every language a farmer can choose, in their own script (Sarvam speaks all of them). */
+/** Every language a farmer can choose, in their own script. Odia is off for now:
+ *  the voice provider does not answer Odia speech requests. Its translations stay
+ *  in locales/od.json; add the row and 'od' in api/types.ts to bring it back. */
 export const LANGS: { code: Lang; label: string; english: string; ready: boolean }[] = [
   { code: 'mr', label: 'मराठी', english: 'Marathi', ready: true },
   { code: 'hi', label: 'हिन्दी', english: 'Hindi', ready: true },
@@ -1478,5 +1480,4 @@ export const LANGS: { code: Lang; label: string; english: string; ready: boolean
   { code: 'ml', label: 'മലയാളം', english: 'Malayalam', ready: true },
   { code: 'gu', label: 'ગુજરાતી', english: 'Gujarati', ready: true },
   { code: 'pa', label: 'ਪੰਜਾਬੀ', english: 'Punjabi', ready: true },
-  { code: 'od', label: 'ଓଡ଼ିଆ', english: 'Odia', ready: true },
 ]
