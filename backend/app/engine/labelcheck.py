@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import re
 
-from app.kb import KB, tr
+from app.kb import KB, tr, tr_reviewed
 
 VERDICTS = {
     "NO_OBJECTION_FOUND": {
@@ -50,6 +50,17 @@ VERDICTS = {
         "mr": "या शेतावर अद्याप कोणतीही निश्चित समस्या नाही, म्हणून फवारणीचे कारण नाही. आधी निदान करा.",
     },
 }
+
+TITLES = {
+    "stop": {"en": "Do not spray this", "hi": "इसका छिड़काव न करें", "mr": "याची फवारणी करू नका"},
+    # Was "I don't recognise this": Bengali and Tamil translated "recognise" as
+    # "accept" / "approve" — the opposite of what a farmer needs to hear.
+    "unknown": {"en": "I don't know this product", "hi": "यह मुझे पहचान में नहीं आया", "mr": "हे मला ओळखता आले नाही"},
+    "ok": {"en": "No objection found", "hi": "कोई आपत्ति नहीं मिली", "mr": "कोणताही आक्षेप नाही"},
+}
+"""The verdict's heading. Served from here rather than the app's own strings so
+it follows the same rule as the warning under it: a machine translation only
+after a native speaker approved it."""
 
 CLASS_WORDS = {
     "fungicide": {"en": "a fungicide (for fungal disease)", "hi": "फफूँदनाशक", "mr": "बुरशीनाशक"},
@@ -107,9 +118,14 @@ def check(kb: KB, query: str, crop: str, target: str | None, lang: str) -> dict:
     ingredient = kb.match_pesticide(query)
 
     def verdict(code: str, **fmt) -> dict:
-        text = tr(VERDICTS[code], lang).format(**fmt) if fmt else tr(VERDICTS[code], lang)
+        # Reviewed translations only: an unchecked machine translation of a
+        # pesticide warning is worse than the English (app.i18n.lookup_reviewed).
+        text = tr_reviewed(VERDICTS[code], lang)
+        text = text.format(**fmt) if fmt else text
+        tone = "ok" if code == "NO_OBJECTION_FOUND" else "unknown" if code == "NOT_IN_RECORDS" else "stop"
         return {
             "code": code,
+            "title": tr_reviewed(TITLES[tone], lang),
             "message": text,
             "ingredient": ingredient,
             "product": kb.pesticides[ingredient]["name"] if ingredient else None,
@@ -122,7 +138,7 @@ def check(kb: KB, query: str, crop: str, target: str | None, lang: str) -> dict:
             # red reads as if water were dangerous. Both still refuse to endorse,
             # and is_veto stays true for both so nothing downstream treats an
             # unrecognised input as approved.
-            "tone": "ok" if code == "NO_OBJECTION_FOUND" else "unknown" if code == "NOT_IN_RECORDS" else "stop",
+            "tone": tone,
         }
 
     if ingredient is None:
@@ -141,8 +157,8 @@ def check(kb: KB, query: str, crop: str, target: str | None, lang: str) -> dict:
     if cls not in CLASS_FITS[kind]:
         return verdict(
             "WRONG_CLASS",
-            cls=tr(CLASS_WORDS[cls], lang),
-            problem_kind=tr(PROBLEM_KIND[kind], lang),
+            cls=tr_reviewed(CLASS_WORDS[cls], lang),
+            problem_kind=tr_reviewed(PROBLEM_KIND[kind], lang),
         )
 
     uses = kb.registered_uses(ingredient)

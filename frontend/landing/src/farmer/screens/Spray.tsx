@@ -125,7 +125,7 @@ export default function Spray() {
               {v.tone === 'stop' ? <Ban className="w-6 h-6" />
                 : v.tone === 'unknown' ? <HelpCircle className="w-6 h-6 text-[#8a5a17]" />
                 : <ShieldCheck className="w-6 h-6 text-leaf" />}
-              {v.tone === 'stop' ? t('vetoTitle') : v.tone === 'unknown' ? t('unknownTitle') : t('noObjectionTitle')}
+              {v.title ?? (v.tone === 'stop' ? t('vetoTitle') : v.tone === 'unknown' ? t('unknownTitle') : t('noObjectionTitle'))}
             </p>
             <ListenButton text={v.message} lang={lang} label={t('listen')} stopLabel={t('stop')} compact />
           </div>

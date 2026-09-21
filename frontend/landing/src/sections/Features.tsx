@@ -15,7 +15,7 @@ const FEATURES = [
   {
     icon: ZoomIn,
     title: 'Explainable diagnosis',
-    line: 'Trained on ICAR rice & maize images. Grad-CAM shows the part of the leaf the model looked at.',
+    line: 'Trained on ICAR and field photos of rice, maize and cotton. Grad-CAM shows the part of the leaf the model looked at.',
   },
   {
     icon: Ban,

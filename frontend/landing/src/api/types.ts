@@ -229,6 +229,8 @@ export interface LabelVerdict {
   is_veto: boolean
   /** 'stop' = known to be wrong here, 'unknown' = no record of it, 'ok' = no objection found. */
   tone: 'stop' | 'unknown' | 'ok'
+  /** The heading, from the server: machine-translated only once reviewed. */
+  title?: string
   /** No record of this input: the app may fetch an AI note from
    *  /api/labelcheck/note, which never waits the verdict above. */
   note_available?: boolean

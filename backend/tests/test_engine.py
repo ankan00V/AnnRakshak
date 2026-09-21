@@ -397,3 +397,38 @@ def test_an_ai_note_may_explain_but_never_recommend(text, shown):
     from app.engine.labelcheck import safe_suggestion
 
     assert (safe_suggestion(kb, text) is not None) is shown
+
+
+def test_a_pesticide_warning_is_never_shown_machine_translated_before_review(monkeypatch):
+    """A mistranslated spray warning can hurt someone, so the spray check shows
+    a machine-translated line only after a native speaker approved it; until
+    then the farmer sees the English."""
+    from app import i18n
+    from app.kb import tr_reviewed
+
+    line = {"en": "Do not spray this.", "hi": "इसका छिड़काव न करें।"}
+    monkeypatch.setattr(i18n, "memory", lambda lang: {"Do not spray this.": "এটা স্প্রে করবেন না।"})
+    monkeypatch.setattr(i18n, "reviewed", lambda lang: frozenset())
+    assert tr_reviewed(line, "bn") == "Do not spray this."           # machine line, not yet approved
+    assert tr_reviewed(line, "hi") == "इसका छिड़काव न करें।"            # authored language, as ever
+    monkeypatch.setattr(i18n, "reviewed", lambda lang: frozenset({"Do not spray this."}))
+    assert tr_reviewed(line, "bn") == "এটা স্প্রে করবেন না।"           # approved: now shown
+
+
+def test_a_candidate_is_never_deployed_for_a_crop_that_failed_its_checks():
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[2] / "ml" / "deploy_candidate.py"
+    spec = importlib.util.spec_from_file_location("deploy_candidate", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    meta = {"classes": ["rice_blast", "cotton_wilt", "soybean_rust"], "deploy_checks": [
+        {"check": "ICAR accuracy-when-advised within 1 point of deployed", "passed": True, "value": "0.98"},
+        {"check": "cotton_wilt recall >= 0.70", "passed": True, "value": "0.92"},
+        {"check": "soybean_rust recall >= 0.70", "passed": False, "value": "0.57"}]}
+    assert mod.refusals(meta, ["rice", "cotton"]) == []
+    assert any("soybean_rust" in r for r in mod.refusals(meta, ["cotton", "soybean"]))
+    assert any("no classes for maize" in r for r in mod.refusals(meta, ["maize"]))
+    icar_bad = meta | {"deploy_checks": [{"check": "ICAR test top-1", "passed": False, "value": "0.80"}]}
+    assert mod.refusals(icar_bad, ["cotton"])  # rice and maize must never get worse

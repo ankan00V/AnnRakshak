@@ -62,6 +62,24 @@ def lookup(english: str, lang: str) -> str | None:
     return memory(lang).get(english) if english else None
 
 
+@lru_cache
+def reviewed(lang: str) -> frozenset[str]:
+    """English lines a native speaker has approved or corrected for `lang`
+    (review_translations.py --import)."""
+    f = MEMORY_DIR / f"{lang}.json"
+    if lang in AUTHORED or not f.exists():
+        return frozenset()
+    return frozenset(json.loads(f.read_text(encoding="utf-8")).get("reviewed") or [])
+
+
+def lookup_reviewed(english: str, lang: str) -> str | None:
+    """A translation only once a native speaker has approved it. For text where
+    a mistranslation could hurt someone — a pesticide warning — an unchecked
+    machine translation is worse than English, so until review this returns
+    None and the caller shows the English."""
+    return lookup(english, lang) if english in reviewed(lang) else None
+
+
 # --------------------------------------------------------------------------
 # Machine translation (offline job, not the request path)
 # --------------------------------------------------------------------------

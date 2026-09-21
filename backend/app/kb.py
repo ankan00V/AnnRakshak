@@ -13,7 +13,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from app.config import KB_DIR
-from app.i18n import AUTHORED, lookup
+from app.i18n import AUTHORED, lookup, lookup_reviewed
 
 LANGS = ("en", "hi", "mr")
 TIER_ORDER = {"cultural": 0, "biological": 1, "chemical": 2}
@@ -41,6 +41,16 @@ def tr(text: dict | str | None, lang: str) -> str:
     if lang not in AUTHORED and isinstance(en, str):
         return lookup(en, lang) or en
     return en
+
+
+def tr_reviewed(text: dict, lang: str) -> str:
+    """tr() for safety-critical text: an authored language from the dict, a
+    machine-translated one only after a native speaker approved it, otherwise
+    the English."""
+    if text.get(lang):
+        return text[lang]
+    en = text.get("en", "")
+    return (lookup_reviewed(en, lang) or en) if lang not in AUTHORED else en
 
 
 def trl(texts: dict | None, lang: str) -> list[str]:
