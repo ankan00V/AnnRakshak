@@ -18,7 +18,8 @@ Pipeline
      asks or escalates, and how accurate it is when it does advise.
 
 Writes ml/artifacts/{model.pt,meta.json} (gitignored) and ml/reports/
-(committed: MODEL_REPORT.md, confusion matrix, Grad-CAM gallery).
+(MODEL_REPORT.md stays local — only READMEs are committed; the confusion
+matrix and Grad-CAM gallery images are committed).
 """
 
 from __future__ import annotations

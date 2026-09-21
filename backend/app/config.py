@@ -164,7 +164,11 @@ OTP_DIGITS = 6
 OTP_TTL_MINUTES = 5
 OTP_MAX_ATTEMPTS = 5
 OTP_RESEND_SECONDS = 30
-SESSION_DAYS = 30
+SESSION_HOURS = 24
+"""A session ends 24 hours after sign-in, however active it was; then sign in again."""
+SINGLE_SESSION = True
+"""Signing in ends the account's other sessions, so one account is open in one
+browser at a time. Demo accounts are exempt: judges share them."""
 COOKIE_SECURE = os.environ.get("ANNRAKSHAK_COOKIE_SECURE", "off") == "on"  # on behind HTTPS
 
 # --- Notifications: in-app (SSE), phone (Web Push) and email ---------------

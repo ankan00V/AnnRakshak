@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- AnnRakshak backend (uvicorn, :8010). Install:
+     cp scripts/com.annrakshak.*.plist ~/Library/LaunchAgents/
+     launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.annrakshak.backend.plist
+-->
+<dict>
+  <key>Label</key>
+  <string>com.annrakshak.backend</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/ankanghosh/Developer/SIH/.venv/bin/uvicorn</string>
+    <string>app.main:app</string>
+    <string>--port</string>
+    <string>8010</string>
+    <string>--app-dir</string>
+    <string>backend</string>
+    <string>--env-file</string>
+    <string>/Users/ankanghosh/Developer/SIH/.env</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/ankanghosh/Developer/SIH</string>
+  <key>KeepAlive</key>
+  <true/>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/tmp/annrakshak-backend.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/annrakshak-backend.log</string>
+</dict>
+</plist>

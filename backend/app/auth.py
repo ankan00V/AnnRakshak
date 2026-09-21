@@ -11,7 +11,9 @@ There is no free SMS gateway yet, so every code goes to the account's email
 by SMTP, whichever identifier was typed.
 
 Sessions: an opaque random token in an HttpOnly, SameSite=Lax cookie; only
-its hash is stored, so a database leak does not leak sessions.
+its hash is stored, so a database leak does not leak sessions. A session lasts
+24 hours from sign-in, and a new sign-in ends the account's other sessions
+(demo accounts excepted).
 """
 
 from __future__ import annotations
@@ -152,11 +154,18 @@ def _token_hash(token: str) -> str:
 
 
 def start_session(db: Session, user: User, response: Response, user_agent: str | None) -> None:
+    """A fresh session, lasting SESSION_HOURS. With SINGLE_SESSION the account's
+    other live sessions are revoked first: the browser signed in earlier gets a
+    401 on its next call and lands on the sign-in page."""
+    if config.SINGLE_SESSION and not user.is_demo:
+        for s in db.scalars(select(UserSession).where(UserSession.user_id == user.id,
+                                                      UserSession.revoked_at.is_(None))).all():
+            s.revoked_at = now()
     token = secrets.token_urlsafe(32)
     db.add(UserSession(user_id=user.id, token_hash=_token_hash(token), created_at=now(),
-                       expires_at=now() + timedelta(days=config.SESSION_DAYS), user_agent=(user_agent or "")[:200]))
+                       expires_at=now() + timedelta(hours=config.SESSION_HOURS), user_agent=(user_agent or "")[:200]))
     user.last_login_at = now()
-    response.set_cookie(COOKIE, token, max_age=config.SESSION_DAYS * 86400, httponly=True, samesite="lax",
+    response.set_cookie(COOKIE, token, max_age=config.SESSION_HOURS * 3600, httponly=True, samesite="lax",
                         secure=config.COOKIE_SECURE, path="/")
 
 
@@ -176,7 +185,9 @@ def user_from_token(db: Session, token: str | None) -> User | None:
     if row is None:
         return None
     s, user = row
-    if s.revoked_at is not None or s.expires_at < now():
+    # created_at too: sessions issued under an older, longer lifetime still end at 24 h
+    if (s.revoked_at is not None or s.expires_at < now()
+            or s.created_at < now() - timedelta(hours=config.SESSION_HOURS)):
         return None
     if s.last_seen_at is None or (now() - s.last_seen_at) > timedelta(hours=1):
         s.last_seen_at = now()

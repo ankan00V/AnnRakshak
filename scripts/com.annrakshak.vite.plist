@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- AnnRakshak frontend (vite dev server, :5173). Install:
+     cp scripts/com.annrakshak.*.plist ~/Library/LaunchAgents/
+     launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.annrakshak.vite.plist
+-->
+<dict>
+  <key>Label</key>
+  <string>com.annrakshak.vite</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/ankanghosh/.nvm/versions/node/v25.5.0/bin/node</string>
+    <string>/Users/ankanghosh/Developer/SIH/node_modules/vite/bin/vite.js</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/ankanghosh/Developer/SIH/frontend/landing</string>
+  <key>KeepAlive</key>
+  <true/>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/tmp/annrakshak-vite.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/annrakshak-vite.log</string>
+</dict>
+</plist>

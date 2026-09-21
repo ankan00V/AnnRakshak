@@ -35,3 +35,8 @@ skills-lock.json
 
 # Translation review CSVs, exported per language for a native speaker
 backend/reviews/
+
+# Markdown: only READMEs are published. Every other .md (reports, notes, demo
+# scripts, dataset write-ups) stays on the machine that made it.
+*.md
+!README.md

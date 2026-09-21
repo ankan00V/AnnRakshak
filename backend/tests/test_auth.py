@@ -278,6 +278,52 @@ def test_logout_revokes_the_session(client, mail):
         assert db.scalar(select(UserSession)).revoked_at is not None
 
 
+def test_new_sign_in_ends_the_other_browser_session(client, mail):
+    farmer_signup(client, mail)
+    client.post("/api/auth/logout")
+    assert login(client, mail, "ramesh@example.com").status_code == 200
+    first = client.cookies.get("ar_session")
+    with TestClient(app) as other:  # the same account in a second browser
+        assert login(other, mail, "ramesh@example.com").status_code == 200
+        assert other.get("/api/auth/me").status_code == 200  # the new browser stays signed in
+    client.cookies.set("ar_session", first)
+    assert client.get("/api/auth/me").status_code == 401  # the old one is signed out
+    with SessionLocal() as db:
+        live = [s for s in db.scalars(select(UserSession)).all() if s.revoked_at is None]
+        assert len(live) == 1
+
+
+def test_demo_accounts_keep_every_session(client):
+    """Judges share the demo account; one signing in must not sign out another."""
+    assert client.post("/api/auth/demo", json={"role": "farmer"}).status_code == 200
+    with TestClient(app) as other:
+        assert other.post("/api/auth/demo", json={"role": "farmer"}).status_code == 200
+        assert other.get("/api/auth/me").status_code == 200
+    assert client.get("/api/auth/me").status_code == 200
+
+
+def test_session_ends_after_24_hours(client, mail):
+    farmer_signup(client, mail)
+    assert client.get("/api/auth/me").status_code == 200
+    with SessionLocal() as db:
+        s = db.scalar(select(UserSession).where(UserSession.revoked_at.is_(None)))
+        assert timedelta(hours=23, minutes=59) < s.expires_at - s.created_at <= timedelta(hours=24)
+        s.expires_at = s.created_at - timedelta(seconds=1)  # as if 24 hours have passed
+        db.commit()
+    assert client.get("/api/auth/me").status_code == 401
+
+
+def test_older_long_sessions_also_end_at_24_hours(client, mail):
+    """A session issued with the old 30-day lifetime still ends 24 h after sign-in."""
+    farmer_signup(client, mail)
+    with SessionLocal() as db:
+        s = db.scalar(select(UserSession).where(UserSession.revoked_at.is_(None)))
+        s.created_at -= timedelta(hours=25)
+        s.expires_at = s.created_at + timedelta(days=30)
+        db.commit()
+    assert client.get("/api/auth/me").status_code == 401
+
+
 def test_voice_needs_a_signed_in_user(client):
     assert client.post("/api/voice/tts", json={"text": "hello", "lang": "en"}).status_code == 401
 

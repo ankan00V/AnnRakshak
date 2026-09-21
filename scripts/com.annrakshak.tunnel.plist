@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- AnnRakshak public tunnel (slim.sh share, :5173). The URL is random per
+     start; read it from /tmp/annrakshak-tunnel.log. Install:
+     cp scripts/com.annrakshak.*.plist ~/Library/LaunchAgents/
+     launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.annrakshak.tunnel.plist
+-->
+<dict>
+  <key>Label</key>
+  <string>com.annrakshak.tunnel</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/ankanghosh/.local/bin/slim</string>
+    <string>share</string>
+    <string>--port</string>
+    <string>5173</string>
+  </array>
+  <key>KeepAlive</key>
+  <true/>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/tmp/annrakshak-tunnel.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/annrakshak-tunnel.log</string>
+</dict>
+</plist>
