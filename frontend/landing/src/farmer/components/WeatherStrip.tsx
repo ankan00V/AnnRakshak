@@ -11,7 +11,7 @@ export default function WeatherStrip({ weather, rain }: { weather: Home['weather
   const dep = rain?.departure_pct
 
   return (
-    <section className="rounded-2xl bg-white border border-soil-dark/10 p-4">
+    <section className="rounded-2xl bg-white border border-soil-dark/10 p-4 lg:p-5">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold flex items-center gap-1.5">
           <CloudRain className="w-4 h-4 text-leaf" />
@@ -21,14 +21,14 @@ export default function WeatherStrip({ weather, rain }: { weather: Home['weather
       </div>
 
       {days.length > 0 && (
-        <div className="mt-3 flex gap-1 overflow-x-auto no-scrollbar -mx-1 px-1">
+        <div className="mt-3 flex gap-1 overflow-x-auto no-scrollbar -mx-1 px-1 lg:grid lg:grid-cols-5 lg:gap-1.5 lg:overflow-visible">
           {days.map((d) => {
             const date = new Date(d.on + 'T00:00:00')
             const humid = (d.rh_max ?? 0) >= 90
             return (
               <div
                 key={d.on}
-                className={`shrink-0 w-[52px] rounded-xl px-1 py-2 text-center ${
+                className={`shrink-0 w-[52px] rounded-xl px-1 py-2 text-center lg:w-auto ${
                   d.forecast ? 'bg-sky-50 border border-dashed border-sky-200' : 'bg-cream/70'
                 }`}
               >

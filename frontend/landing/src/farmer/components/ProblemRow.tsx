@@ -14,7 +14,7 @@ export function problemStatus(p: ProblemView, t: (k: string) => string) {
   return { label: t('open'), tone: 'neutral' as const, icon: Clock }
 }
 
-export default function ProblemRow({ p }: { p: ProblemView }) {
+export default function ProblemRow({ p, stacked = false }: { p: ProblemView; stacked?: boolean }) {
   const { t, lang } = useFarmer()
   const s = problemStatus(p, t)
   const Icon = s.icon
@@ -27,11 +27,15 @@ export default function ProblemRow({ p }: { p: ProblemView }) {
       <span className="flex-1 min-w-0">
         <span className="block text-sm font-medium truncate">{p.name ?? '—'}</span>
         <span className="block text-xs text-soil-dark/50">{date}</span>
+        {/* In a narrow column the status goes under the name, not beside it. */}
+        {stacked && <Pill tone={s.tone} className="mt-1.5"><Icon className="w-3 h-3" />{s.label}</Pill>}
       </span>
-      <Pill tone={s.tone}>
-        <Icon className="w-3 h-3" />
-        {s.label}
-      </Pill>
+      {!stacked && (
+        <Pill tone={s.tone}>
+          <Icon className="w-3 h-3" />
+          {s.label}
+        </Pill>
+      )}
       <ChevronRight className="w-4 h-4 text-soil-dark/30" />
     </Link>
   )

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../../api/client'
 import type { CropInfo, Home as HomeData } from '../../api/types'
 import { useAsync, useWide } from '../../lib/hooks'
+import { EYEBROW, MAIN, ROW, SIDE, SPLIT } from '../layout'
 import { Card, ErrorBox, SectionTitle, Spinner } from '../../ui/kit'
 import AlertCard from '../components/AlertCard'
 import LocationAsk from '../components/LocationAsk'
@@ -119,7 +120,7 @@ export default function Home() {
           ) : (
             <div className="space-y-2">
               {d.problems.filter((p) => p.gate_outcome !== 'retake').slice(0, 5).map((p) => (
-                <ProblemRow key={p.id} p={p} />
+                <ProblemRow key={p.id} p={p} stacked={wide} />
               ))}
             </div>
           )}
@@ -127,22 +128,41 @@ export default function Home() {
   )
   const location = <LocationAsk farm={d.farm} onUpdated={(farm) => home.setData({ ...d, farm })} />
 
-  // A wide screen gets two columns: the field and its weather on the left,
-  // what to do now on the right. Below lg this is the phone layout, in order.
+  // Desktop: a hero row (the field | the weather now), then the same 8 | 4
+  // split as every other tab screen — what to do today on the left, the
+  // forecast and recent problems beside it. Below lg: the phone order below.
   if (wide) {
     return (
-      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-8 items-start">
-        <div className="space-y-6">
-          <FarmCard data={d} crop={crop} />
-          {location}
-          <WeatherNowCard />
-          <WeatherStrip weather={d.weather} rain={d.rain_context} />
+      <div className="space-y-8">
+        <div className={ROW}>
+          <div className="col-span-8"><FarmCard data={d} crop={crop} /></div>
+          <div className="col-span-4"><WeatherNowCard /></div>
         </div>
-        <div className="space-y-6">
-          {followups}
-          <div className="grid grid-cols-2 gap-4 [&>a]:h-full">{cta}</div>
-          {todayChecks}
-          {recentProblems}
+        {location}
+        <div className={SPLIT}>
+          <div className={`${MAIN} space-y-8`}>
+            <div className="grid grid-cols-2 gap-6 [&>a]:h-full [&>a]:!p-6">{cta}</div>
+            {due.length > 0 && (
+              <section className="space-y-3">
+                <p className={EYEBROW}>{t('followupDue')}</p>
+                <Card className="divide-y divide-soil-dark/10">
+                  {due.slice(0, 3).map((f) => (
+                    <FollowUp key={f.id} id={f.id} name={f.name} onDone={home.reload} row />
+                  ))}
+                </Card>
+                {due.length > 3 && (
+                  <Link to="/app/history" className="inline-block text-sm text-leaf-deep font-medium">
+                    +{due.length - 3} · {t('allHistory')} →
+                  </Link>
+                )}
+              </section>
+            )}
+            {todayChecks}
+          </div>
+          <aside className={`${SIDE} space-y-8`}>
+            <WeatherStrip weather={d.weather} rain={d.rain_context} />
+            {recentProblems}
+          </aside>
         </div>
       </div>
     )
@@ -177,26 +197,26 @@ function FarmCard({ data, crop }: { data: HomeData; crop?: CropInfo }) {
   const lastDas = stages.length ? stages[stages.length - 2]?.das[1] ?? 120 : 120
   const pct = Math.min(100, Math.max(0, (f.das / lastDas) * 100))
   return (
-    <Card className="p-4">
+    <Card className="p-4 lg:h-full lg:p-8 lg:flex lg:flex-col lg:justify-between lg:rounded-3xl">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs text-soil-dark/50">{f.district} · {f.area_acres} {t('acres')}{f.variety ? ` · ${f.variety}` : ''}</p>
-          <h1 className="font-instrument-serif text-3xl leading-tight">{f.crop_name}</h1>
+          <p className="text-xs text-soil-dark/50 lg:text-sm">{f.district} · {f.area_acres} {t('acres')}{f.variety ? ` · ${f.variety}` : ''}</p>
+          <h1 className="font-instrument-serif text-3xl leading-tight lg:text-5xl lg:mt-1">{f.crop_name}</h1>
         </div>
         <div className="text-right">
-          <p className="text-3xl font-semibold text-leaf-deep leading-none">{f.das}</p>
-          <p className="text-[11px] text-soil-dark/50">{t('daysOld')}</p>
+          <p className="text-3xl font-semibold text-leaf-deep leading-none lg:text-5xl">{f.das}</p>
+          <p className="text-[11px] text-soil-dark/50 lg:text-xs lg:mt-1">{t('daysOld')}</p>
         </div>
       </div>
       {stages.length > 0 && (
-        <div className="mt-4">
+        <div className="mt-4 lg:mt-8">
           <div className="relative h-2 rounded-full bg-soil-dark/10">
             <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-leaf to-ochre" style={{ width: `${pct}%` }} />
             <span className="absolute -top-1 w-4 h-4 rounded-full bg-white border-2 border-ochre shadow" style={{ left: `calc(${pct}% - 8px)` }} />
           </div>
           <div className="mt-2 flex justify-between gap-1">
             {stages.slice(0, -1).map((s) => (
-              <span key={s.key} className={`text-[10px] leading-tight text-center flex-1 ${s.key === f.stage ? 'text-leaf-deep font-semibold' : 'text-soil-dark/40'}`}>
+              <span key={s.key} className={`text-[10px] leading-tight text-center flex-1 lg:text-xs ${s.key === f.stage ? 'text-leaf-deep font-semibold' : 'text-soil-dark/40'}`}>
                 {s.name}
               </span>
             ))}
@@ -207,7 +227,7 @@ function FarmCard({ data, crop }: { data: HomeData; crop?: CropInfo }) {
   )
 }
 
-function FollowUp({ id, name, onDone }: { id: number; name: string | null; onDone: () => void }) {
+function FollowUp({ id, name, onDone, row = false }: { id: number; name: string | null; onDone: () => void; row?: boolean }) {
   const { t, lang } = useFarmer()
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
@@ -223,6 +243,25 @@ function FollowUp({ id, name, onDone }: { id: number; name: string | null; onDon
       setBusy(null)
     }
   }
+  const choices = ([['improved', t('improved'), 'bg-leaf text-cream'], ['no_change', t('noChange'), 'bg-white border border-soil-dark/20'], ['got_worse', t('gotWorse'), 'bg-ember text-cream']] as const)
+  if (row) {
+    return (
+      <div className="flex items-center gap-6 px-5 py-4">
+        <p className="flex-1 min-w-0 font-semibold truncate">{name ?? t('followupDue')}</p>
+        {msg ? (
+          <p className="text-sm text-ember">{msg}</p>
+        ) : (
+          <div className="grid grid-cols-3 gap-2 w-[22rem] shrink-0">
+            {choices.map(([r, label, cls]) => (
+              <button key={r} onClick={() => send(r)} disabled={busy !== null} className={`min-h-[40px] rounded-xl text-sm font-medium ${cls}`}>
+                {busy === r ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
   return (
     <Card className="p-4 border-ochre/40 bg-ochre/5">
       <p className="text-sm font-semibold">{t('followupDue')}</p>
@@ -231,7 +270,7 @@ function FollowUp({ id, name, onDone }: { id: number; name: string | null; onDon
         <p className="mt-2 text-sm text-ember">{msg}</p>
       ) : (
         <div className="mt-3 grid grid-cols-3 gap-2">
-          {([['improved', t('improved'), 'bg-leaf text-cream'], ['no_change', t('noChange'), 'bg-white border border-soil-dark/20'], ['got_worse', t('gotWorse'), 'bg-ember text-cream']] as const).map(([r, label, cls]) => (
+          {choices.map(([r, label, cls]) => (
             <button key={r} onClick={() => send(r)} disabled={busy !== null} className={`min-h-[44px] rounded-xl text-sm font-medium ${cls}`}>
               {busy === r ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : label}
             </button>

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { AlertTriangle, Bell, Camera, ChevronDown, CloudSun, FlaskConical, Home as HomeIcon, MapPin, X } from 'lucide-react'
+import { AlertTriangle, Bell, Camera, ChevronDown, CloudSun, FlaskConical, Home as HomeIcon, MapPin, Phone, X } from 'lucide-react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import type { Farm, LiveEvent } from '../api/types'
@@ -22,8 +22,8 @@ const NAV = [
 function Shell() {
   const { lang, setLang, farmId, setFarmId, t, unread, setUnread, setToast } = useFarmer()
   const { pathname } = useLocation()
-  // Home lays out in two columns on a wide screen; the rest stay one column.
-  const wideRoute = pathname === '/app' || pathname === '/app/'
+  // Tab screens use the full desktop grid; detail screens stay at reading width.
+  const wideRoute = ['/app', '/app/', '/app/weather', '/app/scan', '/app/spray', '/app/alerts'].includes(pathname)
   const navigate = useNavigate()
   const [farm, setFarm] = useState<Farm | null>(null)
   const switchFarm = () => {
@@ -86,8 +86,8 @@ function Shell() {
 
   return (
     <div className="min-h-screen w-full bg-cream text-soil-dark flex flex-col">
-      <header className="sticky top-0 z-30 bg-leaf-deep text-cream shadow-sm">
-        <div className="max-w-md mx-auto flex items-center justify-between gap-3 px-4 py-3 lg:max-w-none lg:px-6">
+      <header className="sticky top-0 z-30 bg-leaf-deep text-cream shadow-sm lg:shadow-none">
+        <div className="max-w-md mx-auto flex items-center justify-between gap-3 px-4 py-3 lg:max-w-none lg:h-16 lg:px-6">
           {/* The field line is the switcher: a farmer with rice on one plot and
               cotton on another taps their crop to move between them. */}
           <div className="flex items-center gap-2 min-w-0">
@@ -128,21 +128,22 @@ function Shell() {
       <Toast />
       <Krishi aboveNav={farmId != null} />
 
-      {/* Below lg this is the phone column, unchanged. On a wide screen the tab
-          bar becomes a sidebar, the content sits beside it, and Home and the
-          farm picker spread into columns; screens that are one list stay at a
-          reading width rather than stretching edge to edge. */}
-      <main className={`flex-1 w-full max-w-md mx-auto px-4 pt-5 pb-28 animate-fadein lg:max-w-none lg:px-8 lg:pt-8 lg:pb-12 ${
-        farmId != null ? 'lg:pl-[calc(15rem+2rem)]' : ''}`} key={pathname}>
-        <div className={`lg:mx-auto ${farmId == null || wideRoute ? 'lg:max-w-5xl' : 'lg:max-w-2xl'}`}>
+      {/* Below lg this is the phone column, unchanged. On a wide screen the
+          header and a dark sidebar frame the page, and every tab screen shares
+          one content width and one 12-column grid (see farmer/layout.ts), so
+          edges line up from screen to screen. Detail screens (a result, the
+          history) keep a centred reading width. */}
+      <main className={`flex-1 w-full max-w-md mx-auto px-4 pt-5 pb-28 animate-fadein lg:max-w-none lg:px-10 lg:pt-8 lg:pb-16 ${
+        farmId != null ? 'lg:pl-[calc(16rem+2.5rem)]' : ''}`} key={pathname}>
+        <div className={`lg:mx-auto ${farmId == null || wideRoute ? 'lg:max-w-6xl' : 'lg:max-w-3xl'}`}>
           {farmId == null ? <Onboard /> : <Outlet />}
         </div>
       </main>
 
       {farmId != null && (
         <nav className="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-soil-dark/10 pb-[env(safe-area-inset-bottom)]
-          lg:top-[60px] lg:right-auto lg:w-60 lg:border-t-0 lg:border-r lg:pb-0 lg:bg-white">
-          <div className="max-w-md mx-auto grid grid-cols-5 lg:max-w-none lg:flex lg:flex-col lg:gap-1 lg:p-3">
+          lg:top-16 lg:right-auto lg:w-64 lg:border-t-0 lg:pb-0 lg:bg-leaf-deep lg:backdrop-blur-none lg:flex lg:flex-col">
+          <div className="max-w-md mx-auto grid grid-cols-5 lg:max-w-none lg:w-full lg:flex lg:flex-col lg:gap-1 lg:px-4 lg:pt-4">
             {NAV.map(({ to, icon: Icon, key }) => {
               const on = active === to
               const isScan = to === '/app/scan'
@@ -151,22 +152,27 @@ function Shell() {
                   key={to}
                   to={to}
                   className={`flex flex-col items-center justify-center gap-0.5 py-2 min-h-[60px] text-[10.5px] font-medium transition-colors
-                    lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:min-h-[48px] lg:rounded-xl lg:text-sm ${
-                    on ? 'text-leaf-deep lg:bg-leaf/10' : 'text-soil-dark/50 hover:text-soil-dark lg:hover:bg-soil-dark/5'
+                    lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:min-h-[44px] lg:rounded-xl lg:text-[14px] ${
+                    on ? 'text-leaf-deep lg:text-cream lg:bg-cream/10' : 'text-soil-dark/50 hover:text-soil-dark lg:text-cream/65 lg:hover:text-cream lg:hover:bg-cream/5'
                   }`}
                 >
                   {isScan ? (
-                    <span className={`-mt-6 w-12 h-12 rounded-full flex items-center justify-center shadow-lg ring-4 ring-cream lg:mt-0 lg:w-8 lg:h-8 lg:shadow-none lg:ring-0 ${on ? 'bg-ochre text-cream' : 'bg-leaf-deep text-cream'}`}>
+                    <span className={`-mt-6 w-12 h-12 rounded-full flex items-center justify-center shadow-lg ring-4 ring-cream lg:mt-0 lg:w-5 lg:h-5 lg:shadow-none lg:ring-0 lg:rounded-none lg:bg-transparent ${on ? 'bg-ochre text-cream lg:text-ochre' : 'bg-leaf-deep text-cream lg:text-inherit'}`}>
                       <Icon className="w-5 h-5" />
                     </span>
                   ) : (
-                    <Icon className="w-5 h-5" strokeWidth={on ? 2.4 : 2} />
+                    <Icon className={`w-5 h-5 ${on ? 'lg:text-ochre' : ''}`} strokeWidth={on ? 2.4 : 2} />
                   )}
                   {t(key)}
                 </Link>
               )
             })}
           </div>
+          {/* Desktop only: the free helpline sits at the foot of the sidebar. */}
+          <a href="tel:18001801551" className="hidden lg:flex mt-auto m-4 items-start gap-2.5 rounded-xl bg-cream/5 border border-cream/10 p-3 text-[12px] leading-snug text-cream/70 hover:text-cream hover:bg-cream/10">
+            <Phone className="w-4 h-4 shrink-0 mt-0.5 text-ochre" />
+            {t('callKcc')}
+          </a>
         </nav>
       )}
     </div>

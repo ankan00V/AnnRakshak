@@ -5,10 +5,11 @@ import {
 import { Link } from 'react-router-dom'
 import { api } from '../../api/client'
 import type { Lang, WeatherAdvisory, WeatherDay, WeatherHour, WeatherView } from '../../api/types'
-import { useAsync } from '../../lib/hooks'
+import { useAsync, useWide } from '../../lib/hooks'
 import { Card, ErrorBox, ListenButton, Pill, SectionTitle, Spinner } from '../../ui/kit'
 import { bcp47 } from '../../lib/i18n'
 import { useFarmer } from '../FarmerContext'
+import { MAIN, SIDE, SPLIT } from '../layout'
 
 type T = ReturnType<typeof useFarmer>['t']
 
@@ -66,56 +67,96 @@ const hhmm = (iso: string) => iso.slice(11, 16)
 export default function Weather() {
   const { farmId, lang, t } = useFarmer()  // lang also feeds dates and the KCC month name
   const w = useAsync(() => api.weather(farmId!, lang), [farmId, lang], ['weather', farmId!, lang].join(':'))
+  const wide = useWide()
   if (w.loading && !w.data) return <Spinner label={t('loading')} />
   if (w.error) return <ErrorBox error={w.error} onRetry={w.reload} retryLabel={t('retry')} />
   const v = w.data!
   const speech = v.advisories.filter((a) => a.rule !== 'spray_window').slice(0, 3).map((a) => `${a.title}. ${a.text}`).join(' ')
 
+  const header = (
+    <>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="font-instrument-serif text-3xl leading-tight">{t('weatherTitle')}</h1>
+            <p className="text-xs text-soil-dark/50 mt-0.5">
+              {v.location.district} · {v.crop.name} · {v.crop.stage_name} · {t('updatedAt').replace('{t}', hhmm(v.fetched_at))}
+            </p>
+          </div>
+          {speech && <ListenButton text={speech} lang={lang} label={t('listen')} stopLabel={t('stop')} compact />}
+        </div>
+        {v.stale && <p className="text-xs rounded-xl bg-ochre/10 text-[#8a5a17] p-2.5">{t('staleData')}</p>}
+    </>
+  )
+  const todo = (
+        <section className="space-y-2">
+          <SectionTitle>{t('weatherToDo')}</SectionTitle>
+          <Advisories items={v.advisories.filter((a) => a.rule !== 'spray_window')} />
+          {v.watch_for.length > 0 && (
+            <div className="rounded-2xl bg-white border border-soil-dark/10 p-3">
+              <p className="text-xs text-soil-dark/60">{t('watchFor').replace('{crop}', v.crop.name)}</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {v.watch_for.map((r) => (
+                  <Pill key={r.target} tone={r.level === 'high' ? 'ember' : r.level === 'medium' ? 'ochre' : 'neutral'}>
+                    {r.name} · {t(`level_${r.level}`)}
+                  </Pill>
+                ))}
+              </div>
+            </div>
+          )}
+          {v.seasonal.length > 0 && (
+            <div className="rounded-2xl bg-sky-50 border border-sky-100 p-3">
+              <p className="text-xs text-sky-900">
+                {t('kccSeasonal').replace('{month}', new Date().toLocaleDateString(bcp47(lang), { month: 'long' })).replace('{district}', v.location.district)}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {v.seasonal.map((s) => (
+                  <span key={s.group} className="rounded-full bg-white border border-sky-200 px-2.5 py-1 text-[11px] text-sky-900">
+                    {s.name}{s.district_calls_this_month > 0 && <span className="text-sky-700/70"> · {s.district_calls_this_month}</span>}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+  )
+  const sources = (
+        <p className="text-[11px] text-soil-dark/45 leading-relaxed">
+          {t('sources')}: {v.source.forecast}; {t('rainNow')}: {v.source.current}; ET₀: {v.source.et0}
+          {v.source.soil ? `; ${v.source.soil}` : ''}.
+        </p>
+  )
+
+  // Desktop: conditions and the forecast on the left; what to do, the spraying
+  // window and the satellite view beside them (the shared 8 | 4 grid).
+  if (wide) {
+    return (
+      <div className="space-y-6">
+        {header}
+        <div className={SPLIT}>
+          <div className={`${MAIN} space-y-6`}>
+            <NowCard v={v} />
+            <HourlyChart hours={v.hourly.slice(0, 24)} />
+            <DailyList days={v.daily} />
+            <SoilWater v={v} />
+          </div>
+          <aside className={`${SIDE} space-y-6`}>
+            {todo}
+            <SprayCard v={v} />
+            <SatelliteCard />
+          </aside>
+        </div>
+        {sources}
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="font-instrument-serif text-3xl leading-tight">{t('weatherTitle')}</h1>
-          <p className="text-xs text-soil-dark/50 mt-0.5">
-            {v.location.district} · {v.crop.name} · {v.crop.stage_name} · {t('updatedAt').replace('{t}', hhmm(v.fetched_at))}
-          </p>
-        </div>
-        {speech && <ListenButton text={speech} lang={lang} label={t('listen')} stopLabel={t('stop')} compact />}
-      </div>
-      {v.stale && <p className="text-xs rounded-xl bg-ochre/10 text-[#8a5a17] p-2.5">{t('staleData')}</p>}
+      {header}
 
       <NowCard v={v} />
 
-      <section className="space-y-2">
-        <SectionTitle>{t('weatherToDo')}</SectionTitle>
-        <Advisories items={v.advisories.filter((a) => a.rule !== 'spray_window')} />
-        {v.watch_for.length > 0 && (
-          <div className="rounded-2xl bg-white border border-soil-dark/10 p-3">
-            <p className="text-xs text-soil-dark/60">{t('watchFor').replace('{crop}', v.crop.name)}</p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {v.watch_for.map((r) => (
-                <Pill key={r.target} tone={r.level === 'high' ? 'ember' : r.level === 'medium' ? 'ochre' : 'neutral'}>
-                  {r.name} · {t(`level_${r.level}`)}
-                </Pill>
-              ))}
-            </div>
-          </div>
-        )}
-        {v.seasonal.length > 0 && (
-          <div className="rounded-2xl bg-sky-50 border border-sky-100 p-3">
-            <p className="text-xs text-sky-900">
-              {t('kccSeasonal').replace('{month}', new Date().toLocaleDateString(bcp47(lang), { month: 'long' })).replace('{district}', v.location.district)}
-            </p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {v.seasonal.map((s) => (
-                <span key={s.group} className="rounded-full bg-white border border-sky-200 px-2.5 py-1 text-[11px] text-sky-900">
-                  {s.name}{s.district_calls_this_month > 0 && <span className="text-sky-700/70"> · {s.district_calls_this_month}</span>}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
+      {todo}
 
       <SprayCard v={v} />
       <HourlyChart hours={v.hourly.slice(0, 24)} />
@@ -123,10 +164,7 @@ export default function Weather() {
       <SoilWater v={v} />
       <SatelliteCard />
 
-      <p className="text-[11px] text-soil-dark/45 leading-relaxed">
-        {t('sources')}: {v.source.forecast}; {t('rainNow')}: {v.source.current}; ET₀: {v.source.et0}
-        {v.source.soil ? `; ${v.source.soil}` : ''}.
-      </p>
+      {sources}
     </div>
   )
 }
@@ -251,8 +289,11 @@ function SprayCard({ v }: { v: WeatherView }) {
 
 function HourlyChart({ hours }: { hours: WeatherHour[] }) {
   const { t } = useFarmer()
+  // A wider drawing on desktop keeps labels at their phone size instead of
+  // scaling the whole chart up with the column.
+  const wide = useWide()
   if (hours.length < 2) return null
-  const W = 336, H = 120, top = 16, bottom = 22
+  const W = wide ? 640 : 336, H = wide ? 150 : 120, top = 16, bottom = 22
   const temps = hours.map((h) => h.temp ?? 0)
   const lo = Math.min(...temps) - 1, hi = Math.max(...temps) + 1
   const x = (i: number) => (i / (hours.length - 1)) * (W - 16) + 8
@@ -402,11 +443,11 @@ export function WeatherNowCard() {
   const c = v.current
   const top = v.advisories.find((a) => a.rule !== 'spray_window')
   return (
-    <Link to="/app/weather" className="block rounded-3xl bg-white border border-soil-dark/10 p-4 active:scale-[0.99] transition-transform">
+    <Link to="/app/weather" className="block rounded-3xl bg-white border border-soil-dark/10 p-4 active:scale-[0.99] transition-transform lg:h-full lg:p-6 lg:flex lg:flex-col lg:hover:border-leaf/40">
       <div className="flex items-center gap-4">
-        <div className="shrink-0 w-16 text-center">
-          <p className="text-3xl font-semibold leading-none">{c.temp != null ? Math.round(c.temp) : '–'}°</p>
-          <p className="text-[10px] text-soil-dark/55 mt-1">{t(wmoKey(c.code))}</p>
+        <div className="shrink-0 w-16 text-center lg:w-20">
+          <p className="text-3xl font-semibold leading-none lg:text-5xl">{c.temp != null ? Math.round(c.temp) : '–'}°</p>
+          <p className="text-[10px] text-soil-dark/55 mt-1 lg:text-xs">{t(wmoKey(c.code))}</p>
         </div>
         <div className="flex-1 grid grid-cols-3 gap-2 text-center">
           <p className="text-[10px] text-soil-dark/55"><Droplets className="w-3.5 h-3.5 mx-auto text-sky-600" />{c.rh}%</p>
@@ -419,7 +460,7 @@ export function WeatherNowCard() {
           {top.title}
         </p>
       )}
-      <p className="mt-2 text-xs font-medium text-leaf-deep">{t('fullWeather')} →</p>
+      <p className="mt-2 text-xs font-medium text-leaf-deep lg:mt-auto lg:pt-3 lg:text-sm">{t('fullWeather')} →</p>
     </Link>
   )
 }

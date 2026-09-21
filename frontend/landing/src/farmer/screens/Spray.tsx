@@ -5,6 +5,7 @@ import type { LabelVerdict } from '../../api/types'
 import { useAsync } from '../../lib/hooks'
 import { ErrorBox, ListenButton, VoiceButton } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
+import { MAIN, SIDE, SPLIT } from '../layout'
 
 const QUICK = ['Mancozeb', 'Copper oxychloride', 'Emamectin', 'Tricyclazole', 'Chlorantraniliprole', 'Glyphosate']
 
@@ -59,8 +60,10 @@ export default function Spray() {
         <p className="mt-1 text-sm text-soil-dark/60">{t('spraySub')}</p>
       </div>
 
+      <div className={`space-y-5 ${SPLIT}`}>
+      <aside className={`space-y-5 lg:order-2 ${SIDE}`}>
       {now && (
-        <div className={`rounded-2xl p-3 flex gap-3 items-start ${now.status === 'good' ? 'bg-leaf/10 text-leaf-deep' : now.status === 'caution' ? 'bg-ochre/10 text-[#8a5a17]' : 'bg-ember/10 text-ember'}`}>
+        <div className={`rounded-2xl p-3 lg:p-5 flex gap-3 items-start ${now.status === 'good' ? 'bg-leaf/10 text-leaf-deep' : now.status === 'caution' ? 'bg-ochre/10 text-[#8a5a17]' : 'bg-ember/10 text-ember'}`}>
           <SprayCan className="w-5 h-5 shrink-0 mt-0.5" />
           <p className="text-sm">
             <span className="font-semibold">{t(`spray_${now.status}`)}</span>
@@ -72,10 +75,17 @@ export default function Spray() {
         </div>
       )}
 
-      <p className="text-xs rounded-xl bg-white border border-soil-dark/10 px-3 py-2">
+      <p className="text-xs rounded-xl bg-white border border-soil-dark/10 px-3 py-2 lg:px-4 lg:py-3 lg:text-sm">
         <span className="text-soil-dark/50">{t('forProblem')}: </span>
-        <span className="font-medium">{current?.name ?? t('noDiagnosisYet')}</span>
+        <span className="font-medium">{current?.name ?? (home.data ? t('noDiagnosisYet') : '…')}</span>
       </p>
+      <p className="hidden lg:flex gap-2 text-xs text-soil-dark/60">
+        <Info className="w-4 h-4 shrink-0" />
+        {t('neverSafeNote')}
+      </p>
+      </aside>
+
+      <div className={`space-y-5 lg:order-1 ${MAIN}`}>
 
       <form
         onSubmit={(e) => {
@@ -157,10 +167,12 @@ export default function Spray() {
         </section>
       )}
 
-      <p className="flex gap-2 text-xs text-soil-dark/60">
+      <p className="flex gap-2 text-xs text-soil-dark/60 lg:hidden">
         <Info className="w-4 h-4 shrink-0" />
         {t('neverSafeNote')}
       </p>
+      </div>
+      </div>
     </div>
   )
 }

@@ -7,6 +7,7 @@ import { Card, ErrorBox, SectionTitle, Spinner } from '../../ui/kit'
 import AlertCard from '../components/AlertCard'
 import { NoticeInbox, NotifySettings } from '../components/NotifyPanels'
 import { useFarmer } from '../FarmerContext'
+import { MAIN, SIDE, SPLIT } from '../layout'
 
 
 export default function Alerts() {
@@ -24,6 +25,8 @@ export default function Alerts() {
     <div className="space-y-6">
       <h1 className="font-instrument-serif text-3xl leading-tight">{t('alertsTitle')}</h1>
 
+      <div className={`space-y-6 ${SPLIT}`}>
+      <div className={`space-y-6 ${MAIN}`}>
       <NoticeInbox />
 
       <section className="space-y-3">
@@ -34,7 +37,9 @@ export default function Alerts() {
           open.map((a) => <AlertCard key={a.id} alert={a} onDone={alerts.reload} />)
         )}
       </section>
+      </div>
 
+      <aside className={`space-y-6 ${SIDE}`}>
       <NotifySettings />
       {crop && <TrapForm crop={crop} onSaved={alerts.reload} />}
       <SensorForm onSaved={alerts.reload} />
@@ -53,6 +58,8 @@ export default function Alerts() {
           </ul>
         </section>
       )}
+      </aside>
+      </div>
     </div>
   )
 }
