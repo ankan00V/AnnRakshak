@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import auth, config, nim, services
+from app import auth, cache, config, nim, services
 from app.db import get_db
 from app.limits import limit
 from app.engine import labelcheck, vision
@@ -372,30 +372,65 @@ class LabelCheckIn(BaseModel):
     lang: Lang = "en"
 
 
-@router.post("/labelcheck")
-def label_check(body: LabelCheckIn, request: Request, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
-    farm = _farm(db, body.farm_id)
-    auth.check_farm(auth.signed_in(request, db), farm)
-    target = None
-    if body.problem_id is not None:
-        target = _problem(db, body.problem_id).target
+def _label_target(db: Session, farm: Farm, problem_id: int | None) -> str | None:
+    """The problem a spray is being checked against: the one named, else the
+    field's latest open diagnosis. A healthy result is no target at all."""
+    if problem_id is not None:
+        target = _problem(db, problem_id).target
     else:
         latest = db.scalar(select(Problem).where(
             Problem.farm_id == farm.id, Problem.status == "open", Problem.target.is_not(None)
         ).order_by(Problem.id.desc()))
         target = latest.target if latest else None
-    if target and target.endswith("_healthy"):
-        target = None
+    return None if target and target.endswith("_healthy") else target
+
+
+@router.post("/labelcheck")
+def label_check(body: LabelCheckIn, request: Request, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    farm = _farm(db, body.farm_id)
+    auth.check_farm(auth.signed_in(request, db), farm)
+    target = _label_target(db, farm, body.problem_id)
     out = labelcheck.check(kb, body.product, farm.crop, target, body.lang) | {"target": target}
-    if out["tone"] == "unknown":
-        # We hold no record of what was typed, so the verified answer stops at
-        # "ask an expert". A model can still say what the thing IS — that water
-        # is not a pesticide, that a fertiliser will not cure a fungus — which is
-        # the difference between a dead end and an answer. It explains only:
-        # labelcheck.safe_suggestion drops anything carrying a dose or naming a
-        # chemical, and the verified refusal above is never replaced.
-        problem = tr(kb.targets[target]["names"], "en") if target else "not diagnosed yet"
-        out["suggestion"] = labelcheck.safe_suggestion(kb, nim.suggest(
-            body.product, tr(kb.crops[farm.crop]["names"], "en"), problem, body.lang,
-            key=config.NVIDIA_SUGGEST_KEY))
+    # The verified verdict never waits on a model. When we hold no record of
+    # what was typed, the app asks /labelcheck/note separately for the AI's
+    # explanation of what it is — so a slow model delays one extra line, not
+    # the answer the farmer came for.
+    out["note_available"] = out["tone"] == "unknown" and nim.enabled()
     return out
+
+
+NOTE_TIMEOUT_S = 25.0
+"""The model took 5.6-9.1 s per note on a busy day (2.6 s median when first
+measured), so the 10 s bar Krishi uses dropped some notes at random. This call
+runs after the verdict is already on screen, so it can afford to wait."""
+NOTE_CACHE_S = 24 * 3600
+
+
+@router.post("/labelcheck/note")
+def label_note(body: LabelCheckIn, request: Request, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    """What an unrecognised input actually is — "water is not a pesticide",
+    "kerosene is a fuel and can harm the crop". It explains only:
+    labelcheck.safe_suggestion drops any reply that names a chemical or carries
+    a dose, and the verified refusal from /labelcheck is never replaced."""
+    farm = _farm(db, body.farm_id)
+    auth.check_farm(auth.signed_in(request, db), farm)
+    target = _label_target(db, farm, body.problem_id)
+    if labelcheck.check(kb, body.product, farm.crop, target, body.lang)["tone"] != "unknown":
+        return {"suggestion": None}  # a product we know about gets the verified answer only
+    limit(f"labelnote:{farm.id}", 30, 60)
+    word = " ".join(body.product.lower().split())
+    key = f"labelnote:{farm.crop}:{target}:{body.lang}:{word}"
+    hit = cache.get_json(key)
+    if hit is not None:
+        return {"suggestion": hit or None}
+    problem = tr(kb.targets[target]["names"], "en") if target else "not diagnosed yet"
+    note = None
+    for _ in range(2):  # one retry: an empty reply is usually a busy server, not a refusal
+        note = labelcheck.safe_suggestion(kb, nim.suggest(
+            body.product, tr(kb.crops[farm.crop]["names"], "en"), problem, body.lang,
+            key=config.NVIDIA_SUGGEST_KEY, timeout=NOTE_TIMEOUT_S))
+        if note:
+            break
+    if note:
+        cache.set_json(key, note, NOTE_CACHE_S)
+    return {"suggestion": note}

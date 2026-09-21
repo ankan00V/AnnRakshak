@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Ban, FlaskConical, HelpCircle, Info, Loader2, ShieldCheck, Sparkles, SprayCan } from 'lucide-react'
 import { api } from '../../api/client'
 import type { LabelVerdict } from '../../api/types'
@@ -13,6 +13,9 @@ export default function Spray() {
   const [q, setQ] = useState('')
   const [busy, setBusy] = useState(false)
   const [v, setV] = useState<LabelVerdict | null>(null)
+  // The AI note loads after the verdict: 'loading' | a sentence | 'none' (asked, nothing usable came back).
+  const [note, setNote] = useState<string | null>(null)
+  const asked = useRef(0) // a note that arrives after a newer check is dropped
   const [error, setError] = useState<Error | null>(null)
   const home = useAsync(() => api.home(farmId!, lang), [farmId, lang], ['home', farmId!, lang].join(':'))
   const weather = useAsync(() => api.weather(farmId!, lang), [farmId, lang], ['weather', farmId!, lang].join(':'))
@@ -31,7 +34,16 @@ export default function Spray() {
     setBusy(true)
     setError(null)
     try {
-      setV(await api.labelCheck(farmId!, text.trim(), lang))
+      const id = ++asked.current
+      const verdict = await api.labelCheck(farmId!, text.trim(), lang)
+      if (id !== asked.current) return
+      setV(verdict)
+      setNote(verdict.note_available ? 'loading' : null)
+      if (verdict.note_available) {
+        api.labelNote(farmId!, text.trim(), lang)
+          .then((r) => id === asked.current && setNote(r.suggestion ?? 'none'))
+          .catch(() => id === asked.current && setNote('none'))
+      }
     } catch (e) {
       setError(e as Error)
     } finally {
@@ -119,12 +131,20 @@ export default function Spray() {
           </div>
           {v.product && <p className={`mt-1 text-xs ${v.tone === 'stop' ? 'text-cream/80' : 'text-soil-dark/60'}`}>{v.product}</p>}
           <p className="mt-3 text-[15px] leading-snug">{v.message}</p>
-          {v.suggestion && (
+          {note && (
             <div className="mt-3 rounded-xl bg-white/70 border border-soil-dark/10 p-3">
               <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-soil-dark/45">
                 <Sparkles className="w-3.5 h-3.5" /> {t('aiNote')}
               </p>
-              <p className="mt-1 text-[14px] leading-snug">{v.suggestion}</p>
+              {note === 'loading' ? (
+                <p className="mt-1 flex items-center gap-2 text-[13px] text-soil-dark/55">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('aiNoteLoading')}
+                </p>
+              ) : note === 'none' ? (
+                <p className="mt-1 text-[13px] text-soil-dark/55">{t('aiNoteNone')}</p>
+              ) : (
+                <p className="mt-1 text-[14px] leading-snug">{note}</p>
+              )}
             </div>
           )}
           {!v.is_veto && (

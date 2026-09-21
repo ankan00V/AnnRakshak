@@ -150,6 +150,37 @@ def classify(img) -> list[tuple[str, float]]:
     return preds if model.is_familiar(fam) else []  # not a crop view: nothing to record
 
 
+MIN_HEALTHY_VIEWS = 2
+"""Separate close-ups the model must be sure are healthy before the walk may
+say so — the same two-view bar a disease must clear before it is reported as
+seen. Absence of a disease in what the camera caught is not health."""
+
+
+def walk_verdict(seen: bool, possible: bool, can_classify: bool, healthy_confident: int, risks: bool) -> str:
+    """What the walk may honestly claim about the plants.
+
+      found         a problem seen in at least two confident close-ups
+      check         glimpsed, or photos sent: an expert looks
+      no_model      this crop cannot be judged from the camera yet (cotton,
+                    soybean) — never reported as healthy
+      unclear       the camera did not get enough confident views of the plant
+                    to say anything: the farmer is asked to try again
+      risk          healthy in what was seen, but the weather favours a problem
+      all_good      healthy in what was seen, and no weather risk
+
+    Before this, a walk in which the model recognised nothing fell through to
+    "healthy" — "Healthy now, but watch out" after showing the camera nothing."""
+    if seen:
+        return "found"
+    if possible:
+        return "check"
+    if not can_classify:
+        return "no_model"
+    if healthy_confident < MIN_HEALTHY_VIEWS:
+        return "unclear"
+    return "risk" if risks else "all_good"
+
+
 def finish(db: Session, kb: KB, farm: Farm, sess: LiveSession, ctx: dict, lang: str,
            send_to_expert: bool = False) -> dict:
     f = sess.findings(kb)
@@ -209,8 +240,8 @@ def finish(db: Session, kb: KB, farm: Farm, sess: LiveSession, ctx: dict, lang: 
         expert_case = services.case_brief(db, services.escalate(db, problem, reason))
         problem_ids.append(problem.id)
 
-    verdict = ("found" if seen_out else "check" if possible_out or expert_case
-               else "risk" if ctx["risks"] else "all_good")
+    verdict = walk_verdict(bool(seen_out), bool(possible_out or expert_case), sess.can_classify,
+                           f.get("healthy_confident_views", 0), bool(ctx["risks"]))
     scan = LiveScan(
         farm_id=farm.id, lat=ctx["location"]["lat"], lon=ctx["location"]["lon"],
         location_source=ctx["location"]["source"], frames=f["frames"], good_frames=f["good_frames"],
@@ -305,6 +336,12 @@ S = {
     "possible": {"en": "I may have seen {names}, but not clearly enough to be sure. An expert will look at the photos.",
                  "hi": "शायद {names} दिखा, पर पक्का कहने लायक साफ़ नहीं। विशेषज्ञ फोटो देखेंगे।",
                  "mr": "कदाचित {names} दिसले, पण खात्रीने सांगण्याइतके स्पष्ट नाही. तज्ज्ञ फोटो पाहतील."},
+    "unclear": {"en": "I could not see your plants clearly enough to tell whether they are healthy. "
+                      "Please try again: hold the phone close to a leaf, in daylight, and keep it still.",
+                "hi": "मैं आपके पौधे इतने साफ़ नहीं देख पाया कि बता सकूँ कि वे स्वस्थ हैं या नहीं। "
+                      "कृपया फिर से कोशिश करें: फ़ोन को पत्ती के पास, दिन की रोशनी में, स्थिर रखें।",
+                "mr": "तुमची रोपे निरोगी आहेत की नाही हे सांगण्याइतकी स्पष्ट दिसली नाहीत. "
+                      "कृपया पुन्हा प्रयत्न करा: फोन पानाजवळ, दिवसाच्या उजेडात, स्थिर धरा."},
     "healthy": {"en": "All the plants I saw look healthy.", "hi": "जितने पौधे मैंने देखे, सब स्वस्थ दिखते हैं।",
                 "mr": "मी पाहिलेली सर्व रोपे निरोगी दिसतात."},
     "no_model": {"en": "I can't judge {crop} diseases from the camera yet.",
@@ -349,7 +386,9 @@ def speech(summary: dict, lang: str) -> str:
     if summary["possible"]:
         parts.append(_s("possible", lang, names=", ".join(x["name"] for x in summary["possible"])))
     if not summary["seen"] and not summary["possible"]:
-        if summary["photo_model"]:
+        if summary.get("verdict") == "unclear":
+            parts.append(_s("unclear", lang))
+        elif summary["photo_model"]:
             parts.append(_s("healthy", lang))
         else:
             parts.append(_s("no_model", lang, crop=c["name"]))

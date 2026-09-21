@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  AlertTriangle, CheckCircle2, CloudSun, Droplets, Eye, Leaf, Loader2, MapPin, ShieldAlert, Sprout,
-  Stethoscope, Video, Volume2, VolumeX, X,
+  AlertTriangle, CameraOff, CheckCircle2, CloudSun, Droplets, Eye, Leaf, Loader2, MapPin, ScanSearch, ShieldAlert,
+  Sprout, Stethoscope, Video, Volume2, VolumeX, X,
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../../api/client'
@@ -422,6 +422,10 @@ const VERDICT = {
   risk: { tone: 'bg-ochre text-soil-dark', icon: AlertTriangle, key: 'verdict_risk' },
   found: { tone: 'bg-ember text-white', icon: ShieldAlert, key: 'verdict_found' },
   check: { tone: 'bg-sky-700 text-white', icon: Stethoscope, key: 'verdict_check' },
+  // The walk may only claim what the camera saw: not enough confident views of
+  // the plant is its own answer, never "healthy" by default.
+  unclear: { tone: 'bg-soil-dark text-cream', icon: ScanSearch, key: 'verdict_unclear' },
+  no_model: { tone: 'bg-soil-dark text-cream', icon: CameraOff, key: 'verdict_no_model' },
 } as const
 
 const LEVEL_TONE = { high: 'ember', medium: 'ochre', low: 'neutral' } as const
@@ -451,6 +455,17 @@ function SummaryView({ s, onAgain, onDone }: { s: LiveSummary; onAgain: () => vo
           </div>
           <ListenButton text={s.speech} lang={lang} label={t('listen')} stopLabel={t('stop')} compact tone="light" />
         </div>
+        {(s.verdict === 'unclear' || s.verdict === 'no_model') && (
+          <p className="mt-3 text-sm leading-snug opacity-90">
+            {s.verdict === 'unclear' ? t('liveUnclearHint') : t('liveNoModelHint').replace('{crop}', c.crop.name)}
+          </p>
+        )}
+        {s.verdict === 'unclear' && (
+          <button onClick={onAgain}
+            className="mt-4 w-full min-h-[48px] rounded-full bg-cream text-soil-dark text-sm font-semibold">
+            {t('liveTryAgain')}
+          </button>
+        )}
         {c.location.far_from_farm && (
           <p className="mt-2 text-xs opacity-80">{t('liveFar').replace('{km}', String(c.location.km_from_farm))}</p>
         )}

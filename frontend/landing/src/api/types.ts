@@ -229,9 +229,9 @@ export interface LabelVerdict {
   is_veto: boolean
   /** 'stop' = known to be wrong here, 'unknown' = no record of it, 'ok' = no objection found. */
   tone: 'stop' | 'unknown' | 'ok'
-  /** AI explanation of an unrecognised input. Never a recommendation — the
-   *  server drops any reply carrying a dose or naming a chemical. */
-  suggestion?: string | null
+  /** No record of this input: the app may fetch an AI note from
+   *  /api/labelcheck/note, which never waits the verdict above. */
+  note_available?: boolean
   target: string | null
 }
 
@@ -466,7 +466,7 @@ export interface LiveFinding {
 
 export interface LiveSummary {
   scan_id: number
-  verdict: 'all_good' | 'risk' | 'found' | 'check'
+  verdict: 'all_good' | 'risk' | 'found' | 'check' | 'unclear' | 'no_model'
   context: LiveContext
   seen: LiveFinding[]
   possible: LiveFinding[]

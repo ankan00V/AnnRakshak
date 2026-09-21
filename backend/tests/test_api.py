@@ -330,3 +330,25 @@ def test_a_language_bhashini_just_failed_on_is_skipped_for_a_while(monkeypatch):
 def test_bhashini_is_asked_for_odia_by_its_iso_code(monkeypatch):
     from app import bhashini
     assert bhashini._code("od") == "or" and bhashini._code("hi") == "hi"
+
+
+def test_the_spray_verdict_never_waits_on_the_ai_note(client, monkeypatch):
+    """The verified answer comes back without touching the model; the AI note is
+    a separate call. A slow model once dropped notes at random by timing out
+    inside the verdict request."""
+    from app import nim
+    monkeypatch.setattr(nim, "enabled", lambda: True)
+    def must_not_run(*a, **k):
+        raise AssertionError("the verdict called the model")
+    monkeypatch.setattr(nim, "suggest", must_not_run)
+    v = client.post("/api/labelcheck", json={"farm_id": 1, "product": "water", "lang": "en"}).json()
+    assert v["tone"] == "unknown" and v["note_available"] is True and "suggestion" not in v
+
+
+def test_the_ai_note_is_only_for_what_we_have_no_record_of(client, monkeypatch):
+    from app import nim
+    monkeypatch.setattr(nim, "suggest", lambda *a, **k: "Water is just water. It does not treat this.")
+    known = client.post("/api/labelcheck/note", json={"farm_id": 1, "product": "mancozeb", "lang": "en"}).json()
+    assert known["suggestion"] is None  # a registered product gets the verified answer only
+    unknown = client.post("/api/labelcheck/note", json={"farm_id": 1, "product": "water", "lang": "en"}).json()
+    assert unknown["suggestion"].startswith("Water is just water")

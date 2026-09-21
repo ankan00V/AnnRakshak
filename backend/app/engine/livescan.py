@@ -283,11 +283,17 @@ class LiveSession:
                     seen.remove(b)
                     possible.append({k: v for k, v in b.items() if k != "settled_by_answer"} | {"reason": "LOOKALIKE"})
         healthy_views = sum(1 for s in self.sightings if is_healthy(s.target) and crop_of(s.target) == self.crop)
+        # Healthy at any confidence is not evidence of health: a blurred or
+        # half-seen leaf lands on "healthy" as easily as on anything else. Only
+        # views the model was sure of may back a "your plants are healthy".
+        healthy_confident = sum(1 for s in self.sightings if is_healthy(s.target)
+                                and crop_of(s.target) == self.crop and s.conf >= gate_for(s.target))
         return {
             "seen": seen,
             "possible": [p for p in possible if p["target"] not in {s["target"] for s in seen}],
             "classified_views": self.classified,
             "healthy_views": healthy_views,
+            "healthy_confident_views": healthy_confident,
             "other_crop_views": self.other_crop,
             "good_frames": self.good_frames,
             "frames": self.frames,

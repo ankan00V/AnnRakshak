@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import contextlib
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -29,8 +28,9 @@ async def lifespan(_: FastAPI):
     yield
     for task in tasks:
         task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await task
+    # Background loops talk to the network; one stuck on a dead socket must not
+    # hold the process open. Give them a moment, then stop waiting.
+    await asyncio.wait(tasks, timeout=3)
 
 
 app = FastAPI(title="AnnRakshak API", version="0.2.0", lifespan=lifespan)

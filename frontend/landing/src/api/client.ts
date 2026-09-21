@@ -151,6 +151,8 @@ export const api = {
 
   labelCheck: (farmId: number, product: string, lang: Lang, problemId?: number) =>
     req<LabelVerdict>('/api/labelcheck', json({ farm_id: farmId, product, lang, problem_id: problemId })),
+  labelNote: (farmId: number, product: string, lang: Lang, problemId?: number) =>
+    req<{ suggestion: string | null }>('/api/labelcheck/note', json({ farm_id: farmId, product, lang, problem_id: problemId })),
 
   cases: (status: 'open' | 'resolved' | 'all' = 'open') => req<CaseListItem[]>(`/api/cases?status=${status}`),
   caseBundle: (id: number) => req<CaseBundle>(`/api/cases/${id}`),

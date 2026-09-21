@@ -190,6 +190,13 @@ GO = {
 }
 
 
+def _today_ist() -> date:
+    """India's date, as every other screen uses (agroweather.now_ist). The
+    server's own clock may run on UTC, which is still "yesterday" for the first
+    five and a half hours of an Indian morning."""
+    return agroweather.now_ist().date()
+
+
 def _t(key: str, lang: str, **kw) -> str:
     return tr(TEXT[key], lang).format(**kw)
 
@@ -426,7 +433,7 @@ def _crop(kb: KB, farm: Farm, lang: str) -> str:
 
 
 def _today(db: Session, kb: KB, farm: Farm, lang: str) -> dict:
-    today = date.today()
+    today = _today_ist()
     stage, das = kb.stage_for(farm.crop, farm.sowing_date, today)
     steps: list[str] = []
     alerts = db.scalars(select(Alert).where(Alert.farm_id == farm.id, Alert.outcome.is_(None),
@@ -515,7 +522,7 @@ def _water(db: Session, kb: KB, farm: Farm, lang: str) -> dict:
 
 
 def _risks(db: Session, kb: KB, farm: Farm, lang: str) -> dict:
-    today = date.today()
+    today = _today_ist()
     scores = services.risk_scores(db, kb, farm, today, services.weather_for(db, farm))
     if not scores:
         return {"text": _t("risks_none", lang), "steps": [], "go": _go([GO["alerts"]], lang)}
@@ -576,7 +583,7 @@ def facts(db: Session, kb: KB, user, farms: list[Farm], lang: str) -> str:
     out.append(f"App language: {lang}")
     out.append(f"Number of fields registered: {len(farms)}")
 
-    today = date.today()
+    today = _today_ist()
     for i, f in enumerate(farms, 1):
         stage, das = kb.stage_for(f.crop, f.sowing_date, today)
         where = ", ".join(x for x in (f.village, f.taluka, f.district, f.state) if x)
@@ -659,7 +666,7 @@ def _route(text: str, idx: Index) -> str | None:
 
 
 def _farm_line(db: Session, kb: KB, farm: Farm, lang: str) -> dict:
-    stage, das = kb.stage_for(farm.crop, farm.sowing_date, date.today())
+    stage, das = kb.stage_for(farm.crop, farm.sowing_date, _today_ist())
     place = ", ".join(x for x in (farm.village, farm.district) if x)
     text = _t("farm_line", lang, crop=_crop(kb, farm, lang), variety=f" ({farm.variety})" if farm.variety else "",
               place=place, sown=farm.sowing_date.strftime("%d %b %Y"), das=das,

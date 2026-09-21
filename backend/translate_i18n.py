@@ -151,10 +151,18 @@ def _save(path: Path, text: str) -> None:
         path.write_text(text, encoding="utf-8")
 
 
+def api_model() -> str:
+    """The model the voice layer's translate() actually used: Bhashini first
+    when its key is set, Sarvam otherwise (app/voice.py) — recorded as such."""
+    from app import bhashini  # noqa: PLC0415
+    from app.config import BHASHINI_TRANSLATE_SERVICE  # noqa: PLC0415
+    return f"bhashini:{BHASHINI_TRANSLATE_SERVICE}" if bhashini.enabled() else SARVAM_TRANSLATE_MODEL
+
+
 def write(lang: str, kb_path: Path, ui_path: Path, kb: dict, ui: dict, engine) -> None:
     old = load(kb_path)
     models = set(old.get("models") or ([old["model"]] if old.get("model") else []))
-    models.add(INDICTRANS2 if engine else SARVAM_TRANSLATE_MODEL)
+    models.add(INDICTRANS2 if engine else api_model())
     strings = dict(sorted(kb.items()))
     updated = old.get("updated") if old.get("strings") == strings else date.today().isoformat()
     out = {"_note": NOTE, "models": sorted(models), "source": "en", "updated": updated, "strings": strings}
@@ -170,8 +178,9 @@ def main() -> None:
     ap.add_argument("--count", action="store_true", help="only count what would be sent")
     ap.add_argument("--beams", type=int, default=4,
                     help="indictrans2 beam search width; 2 is about twice as fast, slightly rougher")
-    ap.add_argument("--engine", choices=("sarvam", "indictrans2"), default="sarvam",
-                    help="sarvam: Sarvam-Translate API (paid credits); indictrans2: AI4Bharat model run locally")
+    ap.add_argument("--engine", choices=("api", "sarvam", "indictrans2"), default="api",
+                    help="api: the app's voice layer (Bhashini, then Sarvam if its keys are set; "
+                         "'sarvam' is the old name for it); indictrans2: AI4Bharat model run locally")
     args = ap.parse_args()
     langs = [x for x in args.lang.split(",") if x]
     bad = [x for x in langs if x not in MACHINE]

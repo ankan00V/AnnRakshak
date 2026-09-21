@@ -174,5 +174,13 @@ async def listen(deliver: Callable[[int, dict], object]) -> None:
         except asyncio.CancelledError:
             raise
         except Exception as e:  # noqa: BLE001
+            # A shutdown that lands while the connection is being torn down
+            # surfaces as the teardown's own error (a TimeoutError on a dead
+            # socket), not as CancelledError. Treating that as a network blip
+            # and reconnecting swallowed the shutdown, and the server hung on
+            # "Waiting for application shutdown" and could not reload.
+            task = asyncio.current_task()
+            if task is not None and task.cancelling():
+                raise asyncio.CancelledError from e
             log.warning("redis events: %s; reconnecting", type(e).__name__)
             await asyncio.sleep(5)

@@ -74,7 +74,8 @@ def enabled() -> bool:
     return bool(NVIDIA_API_KEY)
 
 
-def _chat(messages: list[dict], *, max_tokens: int, temperature: float, key: str | None = None) -> str | None:
+def _chat(messages: list[dict], *, max_tokens: int, temperature: float, key: str | None = None,
+          timeout: float | None = None) -> str | None:
     key = key or NVIDIA_API_KEY
     if not key:
         return None
@@ -88,7 +89,7 @@ def _chat(messages: list[dict], *, max_tokens: int, temperature: float, key: str
             json={"model": NVIDIA_MODEL, "messages": messages, "max_tokens": max_tokens,
                   "temperature": temperature, "top_p": 0.9, "stream": False,
                   "reasoning_effort": "low", "chat_template_kwargs": {"thinking": False}},
-            timeout=NVIDIA_TIMEOUT_S,
+            timeout=timeout or NVIDIA_TIMEOUT_S,
         )
         if r.status_code != 200:
             return None
@@ -193,7 +194,8 @@ this problem. At most 35 words."}}
 Plain words a farmer can read on a phone. No markdown, no lists, no greeting."""
 
 
-def suggest(product: str, crop: str, problem: str, lang: str, *, key: str | None = None) -> str | None:
+def suggest(product: str, crop: str, problem: str, lang: str, *, key: str | None = None,
+            timeout: float | None = None) -> str | None:
     """What an unrecognised thing actually is — explanation only, never a
     recommendation. The caller must still run it past the guards in
     labelcheck.safe_suggestion() before showing it."""
@@ -203,7 +205,7 @@ def suggest(product: str, crop: str, problem: str, lang: str, *, key: str | None
     system = SUGGEST_SYSTEM.format(crop=crop, problem=problem, language=LANG_NAME.get(lang, "English"))
     out = _chat([{"role": "system", "content": system},
                  {"role": "user", "content": f'The farmer typed: "{product}"'}],
-                max_tokens=900, temperature=0.1, key=key)
+                max_tokens=900, temperature=0.1, key=key, timeout=timeout)
     if not out:
         return None
     got = json_reply(out)

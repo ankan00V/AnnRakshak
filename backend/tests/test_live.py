@@ -233,7 +233,10 @@ def test_live_context_endpoint(client):
     assert r["risks"][0]["prevention"]["do"]
 
 
-def test_tiny_frames_are_rejected_and_an_empty_walk_still_finishes(client):
+def test_a_walk_that_saw_no_plant_says_so_and_never_calls_the_crop_healthy(client):
+    """This test used to assert the bug: a walk sent only an unusable frame and
+    was expected to finish "risk" or "all_good" — the screen then read "Healthy
+    now, but watch out" about plants the camera never saw."""
     with client.websocket_connect("/api/live/1") as ws:
         ws.send_json({"type": "start", "lang": "en"})
         ws.receive_json()
@@ -242,7 +245,22 @@ def test_tiny_frames_are_rejected_and_an_empty_walk_still_finishes(client):
         assert ws.receive_json()["code"] == "BAD_FRAME"
         ws.send_json({"type": "finish"})
         s = ws.receive_json()["summary"]
-    assert s["verdict"] in {"risk", "all_good"} and not s["seen"] and s["speech"]
+    assert s["verdict"] == "unclear" and not s["seen"]
+    assert "could not see your plants clearly" in s["speech"] and "look healthy" not in s["speech"]
+
+
+@pytest.mark.parametrize(("seen", "possible", "model", "healthy", "risks", "want"), [
+    (True, False, True, 0, True, "found"),
+    (False, True, True, 0, False, "check"),
+    (False, False, False, 5, True, "no_model"),     # cotton/soybean: never "healthy"
+    (False, False, True, 0, True, "unclear"),       # nothing recognised
+    (False, False, True, 1, False, "unclear"),      # one confident view is not enough
+    (False, False, True, 2, True, "risk"),
+    (False, False, True, 3, False, "all_good"),
+])
+def test_the_walk_only_claims_what_the_camera_saw(seen, possible, model, healthy, risks, want):
+    from app.live import walk_verdict
+    assert walk_verdict(seen, possible, model, healthy, risks) == want
 
 
 def test_soil_health_card_ph_beats_the_soil_map_and_a_sensor_beats_both(client):
