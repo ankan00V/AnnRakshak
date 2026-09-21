@@ -6,7 +6,7 @@ import Features from './sections/Features'
 import Impact from './sections/Impact'
 import FinalCta from './sections/FinalCta'
 
-/** The language chosen here is the one sign-up starts in (both read ar.lang). */
+/** The language chosen here is the one sign-up starts in (both read LANG_KEY). */
 export default function Landing() {
   return (
     <FarmerProvider>

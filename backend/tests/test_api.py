@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from PIL import Image
 from sqlalchemy import select
 
-from app import services
+from app import geo, services
 from app.db import Base, SessionLocal, engine
 from app.engine.weather import Day, Window
 from app.main import app
@@ -33,6 +33,10 @@ def client(monkeypatch):
     humid = Window([Day(date.today() - timedelta(6 - i), 92, 23, 30, 6.0) for i in range(7)], "test", None)
     monkeypatch.setattr(services, "fetch_window", lambda lat, lon: humid)
     monkeypatch.setattr(services, "fetch_month_rain", lambda lat, lon: None)
+    # Place lookups stay offline: every district is at Bhandara's headquarters,
+    # and any point reverse-geocodes to Kapurthala, Punjab.
+    monkeypatch.setattr(geo, "locate", lambda state, district, village=None: {"lat": 21.168, "lon": 79.649})
+    monkeypatch.setattr(geo, "reverse", lambda lat, lon: {"state": "Punjab", "district": "Kapurthala", "village": "Phagwara"})
     Base.metadata.drop_all(bind=engine)
     with TestClient(app) as c:
         with SessionLocal() as db:
@@ -260,6 +264,25 @@ def test_field_location_is_recorded_and_used(client):
         farm = db.get(Farm, 1)
         assert farm.agro_polygon_id is None  # the satellite field polygon is redrawn there
     assert client.patch("/api/farms/1", json={"lang": "mr"}).json()["location_source"] == "gps"
+
+
+def test_a_far_away_phone_fix_needs_the_farmer_to_confirm_it(client):
+    """A laptop in Punjab once moved Bhandara farms 1,100 km: a fix far from the
+    district is refused until the farmer confirms, and then the district follows."""
+    r = client.patch("/api/farms/1", json={"lat": 31.25, "lon": 75.70})
+    assert r.status_code == 409 and r.json()["detail"]["code"] == "far_from_district"
+    assert r.json()["detail"]["km"] > 1000
+    assert client.get("/api/farms/1?lang=en").json()["lat"] == 21.17  # unchanged
+    ok = client.patch("/api/farms/1", json={"lat": 31.25, "lon": 75.70, "confirm_far": True}).json()
+    assert (ok["lat"], ok["district"], ok["location_source"]) == (31.25, "Kapurthala", "gps")
+
+
+def test_a_demo_farm_never_moves_to_the_viewers_location(client):
+    with SessionLocal() as db:
+        db.get(Farm, 2).is_demo = True
+        db.commit()
+    r = client.patch("/api/farms/2", json={"lat": 21.181, "lon": 79.661})
+    assert r.status_code == 409 and r.json()["detail"]["code"] == "demo_farm"
 
 
 # --------------------------------------------------------------------------

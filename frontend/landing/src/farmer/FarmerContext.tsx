@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { DiagnoseResult, Lang, LiveEvent } from '../api/types'
-import { LANGS, loadLocale, makeT } from '../lib/i18n'
+import { LANG_KEY, LANGS, loadLocale, makeT } from '../lib/i18n'
 import { usePersistent } from '../lib/hooks'
 
 interface FarmerState {
@@ -20,10 +20,10 @@ interface FarmerState {
 const Ctx = createContext<FarmerState | null>(null)
 
 export function FarmerProvider({ children }: { children: ReactNode }) {
-  const [saved, setLang] = usePersistent<Lang>('ar.lang', 'mr')
+  const [saved, setLang] = usePersistent<Lang>(LANG_KEY, 'en')
   // A language saved on this phone may since have been switched off (Odia):
   // fall back rather than leave the app with no language selected.
-  const lang: Lang = LANGS.some((l) => l.code === saved) ? saved : 'mr'
+  const lang: Lang = LANGS.some((l) => l.code === saved) ? saved : 'en'
   const [farmId, setFarmId] = usePersistent<number | null>('ar.farm', null)
   const [result, setResult] = useState<DiagnoseResult | null>(null)
   const [unread, setUnread] = useState(0)

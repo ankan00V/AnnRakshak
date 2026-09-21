@@ -109,8 +109,8 @@ export const api = {
   createFarm: (body: Record<string, unknown>) => req<Farm>('/api/farms', json(body)),
   setFarmLang: (farmId: number, lang: Lang) =>
     req<Farm>(`/api/farms/${farmId}`, { ...json({ lang }), method: 'PATCH' }),
-  setFarmLocation: (farmId: number, lat: number, lon: number) =>
-    req<Farm>(`/api/farms/${farmId}`, { ...json({ lat, lon }), method: 'PATCH' }),
+  setFarmLocation: (farmId: number, lat: number, lon: number, confirmFar = false) =>
+    req<Farm>(`/api/farms/${farmId}`, { ...json({ lat, lon, confirm_far: confirmFar }), method: 'PATCH' }),
   home: (farmId: number, lang: Lang) => req<Home>(`/api/farms/${farmId}/home?lang=${lang}`),
 
   diagnose: (farmId: number, image: Blob, lang: Lang, scenario?: string) => {

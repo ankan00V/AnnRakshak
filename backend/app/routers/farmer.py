@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import auth, cache, config, nim, services
+from app import auth, cache, config, geo, nim, services
 from app.db import get_db
 from app.limits import limit
 from app.engine import labelcheck, vision
@@ -116,7 +116,7 @@ def pesticides(kb: KB = Depends(get_kb)):
 class FarmIn(BaseModel):
     farmer_name: str = Field(min_length=1, max_length=120)
     phone: str | None = None
-    lang: Lang = "mr"
+    lang: Lang = "en"
     crop: str
     variety: str | None = None
     sowing_date: date
@@ -162,6 +162,15 @@ class FarmPrefs(BaseModel):
     lang: Lang | None = None
     lat: float | None = Field(default=None, ge=-90, le=90)
     lon: float | None = Field(default=None, ge=-180, le=180)
+    confirm_far: bool = False
+    """The farmer has seen that this spot is far from their district and says it
+    is right; the district is then updated to match the spot."""
+
+
+FAR_KM = 100
+"""A phone fix further than this from the farm's district is more likely the
+phone being somewhere else (a town, a relative's house, a demo laptop) than the
+field — so it is not saved without the farmer confirming it."""
 
 
 @router.patch("/farms/{farm_id}")
@@ -173,10 +182,29 @@ def update_farm(farm_id: int, body: FarmPrefs, db: Session = Depends(get_db), kb
     if body.lang:
         farm.lang = body.lang
     if body.lat is not None and body.lon is not None:
-        farm.lat, farm.lon, farm.location_source = body.lat, body.lon, "gps"
-        farm.agro_polygon_id = None  # the satellite field polygon is redrawn around the new spot
+        _set_spot(farm, body.lat, body.lon, body.confirm_far)
     db.commit()
     return services.farm_view(kb, farm, body.lang or farm.lang)
+
+
+def _set_spot(farm: Farm, lat: float, lon: float, confirmed: bool) -> None:
+    # Demo farms are shared showcase data: whoever opens one is not standing in
+    # that field, so a phone's location never moves them.
+    if farm.is_demo:
+        raise HTTPException(409, {"code": "demo_farm"})
+    home = geo.locate(farm.state, farm.district)
+    km = services.haversine_km(lat, lon, home["lat"], home["lon"]) if home else 0.0
+    if km > FAR_KM:
+        if not confirmed:
+            raise HTTPException(409, {"code": "far_from_district", "km": round(km), "district": farm.district})
+        # Confirmed: the field really is here, so the district follows the spot
+        # (rain normals, officers and nearby cases are all read by district).
+        where = geo.reverse(lat, lon)
+        if where and where.get("district"):
+            farm.state, farm.district = where["state"] or farm.state, where["district"]
+            farm.village, farm.taluka = where.get("village"), None
+    farm.lat, farm.lon, farm.location_source = lat, lon, "gps"
+    farm.agro_polygon_id = None  # the satellite field polygon is redrawn around the new spot
 
 
 @router.get("/farms/{farm_id}")

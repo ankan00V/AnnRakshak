@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { api, ApiError, UNAUTHORIZED } from '../api/client'
 import type { Me } from '../api/types'
 import { clearCache } from '../lib/hooks'
+import { LANG_KEY } from '../lib/i18n'
 
 interface AuthState {
   me: Me | null
@@ -65,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // The farmer app reads these when it opens: their language, and their field
       // when they have exactly one (several: they pick).
       localStorage.setItem('ar.farm', JSON.stringify(m.farm_ids?.length === 1 ? m.farm_ids[0] : null))
-      if (m.role === 'farmer') localStorage.setItem('ar.lang', JSON.stringify(m.lang))
+      if (m.role === 'farmer') localStorage.setItem(LANG_KEY, JSON.stringify(m.lang))
     } catch {
       /* private mode */
     }

@@ -461,6 +461,9 @@ const en = {
   locAskTitle: 'Where exactly is your field?',
   locAskBody: 'Weather, the spraying window, irrigation advice and warnings about outbreaks within 5 km are all read at your field\'s own spot. Right now we are using the {district} district headquarters, which can be far away.',
   locAskCta: 'Use my field\'s location',
+  locFarTitle: 'This spot is {km} km from {district}.',
+  locFarBody: 'Save it only if your field is really here — the farm\'s district will change to match.',
+  locFarYes: 'Yes, my field is here',
   locAskLater: 'Not now',
   locAskStanding: 'Tap it while you are standing in the field.',
   locSaved: 'Saved — your field is now on the map.',
@@ -947,6 +950,9 @@ const hi: Partial<Record<Key, string>> = {
   locAskTitle: 'आपका खेत ठीक कहाँ है?',
   locAskBody: 'मौसम, छिड़काव का समय, सिंचाई की सलाह और 5 किमी के अंदर फैलाव की चेतावनी — सब आपके खेत की अपनी जगह से बनते हैं। अभी हम {district} ज़िला मुख्यालय ले रहे हैं, जो दूर हो सकता है।',
   locAskCta: 'मेरे खेत की जगह लें',
+  locFarTitle: 'यह जगह {district} से {km} किमी दूर है।',
+  locFarBody: 'इसे तभी सहेजें जब आपका खेत सच में यहीं हो — खेत का ज़िला भी इसी के अनुसार बदल जाएगा।',
+  locFarYes: 'हाँ, मेरा खेत यहीं है',
   locAskLater: 'अभी नहीं',
   locAskStanding: 'खेत में खड़े होकर दबाएँ।',
   locSaved: 'सहेजा गया — अब आपका खेत नक्शे पर है।',
@@ -1431,6 +1437,9 @@ const mr: Partial<Record<Key, string>> = {
   locAskTitle: 'तुमचे शेत नेमके कुठे आहे?',
   locAskBody: 'हवामान, फवारणीची वेळ, सिंचनाचा सल्ला आणि 5 किमीच्या आतील प्रादुर्भावाचे इशारे — सर्व तुमच्या शेताच्या जागेवरून ठरतात. सध्या आम्ही {district} जिल्हा मुख्यालय वापरत आहोत, जे लांब असू शकते.',
   locAskCta: 'माझ्या शेताची जागा घ्या',
+  locFarTitle: 'ही जागा {district} पासून {km} किमी दूर आहे.',
+  locFarBody: 'तुमचे शेत खरोखर इथेच असेल तरच जतन करा — शेताचा जिल्हाही त्यानुसार बदलेल.',
+  locFarYes: 'हो, माझे शेत इथेच आहे',
   locAskLater: 'आत्ता नाही',
   locAskStanding: 'शेतात उभे असताना दाबा.',
   locSaved: 'जतन झाले — आता तुमचे शेत नकाशावर आहे.',
@@ -1502,3 +1511,7 @@ export const LANGS: { code: Lang; label: string; english: string; ready: boolean
   { code: 'gu', label: 'ગુજરાતી', english: 'Gujarati', ready: true },
   { code: 'pa', label: 'ਪੰਜਾਬੀ', english: 'Punjabi', ready: true },
 ]
+
+/** Where the chosen language is kept on this device. Versioned: browsers that
+ *  only ever had the old Marathi default start again in English. */
+export const LANG_KEY = 'ar.lang.v2'

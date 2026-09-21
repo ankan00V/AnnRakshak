@@ -40,8 +40,9 @@ function Shell() {
       const f = fs.find((x) => x.id === farmId) ?? null
       setFarm(f)
       if (!f) setFarmId(null) // stale id from an older database
-      // The farmer's saved language wins when their farm opens on this device.
-      if (f && synced.current !== f.id) {
+      // The farmer's saved language wins when their own farm opens on this
+      // device. A demo farm is a showcase: the viewer keeps the language they chose.
+      if (f && !f.is_demo && synced.current !== f.id) {
         synced.current = f.id
         if (f.lang !== lang) setLang(f.lang)
       }

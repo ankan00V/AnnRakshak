@@ -229,7 +229,7 @@ class FarmerSignup(BaseModel):
     code: str = Field(min_length=4, max_length=8)
     name: str = Field(min_length=2, max_length=120)
     phone: str = Field(max_length=20)
-    lang: str = "mr"
+    lang: str = "en"
     state: str | None = Field(default=None, max_length=60)
     district: str = Field(min_length=2, max_length=60)
     """Any district in India (the Government's LGD list, or one typed in)."""
@@ -387,7 +387,7 @@ def demo(body: DemoIn, request: Request, response: Response, db: Session = Depen
     user = _by(db, User.email, email)
     if user is None:
         user = User(role=body.role, name="Demo farmer" if body.role == "farmer" else "Demo expert",
-                    email=email, lang="mr" if body.role == "farmer" else "en", is_demo=True)
+                    email=email, lang="en", is_demo=True)
         db.add(user)
         db.flush()
         if body.role == "farmer":
