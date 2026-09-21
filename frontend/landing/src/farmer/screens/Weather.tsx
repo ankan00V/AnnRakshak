@@ -294,32 +294,43 @@ function HourlyChart({ hours }: { hours: WeatherHour[] }) {
   const wide = useWide()
   if (hours.length < 2) return null
   const W = wide ? 640 : 336, H = wide ? 150 : 120, top = 16, bottom = 22
+  // Side padding wide enough that an "HH:MM" label centred on the first or
+  // last hour stays inside the drawing.
+  const pad = 18
   const temps = hours.map((h) => h.temp ?? 0)
   const lo = Math.min(...temps) - 1, hi = Math.max(...temps) + 1
-  const x = (i: number) => (i / (hours.length - 1)) * (W - 16) + 8
+  const x = (i: number) => (i / (hours.length - 1)) * (W - 2 * pad) + pad
   const y = (v: number) => top + (1 - (v - lo) / (hi - lo || 1)) * (H - top - bottom - 20)
   const line = temps.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')
+  const last = hours.length - 1
+  // Every 4th hour, plus the final hour when it isn't crowding the one before,
+  // so the line never runs off the edge unlabelled.
+  const labelled = (i: number) => i % 4 === 0 || (i === last && last % 4 >= 2)
+  const anyRain = hours.some((h) => (h.prob ?? 0) > 0)
   return (
     <section>
       <SectionTitle>{t('next24h')}</SectionTitle>
       <Card className="p-3 overflow-x-auto">
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label={t('next24h')}>
+          <line x1={pad} x2={W - pad} y1={H - bottom} y2={H - bottom} strokeWidth={1} className="stroke-soil-dark/10" />
           {hours.map((h, i) => {
             const p = h.prob ?? 0
             const bh = (p / 100) * 34
             return <rect key={h.t} x={x(i) - 5} y={H - bottom - bh} width={10} height={bh} rx={2} className="fill-sky-300/70" />
           })}
-          <path d={line} fill="none" strokeWidth={2.2} className="stroke-ochre" />
-          {hours.map((h, i) => i % 4 === 0 && (
+          <path d={line} fill="none" strokeWidth={2.2} strokeLinejoin="round" strokeLinecap="round" className="stroke-ochre" />
+          {hours.map((h, i) => labelled(i) && (
             <g key={h.t}>
-              <text x={x(i)} y={y(temps[i]) - 6} textAnchor="middle" className="fill-soil-dark text-[9px] font-semibold">{Math.round(temps[i])}°</text>
+              <line x1={x(i)} x2={x(i)} y1={y(temps[i]) + 3} y2={H - bottom} strokeWidth={1} strokeDasharray="2 3" className="stroke-soil-dark/10" />
+              <circle cx={x(i)} cy={y(temps[i])} r={2.4} className="fill-ochre" />
+              <text x={x(i)} y={y(temps[i]) - 7} textAnchor="middle" className="fill-soil-dark text-[9px] font-semibold">{Math.round(temps[i])}°</text>
               <text x={x(i)} y={H - 6} textAnchor="middle" className="fill-soil-dark/50 text-[9px]">{hhmm(h.t)}</text>
             </g>
           ))}
         </svg>
         <p className="text-[10px] text-soil-dark/50 flex gap-3">
           <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-ochre inline-block" />{t('temp')}</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 bg-sky-300 inline-block rounded-sm" />{t('rainChance')}</span>
+          {anyRain && <span className="flex items-center gap-1"><span className="w-2 h-2 bg-sky-300 inline-block rounded-sm" />{t('rainChance')}</span>}
         </p>
       </Card>
     </section>
