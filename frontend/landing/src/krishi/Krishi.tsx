@@ -131,7 +131,7 @@ export default function Krishi({ aboveNav = false, anchor = 'float' }:
 
   if (screen === 'live') return null // the camera call is full screen
 
-  const offset = aboveNav ? 'bottom-[calc(76px+env(safe-area-inset-bottom))]' : 'bottom-5'
+  const offset = aboveNav ? 'bottom-[calc(76px+env(safe-area-inset-bottom))] lg:bottom-6 lg:right-6' : 'bottom-5'
 
   return (
     <>

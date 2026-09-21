@@ -54,7 +54,7 @@ export default function Onboard() {
       )}
 
       {farms.data && (
-        <ul className="space-y-2">
+        <ul className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3">
           {shown.map((f: Farm) => (
             <li key={f.id}>
               <button

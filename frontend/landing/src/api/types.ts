@@ -217,7 +217,7 @@ export interface Home {
   rain_context: RainContext | null
   alerts: AlertView[]
   problems: ProblemView[]
-  followups_due: { id: number; problem_id: number; due_on: string }[]
+  followups_due: { id: number; problem_id: number; due_on: string; name: string | null }[]
   model: { is_stub: boolean; model_version: string }
 }
 

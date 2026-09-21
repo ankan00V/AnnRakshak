@@ -22,6 +22,8 @@ const NAV = [
 function Shell() {
   const { lang, setLang, farmId, setFarmId, t, unread, setUnread, setToast } = useFarmer()
   const { pathname } = useLocation()
+  // Home lays out in two columns on a wide screen; the rest stay one column.
+  const wideRoute = pathname === '/app' || pathname === '/app/'
   const navigate = useNavigate()
   const [farm, setFarm] = useState<Farm | null>(null)
   const switchFarm = () => {
@@ -85,7 +87,7 @@ function Shell() {
   return (
     <div className="min-h-screen w-full bg-cream text-soil-dark flex flex-col">
       <header className="sticky top-0 z-30 bg-leaf-deep text-cream shadow-sm">
-        <div className="max-w-md mx-auto flex items-center justify-between gap-3 px-4 py-3">
+        <div className="max-w-md mx-auto flex items-center justify-between gap-3 px-4 py-3 lg:max-w-none lg:px-6">
           {/* The field line is the switcher: a farmer with rice on one plot and
               cotton on another taps their crop to move between them. */}
           <div className="flex items-center gap-2 min-w-0">
@@ -126,13 +128,21 @@ function Shell() {
       <Toast />
       <Krishi aboveNav={farmId != null} />
 
-      <main className="flex-1 w-full max-w-md mx-auto px-4 pt-5 pb-28 animate-fadein" key={pathname}>
-        {farmId == null ? <Onboard /> : <Outlet />}
+      {/* Below lg this is the phone column, unchanged. On a wide screen the tab
+          bar becomes a sidebar, the content sits beside it, and Home and the
+          farm picker spread into columns; screens that are one list stay at a
+          reading width rather than stretching edge to edge. */}
+      <main className={`flex-1 w-full max-w-md mx-auto px-4 pt-5 pb-28 animate-fadein lg:max-w-none lg:px-8 lg:pt-8 lg:pb-12 ${
+        farmId != null ? 'lg:pl-[calc(15rem+2rem)]' : ''}`} key={pathname}>
+        <div className={`lg:mx-auto ${farmId == null || wideRoute ? 'lg:max-w-5xl' : 'lg:max-w-2xl'}`}>
+          {farmId == null ? <Onboard /> : <Outlet />}
+        </div>
       </main>
 
       {farmId != null && (
-        <nav className="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-soil-dark/10 pb-[env(safe-area-inset-bottom)]">
-          <div className="max-w-md mx-auto grid grid-cols-5">
+        <nav className="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-soil-dark/10 pb-[env(safe-area-inset-bottom)]
+          lg:top-[60px] lg:right-auto lg:w-60 lg:border-t-0 lg:border-r lg:pb-0 lg:bg-white">
+          <div className="max-w-md mx-auto grid grid-cols-5 lg:max-w-none lg:flex lg:flex-col lg:gap-1 lg:p-3">
             {NAV.map(({ to, icon: Icon, key }) => {
               const on = active === to
               const isScan = to === '/app/scan'
@@ -140,12 +150,13 @@ function Shell() {
                 <Link
                   key={to}
                   to={to}
-                  className={`flex flex-col items-center justify-center gap-0.5 py-2 min-h-[60px] text-[10.5px] font-medium transition-colors ${
-                    on ? 'text-leaf-deep' : 'text-soil-dark/50 hover:text-soil-dark'
+                  className={`flex flex-col items-center justify-center gap-0.5 py-2 min-h-[60px] text-[10.5px] font-medium transition-colors
+                    lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:min-h-[48px] lg:rounded-xl lg:text-sm ${
+                    on ? 'text-leaf-deep lg:bg-leaf/10' : 'text-soil-dark/50 hover:text-soil-dark lg:hover:bg-soil-dark/5'
                   }`}
                 >
                   {isScan ? (
-                    <span className={`-mt-6 w-12 h-12 rounded-full flex items-center justify-center shadow-lg ring-4 ring-cream ${on ? 'bg-ochre text-cream' : 'bg-leaf-deep text-cream'}`}>
+                    <span className={`-mt-6 w-12 h-12 rounded-full flex items-center justify-center shadow-lg ring-4 ring-cream lg:mt-0 lg:w-8 lg:h-8 lg:shadow-none lg:ring-0 ${on ? 'bg-ochre text-cream' : 'bg-leaf-deep text-cream'}`}>
                       <Icon className="w-5 h-5" />
                     </span>
                   ) : (

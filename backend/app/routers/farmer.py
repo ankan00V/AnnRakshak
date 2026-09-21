@@ -198,13 +198,20 @@ def home(farm_id: int, lang: Lang = "en", db: Session = Depends(get_db), kb: KB 
         select(FollowUp).join(Problem, FollowUp.problem_id == Problem.id)
         .where(Problem.farm_id == farm.id, FollowUp.response.is_(None), FollowUp.due_on <= date.today())
     ).all()
+    # Each follow-up card names the problem it asks about; the problem may be
+    # older than the eight listed below, so it is looked up on its own.
+    asked = {v["id"]: v["name"] for v in services.problem_views(
+        db, kb, [db.get(Problem, pid) for pid in {f.problem_id for f in due}], lang)}
     return {
         "farm": services.farm_view(kb, farm, lang),
         "weather": services.weather_summary(window),
         "rain_context": services.rain_context(kb, farm, lang),
         "alerts": [services.alert_view(kb, a, lang) for a in alerts if a.outcome in (None, "snoozed")],
         "problems": services.problem_views(db, kb, list(problems), lang),
-        "followups_due": [{"id": f.id, "problem_id": f.problem_id, "due_on": f.due_on.isoformat()} for f in due],
+        "followups_due": [
+            {"id": f.id, "problem_id": f.problem_id, "due_on": f.due_on.isoformat(), "name": asked.get(f.problem_id)}
+            for f in sorted(due, key=lambda f: f.due_on)
+        ],
         "model": vision.model_status(),
     }
 

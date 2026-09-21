@@ -53,3 +53,20 @@ export function usePersistent<T>(key: string, initial: T) {
   }, [key, value])
   return [value, setValue] as const
 }
+
+/** True while the window is at least `px` wide (Tailwind's lg is 1024). The
+ *  farmer app is designed for a phone; wide screens get a layout of their own
+ *  only where a screen reads better in two columns, and the phone layout —
+ *  order included — is left exactly as it is. */
+export function useWide(px = 1024): boolean {
+  const query = `(min-width: ${px}px)`
+  const [wide, setWide] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches)
+  useEffect(() => {
+    const m = window.matchMedia(query)
+    const on = () => setWide(m.matches)
+    on()
+    m.addEventListener('change', on)
+    return () => m.removeEventListener('change', on)
+  }, [query])
+  return wide
+}
