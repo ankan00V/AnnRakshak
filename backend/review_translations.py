@@ -62,7 +62,7 @@ def export(lang: str) -> Path:
     return path
 
 
-def apply(csv_path: Path) -> None:
+def apply(csv_path: Path, reviewer: str = "native speaker") -> None:
     lang = csv_path.stem.removesuffix("_safety")
     if lang not in MACHINE:
         sys.exit(f"{csv_path}: expected a file named <lang>.csv, one of {MACHINE}")
@@ -72,6 +72,7 @@ def apply(csv_path: Path) -> None:
 
     ui_src = ui_strings()
     reviewed = set(kb.get("reviewed") or [])
+    by = dict(kb.get("reviewed_by") or {})
     changed = refused = 0
     with csv_path.open(encoding="utf-8-sig") as f:
         for row in csv.DictReader(f):
@@ -97,8 +98,10 @@ def apply(csv_path: Path) -> None:
                     continue
                 ui[key] = fix
             reviewed.add(english)
+            by[english] = reviewer
             changed += 1
     kb["reviewed"] = sorted(reviewed)
+    kb["reviewed_by"] = dict(sorted(by.items()))  # who approved each line, so an AI pass is never taken for a native one
     kb_path.write_text(json.dumps(kb, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     ui_path.write_text(json.dumps(dict(sorted(ui.items())), ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     print(f"{lang}: {changed} corrections applied, {refused} refused, {len(reviewed)} lines reviewed in total")
@@ -155,6 +158,8 @@ def main() -> None:
     ap.add_argument("--export", metavar="LANG", help=f"one of {', '.join(MACHINE)}")
     ap.add_argument("--import", dest="import_", metavar="CSV", help="a reviewed CSV to apply")
     ap.add_argument("--safety", metavar="LANG", help="the pesticide warnings, with back-translations")
+    ap.add_argument("--reviewer", default="native speaker",
+                    help="who approved this file, recorded per line (e.g. 'Claude, AI review — not native')")
     args = ap.parse_args()
     if args.safety:
         if args.safety not in MACHINE:
@@ -165,7 +170,7 @@ def main() -> None:
             sys.exit(f"{args.export} is hand-authored or unknown; machine-translated: {', '.join(MACHINE)}")
         export(args.export)
     elif args.import_:
-        apply(Path(args.import_))
+        apply(Path(args.import_), args.reviewer)
     else:
         ap.error("give --export LANG or --import CSV")
 
