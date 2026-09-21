@@ -200,6 +200,16 @@ def fetch_month_rain(lat: float, lon: float, *, client: httpx.Client | None = No
             client.close()
 
 
+def merge_rain(window: Window, observed: dict[date, float]) -> Window:
+    """Past days' rain as the satellite observed it (app.mosdac), in place of the
+    model's estimate. Only rain: temperature and humidity stay as they were."""
+    if not observed:
+        return window
+    days = [Day(d.on, d.rh_max, d.t_min, d.t_max, observed[d.on], d.from_sensor)
+            if d.on in observed and not d.from_sensor else d for d in window.days]
+    return Window(days, window.source, window.fetched_at)
+
+
 def merge_sensor(window: Window, readings: list[dict]) -> Window:
     """In-field sensor days replace the regional value for that day."""
     by_day = {r["on"]: r for r in readings}

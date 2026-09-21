@@ -444,3 +444,20 @@ class EmailLog(Base):
     sent_at: Mapped[datetime] = mapped_column(DateTime)
 
     __table_args__ = (UniqueConstraint("farm_id", "dedupe_key", name="uq_email_key"),)
+
+
+class SatRain(Base):
+    """Rain rate at one spot from one satellite image (app.mosdac). Keyed by the
+    spot, not the farm: farms within ~1 km share a read, and a farm that moves
+    simply reads a different spot."""
+
+    __tablename__ = "sat_rain"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    dataset: Mapped[str] = mapped_column(String(40))
+    lat: Mapped[float] = mapped_column(Float)
+    lon: Mapped[float] = mapped_column(Float)
+    slot: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    """The image's time (UTC)."""
+    mm_h: Mapped[float] = mapped_column(Float)
+
+    __table_args__ = (UniqueConstraint("dataset", "lat", "lon", "slot", name="uq_sat_rain"),)

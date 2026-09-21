@@ -29,7 +29,7 @@ from app.config import (
 )
 from app.engine import advisory as advisory_engine
 from app.engine import doubt, gate, prior, risk, vision
-from app.engine.weather import WeatherUnavailable, fetch_month_rain, fetch_window, merge_sensor
+from app.engine.weather import WeatherUnavailable, fetch_month_rain, fetch_window, merge_rain, merge_sensor
 from app.kb import KB, tr, trl
 from app.models import (
     Advisory,
@@ -679,6 +679,12 @@ def weather_for(db: Session, farm: Farm):
         window = fetch_window(farm.lat, farm.lon)
     except WeatherUnavailable:
         return None
+    # Satellite-observed rain for past days (INSAT-3DS via MOSDAC), then the
+    # farmer's own sensor or gauge on top: the closer to the field, the later.
+    from app import mosdac
+    observed = {d: mm for d, mm in mosdac.trusted(mosdac.observed_days(db, farm.lat, farm.lon)).items()
+                if d < date.today()}
+    window = merge_rain(window, observed)
     since = date.today() - timedelta(days=14)
     readings = db.scalars(
         select(SensorReading).where(SensorReading.farm_id == farm.id, SensorReading.on >= since)

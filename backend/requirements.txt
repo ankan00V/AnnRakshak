@@ -5,6 +5,7 @@ sqlalchemy==2.0.36
 httpx==0.28.1
 pillow==11.0.0
 numpy==2.1.3
+h5py==3.12.1  # reading INSAT-3DS satellite rain (MOSDAC HDF5)
 pytest==8.3.4
 # Inference with the trained model (optional: without them the API serves the labelled stub)
 torch==2.14.0

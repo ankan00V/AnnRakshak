@@ -76,6 +76,9 @@ def weather(farm_id: int, lang: str = "en", db: Session = Depends(get_db), kb: K
         "watch_for": [{"target": s.target, "name": tr(kb.targets[s.target]["names"], lang), "level": s.level}
                       for s in risks[:4]],
         "location": {"lat": b["lat"], "lon": b["lon"], "district": farm.district},
+        # Rain the INSAT-3DS satellite measured at this spot in the last 24 h
+        # (MOSDAC, ISRO); None until an account is set up and images are read.
+        "sat_rain": b.get("sat_rain"),
         "seasonal": services.kcc_seasonal(kb, farm, now.month, lang),
         # The pH of the soil under this field: a sensor reading if there is one,
         # else the Soil Health Card value the farmer typed, else the ISRIC

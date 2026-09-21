@@ -51,6 +51,12 @@ NVIDIA_TIMEOUT_S = 10.0
 farmer the wait AND falls back anyway, so the bar is set past the slow tail."""
 OPENWEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY")
 AGRO_API_KEY = os.environ.get("AGRO_API_KEY")  # AgroMonitoring: satellite NDVI and soil per field  # optional; Open-Meteo is the keyless fallback
+MOSDAC_USERNAME = os.environ.get("MOSDAC_USERNAME")
+MOSDAC_PASSWORD = os.environ.get("MOSDAC_PASSWORD")
+"""ISRO MOSDAC account (https://mosdac.gov.in/signup/) for INSAT-3DS satellite
+rainfall. Optional: without it past rain stays the weather model's estimate."""
+MOSDAC_DATASET = os.environ.get("MOSDAC_DATASET", "3SIMG_L2B_HEM")
+"""INSAT-3DS Hydro-Estimator rain rate; 3RIMG_L2B_HEM is INSAT-3DR's."""
 SARVAM_TTS_MODEL = "bulbul:v3"
 SARVAM_STT_MODEL = "saaras:v3"
 SARVAM_TRANSLATE_MODEL = "sarvam-translate:v1"

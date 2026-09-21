@@ -1,7 +1,4 @@
-import {
-  ArrowDown, ArrowUp, CloudFog, Satellite, CloudRain, CloudSun, Droplets, Eye, Gauge, Minus, Navigation, Snowflake, SprayCan,
-  Sprout, Sun, Thermometer, Wind, Zap,
-} from 'lucide-react'
+import { ArrowDown, ArrowUp, CloudFog, CloudRain, CloudSun, Droplets, Eye, Gauge, Minus, Navigation, Satellite, Snowflake, SprayCan, Sprout, Sun, Thermometer, Wind, Zap } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api } from '../../api/client'
 import type { Lang, WeatherAdvisory, WeatherDay, WeatherHour, WeatherView } from '../../api/types'
@@ -122,7 +119,7 @@ export default function Weather() {
   const sources = (
         <p className="text-[11px] text-soil-dark/45 leading-relaxed">
           {t('sources')}: {v.source.forecast}; {t('rainNow')}: {v.source.current}; ET₀: {v.source.et0}
-          {v.source.soil ? `; ${v.source.soil}` : ''}.
+          {v.source.soil ? `; ${v.source.soil}` : ''}{v.sat_rain ? `; ${t('satRainTitle')}: ${v.sat_rain.source}` : ''}.
         </p>
   )
 
@@ -135,6 +132,7 @@ export default function Weather() {
         <div className={SPLIT}>
           <div className={`${MAIN} space-y-6`}>
             <NowCard v={v} />
+            <SatRainCard v={v} />
             <HourlyChart hours={v.hourly.slice(0, 24)} />
             <DailyList days={v.daily} />
             <SoilWater v={v} />
@@ -155,6 +153,7 @@ export default function Weather() {
       {header}
 
       <NowCard v={v} />
+      <SatRainCard v={v} />
 
       {todo}
 
@@ -166,6 +165,30 @@ export default function Weather() {
 
       {sources}
     </div>
+  )
+}
+
+/** Rain ISRO's INSAT-3DS satellite measured at the field (MOSDAC). Shown only
+ *  when there are images: never a placeholder number. */
+function SatRainCard({ v }: { v: WeatherView }) {
+  const { t, lang } = useFarmer()
+  const s = v.sat_rain
+  if (!s) return null
+  const at = new Date(s.latest).toLocaleTimeString(bcp47(lang), { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' })
+  return (
+    <section className="rounded-2xl bg-sky-50 border border-sky-100 p-4 flex items-center gap-4">
+      <span className="shrink-0 w-11 h-11 rounded-full bg-white border border-sky-200 flex items-center justify-center">
+        <Satellite className="w-5 h-5 text-sky-700" />
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-sky-900/70">{t('satRainTitle')}</p>
+        <p className="text-xl font-semibold text-sky-950 leading-tight">{s.mm} mm</p>
+        <p className="text-[11px] text-sky-900/60">
+          {t('satRainSrc').replace('{t}', at)}
+          {s.coverage < 0.5 ? ` · ${t('satRainPartial').replace('{pct}', String(Math.round(s.coverage * 100)))}` : ''}
+        </p>
+      </div>
+    </section>
   )
 }
 

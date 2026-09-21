@@ -12,7 +12,7 @@ from app.db import init_db
 from app.engine import vision
 from app.kb import get_kb
 from app import voice
-from app import cache, notify, watch
+from app import cache, mosdac, notify, watch
 from app import krishi as krishi_kb
 from app.routers import auth, expert, farmer, geo, krishi, live, officials, weather
 
@@ -25,6 +25,7 @@ async def lifespan(_: FastAPI):
     tasks = [asyncio.create_task(cache.listen(notify.broker.deliver_local))]
     if WATCH_ENABLED:
         tasks.append(asyncio.create_task(watch.run_forever()))
+        tasks.append(asyncio.create_task(mosdac.run_forever()))  # returns at once without an account
     yield
     for task in tasks:
         task.cancel()
@@ -74,4 +75,5 @@ def health():
         "kb": {"targets": len(kb.targets), "cues": len(kb.cues), "rules": len(kb.rules)},
         "model": vision.model_status(),
         "voice": voice.status(),
+        "satellite_rain": mosdac.status(),
     }

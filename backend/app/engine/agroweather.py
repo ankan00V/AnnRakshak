@@ -17,6 +17,7 @@ per-IP limit is not burnt by page loads. Times are local (IST), naive.
 from __future__ import annotations
 
 import json
+import logging
 import math
 import time
 from datetime import date, datetime, timedelta
@@ -25,6 +26,8 @@ from zoneinfo import ZoneInfo
 import httpx
 
 from app import cache
+
+log = logging.getLogger("annrakshak.agroweather")
 from app.config import (
     AGRO_CACHE_MINUTES,
     OPEN_METEO_URL,
@@ -342,6 +345,34 @@ def prefetch(points: list[tuple[float, float]], *, client: httpx.Client | None =
 
 
 def bundle(lat: float, lon: float, *, client: httpx.Client | None = None) -> dict:
+    """The farm's agro-weather, with past days' rain replaced by what the
+    INSAT-3DS satellite observed there wherever enough of the day was covered."""
+    return with_observed_rain(_bundle(lat, lon, client=client), lat, lon)
+
+
+def with_observed_rain(b: dict, lat: float, lon: float) -> dict:
+    from app import mosdac  # imported late: it needs the database
+    from app.db import SessionLocal
+
+    try:
+        with SessionLocal() as db:
+            days = mosdac.observed_days(db, lat, lon)
+            last = mosdac.last_24h(db, lat, lon)
+    except Exception as e:  # noqa: BLE001 — the weather must never fail over this
+        log.warning("satellite rain unavailable: %s", e)
+        return b
+    trusted = {d.isoformat(): mm for d, mm in mosdac.trusted(days).items()}
+    today = now_ist().date().isoformat()
+    if not trusted and not last:
+        return b
+    out = dict(b)  # the cached bundle is shared: copy, never edit it
+    out["days"] = [d | {"rain": trusted[d["on"]], "rain_src": "satellite"}
+                   if d["on"] in trusted and d["on"] < today else d for d in b["days"]]
+    out["sat_rain"] = last
+    return out
+
+
+def _bundle(lat: float, lon: float, *, client: httpx.Client | None = None) -> dict:
     k = _key(lat, lon)
     cached = _cached(k)
     if cached and _fresh(cached):
