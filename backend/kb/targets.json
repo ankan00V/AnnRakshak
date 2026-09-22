@@ -634,5 +634,73 @@
    "hi": "भुट्टे पर सफ़ेद, गुलाबी या हरी-पीली फफूँद, सिरे से या कीट के खाए स्थान से शुरू; दाने सड़ते हैं।",
    "mr": "कणसावर पांढरी, गुलाबी किंवा हिरवट-पिवळी बुरशी, टोकापासून किंवा किडींनी खाल्लेल्या जागेपासून सुरू; दाणे कुजतात."
   }
+ },
+ {
+  "id": "rice_hispa",
+  "crop": "rice",
+  "kind": "pest",
+  "tier": "diagnosable",
+  "agent": "Dicladispa armigera (beetle)",
+  "names": {
+   "en": "Rice hispa",
+   "hi": "हिस्पा भृंग",
+   "mr": "हिस्पा भुंगा"
+  },
+  "signature": {
+   "en": "White scraped streaks running along the veins, and pale tunnels inside the leaf; a badly hit field looks burnt.",
+   "hi": "शिराओं के साथ-साथ खुरची हुई सफ़ेद धारियाँ और पत्ती के अंदर पीली सुरंगें; ज़्यादा प्रकोप में खेत झुलसा हुआ दिखता है।",
+   "mr": "शिरांच्या दिशेने खरवडलेल्या पांढऱ्या रेषा आणि पानाच्या आत फिकट बोगदे; जास्त प्रादुर्भावात शेत करपल्यासारखे दिसते."
+  }
+ },
+ {
+  "id": "rice_bacterial_leaf_streak",
+  "crop": "rice",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Xanthomonas oryzae pv. oryzicola (bacterium)",
+  "names": {
+   "en": "Bacterial leaf streak",
+   "hi": "जीवाणु पत्ती धारी",
+   "mr": "जिवाणू पर्णरेषा"
+  },
+  "signature": {
+   "en": "Thin water-soaked streaks between the veins, dark green turning yellow-brown, see-through against the light.",
+   "hi": "शिराओं के बीच पतली गीली-सी धारियाँ, गहरे हरे से पीले-भूरे होती हुई, रोशनी में आर-पार दिखती हैं।",
+   "mr": "शिरांमधील बारीक ओलसर रेषा, गडद हिरव्या ते पिवळसर तपकिरी, प्रकाशात आरपार दिसतात."
+  }
+ },
+ {
+  "id": "rice_bacterial_panicle_blight",
+  "crop": "rice",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Burkholderia glumae (bacterium)",
+  "names": {
+   "en": "Bacterial panicle blight",
+   "hi": "जीवाणु बाली झुलसा",
+   "mr": "जिवाणू लोंबी करपा"
+  },
+  "signature": {
+   "en": "Panicles that stay upright with empty, discoloured grains; grain bases turn light brown while the leaves stay green.",
+   "hi": "बालियाँ सीधी खड़ी रहती हैं, दाने खाली और बदरंग; दानों का निचला हिस्सा हल्का भूरा, जबकि पत्तियाँ हरी रहती हैं।",
+   "mr": "लोंब्या ताठ राहतात, दाणे पोकळ व रंग बदललेले; दाण्यांचा खालचा भाग फिकट तपकिरी, तर पाने हिरवीच राहतात."
+  }
+ },
+ {
+  "id": "rice_downy_mildew",
+  "crop": "rice",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Sclerophthora macrospora (oomycete)",
+  "names": {
+   "en": "Downy mildew (crazy top)",
+   "hi": "मृदुरोमिल आसिता (क्रेज़ी टॉप)",
+   "mr": "केवडा (क्रेझी टॉप)"
+  },
+  "signature": {
+   "en": "Thickened, twisted, pale-yellow leaves and a panicle that turns into a leafy tuft with no grain; worst in patches that stay flooded.",
+   "hi": "मोटी, मुड़ी हुई, हल्की पीली पत्तियाँ और बाली की जगह पत्तों का गुच्छा, दाना नहीं; पानी भरे हिस्सों में सबसे ज़्यादा।",
+   "mr": "जाड, वळलेली, फिकट पिवळी पाने आणि लोंबीऐवजी पानांचा झुबका, दाणे नाहीत; पाणी साचलेल्या भागात सर्वाधिक."
+  }
  }
 ]

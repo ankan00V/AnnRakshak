@@ -1045,6 +1045,113 @@
      "किडींची छिद्रे असलेली कणसे आधी पाहा — कुजणे तिथूनच सुरू होते."
     ]
    }
+  },
+  "rice_hispa": {
+   "stages": [
+    "nursery",
+    "tillering"
+   ],
+   "weather": {
+    "rh_min": 80,
+    "t_min": 22,
+    "t_max": 30,
+    "days": 3
+   },
+   "source": "Hispa builds up in the rainy season after heavy rain followed by dry spells, in humid, heavily fertilised fields (IRRI Rice Knowledge Bank).",
+   "tasks": {
+    "en": [
+     "Walk the bunds and check 10 hills for white scraped streaks along the leaf veins.",
+     "Look for the small spiny blue-black beetle on the leaves, and cut grassy weeds on the bunds."
+    ],
+    "hi": [
+     "मेड़ों पर चलें और 10 झुंडों की पत्तियों की शिराओं के साथ सफ़ेद खुरची धारियाँ देखें।",
+     "पत्तियों पर छोटी काँटेदार नीली-काली भृंग देखें और मेड़ों की घास काटें।"
+    ],
+    "mr": [
+     "बांधावरून चालत 10 चुडांच्या पानांवर शिरांलगत पांढऱ्या खरवडलेल्या रेषा पाहा.",
+     "पानांवर लहान काटेरी निळसर-काळा भुंगा शोधा आणि बांधावरील गवत कापा."
+    ]
+   }
+  },
+  "rice_bacterial_leaf_streak": {
+   "stages": [
+    "tillering",
+    "panicle_initiation"
+   ],
+   "weather": {
+    "rh_min": 85,
+    "t_min": 25,
+    "t_max": 32,
+    "days": 3
+   },
+   "source": "Bacterial leaf streak spreads in high temperature with high humidity, from maximum tillering to panicle initiation (IRRI Rice Knowledge Bank).",
+   "tasks": {
+    "en": [
+     "Hold 10 leaves against the light and look for thin see-through streaks between the veins.",
+     "Cut one streaked leaf and stand it in clear water; cloudiness within five minutes means bacteria."
+    ],
+    "hi": [
+     "10 पत्तियों को रोशनी के सामने रखकर शिराओं के बीच पतली आर-पार दिखती धारियाँ देखें।",
+     "एक धारी वाली पत्ती काटकर साफ़ पानी में रखें; पाँच मिनट में पानी धुंधला हो तो जीवाणु हैं।"
+    ],
+    "mr": [
+     "10 पाने प्रकाशासमोर धरून शिरांमधील बारीक आरपार दिसणाऱ्या रेषा पाहा.",
+     "एक रेषा असलेले पान कापून स्वच्छ पाण्यात ठेवा; पाच मिनिटांत गढूळपणा आल्यास जिवाणू आहेत."
+    ]
+   }
+  },
+  "rice_bacterial_panicle_blight": {
+   "stages": [
+    "flowering",
+    "grain_filling"
+   ],
+   "weather": {
+    "rh_min": 80,
+    "t_min": 26,
+    "t_max": 35,
+    "days": 3
+   },
+   "source": "Bacterial panicle blight follows hot days with warm nights at flowering and grain filling, and is carried on seed (Cogent Food & Agriculture 2024).",
+   "tasks": {
+    "en": [
+     "Check 10 panicles that stayed upright: squeeze the grains and look for empty ones with light-brown bases.",
+     "Note whether the flag leaves are still green — that separates this from a leaf disease."
+    ],
+    "hi": [
+     "सीधी खड़ी 10 बालियाँ देखें: दाने दबाकर खाली और हल्के भूरे निचले भाग वाले दाने पहचानें।",
+     "देखें कि झंडा पत्तियाँ अब भी हरी हैं — इसी से यह पत्ती रोग से अलग है।"
+    ],
+    "mr": [
+     "ताठ राहिलेल्या 10 लोंब्या तपासा: दाणे दाबून पोकळ व फिकट तपकिरी तळ असलेले दाणे ओळखा.",
+     "ध्वजपाने अजून हिरवी आहेत का पाहा — यावरूनच हा पानांच्या रोगापेक्षा वेगळा ठरतो."
+    ]
+   }
+  },
+  "rice_downy_mildew": {
+   "stages": [
+    "nursery",
+    "tillering"
+   ],
+   "weather": {
+    "rain_mm": 40,
+    "rh_min": 85,
+    "days": 3
+   },
+   "source": "Downy mildew (crazy top) starts where water stands after heavy rain, in nurseries and field low spots (CABI compendium).",
+   "tasks": {
+    "en": [
+     "Check the low, water-logged patches for thickened, twisted, pale leaves.",
+     "Look for panicles that have turned into leafy tufts with no grain, and pull them out."
+    ],
+    "hi": [
+     "खेत के नीचे वाले, पानी भरे हिस्सों में मोटी, मुड़ी, हल्की पत्तियाँ देखें।",
+     "बाली की जगह पत्तों के गुच्छे बने हों तो उन्हें उखाड़ दें, उनमें दाना नहीं बनता।"
+    ],
+    "mr": [
+     "शेतातील सखल, पाणी साचलेल्या भागात जाड, वळलेली, फिकट पाने पाहा.",
+     "लोंबीऐवजी पानांचा झुबका झाला असल्यास ती रोपे उपटून टाका, त्यांना दाणे येत नाहीत."
+    ]
+   }
   }
  }
 }

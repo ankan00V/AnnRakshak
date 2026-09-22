@@ -2464,5 +2464,260 @@
     "url": "https://maizedoctor.org"
    }
   ]
+ },
+ "rice_hispa": {
+  "what_to_check": {
+   "en": "Walk the field edge first — hispa comes in from grassy bunds. Count scraped leaves on 10 hills and look for the small blue-black beetle with spines.",
+   "hi": "पहले खेत की मेड़ देखें — हिस्पा घास वाली मेड़ों से आता है। 10 झुंडों में खुरची हुई पत्तियाँ गिनें और काँटेदार नीली-काली छोटी भृंग देखें।",
+   "mr": "आधी बांध तपासा — हिस्पा गवताळ बांधावरून येतो. 10 चुडांमधील खरवडलेली पाने मोजा आणि काटेरी निळसर-काळा लहान भुंगा शोधा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not add extra nitrogen — a lush, over-fertilised crop feeds hispa.",
+    "hi": "अतिरिक्त नाइट्रोजन न डालें — ज़्यादा उर्वरक वाली हरी-भरी फसल हिस्पा को बढ़ाती है।",
+    "mr": "जादा नत्र देऊ नका — भरपूर खत दिलेले हिरवेगार पीक हिस्पाला वाढवते."
+   },
+   {
+    "en": "Do not leave grassy weeds on the bunds; they carry the beetle between seasons.",
+    "hi": "मेड़ों पर घास-फूस न छोड़ें; उन्हीं में भृंग मौसम-दर-मौसम बचती है।",
+    "mr": "बांधावर गवत ठेवू नका; त्यातच भुंगा हंगामभर टिकतो."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Clip and bury the leaf tips carrying eggs, and keep the bunds free of grassy weeds. Close spacing helps the crop carry the damage.",
+     "hi": "अंडों वाली पत्तियों के सिरे काटकर मिट्टी में दबाएँ और मेड़ों की घास साफ़ रखें। पास-पास रोपाई नुकसान सहने में मदद करती है।",
+     "mr": "अंडी असलेली पानांची टोके कापून मातीत गाडा आणि बांध गवतमुक्त ठेवा. दाट लागवड नुकसान सहन करण्यास मदत करते."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Leave the natural enemies alone — small wasps parasitise the eggs and grubs, and a reduviid bug eats the adults.",
+     "hi": "प्राकृतिक शत्रुओं को बचाएँ — छोटी ततैया अंडों और सूंडियों पर पलती हैं और रेड्यूवीड बग वयस्कों को खाता है।",
+     "mr": "नैसर्गिक शत्रू जपा — लहान गांधीलमाश्या अंडी व अळ्यांवर उपजीविका करतात आणि रेड्युव्हिड ढेकूण प्रौढ खातो."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "chlorpyrifos_20ec",
+    "dose_per_litre": 2.5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Only if more than 1 in 4 leaves is scraped and the crop is still tillering.",
+     "hi": "तभी जब हर 4 में से 1 से ज़्यादा पत्ती खुरची हो और फसल अभी कल्ले फूट रही हो।",
+     "mr": "दर 4 पैकी 1 पेक्षा जास्त पाने खरवडली असतील आणि पीक अजून फुटवे अवस्थेत असेल तरच."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if whole patches look burnt, or if damage keeps spreading after the crop has started booting.",
+   "hi": "अगर पूरे हिस्से झुलसे दिखें, या बाली बनने के बाद भी नुकसान बढ़ता रहे तो विशेषज्ञ को बुलाएँ।",
+   "mr": "संपूर्ण भाग करपल्यासारखा दिसल्यास, किंवा लोंबी अवस्थेनंतरही नुकसान वाढत राहिल्यास तज्ज्ञांना बोलवा."
+  },
+  "citations": [
+   {
+    "title": "Rice hispa — fact sheet",
+    "publisher": "IRRI Rice Knowledge Bank",
+    "url": "http://www.knowledgebank.irri.org/training/fact-sheets/pest-management/insects/item/rice-hispa"
+   },
+   {
+    "title": "AESA-based IPM Package: Rice",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   }
+  ]
+ },
+ "rice_bacterial_leaf_streak": {
+  "what_to_check": {
+   "en": "Hold a streaked leaf against the light — the streaks are translucent. Cut the leading edge, stand it in clear water, and watch for cloudy bacterial ooze within five minutes.",
+   "hi": "धारी वाली पत्ती को रोशनी के सामने रखें — धारियाँ आर-पार दिखती हैं। किनारा काटकर साफ़ पानी में रखें; पाँच मिनट में पानी धुंधला हो तो जीवाणु हैं।",
+   "mr": "रेषा असलेले पान प्रकाशासमोर धरा — रेषा आरपार दिसतात. पुढचा भाग कापून स्वच्छ पाण्यात ठेवा; पाच मिनिटांत पाणी गढूळ झाले तर जिवाणू आहेत."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not use seed from a field that had streaks — the bacterium travels on seed and stubble.",
+    "hi": "जिस खेत में धारी रोग था उसका बीज न लें — जीवाणु बीज और ठूँठ पर बचता है।",
+    "mr": "रेषा रोग आलेल्या शेतातील बियाणे वापरू नका — जिवाणू बियाणे व धसकटांवर टिकतो."
+   },
+   {
+    "en": "Do not add more nitrogen to 'green it up' — extra nitrogen makes streak worse.",
+    "hi": "हरा करने के लिए और नाइट्रोजन न डालें — ज़्यादा नाइट्रोजन से रोग बढ़ता है।",
+    "mr": "हिरवे करण्यासाठी आणखी नत्र देऊ नका — जास्त नत्राने रोग वाढतो."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Drain the field for a few days, keep nitrogen to the recommended split, and plough in stubble and volunteer seedlings after harvest.",
+     "hi": "खेत का पानी कुछ दिन निकाल दें, नाइट्रोजन सिफ़ारिश के अनुसार बाँटकर दें, और कटाई के बाद ठूँठ व अपने-आप उगे पौधे जोत दें।",
+     "mr": "काही दिवस शेतातील पाणी काढा, नत्र शिफारशीप्रमाणे विभागून द्या आणि कापणीनंतर धसकटे व आपोआप उगवलेली रोपे नांगरून टाका."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Next season, treat seed with Pseudomonas fluorescens at 10 g per kg and soak-dry before sowing.",
+     "hi": "अगले मौसम में बीज को स्यूडोमोनास फ्लोरेसेंस 10 ग्राम प्रति किलो से उपचारित करें और बोने से पहले सुखा लें।",
+     "mr": "पुढील हंगामात बियाण्यास स्युडोमोनास फ्लुरोसेन्स 10 ग्रॅम प्रति किलो लावा आणि पेरणीपूर्वी वाळवा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "copper_oxychloride_50wp",
+    "dose_per_litre": 3.0,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Only if streaks are spreading fast before panicle initiation; copper slows it, it does not cure it.",
+     "hi": "तभी जब बाली बनने से पहले धारियाँ तेज़ी से फैल रही हों; ताँबा रोकता है, ठीक नहीं करता।",
+     "mr": "लोंबी तयार होण्यापूर्वी रेषा झपाट्याने पसरत असतील तरच; तांबे रोग आटोक्यात ठेवते, बरे करत नाही."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if more than a third of the leaf area is browning, or if you cannot tell it apart from bacterial blight.",
+   "hi": "अगर पत्ती का एक-तिहाई से ज़्यादा भाग भूरा हो रहा हो, या जीवाणु झुलसा से फ़र्क़ न कर पाएँ तो विशेषज्ञ को बुलाएँ।",
+   "mr": "पानाचा एक-तृतीयांशपेक्षा जास्त भाग तपकिरी होत असल्यास, किंवा जिवाणू करपा आणि हा रोग वेगळा ओळखता येत नसल्यास तज्ज्ञांना बोलवा."
+  },
+  "citations": [
+   {
+    "title": "Bacterial leaf streak — fact sheet",
+    "publisher": "IRRI Rice Knowledge Bank",
+    "url": "http://www.knowledgebank.irri.org/training/fact-sheets/pest-management/diseases/item/bacterial-leaf-streak"
+   },
+   {
+    "title": "Rice Knowledge Management Portal",
+    "publisher": "ICAR-Indian Institute of Rice Research",
+    "url": "https://www.rkmp.co.in"
+   }
+  ]
+ },
+ "rice_bacterial_panicle_blight": {
+  "what_to_check": {
+   "en": "Look at panicles that stayed upright at grain filling: squeeze the grains — empty ones with light-brown bases point to this, while the flag leaf stays green.",
+   "hi": "दाना भरते समय सीधी खड़ी बालियाँ देखें: दाने दबाएँ — खाली दाने जिनका निचला भाग हल्का भूरा हो, यही रोग बताते हैं, जबकि झंडा पत्ती हरी रहती है।",
+   "mr": "दाणे भरताना ताठ राहिलेल्या लोंब्या पाहा: दाणे दाबा — पोकळ दाणे ज्यांचा खालचा भाग फिकट तपकिरी असतो, हेच लक्षण; ध्वजपान हिरवेच राहते."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not save seed from an affected field — the bacterium is carried on seed.",
+    "hi": "प्रभावित खेत का बीज न रखें — जीवाणु बीज से फैलता है।",
+    "mr": "बाधित शेतातील बियाणे ठेवू नका — जिवाणू बियाण्यातून पसरतो."
+   },
+   {
+    "en": "Do not give extra nitrogen late; heavy late nitrogen and hot nights make it worse. No spray is known to cure it.",
+    "hi": "देर से अतिरिक्त नाइट्रोजन न दें; देर की भारी नाइट्रोजन और गर्म रातें रोग बढ़ाती हैं। कोई छिड़काव इसे ठीक नहीं करता।",
+    "mr": "उशिरा जादा नत्र देऊ नका; उशिरा भरपूर नत्र आणि उष्ण रात्री रोग वाढवतात. कोणतीही फवारणी हा रोग बरा करत नाही."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Use clean, certified seed, keep nitrogen to the recommended dose, and keep water in the field during hot nights at flowering.",
+     "hi": "साफ़, प्रमाणित बीज लें, नाइट्रोजन सिफ़ारिश तक रखें, और फूल आते समय गर्म रातों में खेत में पानी बनाए रखें।",
+     "mr": "स्वच्छ, प्रमाणित बियाणे वापरा, नत्र शिफारशीइतकेच ठेवा आणि फुलोऱ्यात उष्ण रात्री शेतात पाणी ठेवा."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Next season, treat seed with Pseudomonas fluorescens at 10 g per kg; there is no proven spray once panicles are hit.",
+     "hi": "अगले मौसम में बीज को स्यूडोमोनास फ्लोरेसेंस 10 ग्राम प्रति किलो से उपचारित करें; बाली पर रोग आने के बाद कोई प्रमाणित छिड़काव नहीं है।",
+     "mr": "पुढील हंगामात बियाण्यास स्युडोमोनास फ्लुरोसेन्स 10 ग्रॅम प्रति किलो लावा; लोंबीवर रोग आल्यानंतर सिद्ध झालेली फवारणी नाही."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Report it to an expert: this is a newer disease in India, and your officer will want the field recorded.",
+   "hi": "विशेषज्ञ को बताएँ: यह भारत में नया रोग है और अधिकारी आपके खेत का रिकॉर्ड रखना चाहेंगे।",
+   "mr": "तज्ज्ञांना कळवा: हा भारतात नवीन रोग आहे आणि अधिकाऱ्यांना तुमच्या शेताची नोंद हवी असेल."
+  },
+  "citations": [
+   {
+    "title": "Bacterial panicle blight caused by Burkholderia glumae: a major disease in rice cultivation",
+    "publisher": "Cogent Food & Agriculture (2024)",
+    "url": "https://www.tandfonline.com/doi/full/10.1080/23311932.2024.2381600"
+   },
+   {
+    "title": "Bacterial Panicle Blight and Burkholderia glumae: From Pathogen Biology to Disease Control",
+    "publisher": "Phytopathology (APS)",
+    "url": "https://apsjournals.apsnet.org/doi/10.1094/PHYTO-09-20-0401-RVW"
+   }
+  ]
+ },
+ "rice_downy_mildew": {
+  "what_to_check": {
+   "en": "Look in the low, water-logged patches: leaves thickened and twisted, and panicles turned into leafy tufts that set no grain.",
+   "hi": "खेत के नीचे वाले, पानी भरे हिस्सों में देखें: मोटी मुड़ी पत्तियाँ और बाली की जगह पत्तों का गुच्छा, दाना नहीं बनता।",
+   "mr": "शेतातील सखल, पाणी साचलेल्या भागात पाहा: जाड वळलेली पाने आणि लोंबीऐवजी पानांचा झुबका, दाणे धरत नाहीत."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not let water stand in the nursery or in field low spots — standing water is what starts it.",
+    "hi": "नर्सरी या खेत के गड्ढों में पानी न ठहरने दें — ठहरा पानी ही इसकी शुरुआत है।",
+    "mr": "रोपवाटिकेत किंवा शेतातील खड्ड्यांत पाणी साचू देऊ नका — साचलेले पाणीच याची सुरुवात आहे."
+   },
+   {
+    "en": "Do not keep affected plants for seed; they set no grain and spread the fungus.",
+    "hi": "प्रभावित पौधों से बीज न रखें; उनमें दाना नहीं बनता और रोग फैलता है।",
+    "mr": "बाधित रोपांपासून बियाणे ठेवू नका; त्यांना दाणे येत नाहीत आणि रोग पसरतो."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Drain the low spots and level the field so water does not stand; pull out and bury the tufted plants.",
+     "hi": "गड्ढों का पानी निकालें और खेत समतल करें ताकि पानी न ठहरे; गुच्छे वाले पौधे उखाड़कर दबा दें।",
+     "mr": "सखल भागातील पाणी काढा व शेत सपाट करा जेणेकरून पाणी साचणार नाही; झुबका आलेली रोपे उपटून गाडा."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Next season, treat seed with Trichoderma viride at 4 g per kg and raise the nursery on a well-drained bed.",
+     "hi": "अगले मौसम में बीज को ट्राइकोडर्मा विरिडी 4 ग्राम प्रति किलो से उपचारित करें और नर्सरी अच्छी निकासी वाली क्यारी पर लगाएँ।",
+     "mr": "पुढील हंगामात बियाण्यास ट्रायकोडर्मा व्हिरिडी 4 ग्रॅम प्रति किलो लावा आणि रोपवाटिका उत्तम निचरा असलेल्या वाफ्यावर करा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "metalaxyl_mancozeb_72wp",
+    "dose_per_litre": 2.0,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Seed treatment before sowing is what works; a spray only helps early, on young plants in wet patches.",
+     "hi": "बोने से पहले बीज उपचार ही काम करता है; छिड़काव केवल शुरुआत में, गीले हिस्सों के छोटे पौधों पर मदद करता है।",
+     "mr": "पेरणीपूर्वी बीजप्रक्रिया हाच उपयुक्त उपाय; फवारणी फक्त सुरुवातीला, ओल्या भागातील लहान रोपांवर उपयोगी."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if tufted panicles appear in more than a few spots — the field may need levelling and drainage advice.",
+   "hi": "अगर कई जगह गुच्छे वाली बालियाँ दिखें तो विशेषज्ञ को बुलाएँ — खेत को समतल करने और निकासी की सलाह चाहिए।",
+   "mr": "अनेक ठिकाणी झुबका आलेल्या लोंब्या दिसल्यास तज्ज्ञांना बोलवा — शेत सपाटीकरण व निचऱ्याचा सल्ला लागेल."
+  },
+  "citations": [
+   {
+    "title": "Sclerophthora macrospora (downy mildew) — compendium datasheet",
+    "publisher": "CABI Digital Library",
+    "url": "https://www.cabidigitallibrary.org/doi/10.1079/cabicompendium.49243"
+   },
+   {
+    "title": "Downy Mildew of Small Grains (RPD 122)",
+    "publisher": "University of Illinois Extension — IPM",
+    "url": "http://ipm.illinois.edu/diseases/series100/rpd122/"
+   }
+  ]
  }
 }

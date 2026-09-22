@@ -63,6 +63,7 @@ from composite import composite  # noqa: E402
 MANIFEST = ROOT / "data" / "processed" / "icar_images.csv"
 EXTRA_MANIFEST = ROOT / "data" / "processed" / "extra_images.csv"
 MORE_MANIFEST = ROOT / "data" / "processed" / "more_images.csv"
+PADDY_MANIFEST = ROOT / "data" / "processed" / "paddy_images.csv"
 ART = ROOT / "ml" / "artifacts"
 REP = ROOT / "ml" / "reports"
 SEED = 42
@@ -78,6 +79,10 @@ EXTRA_CAP_EXISTING = {"train": 150, "val": 30, "test": 60}
 # and caterpillar recall: those classes have 300-865 images and were being cut in
 # half for no reason.
 MORE_CAP_NEW = {"train": 700, "val": 100, "test": 150}
+PADDY_CAP = {"train": 900, "val": 120, "test": 200}
+"""Paddy Doctor is rice photographed in the field on a phone — the closest
+thing we have to what a farmer sends — so it gets the largest cap, and its
+healthy plants become the backgrounds rice was short of (34 before)."""
 MORE_CAP_EXISTING = {"train": 350, "val": 50, "test": 90}
 COMPOSITE_P = 0.85
 
@@ -330,7 +335,11 @@ def finetune(backbone, train, val, class_idx, device, quick, epochs, backgrounds
             # the feature extractor is put in inference mode as well.
             net.features.train(False)
         total = 0.0
-        for x, y in dl_tr:
+        t_ep = time.time()
+        for step, (x, y) in enumerate(dl_tr, 1):
+            if step % 100 == 0:  # a stalled run shows within minutes, not after hours
+                print(f"    epoch {epoch + 1} batch {step}/{len(dl_tr)}  "
+                      f"{step * len(y) / (time.time() - t_ep):.1f} img/s", flush=True)
             x, y = x.to(device), y.to(device)
             if frozen:  # no gradients through the backbone: the forward pass is
                 with torch.no_grad():  # then the only cost, and epochs halve
@@ -351,7 +360,7 @@ def finetune(backbone, train, val, class_idx, device, quick, epochs, backgrounds
                         "val_acc": round(s["accuracy"], 4)})
         print(f"  {backbone} fine-tune epoch {epoch + 1:2d}{' (head only)' if frozen else ''}: "
               f"loss {total / n_seen:.3f}  val acc {s['accuracy']:.3f}  F1 {s['f1']:.3f}  "
-              f"[{time.time() - t0:.0f}s]")
+              f"[{time.time() - t0:.0f}s]", flush=True)
         if s["f1"] > best:
             best, best_state = s["f1"], {k: v.detach().clone() for k, v in net.state_dict().items()}
         if device.type == "mps":  # a 16 GB laptop swaps without this
@@ -490,6 +499,8 @@ def main():
                     help="continue from ml/artifacts/candidate (a run that did not pass the deploy gate)")
     ap.add_argument("--per-class", type=int, default=120,
                     help="with --with-extra: samples drawn per class per epoch")
+    ap.add_argument("--with-paddy", action="store_true",
+                    help="also Paddy Doctor field rice photos (data/processed/paddy_images.csv)")
     ap.add_argument("--with-more", action="store_true",
                     help="also the cotton, soybean and extra maize/rice sets (data/processed/more_images.csv)")
     ap.add_argument("--lr-feat", type=float, default=None,
@@ -674,6 +685,11 @@ def main_extra(args):
         e_tr, e_va, e_te = e_tr + m_tr, e_va + m_va, e_te + m_te
         print(f"with cotton, soybean and more maize/rice: {len(m_tr)}/{len(m_va)}/{len(m_te)} "
               f"images over {len({r['train_class'] for r in m_tr})} classes (data/ingest_more.py)")
+    if getattr(args, "with_paddy", False) and PADDY_MANIFEST.exists():
+        p_tr, p_va, p_te = load_extra_split(PADDY_MANIFEST, PADDY_CAP, PADDY_CAP, set())
+        e_tr, e_va, e_te = e_tr + p_tr, e_va + p_va, e_te + p_te
+        print(f"with Paddy Doctor field rice: {len(p_tr)}/{len(p_va)}/{len(p_te)} images over "
+              f"{len({r['train_class'] for r in p_tr})} classes (data/ingest_paddy.py)")
     if getattr(args, "with_confirmed", False):
         conf_csv = ROOT / "data" / "processed" / "confirmed.csv"
         if conf_csv.exists():
@@ -768,7 +784,8 @@ def main_extra(args):
             checks.append((f"{c} recall on held-out photos >= 0.70", r >= 0.70, f"{r:.3f}"))
     deploy = not args.quick and all(ok for _, ok, _ in checks)
 
-    version = (f"icar+extra{'+more' if getattr(args, 'with_more', False) else ''}-"
+    version = (f"icar+extra{'+more' if getattr(args, 'with_more', False) else ''}"
+               f"{'+paddy' if getattr(args, 'with_paddy', False) else ''}-"
                f"efficientnet_v2_s-{'warmstart' if init else 'finetune'}-"
                f"{datetime.now(UTC):%Y%m%d}")
     meta = {
