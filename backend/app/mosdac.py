@@ -26,6 +26,7 @@ import asyncio
 import logging
 import re
 import tempfile
+import time
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -237,14 +238,30 @@ def _points(db: Session) -> list[tuple[float, float]]:
     return sorted({point_key(lat, lon) for lat, lon in db.execute(select(Farm.lat, Farm.lon)).all()})
 
 
-def _done_slots(db: Session, since: datetime) -> set[datetime]:
-    rows = db.scalars(select(SatRain.slot).where(SatRain.dataset == MOSDAC_DATASET, SatRain.slot >= since)).all()
-    return {s if s.tzinfo else s.replace(tzinfo=timezone.utc) for s in rows}
+def _utc(t: datetime) -> datetime:
+    return t if t.tzinfo else t.replace(tzinfo=timezone.utc)
+
+
+def _read_so_far(db: Session, since: datetime) -> dict[tuple[float, float], set[datetime]]:
+    """For every spot, the image times already read there."""
+    out: dict[tuple[float, float], set[datetime]] = {}
+    for lat, lon, slot in db.execute(select(SatRain.lat, SatRain.lon, SatRain.slot).where(
+            SatRain.dataset == MOSDAC_DATASET, SatRain.slot >= since)).all():
+        out.setdefault((lat, lon), set()).add(_utc(slot))
+    return out
+
+
+_tried: set[tuple[tuple[float, float], datetime]] = set()
+"""(spot, image) pairs already fetched for a spot that the image did not cover
+(off the disc, no data): never fetched again for it."""
 
 
 def ingest(db: Session, now: datetime | None = None, *, client: httpx.Client | None = None) -> dict:
-    """One cycle: find granules from the last day we have not read, fetch up to
-    PER_CYCLE of them (newest first), store the rain rate at every farm spot."""
+    """One cycle. New images from the last day are read at every farm spot;
+    then a spot that is behind — a farm added since those images came — has
+    the images it missed fetched again and read there, so a new farmer sees
+    the last day's rain within minutes, not only rain from here on. At most
+    PER_CYCLE downloads a cycle; "more" says whether work is left."""
     now = now or datetime.now(timezone.utc)
     if not configured() or _state["locked_out"]:
         return {"skipped": "not configured" if not configured() else "login refused"}
@@ -256,20 +273,31 @@ def ingest(db: Session, now: datetime | None = None, *, client: httpx.Client | N
     try:
         entries = [e for e in search((since - timedelta(days=1)).date(), now.date() + timedelta(days=1), client=client)
                    if slot_of(e) >= since]
-        done = _done_slots(db, since)
-        todo = [e for e in entries if slot_of(e) not in done][:PER_CYCLE]
         points = _points(db)
+        seen = _read_so_far(db, since)
+        done = set().union(*seen.values()) if seen else set()
+        # (image, spots to read it at): new images at every spot, then images
+        # a spot missed — newest first, so the last hours fill in first.
+        work: list[tuple[dict, list[tuple[float, float]]]] = []
+        for e in entries:
+            slot = slot_of(e)
+            spots = points if slot not in done else [
+                p for p in points if slot not in seen.get(p, set()) and (p, slot) not in _tried]
+            if spots:
+                work.append((e, spots))
+        todo, more = work[:PER_CYCLE], len(work) > PER_CYCLE
         if todo and points:
             token = _token(client)
             with tempfile.TemporaryDirectory(dir=WORK_DIR) as tmp:
-                for e in todo:
+                for e, spots in todo:
                     path = _download(client, token, e, Path(tmp))
-                    rates = read_rain(path, points)
+                    rates = read_rain(path, spots)
                     path.unlink(missing_ok=True)  # keep the numbers, not the 10 MB file
                     slot = slot_of(e)
-                    for (lat, lon), rate in zip(points, rates):
+                    for spot, rate in zip(spots, rates):
+                        _tried.add((spot, slot))
                         if rate is not None:
-                            db.add(SatRain(dataset=MOSDAC_DATASET, lat=lat, lon=lon, slot=slot, mm_h=rate))
+                            db.add(SatRain(dataset=MOSDAC_DATASET, lat=spot[0], lon=spot[1], slot=slot, mm_h=rate))
                             stored += 1
                     try:
                         db.commit()
@@ -281,7 +309,7 @@ def ingest(db: Session, now: datetime | None = None, *, client: httpx.Client | N
             except httpx.HTTPError:
                 pass
         _state.update(error=None, files=_state["files"] + len(todo))
-        return {"found": len(entries), "fetched": len(todo), "stored": stored}
+        return {"found": len(entries), "fetched": len(todo), "stored": stored, "more": more}
     except LoginRefused as e:
         _state.update(error=str(e), locked_out=True)  # never risk the one-hour lockout
         log.warning("%s; satellite rain stays off until the credentials change", e)
@@ -296,18 +324,26 @@ def ingest(db: Session, now: datetime | None = None, *, client: httpx.Client | N
             client.close()
 
 
+LEASE_S = 180
+"""The ingest lease is short and renewed every minute while held, so a
+restarted server takes over in a minute or two — a 30-minute lease left by a
+killed process had kept the job from running at all."""
+
+
 async def run_forever() -> None:
     if not configured():
         return
+    last, more = 0.0, False
     while True:
         # One ingest across all API workers (shared limit, shared table).
-        if cache.leader("mosdac-ingest", CYCLE_MINUTES * 60 - 30):
+        if cache.leader("mosdac-ingest", LEASE_S) and (more or time.monotonic() - last >= CYCLE_MINUTES * 60):
             def cycle():
                 with SessionLocal() as db:
                     return ingest(db)
             out = await asyncio.to_thread(cycle)
+            last, more = time.monotonic(), bool(out.get("more"))
             log.info("MOSDAC cycle: %s", out)
-        await asyncio.sleep(CYCLE_MINUTES * 60)
+        await asyncio.sleep(60)
 
 
 # --------------------------------------------------------------------------

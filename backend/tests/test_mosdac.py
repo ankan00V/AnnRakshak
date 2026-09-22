@@ -99,10 +99,11 @@ def test_one_cycle_stores_the_rain_and_skips_what_it_has(db, monkeypatch):
     monkeypatch.setattr(mosdac, "MOSDAC_USERNAME", "u")
     monkeypatch.setattr(mosdac, "MOSDAC_PASSWORD", "p")
     monkeypatch.setattr(mosdac, "_state", dict(mosdac._state, locked_out=False))
+    monkeypatch.setattr(mosdac, "_tried", set())
     now = datetime.now(timezone.utc)
     calls: list[str] = []
     out = mosdac.ingest(db, now, client=_fake_mosdac(now, {1: 4.0, 2: 2.0, 3: 0.0}, calls))
-    assert out == {"found": 3, "fetched": 3, "stored": 3}
+    assert out == {"found": 3, "fetched": 3, "stored": 3, "more": False}
     assert db.query(SatRain).count() == 3
     assert calls.count("/download_api/download") == 3 and "/download_api/logout" in calls
 
@@ -168,3 +169,26 @@ def test_the_weather_bundle_carries_observed_rain_without_editing_the_cache(db, 
     assert out["days"][1]["rain"] == 0.0            # today is still the forecast's
     assert cached["days"][0]["rain"] == 0.0          # the shared cached copy is untouched
     assert out["sat_rain"] == {"mm": 17.0}
+
+
+
+def test_a_farm_added_later_gets_the_last_day_it_missed(db, monkeypatch):
+    """Images already read and deleted before a farm existed are fetched again
+    for that farm's spot only — a new farmer sees the last day's rain."""
+    monkeypatch.setattr(mosdac, "MOSDAC_USERNAME", "u")
+    monkeypatch.setattr(mosdac, "MOSDAC_PASSWORD", "p")
+    monkeypatch.setattr(mosdac, "_state", dict(mosdac._state, locked_out=False))
+    monkeypatch.setattr(mosdac, "_tried", set())
+    now = datetime.now(timezone.utc)
+    rates = {1: 4.0, 2: 2.0, 3: 0.0}
+    mosdac.ingest(db, now, client=_fake_mosdac(now, rates, []))
+    db.add(Farm(farmer_name="new", crop="rice", sowing_date=date(2026, 7, 1), district="Bhandara",
+                lat=21.30, lon=79.80, area_acres=1))  # a new farm, inside the image
+    db.commit()
+    calls: list[str] = []
+    out = mosdac.ingest(db, now, client=_fake_mosdac(now, rates, calls))
+    assert out["fetched"] == 3 and out["stored"] == 3  # all three images, read at the new spot only
+    assert db.query(SatRain).filter(SatRain.lat == 21.30).count() == 3
+    assert db.query(SatRain).filter(SatRain.lat == 21.17).count() == 3  # the old spot untouched
+    again: list[str] = []
+    assert mosdac.ingest(db, now, client=_fake_mosdac(now, rates, again))["fetched"] == 0
