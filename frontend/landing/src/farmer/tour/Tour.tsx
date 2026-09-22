@@ -10,9 +10,10 @@ import { AFTER_VOICE_MS, NEW_ACCOUNT_DAYS, readingMs, TOUR_MUTED_KEY, TOUR_STEPS
 
 // The spoken app tour. driver.js draws the spotlight and the card; this adds
 // the voice — one clip per step in the farmer's language (public/tour, made by
-// backend/make_tour_audio.py) — and the pace: a step is not left until its
-// voice has finished (or, muted, its reading time has passed), then the tour
-// moves on by itself, so a farmer who cannot read can simply listen.
+// backend/make_tour_audio.py) — and the pace: left alone, a step stays until
+// its voice has finished (or, muted, its reading time has passed) and then the
+// tour moves on by itself, so a farmer who cannot read can simply listen.
+// Next and Back work at any time.
 
 const store = {
   get: (k: string) => { try { return localStorage.getItem(k) } catch { return null } },
@@ -55,13 +56,13 @@ export function TourProvider({ children }: { children: ReactNode }) {
     if (fill) fill.style.width = `${Math.min(100, pct)}%`
   }
 
-  /** The step's voice (or reading time) is over: unlock Next, then move on. */
+  /** The step's voice (or reading time) is over: move on by itself. Next is
+   *  never locked — a farmer can skip ahead to the part they want. */
   const finish = useCallback((token: number) => {
     const s = live.current
     if (token !== s.token || s.done) return
     s.done = true
     bar(100)
-    if (s.pop) s.pop.nextButton.disabled = false
     if (tour.current?.isLastStep()) return // the last step waits for Finish
     s.timer = window.setTimeout(() => { if (token === live.current.token) tour.current?.moveNext() }, AFTER_VOICE_MS)
   }, [])
@@ -73,7 +74,6 @@ export function TourProvider({ children }: { children: ReactNode }) {
     window.clearTimeout(s.timer)
     const token = ++s.token
     if (!again) { s.done = false; bar(0) }
-    if (s.pop && !s.done) s.pop.nextButton.disabled = true
     const step = TOUR_STEPS[index]
     const a = audio.current
     const text = `${t(`tour_${step.id}_t`)} ${t(`tour_${step.id}_b`)}`
@@ -153,7 +153,6 @@ export function TourProvider({ children }: { children: ReactNode }) {
       }
       row.append(sound, replay)
       pop.footer.prepend(progress, row)
-      pop.nextButton.disabled = true // until this step's voice has finished
     }
 
     const run = () => {
@@ -171,7 +170,6 @@ export function TourProvider({ children }: { children: ReactNode }) {
         stageRadius: 18,
         smoothScroll: true,
         allowClose: true,
-        allowKeyboardControl: false, // an arrow key must not skip a step the farmer has not heard
         onPopoverRender: (pop, { index }) => controls(pop, index ?? 0),
         onHighlighted: (_el, _step, { index }) => speak(index ?? 0),
         onDeselected: () => stop(),
