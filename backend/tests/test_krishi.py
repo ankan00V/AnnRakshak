@@ -80,12 +80,12 @@ def krishi_world(world, monkeypatch):  # noqa: F811
     monkeypatch.setattr(agroweather, "now_ist", lambda: NOW)
     # Offline and repeatable: no live translator or language model in tests
     # (a test that wants one patches it in itself).
-    from app import nim, voice
+    from app import llm, voice
 
     def offline(*a, **k):
         raise RuntimeError("no network in tests")
     monkeypatch.setattr(voice, "translate", offline)
-    monkeypatch.setattr(nim, "_chat", lambda *a, **k: None)
+    monkeypatch.setattr(llm, "_chat", lambda *a, **k: None)
     return c
 
 
@@ -244,62 +244,58 @@ def test_a_machine_language_question_is_also_read_in_english(monkeypatch):
     assert krishi._fused_rank(krishi.index(), q, "ml", "home") == []  # the native score stands alone
 
 
-def test_the_ai_falls_back_groq_nvidia_sarvam(monkeypatch):
-    """One provider down must not silence Krishi: the next answers, and the one
-    that failed sits out instead of costing every question its timeout."""
-    from app import nim
-    monkeypatch.setattr(nim, "GROQ_API_KEYS", ["g"])
-    monkeypatch.setattr(nim, "NVIDIA_API_KEY", "n")
-    monkeypatch.setattr(nim, "_benched", {})
+def test_every_groq_key_down_means_no_model_not_an_error(monkeypatch):
+    """All keys limited or down: None, so Krishi uses its own matcher; the keys
+    that failed sit out instead of costing every question its timeout."""
+    from app import llm
+    monkeypatch.setattr(llm, "GROQ_API_KEYS", ["g1", "g2"])
+    monkeypatch.setattr(llm, "_benched", {})
     calls: list[str] = []
-    monkeypatch.setattr(nim, "_groq", lambda m, **k: calls.append("groq") or None)
-    monkeypatch.setattr(nim, "_nvidia", lambda m, **k: calls.append("nvidia") or None)
-    monkeypatch.setattr(nim, "_sarvam", lambda m, **k: calls.append("sarvam") or "my_farm")
-    assert nim._chat([{"role": "user", "content": "q"}], max_tokens=10, temperature=0) == "my_farm"
-    assert calls == ["groq", "nvidia", "sarvam"]
+    monkeypatch.setattr(llm, "_groq", lambda m, *, key, **k: calls.append(key) or None)
+    assert llm._chat([{"role": "user", "content": "q"}], max_tokens=10, temperature=0) is None
+    assert sorted(calls) == ["g1", "g2"]
     calls.clear()
-    nim._chat([{"role": "user", "content": "q"}], max_tokens=10, temperature=0)
-    assert calls == ["sarvam"]  # both sit out now
-    assert all("g" != k and "n" != k for k in nim._benched)  # tracked by name, never by raw key
-
+    assert llm._chat([{"role": "user", "content": "q"}], max_tokens=10, temperature=0) is None
+    assert calls == []  # both sit out now
+    assert all(k not in ("g1", "g2") for k in llm._benched)  # tracked by hash, never by raw key
 
 
 def test_krishi_answers_in_the_language_the_farmer_wrote(krishi_world, monkeypatch):
     """The app's language is a default, not a lock: English typed with the app
     in Bengali gets English; romanised Hindi gets romanised Hindi (numbers
     kept); an Indian script gets that language."""
-    from app import nim
+    from app import llm
     c = krishi_world
     en = c.post("/api/krishi/ask", json={"text": "how do I check a sick plant", "lang": "bn", "screen": "home"}).json()
     assert en["lang"] == "en" and en["text"].startswith("Tap Scan")
     ta = c.post("/api/krishi/ask", json={"text": "பயிரின் புகைப்படம் எப்படி எடுப்பது", "lang": "en"}).json()
     assert ta["lang"] == "ta"
 
-    monkeypatch.setattr(nim, "restyle", lambda q, lines, lang: [f"roman:{x}" for x in lines])
+    monkeypatch.setattr(llm, "restyle", lambda q, lines, lang: [f"roman:{x}" for x in lines])
     hi = c.post("/api/krishi/ask", json={"text": "bimar paudhe ki jaanch kaise karu", "lang": "en",
                                          "screen": "home"}).json()
     assert hi["lang"] == "hi" and hi["text"].startswith("roman:") and "जाँच" in hi["speak"]
 
 
 def test_a_restyle_that_changes_a_number_is_refused(monkeypatch):
-    from app import nim
-    monkeypatch.setattr(nim, "_chat", lambda *a, **k: '{"lines": ["aaj 30 degree hai"]}')
-    assert nim.restyle("aaj weather kya h", ["अभी 28°C है"], "hi") is None
-    monkeypatch.setattr(nim, "_chat", lambda *a, **k: '{"lines": ["abhi 28°C hai"]}')
-    assert nim.restyle("aaj weather kya h", ["अभी 28°C है"], "hi") == ["abhi 28°C hai"]
+    from app import llm
+    monkeypatch.setattr(llm, "_chat", lambda *a, **k: '{"lines": ["aaj 30 degree hai"]}')
+    assert llm.restyle("aaj weather kya h", ["अभी 28°C है"], "hi") is None
+    monkeypatch.setattr(llm, "_chat", lambda *a, **k: '{"lines": ["abhi 28°C hai"]}')
+    assert llm.restyle("aaj weather kya h", ["अभी 28°C है"], "hi") == ["abhi 28°C hai"]
 
 
 
 def test_groq_keys_take_turns_and_a_limited_one_steps_aside(monkeypatch):
-    from app import nim
-    monkeypatch.setattr(nim, "GROQ_API_KEYS", ["k1", "k2", "k3"])
-    monkeypatch.setattr(nim, "_benched", {})
+    from app import llm
+    monkeypatch.setattr(llm, "GROQ_API_KEYS", ["k1", "k2", "k3"])
+    monkeypatch.setattr(llm, "_benched", {})
     used: list[str] = []
 
     def groq(m, *, key, **k):
         used.append(key)
         return None if key == "k2" else "ok"  # k2 has hit its limit
-    monkeypatch.setattr(nim, "_groq", groq)
+    monkeypatch.setattr(llm, "_groq", groq)
     for _ in range(4):
-        assert nim._chat([{"role": "user", "content": "q"}], max_tokens=5, temperature=0) == "ok"
+        assert llm._chat([{"role": "user", "content": "q"}], max_tokens=5, temperature=0) == "ok"
     assert set(used) == {"k1", "k2", "k3"} and used.count("k2") == 1  # tried once, then sat out

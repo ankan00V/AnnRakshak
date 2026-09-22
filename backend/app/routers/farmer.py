@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import auth, cache, config, geo, nim, services, voice
+from app import auth, cache, geo, llm, services, voice
 from app.db import get_db
 from app.limits import limit
 from app.engine import labelcheck, vision
@@ -432,7 +432,7 @@ def label_check(body: LabelCheckIn, request: Request, db: Session = Depends(get_
     # what was typed, the app asks /labelcheck/note separately for the AI's
     # explanation of what it is — so a slow model delays one extra line, not
     # the answer the farmer came for.
-    out["note_available"] = out["tone"] == "unknown" and nim.enabled()
+    out["note_available"] = out["tone"] == "unknown" and llm.enabled()
     return out
 
 
@@ -468,9 +468,9 @@ def label_note(body: LabelCheckIn, request: Request, db: Session = Depends(get_d
     if not note:
         problem = tr(kb.targets[target]["names"], "en") if target else "not diagnosed yet"
         for _ in range(2):  # one retry: an empty reply is usually a busy server, not a refusal
-            note = labelcheck.safe_suggestion(kb, nim.suggest(
+            note = labelcheck.safe_suggestion(kb, llm.suggest(
                 body.product, tr(kb.crops[farm.crop]["names"], "en"), problem, "en",
-                key=config.NVIDIA_SUGGEST_KEY, timeout=NOTE_TIMEOUT_S))
+                timeout=NOTE_TIMEOUT_S))
             if note:
                 break
         if note:

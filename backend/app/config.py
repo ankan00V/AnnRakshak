@@ -34,33 +34,20 @@ _ASR_IA, _ASR_DR = ("ai4bharat/conformer-multilingual-indo_aryan-gpu--t4",
 BHASHINI_ASR_SERVICE = {"en": "ai4bharat/whisper-medium-en--gpu--t4", "hi": "ai4bharat/conformer-hi-gpu--t4",
                         "mr": _ASR_IA, "bn": _ASR_IA, "gu": _ASR_IA, "pa": _ASR_IA, "od": _ASR_IA,
                         "ta": _ASR_DR, "te": _ASR_DR, "kn": _ASR_DR, "ml": _ASR_DR}
-NVIDIA_API_KEY = os.environ.get("NVIDIA_API_KEY") if os.environ.get("ANNRAKSHAK_NIM") != "off" else None
-"""NVIDIA NIM, used by Krishi to understand a question — never to answer one.
-Absent, Krishi falls back to its own matcher and loses nothing it can promise."""
-NVIDIA_BASE_URL = os.environ.get("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
-NVIDIA_MODEL = os.environ.get("NVIDIA_MODEL", "openai/gpt-oss-20b")
-"""Chosen by measurement on 28 questions typed the way farmers actually type
-(Hinglish, romanised Marathi, typos): it routed 25 right where Krishi's own
-matcher managed 16, refused all 4 off-topic questions, and answers in under a
-second. nemotron-3-super-120b was faster (366 ms) but got 21."""
-NVIDIA_SUGGEST_KEY = (os.environ.get("NVIDIA_API_KEYS") or "").split(",")[-1].strip() or NVIDIA_API_KEY
-"""The spray check's own key. It is a separate, farmer-facing call on a screen
-about chemicals, and it should not go dark because Krishi used up the quota."""
-NVIDIA_TIMEOUT_S = 10.0
-SARVAM_CHAT_KEYS = [k.strip() for k in (os.environ.get("SARVAM_CHAT_KEYS") or "").split(",") if k.strip()]
-"""Sarvam chat keys (sarvam-105b), the fallback when NVIDIA is slow or down.
-Separate from SARVAM_API_KEYS: voice stays on Bhashini."""
-SARVAM_CHAT_MODEL = "sarvam-105b"
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 GROQ_API_KEYS = list(dict.fromkeys(
-    k.strip() for k in [*(os.environ.get("GROQ_API_KEYS") or "").split(","), GROQ_API_KEY or ""] if k.strip()))
-"""Every Groq key, used in turn (see nim._chat)."""
+    k.strip() for k in [*(os.environ.get("GROQ_API_KEYS") or "").split(","), GROQ_API_KEY or ""] if k.strip()
+)) if os.environ.get("ANNRAKSHAK_LLM") != "off" else []
+"""Groq keys, used in turn (see llm._chat). The language model reads what a
+farmer typed and phrases facts the server computed — it never supplies one.
+Without a key Krishi falls back to its own matcher and loses nothing it can
+promise."""
 GROQ_MODEL = "openai/gpt-oss-20b"
-"""The same model as on NVIDIA, so every prompt behaves the same; ~0.5 s."""
+"""Chosen by measurement on 28 questions typed the way farmers actually type
+(Hinglish, romanised Marathi, typos): it routed 25 right where Krishi's own
+matcher managed 16, and refused all 4 off-topic questions. ~0.5 s on Groq."""
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-SARVAM_CHAT_URL = "https://api.sarvam.ai/v1/chat/completions"
-"""Measured median 2.6 s, 90th percentile 4.8 s. A call that times out costs the
-farmer the wait AND falls back anyway, so the bar is set past the slow tail."""
+LLM_TIMEOUT_S = 10.0
 OPENWEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY")
 AGRO_API_KEY = os.environ.get("AGRO_API_KEY")  # AgroMonitoring: satellite NDVI and soil per field  # optional; Open-Meteo is the keyless fallback
 MOSDAC_USERNAME = os.environ.get("MOSDAC_USERNAME")

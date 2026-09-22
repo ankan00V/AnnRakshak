@@ -1,4 +1,5 @@
-"""NVIDIA NIM, used for one job: understanding what a farmer typed.
+"""The language model (openai/gpt-oss-20b on Groq), used for one job:
+understanding what a farmer typed.
 
 Krishi's promise is that it never invents an answer. A language model is very
 good at reading "mera dhan me patta pila ho raha hai kya karu" and very willing
@@ -32,10 +33,9 @@ import time
 
 import httpx
 
-from app.config import (GROQ_API_KEYS, GROQ_MODEL, GROQ_URL, NVIDIA_API_KEY, NVIDIA_BASE_URL, NVIDIA_MODEL,
-                        NVIDIA_TIMEOUT_S, SARVAM_CHAT_KEYS, SARVAM_CHAT_MODEL, SARVAM_CHAT_URL)
+from app.config import GROQ_API_KEYS, GROQ_MODEL, GROQ_URL, LLM_TIMEOUT_S
 
-log = logging.getLogger("annrakshak.nim")
+log = logging.getLogger("annrakshak.llm")
 
 ROUTE_SYSTEM = """You route a farmer's question to one help topic in an Indian \
 crop-advisory app called AnnRakshak.
@@ -79,100 +79,48 @@ LANG_NAME = {"en": "English", "hi": "Hindi", "mr": "Marathi", "bn": "Bengali", "
 
 
 def enabled() -> bool:
-    return bool(GROQ_API_KEYS or NVIDIA_API_KEY or SARVAM_CHAT_KEYS)
+    return bool(GROQ_API_KEYS)
 
 
 BENCH_S = 300
-"""After an NVIDIA key times out or errors, it sits out this long and calls go
-straight to Sarvam — a farmer should not wait out a dead server's timeout on
-every question."""
+"""A key that timed out sits out this long: a farmer should not wait out a
+struggling server's timeout on every question."""
 BLIP_S = 60
+"""A key that was refused quickly (the free tier's rate limit) sits out briefly."""
 _turn = itertools.count()
 _benched: dict[str, float] = {}
-_sarvam_out: set[str] = set()  # keys that ran out of credit
 
 
-def _chat(messages: list[dict], *, max_tokens: int, temperature: float, key: str | None = None,
-          timeout: float | None = None) -> str | None:
-    """Groq, then NVIDIA, then Sarvam (sarvam-105b). Groq and NVIDIA serve the
-    same model; whichever fails or times out sits out BENCH_S and the next
-    answers, so a slow provider costs one wait, not one per question."""
-    kw = {"max_tokens": max_tokens, "temperature": temperature, "timeout": timeout}
-    # Groq keys take turns, so the free tier's per-key limits share the load;
-    # each call starts one key further on and walks the rest if one is limited.
-    start = next(_turn) % len(GROQ_API_KEYS) if GROQ_API_KEYS else 0
-    groq = GROQ_API_KEYS[start:] + GROQ_API_KEYS[:start]
-    chain = [*(("groq", k, _groq) for k in groq), ("nvidia", key or NVIDIA_API_KEY, _nvidia)]
-    for name, k, call in chain:
-        slot = f"{name}:{hashlib.sha1(k.encode()).hexdigest()[:8]}" if k else name  # never hold a raw key
-        if not k or _benched.get(slot, 0) > time.monotonic():
+def _chat(messages: list[dict], *, max_tokens: int, temperature: float, timeout: float | None = None) -> str | None:
+    """Groq keys take turns, so each key's free-tier limit shares the load: each
+    call starts one key further on and walks the rest if one is limited. All
+    of them failing returns None, and every caller has its own fallback."""
+    if not GROQ_API_KEYS:
+        return None
+    start = next(_turn) % len(GROQ_API_KEYS)
+    for k in GROQ_API_KEYS[start:] + GROQ_API_KEYS[:start]:
+        slot = hashlib.sha1(k.encode()).hexdigest()[:8]  # never hold a raw key
+        if _benched.get(slot, 0) > time.monotonic():
             continue
         started = time.monotonic()
-        out = call(messages, key=k, **kw)
+        out = _groq(messages, key=k, max_tokens=max_tokens, temperature=temperature, timeout=timeout)
         if out is not None:
             return out
-        # A timeout means the server is struggling: sit out long. A quick
-        # refusal (a rate limit, a blip) only briefly.
-        wait = BENCH_S if time.monotonic() - started >= (timeout or NVIDIA_TIMEOUT_S) - 0.5 else BLIP_S
-        _benched[slot] = time.monotonic() + wait
-        log.warning("%s sits out %ss", name, wait)
-    return _sarvam(messages, **kw)
+        slow = time.monotonic() - started >= (timeout or LLM_TIMEOUT_S) - 0.5
+        _benched[slot] = time.monotonic() + (BENCH_S if slow else BLIP_S)
+        log.warning("a Groq key sits out %ss", BENCH_S if slow else BLIP_S)
+    return None
 
 
 def _groq(messages: list[dict], *, max_tokens: int, temperature: float, key: str,
           timeout: float | None) -> str | None:
     try:
         r = httpx.post(GROQ_URL, headers={"Authorization": f"Bearer {key}"},
+                       # reasoning kept low: a farmer is waiting, and for this
+                       # model more thinking bought no better answers
                        json={"model": GROQ_MODEL, "messages": messages, "max_tokens": max_tokens,
                              "temperature": temperature, "top_p": 0.9, "reasoning_effort": "low"},
-                       timeout=timeout or NVIDIA_TIMEOUT_S)
-        if r.status_code != 200:  # 429 = the free tier's rate limit: sit out, the next provider answers
-            return None
-        out = r.json()["choices"][0]["message"]["content"]
-    except (httpx.HTTPError, KeyError, IndexError, ValueError, TypeError):
-        return None
-    return _strip_thinking(out or "")
-
-
-def _sarvam(messages: list[dict], *, max_tokens: int, temperature: float, timeout: float | None) -> str | None:
-    for k in SARVAM_CHAT_KEYS:
-        if k in _sarvam_out:
-            continue
-        try:
-            r = httpx.post(SARVAM_CHAT_URL, headers={"api-subscription-key": k},
-                           # reasoning off: 0.3 s instead of 6 s for the same topic id
-                           json={"model": SARVAM_CHAT_MODEL, "messages": messages, "max_tokens": max_tokens,
-                                 "temperature": temperature, "reasoning_effort": None},
-                           timeout=timeout or NVIDIA_TIMEOUT_S)
-        except httpx.HTTPError:
-            return None  # the service itself is unreachable: another key won't help
-        if r.status_code in (401, 402, 403, 429):
-            _sarvam_out.add(k)  # out of credit or refused: the next key
-            continue
-        if r.status_code != 200:
-            return None
-        try:
-            out = r.json()["choices"][0]["message"]["content"]
-        except (KeyError, IndexError, ValueError, TypeError):
-            return None
-        return _strip_thinking(out or "") or None
-    return None
-
-
-def _nvidia(messages: list[dict], *, max_tokens: int, temperature: float, key: str,
-            timeout: float | None) -> str | None:
-    try:
-        r = httpx.post(
-            f"{NVIDIA_BASE_URL}/chat/completions",
-            headers={"Authorization": f"Bearer {key}", "Accept": "application/json"},
-            # A farmer is waiting, so the model answers instead of thinking about
-            # it: left to reason, this one takes 16 s over "read it out to me"
-            # and 1 s with reasoning off, for the same answer.
-            json={"model": NVIDIA_MODEL, "messages": messages, "max_tokens": max_tokens,
-                  "temperature": temperature, "top_p": 0.9, "stream": False,
-                  "reasoning_effort": "low", "chat_template_kwargs": {"thinking": False}},
-            timeout=timeout or NVIDIA_TIMEOUT_S,
-        )
+                       timeout=timeout or LLM_TIMEOUT_S)
         if r.status_code != 200:
             return None
         out = r.json()["choices"][0]["message"]["content"]
@@ -287,8 +235,7 @@ this problem. At most 35 words."}}
 Plain words a farmer can read on a phone. No markdown, no lists, no greeting."""
 
 
-def suggest(product: str, crop: str, problem: str, lang: str, *, key: str | None = None,
-            timeout: float | None = None) -> str | None:
+def suggest(product: str, crop: str, problem: str, lang: str, *, timeout: float | None = None) -> str | None:
     """What an unrecognised thing actually is — explanation only, never a
     recommendation. The caller must still run it past the guards in
     labelcheck.safe_suggestion() before showing it."""
@@ -298,7 +245,7 @@ def suggest(product: str, crop: str, problem: str, lang: str, *, key: str | None
     system = SUGGEST_SYSTEM.format(crop=crop, problem=problem, language=LANG_NAME.get(lang, "English"))
     out = _chat([{"role": "system", "content": system},
                  {"role": "user", "content": f'The farmer typed: "{product}"'}],
-                max_tokens=900, temperature=0.1, key=key, timeout=timeout)
+                max_tokens=900, temperature=0.1, timeout=timeout)
     if not out:
         return None
     got = json_reply(out)

@@ -27,7 +27,7 @@ from functools import lru_cache
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import cache, nim, services, voice
+from app import cache, llm, services, voice
 from app.i18n import local_date
 from app.config import KB_DIR
 from app.engine import agromet, agroweather
@@ -38,9 +38,6 @@ from app.models import Alert, Farm, FarmerProfile, FollowUp, Problem
 MATCH_MIN = 0.14
 """Below this similarity Krishi says it didn't understand instead of guessing."""
 CONFIDENT = 0.30
-CLEAR_LEAD = 0.08
-"""The native+English score answers alone only this far ahead of the runner-up;
-a close call goes to the model."""
 """At or above this the matcher is trusted on its own and no model is called:
 the common questions stay instant and work with the network down."""
 PERSONAL = "my_details"
@@ -422,7 +419,7 @@ def answer(db: Session, kb: KB, *, text: str | None, topic: str | None, screen: 
     out["lang"] = said
     if roman and said != "en":
         native = [out.get("text") or "", *(out.get("steps") or [])]
-        styled = nim.restyle(text or "", native, said)
+        styled = llm.restyle(text or "", native, said)
         if styled:
             out["speak"] = " ".join(x for x in native if x)
             out["text"], out["steps"] = styled[0], styled[1:]
@@ -442,16 +439,6 @@ def _answer(db: Session, kb: KB, *, text: str | None, topic: str | None, screen:
     else:
         ranked = idx.rank(text or "", screen)
         best, score = ranked[0] if ranked else (None, 0.0)
-        # A machine-translated language: the keyword lists there are thin, so
-        # the question is also read in English (Bhashini, ~0.5 s) and each
-        # topic scores on both. A clear winner skips the model entirely — which
-        # also keeps Krishi answering when the model is slow or down.
-        fused: list[tuple[str, float]] = []
-        if score < CONFIDENT and lang not in AUTHORED_LANGS and (text or "").strip():
-            fused = _fused_rank(idx, text or "", lang, screen)
-            runner_up = fused[1][1] if len(fused) > 1 else 0.0
-            if fused and fused[0][1] >= CONFIDENT and fused[0][1] - runner_up >= CLEAR_LEAD:
-                ranked, (best, score) = fused, fused[0]
         # The matcher is fast, offline and right about the common questions. It
         # is weak on the way farmers really type ("mera dhan me patta pila ho
         # raha hai"), so below CONFIDENT the model reads the question instead —
@@ -462,8 +449,15 @@ def _answer(db: Session, kb: KB, *, text: str | None, topic: str | None, screen:
                 best, score, ranked = routed, max(score, MATCH_MIN), []
             elif routed == PERSONAL:
                 best, score, ranked = PERSONAL, 1.0, []
-            elif routed is None and fused and fused[0][1] >= CONFIDENT and not nim.answered_none():
-                ranked, (best, score) = fused, fused[0]  # the model is down: the close call stands
+            elif routed is None and not llm.answered_none() and lang not in AUTHORED_LANGS:
+                # No model answered. For a machine-translated language the
+                # question is also read in English (Bhashini) and each topic
+                # scores on both — Krishi still understands without the model.
+                fused = _fused_rank(idx, text or "", lang, screen)
+                if fused and fused[0][1] >= CONFIDENT:
+                    ranked, (best, score) = fused, fused[0]
+                elif score < MATCH_MIN:
+                    best = None
             elif routed is None and score < MATCH_MIN:
                 best = None  # off topic, or nothing we have an authored answer for
     if best == PERSONAL:
@@ -735,12 +729,12 @@ def grounded(reply: str, source: str) -> bool:
 
 def _personal(db: Session, kb: KB, user, farms: list[Farm], question: str, lang: str, screen: str | None) -> dict | None:
     """Answer a question about the farmer's own field from their own rows."""
-    if user is None or not nim.enabled():
+    if user is None or not llm.enabled():
         return None
     sheet = facts(db, kb, user, farms, lang)
     if not sheet:
         return None
-    said = nim.say(question, sheet, lang)
+    said = llm.say(question, sheet, lang)
     if said is None:
         return None
     text, steps = said
@@ -772,7 +766,7 @@ def _route(text: str, idx: Index) -> str | None:
               for tid, t in idx.topics.items()]
     topics.append((PERSONAL, "what crops do I grow / where is my field / how big is my land / "
                              "when did I sow / what is my name, village, phone | my, mera, majha, apna"))
-    return nim.route(text, topics)
+    return llm.route(text, topics)
 
 
 def _farm_line(db: Session, kb: KB, farm: Farm, lang: str) -> dict:
