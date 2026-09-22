@@ -64,6 +64,7 @@ MANIFEST = ROOT / "data" / "processed" / "icar_images.csv"
 EXTRA_MANIFEST = ROOT / "data" / "processed" / "extra_images.csv"
 MORE_MANIFEST = ROOT / "data" / "processed" / "more_images.csv"
 PADDY_MANIFEST = ROOT / "data" / "processed" / "paddy_images.csv"
+ASDID_MANIFEST = ROOT / "data" / "processed" / "asdid_images.csv"
 ART = ROOT / "ml" / "artifacts"
 REP = ROOT / "ml" / "reports"
 SEED = 42
@@ -83,6 +84,10 @@ PADDY_CAP = {"train": 900, "val": 120, "test": 200}
 """Paddy Doctor is rice photographed in the field on a phone — the closest
 thing we have to what a farmer sends — so it gets the largest cap, and its
 healthy plants become the backgrounds rice was short of (34 before)."""
+ASDID_CAP = {"train": 900, "val": 120, "test": 200}
+"""ASDID is the second camera and the second country soybean has ever seen
+(data/ingest_asdid.py). Its three shared classes are capped like Paddy Doctor so
+Alabama cannot outvote the Indian photos, and its five new classes come in whole."""
 MORE_CAP_EXISTING = {"train": 350, "val": 50, "test": 90}
 COMPOSITE_P = 0.85
 
@@ -501,6 +506,8 @@ def main():
                     help="with --with-extra: samples drawn per class per epoch")
     ap.add_argument("--with-paddy", action="store_true",
                     help="also Paddy Doctor field rice photos (data/processed/paddy_images.csv)")
+    ap.add_argument("--with-asdid", action="store_true",
+                    help="add the ASDID Alabama soybean photos (data/ingest_asdid.py)")
     ap.add_argument("--with-more", action="store_true",
                     help="also the cotton, soybean and extra maize/rice sets (data/processed/more_images.csv)")
     ap.add_argument("--lr-feat", type=float, default=None,
@@ -690,6 +697,11 @@ def main_extra(args):
         e_tr, e_va, e_te = e_tr + p_tr, e_va + p_va, e_te + p_te
         print(f"with Paddy Doctor field rice: {len(p_tr)}/{len(p_va)}/{len(p_te)} images over "
               f"{len({r['train_class'] for r in p_tr})} classes (data/ingest_paddy.py)")
+    if getattr(args, "with_asdid", False) and ASDID_MANIFEST.exists():
+        a_tr, a_va, a_te = load_extra_split(ASDID_MANIFEST, ASDID_CAP, ASDID_CAP, set())
+        e_tr, e_va, e_te = e_tr + a_tr, e_va + a_va, e_te + a_te
+        print(f"with ASDID field soybean: {len(a_tr)}/{len(a_va)}/{len(a_te)} images over "
+              f"{len({r['train_class'] for r in a_tr})} classes (data/ingest_asdid.py)")
     if getattr(args, "with_confirmed", False):
         conf_csv = ROOT / "data" / "processed" / "confirmed.csv"
         if conf_csv.exists():
@@ -785,7 +797,8 @@ def main_extra(args):
     deploy = not args.quick and all(ok for _, ok, _ in checks)
 
     version = (f"icar+extra{'+more' if getattr(args, 'with_more', False) else ''}"
-               f"{'+paddy' if getattr(args, 'with_paddy', False) else ''}-"
+               f"{'+paddy' if getattr(args, 'with_paddy', False) else ''}"
+               f"{'+asdid' if getattr(args, 'with_asdid', False) else ''}-"
                f"efficientnet_v2_s-{'warmstart' if init else 'finetune'}-"
                f"{datetime.now(UTC):%Y%m%d}")
     meta = {

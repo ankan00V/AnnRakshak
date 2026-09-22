@@ -2719,5 +2719,309 @@
     "url": "http://ipm.illinois.edu/diseases/series100/rpd122/"
    }
   ]
+ },
+ "soybean_target_spot": {
+  "what_to_check": {
+   "en": "Turn over the lower leaves of 10 plants and count the ones carrying ringed brown spots bigger than a rice grain.",
+   "hi": "10 पौधों की नीचे की पत्तियाँ पलटकर देखें और गिनें कि कितनी पर चावल के दाने से बड़े छल्लेदार भूरे धब्बे हैं।",
+   "mr": "10 झाडांची खालची पाने उलटून पाहा आणि तांदळाच्या दाण्यापेक्षा मोठे वलयी तपकिरी ठिपके असलेली पाने मोजा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not spray while the canopy is wet with dew — the fungus spreads in leaf wetness.",
+    "hi": "ओस से भीगी फसल पर छिड़काव न करें — पत्ती की नमी में फफूँद फैलती है।",
+    "mr": "दवाने ओली असलेली फसल असताना फवारणी करू नका — पानावरील ओलाव्यात बुरशी पसरते."
+   },
+   {
+    "en": "Do not keep seed from a badly affected field.",
+    "hi": "बुरी तरह प्रभावित खेत का बीज न रखें।",
+    "mr": "जास्त बाधित शेतातील बियाणे ठेवू नका."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Rotate with a cereal, keep row spacing wide enough for air to move through the canopy, and bury the stubble after harvest.",
+     "hi": "अनाज फसल से फसल-चक्र करें, कतारों की दूरी इतनी रखें कि फसल में हवा चले, और कटाई के बाद अवशेष दबा दें।",
+     "mr": "तृणधान्याची फेरपालट करा, ओळींतील अंतर हवा खेळण्याइतके ठेवा आणि काढणीनंतर धसकटे गाडा."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Treat next season's seed with Trichoderma viride at 5 g per kg.",
+     "hi": "अगले मौसम के बीज को ट्राइकोडर्मा विरिडी 5 ग्राम प्रति किलो से उपचारित करें।",
+     "mr": "पुढील हंगामाच्या बियाण्यास ट्रायकोडर्मा व्हिरिडी 5 ग्रॅम प्रति किलो प्रक्रिया करा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "propiconazole_25ec",
+    "dose_per_litre": 1.0,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "When ringed spots show on the lower third of the plants, before pod filling.",
+     "hi": "जब पौधों के निचले एक-तिहाई भाग पर छल्लेदार धब्बे दिखें, दाना भरने से पहले।",
+     "mr": "झाडांच्या खालच्या एक तृतीयांश भागावर वलयी ठिपके दिसल्यावर, दाणे भरण्यापूर्वी."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if the spots reach the top leaves or the pods within a week of a spray.",
+   "hi": "छिड़काव के एक हफ़्ते के भीतर धब्बे ऊपरी पत्तियों या फलियों तक पहुँचें तो विशेषज्ञ को बुलाएँ।",
+   "mr": "फवारणीनंतर आठवड्याभरात ठिपके वरच्या पानांपर्यंत किंवा शेंगांपर्यंत पोहोचले तर तज्ज्ञांना बोलवा."
+  },
+  "citations": [
+   {
+    "title": "Soybean disease and insect-pest management",
+    "publisher": "ICAR-Indian Institute of Soybean Research",
+    "url": "https://iisrindore.icar.gov.in"
+   },
+   {
+    "title": "Target spot of soybean",
+    "publisher": "Crop Protection Network (US land-grant universities)",
+    "url": "https://cropprotectionnetwork.org/encyclopedia/target-spot-of-soybean"
+   }
+  ]
+ },
+ "soybean_cercospora_leaf_blight": {
+  "what_to_check": {
+   "en": "At pod filling, look at the sunlit top leaves of 10 plants for a bronze-purple sheen, and open a few pods to see whether the seed carries a purple stain.",
+   "hi": "दाना भरते समय 10 पौधों की धूप वाली ऊपरी पत्तियों पर ताँबई-बैंगनी चमक देखें, और कुछ फलियाँ खोलकर देखें कि बीज पर बैंगनी दाग तो नहीं।",
+   "mr": "दाणे भरताना 10 झाडांच्या उन्हातील वरच्या पानांवर तांबूस-जांभळी झाक पाहा आणि काही शेंगा फोडून बियांवर जांभळा डाग आहे का ते पाहा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not keep seed from a field with purple-stained grain — it starts next year's crop off infected.",
+    "hi": "जिस खेत के दाने पर बैंगनी दाग हो, उसका बीज न रखें — अगले साल की फसल शुरू से ही रोगग्रस्त होगी।",
+    "mr": "जांभळा डाग असलेल्या दाण्याच्या शेतातील बियाणे ठेवू नका — पुढील वर्षीचे पीक सुरुवातीपासूनच बाधित होते."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Sow certified seed, stay off soybean for a season on that plot, and clear the residue after harvest.",
+     "hi": "प्रमाणित बीज बोएँ, उस टुकड़े पर एक मौसम सोयाबीन न लें, और कटाई के बाद अवशेष हटा दें।",
+     "mr": "प्रमाणित बियाणे पेरा, त्या तुकड्यावर एक हंगाम सोयाबीन घेऊ नका आणि काढणीनंतर अवशेष काढा."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Treat next season's seed with Trichoderma viride at 5 g per kg.",
+     "hi": "अगले मौसम के बीज को ट्राइकोडर्मा विरिडी 5 ग्राम प्रति किलो से उपचारित करें।",
+     "mr": "पुढील हंगामाच्या बियाण्यास ट्रायकोडर्मा व्हिरिडी 5 ग्रॅम प्रति किलो प्रक्रिया करा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "hexaconazole_5ec",
+    "dose_per_litre": 2.0,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "As pods start to form, when the top leaves first go bronze.",
+     "hi": "फलियाँ बनने के शुरू में, जब ऊपरी पत्तियाँ पहली बार ताँबई पड़ें।",
+     "mr": "शेंगा लागू लागताना, वरची पाने प्रथम तांबूस पडल्यावर."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if more than a quarter of the top leaves go bronze before the pods fill.",
+   "hi": "दाना भरने से पहले चौथाई से ज़्यादा ऊपरी पत्तियाँ ताँबई हो जाएँ तो विशेषज्ञ को बुलाएँ।",
+   "mr": "दाणे भरण्यापूर्वी एक चतुर्थांशापेक्षा जास्त वरची पाने तांबूस झाली तर तज्ज्ञांना बोलवा."
+  },
+  "citations": [
+   {
+    "title": "Soybean disease and insect-pest management",
+    "publisher": "ICAR-Indian Institute of Soybean Research",
+    "url": "https://iisrindore.icar.gov.in"
+   },
+   {
+    "title": "Cercospora leaf blight and purple seed stain of soybean",
+    "publisher": "Crop Protection Network (US land-grant universities)",
+    "url": "https://cropprotectionnetwork.org/encyclopedia/cercospora-leaf-blight-of-soybean"
+   }
+  ]
+ },
+ "soybean_downy_mildew": {
+  "what_to_check": {
+   "en": "Early in the morning, turn 10 leaves over and look for grey-violet fuzz under the pale patches.",
+   "hi": "सुबह जल्दी 10 पत्तियाँ पलटकर हल्के धब्बों के नीचे धूसर-बैंगनी रोएँ देखें।",
+   "mr": "सकाळी लवकर 10 पाने उलटून फिकट ठिपक्यांखाली राखाडी-जांभळट लव आहे का पाहा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not flood the field while patches are spreading, and do not sow untreated seed saved from it.",
+    "hi": "धब्बे फैलते समय खेत में पानी न भरें, और उस खेत का बिना उपचार बीज न बोएँ।",
+    "mr": "ठिपके पसरत असताना शेतात पाणी साचवू नका आणि त्या शेतातील बियाणे प्रक्रिया न करता पेरू नका."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Grow a resistant variety and rotate with a cereal; on its own this disease rarely costs enough yield to spray for.",
+     "hi": "रोगरोधी किस्म लें और अनाज फसल से फसल-चक्र करें; अकेले यह रोग इतना नुक़सान कम ही करता है कि छिड़काव ज़रूरी हो।",
+     "mr": "प्रतिकारक वाण घ्या आणि तृणधान्याची फेरपालट करा; एकट्याने हा रोग फवारणी करावी इतके नुकसान क्वचितच करतो."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Treat next season's seed with Trichoderma viride at 5 g per kg.",
+     "hi": "अगले मौसम के बीज को ट्राइकोडर्मा विरिडी 5 ग्राम प्रति किलो से उपचारित करें।",
+     "mr": "पुढील हंगामाच्या बियाण्यास ट्रायकोडर्मा व्हिरिडी 5 ग्रॅम प्रति किलो प्रक्रिया करा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "metalaxyl_mancozeb_72wp",
+    "dose_per_litre": 2.0,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "Only if the fuzzy patches pass a quarter of the leaves during a long wet spell.",
+     "hi": "तभी जब लंबी नमी में रोएँदार धब्बे चौथाई से ज़्यादा पत्तियों पर फैल जाएँ।",
+     "mr": "दीर्घ ओल्या हवामानात लवदार ठिपके एक चतुर्थांशापेक्षा जास्त पानांवर गेले तरच."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if young pods show a creamy crust inside when you open them.",
+   "hi": "कच्ची फलियाँ खोलने पर अंदर मलाई जैसी परत दिखे तो विशेषज्ञ को बुलाएँ।",
+   "mr": "कोवळ्या शेंगा फोडल्यावर आत मलईसारखा थर दिसल्यास तज्ज्ञांना बोलवा."
+  },
+  "citations": [
+   {
+    "title": "Soybean disease and insect-pest management",
+    "publisher": "ICAR-Indian Institute of Soybean Research",
+    "url": "https://iisrindore.icar.gov.in"
+   },
+   {
+    "title": "AESA-based IPM Package: Soybean",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   }
+  ]
+ },
+ "soybean_bacterial_blight": {
+  "what_to_check": {
+   "en": "Check the youngest top leaves of 10 plants for angular spots with a yellow halo, and note whether the field has just had cool windy rain.",
+   "hi": "10 पौधों की सबसे नई ऊपरी पत्तियों पर पीले घेरे वाले कोणदार धब्बे देखें, और ध्यान रखें कि हाल में ठंडी हवा वाली बारिश हुई है या नहीं।",
+   "mr": "10 झाडांच्या सर्वात कोवळ्या वरच्या पानांवर पिवळ्या वलयाचे कोनाकृती ठिपके पाहा आणि नुकताच थंड वाऱ्याचा पाऊस झाला का ते लक्षात घ्या."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not walk or spray through the field while the leaves are wet — the bacterium travels on wet leaves, hands and tools.",
+    "hi": "पत्तियाँ भीगी हों तब खेत में न चलें और न छिड़काव करें — जीवाणु गीली पत्तियों, हाथों और औज़ारों से फैलता है।",
+    "mr": "पाने ओली असताना शेतात फिरू नका किंवा फवारणी करू नका — जिवाणू ओल्या पानांवरून, हातांवरून व अवजारांवरून पसरतो."
+   },
+   {
+    "en": "Do not spray a fungicide for it; no fungicide cures a bacterial disease.",
+    "hi": "इसके लिए फफूँदनाशक न छिड़कें; कोई फफूँदनाशक जीवाणु रोग ठीक नहीं करता।",
+    "mr": "यासाठी बुरशीनाशक फवारू नका; कोणतेही बुरशीनाशक जिवाणू रोग बरा करत नाही."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Sow clean certified seed, rotate with a cereal, and stay out of the crop while it is wet.",
+     "hi": "साफ़, प्रमाणित बीज बोएँ, अनाज फसल से फसल-चक्र करें, और फसल भीगी हो तब उसमें न जाएँ।",
+     "mr": "स्वच्छ, प्रमाणित बियाणे पेरा, तृणधान्याची फेरपालट करा आणि पीक ओले असताना त्यात जाऊ नका."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Treat next season's seed with Pseudomonas fluorescens at 10 g per kg.",
+     "hi": "अगले मौसम के बीज को स्यूडोमोनास फ्लोरेसेंस 10 ग्राम प्रति किलो से उपचारित करें।",
+     "mr": "पुढील हंगामाच्या बियाण्यास स्युडोमोनास फ्लुरोसेन्स 10 ग्रॅम प्रति किलो लावा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "copper_oxychloride_50wp",
+    "dose_per_litre": 3.0,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "verified": false,
+    "timing": {
+     "en": "If angular spots keep spreading on the new leaves in a cool wet spell — copper slows it; nothing cures it.",
+     "hi": "ठंडी-नम अवधि में नई पत्तियों पर कोणदार धब्बे बढ़ते रहें तो — ताँबा इसे धीमा करता है, ठीक कोई नहीं करता।",
+     "mr": "थंड-ओल्या काळात कोवळ्या पानांवर कोनाकृती ठिपके वाढतच राहिले तर — तांबे रोग मंदावते, बरा करत नाही."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if the top leaves tear away on most plants or the pods carry spots.",
+   "hi": "ज़्यादातर पौधों की ऊपरी पत्तियाँ फटकर गिरने लगें या फलियों पर धब्बे आ जाएँ तो विशेषज्ञ को बुलाएँ।",
+   "mr": "बहुतांश झाडांची वरची पाने फाटून पडू लागली किंवा शेंगांवर ठिपके आले तर तज्ज्ञांना बोलवा."
+  },
+  "citations": [
+   {
+    "title": "Soybean disease and insect-pest management",
+    "publisher": "ICAR-Indian Institute of Soybean Research",
+    "url": "https://iisrindore.icar.gov.in"
+   },
+   {
+    "title": "Bacterial blight of soybean",
+    "publisher": "Crop Protection Network (US land-grant universities)",
+    "url": "https://cropprotectionnetwork.org/encyclopedia/bacterial-blight-of-soybean"
+   }
+  ]
+ },
+ "soybean_potassium_deficiency": {
+  "what_to_check": {
+   "en": "Walk to the pale patch and look at the older lower leaves of 10 plants: yellow edges with a green middle, on the old leaves and not the new ones, means potash and not disease.",
+   "hi": "पीले पड़े हिस्से में जाकर 10 पौधों की पुरानी, नीचे की पत्तियाँ देखें: किनारे पीले और बीच हरा, वह भी पुरानी पत्तियों पर — नई पर नहीं — तो यह पोटाश की कमी है, रोग नहीं।",
+   "mr": "फिकट पडलेल्या पट्ट्यात जाऊन 10 झाडांची जुनी, खालची पाने पाहा: कडा पिवळ्या व मध्य हिरवा, तेही जुन्या पानांवर — कोवळ्यांवर नाही — म्हणजे ही पालाशाची कमतरता आहे, रोग नाही."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not spray a fungicide or insecticide for it — nothing is eating or infecting the crop.",
+    "hi": "इसके लिए फफूँदनाशक या कीटनाशक न छिड़कें — फसल को न कोई कीट खा रहा है, न रोग लगा है।",
+    "mr": "यासाठी बुरशीनाशक किंवा कीटकनाशक फवारू नका — पिकाला कीड लागलेली नाही आणि रोगही नाही."
+   },
+   {
+    "en": "Do not spray potash on the leaf in strong afternoon sun, and do not make the solution stronger than told — it burns the leaf edge further.",
+    "hi": "दोपहर की तेज़ धूप में पत्तियों पर पोटाश न छिड़कें और घोल बताए से गाढ़ा न बनाएँ — किनारे और झुलस जाएँगे।",
+    "mr": "दुपारच्या कडक उन्हात पानांवर पालाश फवारू नका आणि द्रावण सांगितल्यापेक्षा दाट करू नका — कडा अधिकच करपतात."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Get the soil tested and put on the recommended muriate of potash at sowing next season. For the standing crop, spray 1% potassium nitrate (10 g per litre of water) twice, a week apart, in the evening.",
+     "hi": "मिट्टी की जाँच कराएँ और अगले मौसम बुवाई के समय सिफ़ारिश के अनुसार म्यूरेट ऑफ़ पोटाश डालें। खड़ी फसल पर शाम के समय 1% पोटैशियम नाइट्रेट (10 ग्राम प्रति लीटर पानी) एक-एक हफ़्ते के अंतर से दो बार छिड़कें।",
+     "mr": "माती परीक्षण करून घ्या आणि पुढील हंगामात पेरणीच्या वेळी शिफारशीनुसार म्युरेट ऑफ पोटॅश द्या. उभ्या पिकावर संध्याकाळी 1% पोटॅशियम नायट्रेट (10 ग्रॅम प्रति लिटर पाणी) आठवड्याच्या अंतराने दोनदा फवारा."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if the edges scorch before flowering, or the patch keeps growing after two sprays — a soil or root problem may be behind it.",
+   "hi": "फूल आने से पहले ही किनारे झुलस जाएँ, या दो छिड़काव के बाद भी हिस्सा बढ़ता रहे तो विशेषज्ञ को बुलाएँ — पीछे मिट्टी या जड़ की कोई समस्या हो सकती है।",
+   "mr": "फुलोऱ्यापूर्वीच कडा करपल्या किंवा दोन फवारण्यांनंतरही पट्टा वाढतच राहिला तर तज्ज्ञांना बोलवा — मागे मातीची किंवा मुळांची समस्या असू शकते."
+  },
+  "citations": [
+   {
+    "title": "Soybean disease and insect-pest management",
+    "publisher": "ICAR-Indian Institute of Soybean Research",
+    "url": "https://iisrindore.icar.gov.in"
+   },
+   {
+    "title": "Potassium deficiency of soybean",
+    "publisher": "Crop Protection Network (US land-grant universities)",
+    "url": "https://cropprotectionnetwork.org/encyclopedia/potassium-deficiency-of-soybean"
+   }
+  ]
  }
 }
