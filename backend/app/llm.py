@@ -135,20 +135,25 @@ def _strip_thinking(text: str) -> str:
     return re.sub(r"</?think>", " ", text, flags=re.I).strip()
 
 
-def route(question: str, topics: list[tuple[str, str]]) -> str | None:
+def route(question: str, topics: list[tuple[str, str]], before: str | None = None) -> str | None:
     """The id of the topic that best answers `question`, or None.
 
     `topics` is [(id, what the topic covers)]. The reply is only accepted when it
     is one of those ids, so this can never introduce a topic that does not exist.
+    `before` is the chat so far (the farmer's last question and the topic that
+    answered it), so a follow-up such as "no, it's not that" is read in context.
     """
     question = " ".join((question or "").split())[:300]
     if not question or not topics:
         return None
     listing = "\n".join(f"{tid}: {example}" for tid, example in topics)
+    earlier = (f"Earlier in this chat: {before}. Read the new question as a follow-up to that if it is one — "
+               "for example 'no, it's not that' after a list of likely diseases means the farmer wants to find "
+               "out what their crop actually has.\n\n") if before else ""
     _said_none.value = False
     out = _chat(
         [{"role": "system", "content": ROUTE_SYSTEM},
-         {"role": "user", "content": f"Topics:\n{listing}\n\nFarmer's question: {question}\n\nTopic id:"}],
+         {"role": "user", "content": f"Topics:\n{listing}\n\n{earlier}Farmer's question: {question}\n\nTopic id:"}],
         max_tokens=800, temperature=0.0)
     if not out:
         return None
@@ -279,6 +284,10 @@ switch to English. Short and natural, like a message from a helpful neighbour. \
 Example (Hindi): "अभी 31°C, नमी 69%, अगले 3 घंटों में बारिश की संभावना 68%" \
 becomes "Abhi 31°C hai, humidity 69%, agle 3 ghante mein rain chance 68%". \
 Every detail stays, including time spans like "next 3 hours". \
+Keep every marker like <<0>> exactly as it is — each stands for a name. \
+For crop problems use the standard English farming words: blight, rot, root \
+rot, rust, wilt, leaf spot, pest, pest damage — never a looser word such as \
+"burn" or "scorch". \
 Use English letters only — no {language} script anywhere; write units the \
 English way (mm, °C, km/h, acres, %). Keep every number, date, name and time \
 exactly as written. Do not add, drop or soften anything — especially a \
@@ -297,7 +306,7 @@ def restyle(question: str, lines: list[str], lang: str) -> list[str] | None:
     lines = [x for x in lines if x and x.strip()]
     if not lines:
         return None
-    for _ in range(2):  # one retry: a rewrite that drops a detail is refused, not shown
+    for _ in range(3):  # retries: a rewrite that drops a detail is refused, not shown
         got = _restyle_once(question, lines, lang)
         if got:
             return got

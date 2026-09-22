@@ -40,6 +40,10 @@ class AskIn(BaseModel):
     lang: str = "en"
     screen: str | None = Field(default=None, max_length=20)
     farm_id: int | None = None
+    prev_text: str | None = Field(default=None, max_length=300)
+    """The farmer's previous question in this chat, and the topic that answered
+    it — so a follow-up is read in context."""
+    prev_topic: str | None = Field(default=None, max_length=40)
 
 
 @router.post("/ask")
@@ -64,4 +68,5 @@ def ask(body: AskIn, request: Request, db: Session = Depends(get_db), kb: KB = D
         where = (owned | Farm.is_demo.is_(True)) if user.is_demo else owned
         farms = list(db.scalars(select(Farm).where(where).order_by(Farm.id)).all())
     return krishi.answer(db, kb, text=body.text, topic=body.topic, screen=body.screen, lang=_lang(body.lang),
-                         farm=farm, user=user if user and user.role == "farmer" else None, farms=farms)
+                         farm=farm, user=user if user and user.role == "farmer" else None, farms=farms,
+                         prev_text=body.prev_text, prev_topic=body.prev_topic)

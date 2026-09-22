@@ -214,9 +214,9 @@
    ],
    "ask": {
     "en": [
-     "Which pests or diseases can come now?",
-     "what disease risk is there",
-     "which pest to watch for"
+     "Which pests or diseases could come this week?",
+     "what disease risk is there right now",
+     "which pest should I watch out for"
     ],
     "hi": [
      "अभी कौन से कीट या रोग आ सकते हैं?",
@@ -230,22 +230,40 @@
     ]
    },
    "keys": [
+    "risk",
+    "khatra",
+    "dhoka",
+    "aa sakte",
+    "aa sakta",
+    "yeu shakto",
+    "forecast",
+    "chance",
+    "likely",
+    "watch",
+    "khatre",
+    "खतरा",
+    "धोका",
+    "जोखिम",
+    "आ सकते",
+    "येऊ शकतो",
     "pest",
-    "disease",
+    "pests",
     "keeda",
     "kida",
     "keede",
-    "rog",
-    "bimari",
     "kid",
-    "khatra",
-    "dhoka",
-    "risk",
+    "could come",
+    "come",
+    "aa sakti",
+    "aa sakta hai",
+    "आ सकता",
+    "आ सकती",
     "कीट",
     "कीड",
-    "रोग",
-    "धोका",
-    "खतरा"
+    "कीड़े",
+    "week",
+    "hafte",
+    "athavda"
    ]
   },
   {
@@ -931,6 +949,99 @@
     "hi": "यह दिखाता है कि पिछले सालों में इसी महीने आपके ज़िले के किसानों ने किसान कॉल सेंटर से सबसे ज़्यादा किस बारे में पूछा — 2.6 लाख असली कॉल से। इससे पता चलता है कि आपके आसपास अभी आम तौर पर कौन से कीट आते हैं।",
     "mr": "मागील वर्षांत याच महिन्यात तुमच्या जिल्ह्यातील शेतकऱ्यांनी किसान कॉल सेंटरला सर्वाधिक कशाबद्दल विचारले ते हे दाखवते — 2.6 लाख खऱ्या कॉलमधून. तुमच्या भागात सध्या सहसा कोणत्या किडी येतात याचा हा आधीचा अंदाज आहे."
    }
+  },
+  {
+   "id": "diagnose_problem",
+   "screens": [
+    "home",
+    "scan",
+    "result",
+    "weather"
+   ],
+   "ask": {
+    "en": [
+     "Something is wrong with my crop — what is it?",
+     "which disease has my crop got",
+     "I think my plants have root rot",
+     "I am confused about what is wrong with my crop"
+    ],
+    "hi": [
+     "मेरी फसल में क्या खराबी है?",
+     "मेरी फसल को कौन सी बीमारी लग गई है",
+     "लगता है जड़ सड़ गई है",
+     "फसल को लेकर बहुत परेशान हूँ, समझ नहीं आ रहा"
+    ],
+    "mr": [
+     "माझ्या पिकाला काय झाले आहे?",
+     "माझ्या पिकाला कोणता रोग लागला आहे",
+     "मुळे कुजली आहेत असे वाटते",
+     "पिकाबद्दल काही कळत नाही, काळजी वाटते"
+    ]
+   },
+   "keys": [
+    "lag gayi",
+    "lag gaya",
+    "ho gayi",
+    "ho gaya",
+    "hui hai",
+    "huyi",
+    "kya hua",
+    "kya ho gaya",
+    "khrab",
+    "kharab",
+    "problem",
+    "wrong",
+    "sick",
+    "dying",
+    "rot",
+    "sadan",
+    "sad gayi",
+    "gal gayi",
+    "jad",
+    "root",
+    "roots",
+    "confused",
+    "pareshan",
+    "samajh nahi",
+    "pata nahi",
+    "pata nhi",
+    "identify",
+    "what is it",
+    "zala",
+    "lagla",
+    "kujli",
+    "सड़",
+    "जड़",
+    "खराब",
+    "परेशान",
+    "लग गई",
+    "कुजली",
+    "मुळे",
+    "झाले"
+   ],
+   "answer": {
+    "en": "I can't tell a disease from words alone — many look alike, and root rot, a blight or pest damage each need different care. Let's check it properly: photograph the affected part (leaf, stem or roots) in daylight, or start a live check and I'll guide you around the plant. If the app isn't sure, an expert looks at it. You can also call the Kisan Call Centre on 1800-180-1551 (free).",
+    "hi": "सिर्फ़ बताने से बीमारी पहचानना मुमकिन नहीं — कई बीमारियाँ एक जैसी दिखती हैं, और जड़ सड़न, झुलसा या कीट के नुकसान का इलाज अलग-अलग होता है। आइए ठीक से जाँचें: दिन की रोशनी में प्रभावित हिस्से (पत्ता, तना या जड़) की फोटो लें, या लाइव जाँच शुरू करें — मैं पौधे के चारों ओर रास्ता दिखाऊँगा। ऐप को भरोसा न हो तो विशेषज्ञ देखते हैं। आप किसान कॉल सेंटर 1800-180-1551 (मुफ़्त) पर भी फ़ोन कर सकते हैं।",
+    "mr": "फक्त सांगण्यावरून रोग ओळखता येत नाही — अनेक रोग सारखे दिसतात, आणि मूळकूज, करपा किंवा किडीचे नुकसान यांचे उपचार वेगळे असतात. चला नीट तपासू: दिवसाच्या उजेडात बाधित भागाचा (पान, खोड किंवा मुळे) फोटो घ्या, किंवा थेट तपासणी सुरू करा — मी रोपाभोवती मार्ग दाखवेन. ॲपला खात्री नसेल तर तज्ज्ञ पाहतात. तुम्ही किसान कॉल सेंटर 1800-180-1551 (मोफत) वरही फोन करू शकता."
+   },
+   "go": [
+    {
+     "to": "/app/scan",
+     "label": {
+      "en": "Photograph it",
+      "hi": "फोटो लें",
+      "mr": "फोटो घ्या"
+     }
+    },
+    {
+     "to": "/app/live",
+     "label": {
+      "en": "Start live check",
+      "hi": "लाइव जाँच शुरू करें",
+      "mr": "थेट तपासणी सुरू करा"
+     }
+    }
+   ]
   },
   {
    "id": "scan_photo",

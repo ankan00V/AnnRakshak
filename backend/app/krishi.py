@@ -410,24 +410,70 @@ def register(text: str | None, app_lang: str) -> tuple[str, bool]:
 
 
 def answer(db: Session, kb: KB, *, text: str | None, topic: str | None, screen: str | None, lang: str,
-           farm: Farm | None, user=None, farms: list[Farm] | None = None) -> dict:
+           farm: Farm | None, user=None, farms: list[Farm] | None = None,
+           prev_text: str | None = None, prev_topic: str | None = None) -> dict:
     """Answer in the language and letters the farmer used: a Tamil question gets
     Tamil, English gets English, and "aj ka weather kya h" gets Hindi in English
     letters. `speak` keeps the proper-script text for the voice."""
     said, roman = register(text, lang)
-    out = _answer(db, kb, text=text, topic=topic, screen=screen, lang=said, farm=farm, user=user, farms=farms)
+    before = None
+    if prev_text or prev_topic:  # the chat so far, for a follow-up ("no, it's not that")
+        before = (f'the farmer asked "{" ".join((prev_text or "").split())[:200]}"' if prev_text else "the farmer tapped a question") + \
+                 (f" and was answered with topic {prev_topic}" if prev_topic else "")
+    out = _answer(db, kb, text=text, topic=topic, screen=screen, lang=said, farm=farm, user=user, farms=farms,
+                  before=before)
     out["lang"] = said
     if roman and said != "en":
         native = [out.get("text") or "", *(out.get("steps") or [])]
-        styled = llm.restyle(text or "", native, said)
+        styled = _restyle_keeping_names(kb, text or "", native, said)
         if styled:
             out["speak"] = " ".join(x for x in native if x)
             out["text"], out["steps"] = styled[0], styled[1:]
+            # Buttons in the same letters as the answer: the English labels.
+            out["go"] = [{"to": g["to"], "label": _english_label(g["to"], out.get("topic")) or g["label"]}
+                         for g in out.get("go") or []]
     return out
 
 
+def _restyle_keeping_names(kb: KB, question: str, lines: list[str], lang: str) -> list[str] | None:
+    """The romanised rewrite, with every pest and disease name held out of the
+    model's hands: each is swapped for a marker before and back — as its English
+    name, which is how people write them in English letters — after. A rewrite
+    once turned "Maydis leaf blight" into "Medis leaf burn"; a lost marker means
+    the whole rewrite is refused and the proper-script answer stands."""
+    names = sorted({tr(t["names"], lang): tr(t["names"], "en") for t in kb.targets.values()}.items(),
+                   key=lambda kv: -len(kv[0]))  # longest first: "rice leaf blast" before "leaf blast"
+    held: list[str] = []
+    marked = []
+    for line in lines:
+        for native_name, english in names:
+            if native_name and native_name in line:
+                line = line.replace(native_name, f"<<{len(held)}>>")
+                held.append(english)
+        marked.append(line)
+    styled = llm.restyle(question, marked, lang)
+    if not styled:
+        return None
+    joined = "\n".join(styled)
+    if any(joined.count(f"<<{i}>>") < 1 for i in range(len(held))):
+        return None
+    for i, english in enumerate(held):
+        styled = [x.replace(f"<<{i}>>", english) for x in styled]
+    return styled
+
+
+def _english_label(to: str, topic: str | None = None) -> str | None:
+    """The button's English label: the answering topic's own first, then the
+    shared buttons, then any topic's."""
+    own = index().topics.get(topic or "", {}).get("go") or []
+    for g in [*own, *GO.values(), *(g for t in index().topics.values() for g in t.get("go") or [])]:
+        if g["to"] == to:
+            return tr(g["label"], "en")
+    return None
+
+
 def _answer(db: Session, kb: KB, *, text: str | None, topic: str | None, screen: str | None, lang: str,
-            farm: Farm | None, user=None, farms: list[Farm] | None = None) -> dict:
+            farm: Farm | None, user=None, farms: list[Farm] | None = None, before: str | None = None) -> dict:
     """`user` and `farms` are the signed-in farmer and their own fields, and are
     the only place a personal answer may come from."""
     idx = index()
@@ -444,7 +490,7 @@ def _answer(db: Session, kb: KB, *, text: str | None, topic: str | None, screen:
         # raha hai"), so below CONFIDENT the model reads the question instead —
         # and only ever answers with one of our own topic ids.
         if score < CONFIDENT and (text or "").strip():
-            routed = _route(text or "", idx)
+            routed = _route(text or "", idx, before)
             if routed in idx.topics:
                 best, score, ranked = routed, max(score, MATCH_MIN), []
             elif routed == PERSONAL:
@@ -760,13 +806,13 @@ def _fused_rank(idx: Index, text: str, lang: str, screen: str | None) -> list[tu
     return total.most_common()
 
 
-def _route(text: str, idx: Index) -> str | None:
+def _route(text: str, idx: Index, before: str | None = None) -> str | None:
     """What the farmer meant, read by the model, as one of our own topic ids."""
     topics = [(tid, " / ".join(t["ask"]["en"][:3]) + " | " + ", ".join(t.get("keys", [])[:10]))
               for tid, t in idx.topics.items()]
     topics.append((PERSONAL, "what crops do I grow / where is my field / how big is my land / "
                              "when did I sow / what is my name, village, phone | my, mera, majha, apna"))
-    return llm.route(text, topics)
+    return llm.route(text, topics, before)
 
 
 def _farm_line(db: Session, kb: KB, farm: Farm, lang: str) -> dict:

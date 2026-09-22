@@ -94,7 +94,8 @@ export const api = {
 
   krishiHello: (lang: Lang, screen: string) =>
     req<{ text: string; suggestions: KrishiChip[] }>(`/api/krishi/hello?lang=${lang}&screen=${screen}`),
-  krishiAsk: (body: { text?: string; topic?: string; lang: Lang; screen: string; farm_id?: number | null }) =>
+  krishiAsk: (body: { text?: string; topic?: string; lang: Lang; screen: string; farm_id?: number | null;
+    prev_text?: string | null; prev_topic?: string | null }) =>
     req<KrishiAnswer>('/api/krishi/ask', json(body)),
 
   health: () => req<{ status: string; model: { is_stub: boolean }; voice: { configured: boolean } }>('/health'),

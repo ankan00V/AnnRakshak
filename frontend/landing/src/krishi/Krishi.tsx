@@ -108,13 +108,19 @@ export default function Krishi({ aboveNav = false, anchor = 'float' }:
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
 
+  // The last question and the topic that answered it: sent with the next one,
+  // so a follow-up ("no, it's not that") is read in context.
+  const last = useRef<{ text: string; topic: string | null } | null>(null)
+
   const ask = async (q: { topic?: string; text?: string }, shown: string) => {
     if (busy) return
     setMsgs((m) => [...m, { id: nextId++, from: 'me', text: shown }])
     setInput('')
     setBusy(true)
     try {
-      const r = await api.krishiAsk({ ...q, lang, screen, farm_id: farmId })
+      const r = await api.krishiAsk({ ...q, lang, screen, farm_id: farmId,
+        prev_text: last.current?.text ?? null, prev_topic: last.current?.topic ?? null })
+      last.current = { text: shown, topic: r.topic }
       setMsgs((m) => [...m, { id: nextId++, from: 'krishi', text: r.text, steps: r.steps, go: r.go, lang: r.lang, speak: r.speak, ask: q }])
       setChips(r.suggestions)
       if (r.topic) setAsked((a) => [...a, r.topic!])

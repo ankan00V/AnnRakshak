@@ -60,6 +60,12 @@ CASES = [
     ("what is the price of onion in market", None, "not_app"),
     ("namaste", None, "greeting"),
     ("asdf qwerty", None, None),
+    # a farmer describing a sick crop wants to find out what it is — not the forecast
+    ("mere harvest pe konsi bimari lag gayi h mujhe pata nhi chal raha", None, "diagnose_problem"),
+    ("mere harvest ko shayd roots rot huyi hai", None, "diagnose_problem"),
+    ("mai bohot confused hu apne harvest ko leke", None, "diagnose_problem"),
+    ("I checked its not maydis leaf blight, I feel its root rot", None, "diagnose_problem"),
+    ("which pests could come this week", None, "risks_now"),
 ]
 
 
@@ -299,3 +305,34 @@ def test_groq_keys_take_turns_and_a_limited_one_steps_aside(monkeypatch):
     for _ in range(4):
         assert llm._chat([{"role": "user", "content": "q"}], max_tokens=5, temperature=0) == "ok"
     assert set(used) == {"k1", "k2", "k3"} and used.count("k2") == 1  # tried once, then sat out
+
+
+
+def test_a_follow_up_is_read_with_the_question_before_it(krishi_world, monkeypatch):
+    """ "nhi ye nhi h" alone means nothing; after a list of likely diseases it
+    means "then find out what my crop has". The router gets the chat so far."""
+    from app import llm
+    seen: list[str | None] = []
+    monkeypatch.setattr(llm, "route", lambda q, topics, before=None: seen.append(before) or "diagnose_problem")
+    r = krishi_world.post("/api/krishi/ask", json={"text": "nhi ye nhi h", "lang": "hi", "farm_id": 1,
+                                                   "prev_text": "mere harvest pe konsi bimari lag gayi",
+                                                   "prev_topic": "risks_now"}).json()
+    assert r["topic"] == "diagnose_problem"
+    assert seen and "risks_now" in seen[0] and "konsi bimari" in seen[0]
+
+
+def test_a_romanised_answer_keeps_disease_names_exact(monkeypatch):
+    """The rewrite into English letters never touches a pest or disease name:
+    each is held out and put back as its English name."""
+    from app import llm
+    from app.kb import get_kb
+    kb = get_kb()
+    hi_name = next(t["names"]["hi"] for k, t in kb.targets.items() if k == "maize_maydis_leaf_blight")
+    lines = ["अभी मौसम इनके पक्ष में है:", f"{hi_name} — अधिक जोखिम"]
+
+    def rewrite(messages, **k):  # a model that would mangle the name if it could see it
+        body = messages[1]["content"].split("Answer lines:\n", 1)[1].splitlines()
+        return '{"lines": ["Abhi weather inke favour mein hai:", "' + body[1].split(" — ")[0] + ' — high risk"]}'
+    monkeypatch.setattr(llm, "_chat", rewrite)
+    out = krishi._restyle_keeping_names(kb, "kaunsi bimari aa sakti hai", lines, "hi")
+    assert out and out[1].startswith("Maydis leaf blight") and hi_name not in out[1]
