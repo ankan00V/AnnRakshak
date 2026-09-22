@@ -379,17 +379,29 @@ def finetune(backbone, train, val, class_idx, device, quick, epochs, backgrounds
 # --------------------------------------------------------------------------
 
 def fit_temperature(logits: torch.Tensor, y: torch.Tensor) -> float:
+    """One scale for the whole model, fitted so its confidence matches how
+    often it is right — every class counting the same.
+
+    Counting rows instead lets the biggest classes set the scale. On 22 Sep the
+    validation set was 125 ICAR photos against 1,520 from the extra sources and
+    the fit came out at T=0.824; weighting every class the same — as the
+    training sampler already draws them — gives 0.858 on the same logits. It did
+    not change what the gate decided that day, and it stops the scale drifting
+    further as the Paddy Doctor and ASDID imports pile thousands of rows onto a
+    few classes."""
+    counts = torch.bincount(y, minlength=logits.shape[1]).clamp(min=1)
+    w = (1.0 / counts).to(logits.dtype)
     log_t = torch.zeros(1, requires_grad=True)
     opt = torch.optim.LBFGS([log_t], lr=0.1, max_iter=200)
 
     def closure():
         opt.zero_grad()
-        loss = F.cross_entropy(logits / log_t.exp(), y)
+        loss = F.cross_entropy(logits / log_t.exp(), y, weight=w)
         loss.backward()
         return loss
 
     opt.step(closure)
-    return float(log_t.exp().clamp(0.05, 20.0))
+    return float(log_t.exp().clamp(0.05, 20.0).detach())
 
 
 def ece(probs: np.ndarray, y: np.ndarray, bins: int = 10) -> float:
