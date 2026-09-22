@@ -48,7 +48,7 @@ export default function LanguagePicker({ onPick, variant = 'button' }: {
 
   return (
     <>
-      <button onClick={() => setOpen(true)} aria-label={t('chooseLanguage')}
+      <button data-tour="lang" onClick={() => setOpen(true)} aria-label={t('chooseLanguage')}
         className="flex items-center gap-1.5 rounded-full bg-cream/10 hover:bg-cream/20 px-3 min-h-[36px] text-xs font-medium">
         <Languages className="w-4 h-4" />
         {current?.label}

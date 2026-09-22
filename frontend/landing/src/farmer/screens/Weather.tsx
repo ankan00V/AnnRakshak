@@ -477,7 +477,7 @@ export function WeatherNowCard() {
   const c = v.current
   const top = v.advisories.find((a) => a.rule !== 'spray_window')
   return (
-    <Link to="/app/weather" className="block rounded-3xl bg-white border border-soil-dark/10 p-4 active:scale-[0.99] transition-transform lg:h-full lg:p-6 lg:flex lg:flex-col lg:hover:border-leaf/40">
+    <Link to="/app/weather" data-tour="weather" className="block rounded-3xl bg-white border border-soil-dark/10 p-4 active:scale-[0.99] transition-transform lg:h-full lg:p-6 lg:flex lg:flex-col lg:hover:border-leaf/40">
       <div className="flex items-center gap-4">
         <div className="shrink-0 w-16 text-center lg:w-20">
           <p className="text-3xl font-semibold leading-none lg:text-5xl">{c.temp != null ? Math.round(c.temp) : '–'}°</p>

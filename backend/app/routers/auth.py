@@ -270,7 +270,8 @@ class ExpertSignup(BaseModel):
 
 def _me(db: Session, user: User) -> dict:
     out = {"id": user.id, "role": user.role, "name": user.name, "phone": user.phone, "email": user.email,
-           "lang": user.lang, "is_demo": user.is_demo}
+           "lang": user.lang, "is_demo": user.is_demo,
+           "created_at": user.created_at.isoformat() if user.created_at else None}
     if user.role == "farmer":
         p = db.get(FarmerProfile, user.id)
         out["profile"] = {"state": p.state, "district": p.district, "taluka": p.taluka, "village": p.village,

@@ -675,6 +675,8 @@ export interface Me {
   email: string | null
   lang: Lang
   is_demo: boolean
+  /** When the account was made: a new farmer is offered the app tour. */
+  created_at?: string | null
   farm_ids?: number[]
   profile: {
     state?: string | null

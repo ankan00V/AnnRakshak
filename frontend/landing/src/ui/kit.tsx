@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type HTMLAttributes, type ReactNode } from 'react'
 import { AlertTriangle, Loader2, Mic, Square, Volume2, WifiOff } from 'lucide-react'
 import { api } from '../api/client'
 import type { Heatmap, Lang } from '../api/types'
@@ -49,8 +49,8 @@ export function Pill({ children, tone = 'neutral', className = '' }: {
   )
 }
 
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-2xl bg-white border border-soil-dark/10 ${className}`}>{children}</div>
+export function Card({ children, className = '', ...rest }: { children: ReactNode; className?: string } & Omit<HTMLAttributes<HTMLDivElement>, 'className' | 'children'>) {
+  return <div {...rest} className={`rounded-2xl bg-white border border-soil-dark/10 ${className}`}>{children}</div>
 }
 
 /** Reads text aloud with Sarvam Bulbul via the backend (key stays server-side). */

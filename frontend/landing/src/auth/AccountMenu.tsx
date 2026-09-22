@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, ShieldCheck } from 'lucide-react'
+import { Headphones, LogOut, ShieldCheck } from 'lucide-react'
 import { useAuth } from './AuthContext'
 
 /** The signed-in person in a dark header: initials, and a menu with who they
  *  are and Log out. Labels default to English (the expert screens). */
-export default function AccountMenu({ logoutLabel = 'Log out', demoLabel = 'Demo' }: {
+export default function AccountMenu({ logoutLabel = 'Log out', demoLabel = 'Demo', extra }: {
   logoutLabel?: string; demoLabel?: string
+  /** One more item above Log out (the farmer app's "App tour"). */
+  extra?: { label: string; onClick: () => void }
 }) {
   const { me, logout } = useAuth()
   const navigate = useNavigate()
@@ -49,8 +51,15 @@ export default function AccountMenu({ logoutLabel = 'Log out', demoLabel = 'Demo
               </span>
             )}
           </div>
+          {extra && (
+            <button onClick={() => { setOpen(false); extra.onClick() }}
+              className="mt-4 w-full min-h-[42px] rounded-full bg-leaf-deep text-cream text-sm font-medium flex items-center justify-center gap-2 hover:brightness-110">
+              <Headphones className="w-4 h-4" />
+              {extra.label}
+            </button>
+          )}
           <button onClick={() => { navigate('/', { replace: true }); void logout() }}
-            className="mt-4 w-full min-h-[42px] rounded-full border border-soil-dark/15 text-sm font-medium flex items-center justify-center gap-2 hover:bg-cream">
+            className={`${extra ? 'mt-2' : 'mt-4'} w-full min-h-[42px] rounded-full border border-soil-dark/15 text-sm font-medium flex items-center justify-center gap-2 hover:bg-cream`}>
             <LogOut className="w-4 h-4" />
             {logoutLabel}
           </button>

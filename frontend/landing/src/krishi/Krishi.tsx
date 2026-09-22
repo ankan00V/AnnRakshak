@@ -139,7 +139,7 @@ export default function Krishi({ aboveNav = false, anchor = 'float' }:
     <>
       {!open && anchor === 'header' && (
         <button
-          onClick={() => setOpen(true)}
+          data-tour="krishi" onClick={() => setOpen(true)}
           aria-label={t('krishiAsk')}
           className="shrink-0 flex items-center gap-1.5 rounded-full bg-cream/15 text-cream ring-1 ring-cream/30 pl-1.5 pr-3 py-1 hover:bg-cream/25 transition"
         >
@@ -152,7 +152,7 @@ export default function Krishi({ aboveNav = false, anchor = 'float' }:
 
       {!open && anchor === 'float' && (
         <button
-          onClick={() => setOpen(true)}
+          data-tour="krishi" onClick={() => setOpen(true)}
           aria-label={t('krishiAsk')}
           className={`fixed right-4 ${offset} z-40 flex items-center gap-2 rounded-full bg-ochre text-soil-dark pl-1.5 pr-4 py-1.5 shadow-lg shadow-soil-dark/20 ring-2 ring-cream hover:brightness-105 transition animate-fadein`}
         >
