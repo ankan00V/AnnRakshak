@@ -47,6 +47,18 @@ NVIDIA_SUGGEST_KEY = (os.environ.get("NVIDIA_API_KEYS") or "").split(",")[-1].st
 """The spray check's own key. It is a separate, farmer-facing call on a screen
 about chemicals, and it should not go dark because Krishi used up the quota."""
 NVIDIA_TIMEOUT_S = 10.0
+SARVAM_CHAT_KEYS = [k.strip() for k in (os.environ.get("SARVAM_CHAT_KEYS") or "").split(",") if k.strip()]
+"""Sarvam chat keys (sarvam-105b), the fallback when NVIDIA is slow or down.
+Separate from SARVAM_API_KEYS: voice stays on Bhashini."""
+SARVAM_CHAT_MODEL = "sarvam-105b"
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+GROQ_API_KEYS = list(dict.fromkeys(
+    k.strip() for k in [*(os.environ.get("GROQ_API_KEYS") or "").split(","), GROQ_API_KEY or ""] if k.strip()))
+"""Every Groq key, used in turn (see nim._chat)."""
+GROQ_MODEL = "openai/gpt-oss-20b"
+"""The same model as on NVIDIA, so every prompt behaves the same; ~0.5 s."""
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+SARVAM_CHAT_URL = "https://api.sarvam.ai/v1/chat/completions"
 """Measured median 2.6 s, 90th percentile 4.8 s. A call that times out costs the
 farmer the wait AND falls back anyway, so the bar is set past the slow tail."""
 OPENWEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY")

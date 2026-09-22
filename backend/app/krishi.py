@@ -27,7 +27,8 @@ from functools import lru_cache
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import nim, services
+from app import cache, nim, services, voice
+from app.i18n import local_date
 from app.config import KB_DIR
 from app.engine import agromet, agroweather
 from app.i18n import LANGS
@@ -37,6 +38,9 @@ from app.models import Alert, Farm, FarmerProfile, FollowUp, Problem
 MATCH_MIN = 0.14
 """Below this similarity Krishi says it didn't understand instead of guessing."""
 CONFIDENT = 0.30
+CLEAR_LEAD = 0.08
+"""The native+English score answers alone only this far ahead of the runner-up;
+a close call goes to the model."""
 """At or above this the matcher is trusted on its own and no model is called:
 the common questions stay instant and work with the network down."""
 PERSONAL = "my_details"
@@ -135,7 +139,7 @@ TEXT = {
     "water_unknown": {"en": "There isn't enough recent weather for your field to judge water yet. Push a finger 5 cm into the soil: if it's dry, irrigate.",
                       "hi": "आपके खेत के पानी का अंदाज़ा लगाने के लिए अभी पर्याप्त मौसम आँकड़े नहीं हैं। मिट्टी में 5 सेमी उंगली डालें: सूखी हो तो सिंचाई करें।",
                       "mr": "तुमच्या शेताच्या पाण्याचा अंदाज लावण्यासाठी अद्याप पुरेशी हवामान माहिती नाही. मातीत 5 सेमी बोट घाला: कोरडी असेल तर पाणी द्या."},
-    "risks_intro": {"en": "The weather and your crop's stage favour these now:",
+    "risks_intro": {"en": "The weather and your crop's growth stage favour these now:",
                     "hi": "अभी का मौसम और फसल की अवस्था इनके लिए अनुकूल है:",
                     "mr": "सध्याचे हवामान आणि पिकाची अवस्था यांना पोषक आहे:"},
     "risks_none": {"en": "Nothing is favoured strongly right now. AnnRakshak keeps checking every day and will alert you.",
@@ -173,9 +177,9 @@ TEXT = {
     "crops_trained": {"en": "The model is trained on ICAR photos and field photos from Indian fields.",
                       "hi": "मॉडल ICAR की तस्वीरों और भारतीय खेतों की फ़ील्ड फ़ोटो पर सीखा है।",
                       "mr": "मॉडेल ICAR ची चित्रे आणि भारतीय शेतांतील फोटोंवर शिकले आहे."},
-    "farm_line": {"en": "Your {crop}{variety} in {place}: sown on {sown}, now {das} days old, at the {stage} stage. Field size {area} acres.",
-                  "hi": "{place} में आपकी {crop}{variety}: बुवाई {sown} को, अब {das} दिन की, {stage} अवस्था में। खेत {area} एकड़।",
-                  "mr": "{place} मधील तुमचे {crop}{variety}: पेरणी {sown} रोजी, आता {das} दिवसांचे, {stage} अवस्थेत. क्षेत्र {area} एकर."},
+    "farm_line": {"en": "Crop: {crop}. Place: {place}. Sown on {sown}. Age: {das} days. Stage: {stage}. Field: {area} acres.",
+                  "hi": "फसल: {crop}। जगह: {place}। बुवाई: {sown}। उम्र: {das} दिन। अवस्था: {stage}। खेत: {area} एकड़।",
+                  "mr": "पीक: {crop}. ठिकाण: {place}. पेरणी: {sown}. वय: {das} दिवस. अवस्था: {stage}. क्षेत्र: {area} एकर."},
 }
 
 # Buttons Krishi attaches to live answers.
@@ -347,8 +351,86 @@ def hello(screen: str | None, lang: str, name: str | None) -> dict:
     return {"text": _t("hello", lang, name=f" {first}" if first else ""), "suggestions": suggestions(screen, lang)}
 
 
+# --------------------------------------------------------------------------
+# Answering in the farmer's own voice
+# --------------------------------------------------------------------------
+
+SCRIPTS = [  # Unicode block -> language
+    ((0x0980, 0x09FF), "bn"), ((0x0A00, 0x0A7F), "pa"), ((0x0A80, 0x0AFF), "gu"), ((0x0B80, 0x0BFF), "ta"),
+    ((0x0C00, 0x0C7F), "te"), ((0x0C80, 0x0CFF), "kn"), ((0x0D00, 0x0D7F), "ml"), ((0x0900, 0x097F), "deva"),
+]
+
+ROMAN = {  # everyday words farmers type in English letters, per language
+    "hi": "kya kyaa hai h hain hoga hogi aaj aj kal mera meri mere kab karu karoon karna nahi nhi kaise kitna "
+          "kitni ka ki ke ko mein mausam barish baarish dawa dawai khet fasal paani pani chhidkav kyu kyun "
+          "batao bata sakta sakte abhi raha rahi gaya kaun konsi",
+    "mr": "kay kaay ahe aahe majha majhi maza mazi kadhi kasa kashi paus sheti pik kiti karaycha udya "
+          "fawarni favarni havaman zala nahi",
+    "bn": "ache achhe amar amake kobe kemon kothay kichu brishti chas jol korbo hobe bolo keno",
+    "ta": "enna epdi eppadi naan enaku inniku indru naalai mazhai vayal payir thanni eppo sollu iruku irukku",
+    "te": "emi ela naaku ivala eeroju repu varsham panta polam neellu eppudu cheppu undi ledu",
+    "kn": "enu hege nanna nange indu naale male bele hola neeru yavaga heli ide",
+    "ml": "enthu entha engane ente enikku innu mazha vila vellam eppol parayu undo",
+    "gu": "shu kem che chhe maru mari aaje kale varsad khetar paak kyare kaho nathi",
+    "pa": "kiven ajj meenh kado dasso kinna",
+}
+_ROMAN = {lang: set(words.split()) for lang, words in ROMAN.items()}
+
+
+def register(text: str | None, app_lang: str) -> tuple[str, bool]:
+    """The language the farmer wrote in, and whether in English letters.
+
+    An Indian script decides the language (Devanagari follows the app between
+    Hindi and Marathi). English letters are English unless the words are a
+    romanised Indian language ("aj ka weather kya h" is Hindi); a tie goes to
+    the app's language. No question text (a tapped chip): the app's language."""
+    s = (text or "").strip()
+    if not s:
+        return app_lang, False
+    counts: Counter = Counter()
+    latin = 0
+    for ch in s:
+        o = ord(ch)
+        if ch.isascii() and ch.isalpha():
+            latin += 1
+            continue
+        for (lo, hi), code in SCRIPTS:
+            if lo <= o <= hi:
+                counts[code] += 1
+                break
+    if counts and counts.most_common(1)[0][1] >= latin:
+        code = counts.most_common(1)[0][0]
+        if code == "deva":
+            code = app_lang if app_lang in ("hi", "mr") else "hi"
+        return code, False
+    words = set(re.findall(r"[a-z]+", s.lower()))
+    scores = {lang: len(words & vocab) for lang, vocab in _ROMAN.items()}
+    top = max(scores.values())
+    if top == 0:
+        return "en", False
+    tied = [lang for lang, n in scores.items() if n == top]
+    return (app_lang if app_lang in tied else tied[0]), True
+
+
 def answer(db: Session, kb: KB, *, text: str | None, topic: str | None, screen: str | None, lang: str,
            farm: Farm | None, user=None, farms: list[Farm] | None = None) -> dict:
+    """Answer in the language and letters the farmer used: a Tamil question gets
+    Tamil, English gets English, and "aj ka weather kya h" gets Hindi in English
+    letters. `speak` keeps the proper-script text for the voice."""
+    said, roman = register(text, lang)
+    out = _answer(db, kb, text=text, topic=topic, screen=screen, lang=said, farm=farm, user=user, farms=farms)
+    out["lang"] = said
+    if roman and said != "en":
+        native = [out.get("text") or "", *(out.get("steps") or [])]
+        styled = nim.restyle(text or "", native, said)
+        if styled:
+            out["speak"] = " ".join(x for x in native if x)
+            out["text"], out["steps"] = styled[0], styled[1:]
+    return out
+
+
+def _answer(db: Session, kb: KB, *, text: str | None, topic: str | None, screen: str | None, lang: str,
+            farm: Farm | None, user=None, farms: list[Farm] | None = None) -> dict:
     """`user` and `farms` are the signed-in farmer and their own fields, and are
     the only place a personal answer may come from."""
     idx = index()
@@ -360,6 +442,16 @@ def answer(db: Session, kb: KB, *, text: str | None, topic: str | None, screen: 
     else:
         ranked = idx.rank(text or "", screen)
         best, score = ranked[0] if ranked else (None, 0.0)
+        # A machine-translated language: the keyword lists there are thin, so
+        # the question is also read in English (Bhashini, ~0.5 s) and each
+        # topic scores on both. A clear winner skips the model entirely — which
+        # also keeps Krishi answering when the model is slow or down.
+        fused: list[tuple[str, float]] = []
+        if score < CONFIDENT and lang not in AUTHORED_LANGS and (text or "").strip():
+            fused = _fused_rank(idx, text or "", lang, screen)
+            runner_up = fused[1][1] if len(fused) > 1 else 0.0
+            if fused and fused[0][1] >= CONFIDENT and fused[0][1] - runner_up >= CLEAR_LEAD:
+                ranked, (best, score) = fused, fused[0]
         # The matcher is fast, offline and right about the common questions. It
         # is weak on the way farmers really type ("mera dhan me patta pila ho
         # raha hai"), so below CONFIDENT the model reads the question instead —
@@ -370,6 +462,8 @@ def answer(db: Session, kb: KB, *, text: str | None, topic: str | None, screen: 
                 best, score, ranked = routed, max(score, MATCH_MIN), []
             elif routed == PERSONAL:
                 best, score, ranked = PERSONAL, 1.0, []
+            elif routed is None and fused and fused[0][1] >= CONFIDENT and not nim.answered_none():
+                ranked, (best, score) = fused, fused[0]  # the model is down: the close call stands
             elif routed is None and score < MATCH_MIN:
                 best = None  # off topic, or nothing we have an authored answer for
     if best == PERSONAL:
@@ -482,7 +576,7 @@ def _when(iso: str, lang: str) -> str:
     t = datetime.fromisoformat(iso)
     today = agroweather.now_ist().date()
     day = _t("today", lang) if t.date() == today else _t("tomorrow", lang) if t.date() == today + timedelta(days=1) \
-        else t.strftime("%d %b")
+        else local_date(t.date(), lang, year=False)
     return f"{day} {t:%H:%M}"
 
 
@@ -656,6 +750,22 @@ def _personal(db: Session, kb: KB, user, farms: list[Farm], question: str, lang:
             "suggestions": suggestions(screen, lang)}
 
 
+def _fused_rank(idx: Index, text: str, lang: str, screen: str | None) -> list[tuple[str, float]]:
+    """Topics scored on the farmer's own words plus their English translation."""
+    key = f"krishi:en:{lang}:{' '.join(text.lower().split())[:200]}"
+    en = cache.get_json(key)
+    if en is None:
+        try:
+            en = voice.translate(text, lang, "en") or ""
+        except Exception:  # noqa: BLE001 — no translation: the native score stands
+            return []
+        cache.set_json(key, en, 7 * 24 * 3600)
+    total: Counter = Counter()
+    for tid, sc in idx.rank(text, screen) + idx.rank(en, screen):
+        total[tid] += sc
+    return total.most_common()
+
+
 def _route(text: str, idx: Index) -> str | None:
     """What the farmer meant, read by the model, as one of our own topic ids."""
     topics = [(tid, " / ".join(t["ask"]["en"][:3]) + " | " + ", ".join(t.get("keys", [])[:10]))
@@ -668,7 +778,8 @@ def _route(text: str, idx: Index) -> str | None:
 def _farm_line(db: Session, kb: KB, farm: Farm, lang: str) -> dict:
     stage, das = kb.stage_for(farm.crop, farm.sowing_date, _today_ist())
     place = ", ".join(x for x in (farm.village, farm.district) if x)
-    text = _t("farm_line", lang, crop=_crop(kb, farm, lang), variety=f" ({farm.variety})" if farm.variety else "",
-              place=place, sown=farm.sowing_date.strftime("%d %b %Y"), das=das,
+    crop = _crop(kb, farm, lang) + (f" ({farm.variety})" if farm.variety else "")
+    text = _t("farm_line", lang, crop=crop,
+              place=place, sown=local_date(farm.sowing_date, lang), das=das,
               stage=kb.stage_name(farm.crop, stage, lang), area=farm.area_acres)
     return {"text": text, "steps": [], "go": _go([GO["home"]], lang)}

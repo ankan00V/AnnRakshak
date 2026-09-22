@@ -5,7 +5,7 @@
   "sarvam-translate:v1"
  ],
  "source": "en",
- "updated": "2026-09-21",
+ "updated": "2026-09-22",
  "strings": {
   "(includes readings from your field sensor)": "(உங்கள் கள உணரியிலிருந்து வரும் அளவீடுகள் உட்பட)",
   "A Trichogramma strain bred to survive insecticide sprays, so egg parasitism continues in fields that are also sprayed.": "பூச்சிக்கொல்லி தெளிப்புகளிலிருந்து தப்பிப் பிழைக்கக்கூடிய ஒரு டிரைகோகிராமா வகை உருவாக்கப்பட்டது, எனவே தெளிக்கப்பட்ட வயல்களிலும் முட்டை ஒட்டுண்ணித் தொற்று தொடர்கிறது.",
@@ -186,6 +186,7 @@
   "Cover nursery beds and young plants overnight with straw or plastic": "நாற்றங்கால் படுக்கைகள் மற்றும் இளம் செடிகளை வைக்கோல் அல்லது பிளாஸ்டிக் கொண்டு இரவு முழுவதும் மூடி வைக்கவும்",
   "Crop greenness fell: {before} → {after}": "பயிர் பசுமை குறைந்தது: {before} → {after}",
   "Crop used ≈ {etc} mm this week; effective rain ≈ {rain} mm; shortfall ≈ {deficit} mm.": "பயன்படுத்தப்பட்ட பயிர் ≈ {etc} மிமீ இந்த வாரம்; பயனுள்ள மழை ≈ {rain} மிமீ; பற்றாக்குறை ≈ {deficit} மிமீ.",
+  "Crop: {crop}. Place: {place}. Sown on {sown}. Age: {das} days. Stage: {stage}. Field: {area} acres.": "பயிர்: {crop}. இடம்: {place}. {sown} அன்று விதைக்கப்படுகிறது. வயது: {das} நாட்கள். நிலை: {stage}. வயல்: {area} ஏக்கர்.",
   "Curvularia leaf spot": "கர்வூலேரியா இலை புள்ளி",
   "Cut off and destroy girdled parts today.": "இன்று கிரிடில் செய்யப்பட்ட பாகங்களை வெட்டி அழித்துவிடு.",
   "Cut the stem of a wilting plant near the ground: brown streaks inside mean Fusarium wilt; a clean stem after heavy rain points to parawilt.": "ஒரு அழுகும் தாவரத்தின் தண்டை தரைக்கு அருகில் வெட்டுங்கள்: உள்ளே பழுப்பு நிற கோடுகள் சராசரி :புசாரியம் வில்ட்; பலத்த மழைக்குப் பிறகு ஒரு சுத்தமான தண்டு பாராவில்ட்டை சுட்டிக்காட்டுகிறது.",
@@ -636,6 +637,7 @@
   "The forecast shows these conditions continuing.": "இந்த நிலைமைகள் தொடரும் என்று வானிலை அறிக்கை காட்டுகிறது.",
   "The model is trained on ICAR photos and field photos from Indian fields.": "இந்த மாடல் இந்திய வயல்களில் இருந்து ஐ. சி. ஏ. ஆர் புகைப்படங்கள் மற்றும் கள புகைப்படங்களில் பயிற்சி பெற்றுள்ளது.",
   "The number is how sure the AI is. The meter shows the bar it must clear: below 'ask' it won't advise and sends you to an expert; between 'ask' and 'advise' it asks you one quick field question; above 'advise' it gives advice. Hard-to-tell diseases like blast must clear a higher bar. 'What else it considered' shows the other possibilities.": "AI எவ்வளவு உறுதியாக உள்ளது என்பது எண். மீட்டர் அது தெளிவுபடுத்த வேண்டிய பட்டியைக் காட்டுகிறது: 'கேளுங்கள்' என்பதற்குக் கீழே அது ஆலோசனை வழங்காது மற்றும் ஒரு நிபுணரிடம் உங்களை அனுப்பும்; 'கேளுங்கள்' மற்றும் 'ஆலோசனை' என்பதற்கு இடையில் அது உங்களிடம் ஒரு விரைவான களக் கேள்வியைக் கேட்கிறது; 'ஆலோசனை' என்பதற்கு மேலே அது ஆலோசனையை வழங்குகிறது. குண்டுவெடிப்பு போன்ற கடினமான நோய்கள் ஒரு உயர் பட்டியை அழிக்க வேண்டும். 'அது வேறு என்ன கருதியது' என்பது மற்ற சாத்தியக்கூறுகளைக் காட்டுகிறது.",
+  "The weather and your crop's growth stage favour these now:": "வானிலை மற்றும் உங்கள் பயிரின் வளர்ச்சி நிலை இப்போது இவற்றுக்கு சாதகமாக உள்ளன:",
   "The weather and your crop's stage favour these now:": "வானிலை மற்றும் உங்கள் பயிரின் நிலை இப்போது இவற்றுக்கு சாதகமாக உள்ளது:",
   "There is no confirmed problem on this field yet, so there is nothing to spray for. Get a diagnosis first.": "இந்த வயலில் இன்னும் உறுதிசெய்யப்பட்ட பிரச்சனை எதுவும் இல்லை, எனவே தெளிக்க வேண்டிய அவசியம் இல்லை. முதலில் நோயறிதல் செய்யுங்கள்.",
   "There isn't enough recent weather for your field to judge water yet. Push a finger 5 cm into the soil: if it's dry, irrigate.": "உங்கள் வயலில் தண்ணீரை மதிப்பிடுவதற்கு போதுமான சமீபத்திய வானிலை இன்னும் இல்லை. ஒரு விரலை 5 செமீ மண்ணில் அழுத்தவும்: அது உலர்ந்திருந்தால், நீர்ப்பாசனம் செய்யுங்கள்.",

@@ -93,7 +93,10 @@ def protect(text: str) -> tuple[str, list[str]]:
 
 
 def restore(text: str, names: list[str]) -> str | None:
-    """Put the placeholders back; None if the translation lost or duplicated one."""
+    """Put the placeholders back; None if the translation lost or duplicated one.
+    Bhashini often drops the '>' of a marker followed by a word ('<6 acres' for
+    '<6> acres'); that is repaired first rather than losing the whole line."""
+    text = re.sub(r"<(\d+)(?!\d|>)", r"<\1>", text)
     for i, n in enumerate(names):
         if text.count(f"<{i}>") != 1:
             return None
@@ -118,10 +121,26 @@ def machine_translate(text: str, lang: str) -> str | None:
 SENTENCE_END = re.compile(r"[.।॥|!?]+\s*$")
 
 
+VISARGA = "\u0903\u0983\u0a03\u0a83\u0b03\u0c03\u0c83\u0d03"
+"""The visarga of Devanagari, Bengali, Gurmukhi, Gujarati, Odia, Telugu, Kannada
+and Malayalam. It looks like a colon and Bhashini writes it for one ('ফসলঃ' for
+'Crop:'), but it is a letter, so the label reads as a misspelt word."""
+_VISARGA_AS_COLON = re.compile(f"[{VISARGA}](?=\\s|$|\\{{|<)")
+
+
+def colons(source: str, out: str) -> str:
+    """Give back the colons a translator turned into visargas — only as many
+    as the source had, and only at a word's end, so a real visarga inside a
+    word (দুঃখ) is never touched."""
+    n = source.count(":")
+    return _VISARGA_AS_COLON.sub(":", out, count=n) if n else out
+
+
 def tidy(source: str, out: str) -> str:
     """Translators end a lone word or label with a full stop (Bengali 'আজ।' for
-    'today'); keep the source's own ending instead."""
-    out = out.strip()
+    'today'); keep the source's own ending instead. And colons written as a
+    visarga are colons again."""
+    out = colons(source, out.strip())
     if not SENTENCE_END.search(source.strip()):
         out = SENTENCE_END.sub("", out).rstrip()
     return out
@@ -140,3 +159,36 @@ def translate_many(strings: list[str], lang: str, workers: int = 6, progress=Non
             if progress and i % 50 == 0:
                 progress(i, len(strings))
     return done
+
+
+# --------------------------------------------------------------------------
+# Dates in the farmer's language
+# --------------------------------------------------------------------------
+
+MONTHS = {
+    "en": "January February March April May June July August September October November December",
+    "hi": "जनवरी फ़रवरी मार्च अप्रैल मई जून जुलाई अगस्त सितंबर अक्टूबर नवंबर दिसंबर",
+    "mr": "जानेवारी फेब्रुवारी मार्च एप्रिल मे जून जुलै ऑगस्ट सप्टेंबर ऑक्टोबर नोव्हेंबर डिसेंबर",
+    "bn": "জানুয়ারি ফেব্রুয়ারি মার্চ এপ্রিল মে জুন জুলাই আগস্ট সেপ্টেম্বর অক্টোবর নভেম্বর ডিসেম্বর",
+    "ta": "ஜனவரி பிப்ரவரி மார்ச் ஏப்ரல் மே ஜூன் ஜூலை ஆகஸ்ட் செப்டம்பர் அக்டோபர் நவம்பர் டிசம்பர்",
+    "te": "జనవరి ఫిబ్రవరి మార్చి ఏప్రిల్ మే జూన్ జూలై ఆగస్టు సెప్టెంబర్ అక్టోబర్ నవంబర్ డిసెంబర్",
+    "kn": "ಜನವರಿ ಫೆಬ್ರವರಿ ಮಾರ್ಚ್ ಏಪ್ರಿಲ್ ಮೇ ಜೂನ್ ಜುಲೈ ಆಗಸ್ಟ್ ಸೆಪ್ಟೆಂಬರ್ ಅಕ್ಟೋಬರ್ ನವೆಂಬರ್ ಡಿಸೆಂಬರ್",
+    "ml": "ജനുവരി ഫെബ്രുവരി മാർച്ച് ഏപ്രിൽ മേയ് ജൂൺ ജൂലൈ ഓഗസ്റ്റ് സെപ്റ്റംബർ ഒക്ടോബർ നവംബർ ഡിസംബർ",
+    "gu": "જાન્યુઆરી ફેબ્રુઆરી માર્ચ એપ્રિલ મે જૂન જુલાઈ ઑગસ્ટ સપ્ટેમ્બર ઑક્ટોબર નવેમ્બર ડિસેમ્બર",
+    "pa": "ਜਨਵਰੀ ਫ਼ਰਵਰੀ ਮਾਰਚ ਅਪ੍ਰੈਲ ਮਈ ਜੂਨ ਜੁਲਾਈ ਅਗਸਤ ਸਤੰਬਰ ਅਕਤੂਬਰ ਨਵੰਬਰ ਦਸੰਬਰ",
+}
+"""Month names as written in each language (the CLDR forms): a translated
+sentence must not carry 'September' or 'Jun' in English."""
+
+
+def month_name(month: int, lang: str) -> str:
+    return (MONTHS.get(lang) or MONTHS["en"]).split()[month - 1]
+
+
+def local_date(d, lang: str, *, year: bool = True) -> str:
+    """'28 June 2026' / '28 जून 2026' — day, month name, year in every language
+    (English keeps its short month)."""
+    m = month_name(d.month, lang)
+    if lang == "en":
+        m = m[:3]
+    return f"{d.day} {m}" + (f" {d.year}" if year else "")

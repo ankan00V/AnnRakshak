@@ -40,7 +40,7 @@ const en = {
   forecast: 'forecast',
   humidity: 'Humidity',
   rainVsNormal: 'Rain vs IMD normal',
-  stage: 'Stage',
+  stage: 'Growth stage',
   daysOld: 'days old',
   takePhoto: 'Photograph a sick plant',
   takePhotoSub: 'Close-up of the affected leaf, in daylight',

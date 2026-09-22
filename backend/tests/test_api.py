@@ -375,3 +375,23 @@ def test_the_ai_note_is_only_for_what_we_have_no_record_of(client, monkeypatch):
     assert known["suggestion"] is None  # a registered product gets the verified answer only
     unknown = client.post("/api/labelcheck/note", json={"farm_id": 1, "product": "water", "lang": "en"}).json()
     assert unknown["suggestion"].startswith("Water is just water")
+
+
+def test_the_ai_note_is_written_in_english_then_translated(client, monkeypatch):
+    """The model writes English (fast, and what the safety guard reads); the
+    farmer's language comes from the translator. A failed translation shows the
+    English rather than no note."""
+    from app import cache, nim, voice
+    asked: list[str] = []
+    monkeypatch.setattr(nim, "suggest", lambda product, crop, problem, lang, **k: asked.append(lang) or "Salt is not a pesticide.")
+    monkeypatch.setattr(voice, "translate", lambda text, s, t: f"[{t}] {text}")
+    monkeypatch.setattr(cache, "get_json", lambda key: None)
+    monkeypatch.setattr(cache, "set_json", lambda *a, **k: None)
+    hi = client.post("/api/labelcheck/note", json={"farm_id": 1, "product": "salt", "lang": "hi"}).json()
+    assert hi["suggestion"] == "[hi] Salt is not a pesticide." and asked == ["en"]
+
+    def down(*a):
+        raise RuntimeError("translator down")
+    monkeypatch.setattr(voice, "translate", down)
+    ta = client.post("/api/labelcheck/note", json={"farm_id": 1, "product": "salt", "lang": "ta"}).json()
+    assert ta["suggestion"] == "Salt is not a pesticide."

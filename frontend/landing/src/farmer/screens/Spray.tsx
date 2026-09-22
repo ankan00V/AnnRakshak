@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Ban, FlaskConical, HelpCircle, Info, Loader2, ShieldCheck, Sparkles, SprayCan } from 'lucide-react'
 import { api } from '../../api/client'
 import type { LabelVerdict } from '../../api/types'
@@ -30,12 +30,21 @@ export default function Spray() {
   const best = weather.data?.spray.windows[0]
   const current = home.data?.problems.find((p) => p.status === 'open' && p.name)
 
+  // Language switched with a verdict on screen: check the same product again,
+  // so the verdict and the AI note come back in the new language.
+  const checked = useRef<string | null>(null)
+  useEffect(() => {
+    if (checked.current) void check(checked.current)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang])
+
   const check = async (text = q) => {
     if (!text.trim()) return
     setBusy(true)
     setError(null)
     try {
       const id = ++asked.current
+      checked.current = text.trim()
       const verdict = await api.labelCheck(farmId!, text.trim(), lang)
       if (id !== asked.current) return
       setV(verdict)
@@ -51,6 +60,8 @@ export default function Spray() {
       setBusy(false)
     }
   }
+
+  const waiting = v?.tone === 'unknown' && note === 'loading'
 
   return (
     <div className="space-y-5">
@@ -125,7 +136,16 @@ export default function Spray() {
 
       {error && <ErrorBox error={error} />}
 
-      {v && (
+      {/* An unknown product: the AI note is the useful part, so the card waits
+          for it and both appear together. A veto never waits. */}
+      {waiting && (
+        <section className="rounded-2xl p-5 bg-white border border-soil-dark/10 flex items-center gap-3 text-sm text-soil-dark/60 animate-fadein">
+          <Loader2 className="w-5 h-5 animate-spin text-ochre shrink-0" />
+          {t('aiNoteLoading')}
+        </section>
+      )}
+
+      {v && !waiting && (
         <section className={`rounded-2xl p-5 animate-fadein ${
           v.tone === 'stop' ? 'bg-ember text-cream'
             : v.tone === 'unknown' ? 'bg-ochre/15 border-2 border-ochre/50'

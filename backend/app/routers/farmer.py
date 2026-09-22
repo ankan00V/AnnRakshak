@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import date
 from typing import Literal
 
@@ -10,7 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import auth, cache, config, geo, nim, services
+from app import auth, cache, config, geo, nim, services, voice
 from app.db import get_db
 from app.limits import limit
 from app.engine import labelcheck, vision
@@ -19,6 +20,7 @@ from app.models import Alert, Farm, FollowUp, Problem, SensorReading, TrapReadin
 
 # Every /farms/{farm_id}, /problems/{id}, /alerts/{id} and /followups/{id} URL is
 # checked against the signed-in farmer (app.auth.guard); experts may open any farm.
+log = logging.getLogger("annrakshak.farmer")
 router = APIRouter(prefix="/api", tags=["farmer"], dependencies=[Depends(auth.require())])
 Lang = Literal["en", "hi", "mr", "bn", "ta", "te", "kn", "ml", "gu", "pa"]  # Odia off for now: app/i18n.py
 MAX_UPLOAD_BYTES = 12 * 1024 * 1024
@@ -458,14 +460,25 @@ def label_note(body: LabelCheckIn, request: Request, db: Session = Depends(get_d
     hit = cache.get_json(key)
     if hit is not None:
         return {"suggestion": hit or None}
-    problem = tr(kb.targets[target]["names"], "en") if target else "not diagnosed yet"
-    note = None
-    for _ in range(2):  # one retry: an empty reply is usually a busy server, not a refusal
-        note = labelcheck.safe_suggestion(kb, nim.suggest(
-            body.product, tr(kb.crops[farm.crop]["names"], "en"), problem, body.lang,
-            key=config.NVIDIA_SUGGEST_KEY, timeout=NOTE_TIMEOUT_S))
+    # Written in English — fast, and the only language the safety guard reads —
+    # then translated (Bhashini) into the farmer's language. One English note
+    # serves every language; a failed translation shows the English.
+    en_key = f"labelnote:{farm.crop}:{target}:en:{word}"
+    note = cache.get_json(en_key)
+    if not note:
+        problem = tr(kb.targets[target]["names"], "en") if target else "not diagnosed yet"
+        for _ in range(2):  # one retry: an empty reply is usually a busy server, not a refusal
+            note = labelcheck.safe_suggestion(kb, nim.suggest(
+                body.product, tr(kb.crops[farm.crop]["names"], "en"), problem, "en",
+                key=config.NVIDIA_SUGGEST_KEY, timeout=NOTE_TIMEOUT_S))
+            if note:
+                break
         if note:
-            break
-    if note:
-        cache.set_json(key, note, NOTE_CACHE_S)
+            cache.set_json(en_key, note, NOTE_CACHE_S)
+    if note and body.lang != "en":
+        try:
+            note = voice.translate(note, "en", body.lang) or note
+            cache.set_json(key, note, NOTE_CACHE_S)
+        except Exception as e:  # noqa: BLE001 — English beats no note at all
+            log.warning("AI note not translated to %s: %s", body.lang, e)
     return {"suggestion": note}

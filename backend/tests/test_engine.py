@@ -432,3 +432,13 @@ def test_a_candidate_is_never_deployed_for_a_crop_that_failed_its_checks():
     assert any("no classes for maize" in r for r in mod.refusals(meta, ["maize"]))
     icar_bad = meta | {"deploy_checks": [{"check": "ICAR test top-1", "passed": False, "value": "0.80"}]}
     assert mod.refusals(icar_bad, ["cotton"])  # rice and maize must never get worse
+
+
+def test_translation_repairs_what_bhashini_breaks():
+    """Two systematic slips: a colon written as a visarga (a letter that only
+    looks like one), and a marker's closing '>' dropped before a word — which
+    used to throw away the whole translated line."""
+    from app.i18n import colons, restore
+    assert colons("Crop: {crop}.", "শস্যঃ {crop}।") == "শস্য: {crop}।"
+    assert colons("A sad day", "দুঃখের দিন") == "দুঃখের দিন"  # a real visarga stays
+    assert restore("মাঠঃ <0 একর", ["area"]) == "মাঠঃ {area} একর"

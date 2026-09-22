@@ -11,11 +11,17 @@ export function useAsync<T>(fn: () => Promise<T>, deps: unknown[], key?: string)
   const [error, setError] = useState<Error | null>(null)
   const [loading, setLoading] = useState(true)
   const seq = useRef(0)
+  const shown = useRef(key)
 
   const run = useCallback(() => {
     const id = ++seq.current
     const cached = key !== undefined && CACHE.has(key)
     if (cached) setData(CACHE.get(key!) as T)
+    // A new key (another language, another farm) with nothing cached: drop the
+    // old data rather than keep showing it — a slow or failed fetch must never
+    // leave the previous language on screen. A reload of the same key keeps it.
+    else if (key !== shown.current) setData(null)
+    shown.current = key
     setLoading(!cached)
     setError(null)
     fn()

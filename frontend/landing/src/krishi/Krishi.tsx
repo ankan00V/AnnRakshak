@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ArrowRight, RotateCcw, Send, Sprout, X } from 'lucide-react'
 import { api } from '../api/client'
-import type { KrishiAnswer, KrishiChip } from '../api/types'
+import type { KrishiAnswer, KrishiChip, Lang } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { useFarmer } from '../farmer/FarmerContext'
 import { ListenButton, VoiceButton } from '../ui/kit'
@@ -23,6 +23,8 @@ interface Msg {
   text: string
   steps?: string[]
   go?: KrishiAnswer['go']
+  lang?: Lang // the language the answer is in (the farmer's own, not always the app's)
+  speak?: string // proper-script text for the voice when `text` is romanised
   ask?: Ask // what produced a Krishi message, so it can be asked again in a new language
 }
 
@@ -86,7 +88,7 @@ export default function Krishi({ aboveNav = false, anchor = 'float' }:
             return { ...m, text: h.text }
           }
           const r = await api.krishiAsk({ ...m.ask, lang, screen, farm_id: farmId })
-          return { ...m, text: r.text, steps: r.steps, go: r.go }
+          return { ...m, text: r.text, steps: r.steps, go: r.go, lang: r.lang, speak: r.speak }
         } catch {
           return m
         }
@@ -113,7 +115,7 @@ export default function Krishi({ aboveNav = false, anchor = 'float' }:
     setBusy(true)
     try {
       const r = await api.krishiAsk({ ...q, lang, screen, farm_id: farmId })
-      setMsgs((m) => [...m, { id: nextId++, from: 'krishi', text: r.text, steps: r.steps, go: r.go, ask: q }])
+      setMsgs((m) => [...m, { id: nextId++, from: 'krishi', text: r.text, steps: r.steps, go: r.go, lang: r.lang, speak: r.speak, ask: q }])
       setChips(r.suggestions)
       if (r.topic) setAsked((a) => [...a, r.topic!])
     } catch {
@@ -220,7 +222,7 @@ export default function Krishi({ aboveNav = false, anchor = 'float' }:
                         </button>
                       ))}
                       {me && (
-                        <ListenButton text={[m.text, ...(m.steps ?? [])].join(' ')} lang={lang}
+                        <ListenButton text={m.speak ?? [m.text, ...(m.steps ?? [])].join(' ')} lang={m.lang ?? lang}
                           label={t('listen')} stopLabel={t('stop')} compact tone="light" />
                       )}
                     </div>

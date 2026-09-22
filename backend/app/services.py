@@ -19,6 +19,7 @@ from PIL import Image
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.i18n import month_name as i18n_month
 from app.config import (
     CASE_ETA_MINUTES_PER_POSITION,
     FOLLOWUP_DUE_DAYS,
@@ -840,7 +841,7 @@ def rain_context(kb: KB, farm: Farm, lang: str) -> dict | None:
     rc = rain_vs_normal(farm.district, farm.lat, farm.lon)
     if rc is None or rc.get("observed_mm") is None:
         return rc
-    month_name = date.today().strftime("%B")
+    month_name = i18n_month(date.today().month, lang)
     sub_name = rc["subdivision"].title().replace("&", "and")
     rc["text"] = tr(RAIN_CONTEXT, lang).format(
         month=month_name, obs=rc["observed_mm"], exp=rc["expected_to_date_mm"], sub=sub_name,

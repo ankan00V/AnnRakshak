@@ -723,6 +723,10 @@ export interface KrishiChip {
 }
 
 export interface KrishiAnswer {
+  /** The language Krishi answered in: the one the farmer wrote in. */
+  lang?: Lang
+  /** The same answer in proper script, for the voice, when `text` is romanised. */
+  speak?: string
   topic: string | null
   score: number
   text: string
