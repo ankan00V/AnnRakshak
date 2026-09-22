@@ -100,4 +100,6 @@ Tests: `cd backend && ../.venv/bin/python -m pytest -q` (always on the determini
 
 ## Data
 
-ICAR crop disease & insect-pest images (rice, maize), a second wave of 10,174 de-duplicated cotton, soybean, maize and rice field photos (`data/ingest_more.py`), IMD rainfall (subdivision monthly 1901–2017, normals, monsoon departures), MoSPI ENVSTATS pesticide consumption, ICAR technology repository (24 entries linked to our pests), live Open-Meteo weather. Provenance, hashes and caveats in `data/DATASETS.md`.
+ICAR crop disease & insect-pest images (rice, maize), a second wave of 10,174 de-duplicated cotton, soybean, maize and rice field photos (`data/ingest_more.py`), IMD rainfall (subdivision monthly 1901–2017, normals, monsoon departures), MoSPI ENVSTATS pesticide consumption, ICAR technology repository (24 entries linked to our pests), live Open-Meteo weather, and INSAT-3DS Hydro-Estimator rainfall from MOSDAC. Provenance, hashes and caveats in `data/DATASETS.md`.
+
+**Acknowledgement:** satellite rainfall data courtesy of MOSDAC (Meteorological & Oceanographic Satellite Data Archival Centre), Space Applications Centre, ISRO — https://mosdac.gov.in.

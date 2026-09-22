@@ -584,7 +584,7 @@ export interface SprayHour {
 
 export interface WeatherView {
   /** Rain INSAT-3DS measured at this spot in the last 24 h (MOSDAC, ISRO). */
-  sat_rain?: { mm: number; coverage: number; latest: string; source: string } | null
+  sat_rain?: { mm: number; hours: number; coverage: number; latest: string; source: string } | null
   fetched_at: string
   stale: boolean
   source: { forecast: string; current: string | null; soil: string | null; et0: string }

@@ -332,15 +332,19 @@ def observed_days(db: Session, lat: float, lon: float, days: int = 8,
 
 
 def last_24h(db: Session, lat: float, lon: float, now: datetime | None = None) -> dict | None:
+    """Rain actually seen in the last 24 h: each image's rate x its 30 minutes,
+    summed over the images read (a floor, never an extrapolation — one storm
+    in six hours of images is not stretched over the whole day), plus how many
+    hours of images that covers."""
     now = now or datetime.now(timezone.utc)
     plat, plon = point_key(lat, lon)
-    q = select(func.avg(SatRain.mm_h), func.count(), func.max(SatRain.slot)).where(
+    q = select(func.sum(SatRain.mm_h), func.count(), func.max(SatRain.slot)).where(
         SatRain.dataset == MOSDAC_DATASET, SatRain.lat == plat, SatRain.lon == plon,
         SatRain.slot >= now - timedelta(hours=24))
-    avg, n, latest = db.execute(q).one()
+    total, n, latest = db.execute(q).one()
     if not n:
         return None
-    return {"mm": round(float(avg) * 24, 1), "coverage": round(min(1.0, n / 48), 2),
+    return {"mm": round(float(total) * 0.5, 1), "hours": n * 0.5, "coverage": round(min(1.0, n / 48), 2),
             "latest": (latest if latest.tzinfo else latest.replace(tzinfo=timezone.utc)).isoformat(),
             "source": SOURCE}
 

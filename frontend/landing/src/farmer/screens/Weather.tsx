@@ -185,7 +185,7 @@ function SatRainCard({ v }: { v: WeatherView }) {
         <p className="text-xl font-semibold text-sky-950 leading-tight">{s.mm} mm</p>
         <p className="text-[11px] text-sky-900/60">
           {t('satRainSrc').replace('{t}', at)}
-          {s.coverage < 0.5 ? ` · ${t('satRainPartial').replace('{pct}', String(Math.round(s.coverage * 100)))}` : ''}
+          {s.coverage < 0.95 ? ` · ${t('satRainPartial').replace('{h}', String(s.hours))}` : ''}
         </p>
       </div>
     </section>

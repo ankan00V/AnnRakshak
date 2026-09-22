@@ -111,7 +111,8 @@ def test_one_cycle_stores_the_rain_and_skips_what_it_has(db, monkeypatch):
     assert out["fetched"] == 0 and "/download_api/gettoken" not in again  # nothing new: no login
 
     last = mosdac.last_24h(db, *BHANDARA, now=now)
-    assert last["mm"] == 48.0 and last["source"].startswith("INSAT-3DS")  # mean 2 mm/h x 24 h
+    # 4 + 2 + 0 mm/h, each for 30 min: 3 mm seen in 1.5 h of images — not 48 mm extrapolated
+    assert (last["mm"], last["hours"]) == (3.0, 1.5) and last["source"].startswith("INSAT-3DS")
 
 
 def test_a_refused_login_is_not_retried(db, monkeypatch):
