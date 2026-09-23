@@ -1289,6 +1289,60 @@
      "तो पट्टा नकाशावर नोंदवा आणि पुढील पेरणीपूर्वी तिथून मातीचा नमुना घ्या."
     ]
    }
+  },
+  "cotton_leaf_reddening": {
+   "stages": [
+    "squaring",
+    "flowering",
+    "boll_development"
+   ],
+   "weather": {
+    "rh_min": 50,
+    "t_min": 12,
+    "t_max": 24,
+    "days": 3
+   },
+   "source": "Cotton reddens when cool nights slow uptake in a crop short of magnesium or nitrogen, and in waterlogged patches; it is a stress response, not an infection (ICAR-CICR).",
+   "tasks": {
+    "en": [
+     "Look at the oldest leaves in the lowest-lying corner for whole-leaf red with green veins.",
+     "Check the drainage there, and plan an evening magnesium sulphate spray if more than a few plants have turned."
+    ],
+    "hi": [
+     "सबसे नीचे वाले कोने में पुरानी पत्तियों पर पूरी पत्ती का लालपन और हरी शिराएँ देखें।",
+     "वहाँ पानी निकासी देखें, और कुछ से ज़्यादा पौधे लाल हों तो शाम को मैग्नीशियम सल्फेट छिड़काव की योजना बनाएँ।"
+    ],
+    "mr": [
+     "सर्वात सखल कोपऱ्यातील जुन्या पानांवर संपूर्ण पान लाल व शिरा हिरव्या आहेत का पाहा.",
+     "तिथली पाण्याची निचरा व्यवस्था पाहा, आणि काहींपेक्षा जास्त झाडे लाल झाली असल्यास संध्याकाळी मॅग्नेशियम सल्फेट फवारणीचे नियोजन करा."
+    ]
+   }
+  },
+  "cotton_herbicide_damage": {
+   "stages": [
+    "vegetative",
+    "squaring",
+    "flowering"
+   ],
+   "phenology": {
+    "das_min": 15,
+    "das_max": 100
+   },
+   "source": "Weedicide is sprayed in neighbouring fields through the vegetative and squaring months; drift and sprayer residue show on the new growth within a week (ICAR-CICR).",
+   "tasks": {
+    "en": [
+     "Walk the field edge nearest any field sprayed this week and look at the newest leaves for cupping or strapping.",
+     "Check that your own sprayer was washed three times since it last carried a weedicide."
+    ],
+    "hi": [
+     "इस हफ़्ते छिड़काव हुए किसी खेत से लगे किनारे पर चलें और सबसे नई पत्तियों में कटोरी या पट्टी जैसी बनावट देखें।",
+     "देखें कि आपका पंप पिछली बार खरपतवारनाशी के बाद तीन बार धोया गया था या नहीं।"
+    ],
+    "mr": [
+     "या आठवड्यात फवारणी झालेल्या शेताशेजारील कडेने चाला आणि कोवळ्या पानांत वाटीसारखा किंवा पट्ट्यासारखा आकार दिसतो का पाहा.",
+     "तुमचा पंप मागच्या तणनाशकानंतर तीनदा धुतला गेला होता का ते तपासा."
+    ]
+   }
   }
  }
 }

@@ -3023,5 +3023,97 @@
     "url": "https://cropprotectionnetwork.org/encyclopedia/potassium-deficiency-of-soybean"
    }
   ]
+ },
+ "cotton_leaf_reddening": {
+  "what_to_check": {
+   "en": "Look at 10 plants in the reddest patch: is the whole leaf red with the veins still green, and no spots? Then check whether that patch is low-lying or held water, and how cold the last few nights were.",
+   "hi": "सबसे लाल हिस्से में 10 पौधे देखें: क्या पूरी पत्ती लाल है और शिराएँ हरी, और कोई धब्बा नहीं? फिर देखें कि वह हिस्सा नीचा है या वहाँ पानी रुका था, और पिछली कुछ रातें कितनी ठंडी थीं।",
+   "mr": "सर्वात लाल पट्ट्यातील 10 झाडे पाहा: संपूर्ण पान लाल आणि शिरा हिरव्या आहेत का, ठिपके नाहीत ना? मग तो पट्टा सखल आहे का किंवा तिथे पाणी साचले होते का, आणि मागच्या काही रात्री किती थंड होत्या ते पाहा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not spray a fungicide or an insecticide for it — nothing is infecting or eating the crop.",
+    "hi": "इसके लिए फफूँदनाशक या कीटनाशक न छिड़कें — न कोई रोग लगा है, न कोई कीट खा रहा है।",
+    "mr": "यासाठी बुरशीनाशक किंवा कीटकनाशक फवारू नका — रोगही नाही आणि कीडही नाही."
+   },
+   {
+    "en": "Do not let water stand in the field; waterlogged roots redden a crop fastest.",
+    "hi": "खेत में पानी न रुकने दें; जड़ों में पानी भरने से फसल सबसे तेज़ी से लाल पड़ती है।",
+    "mr": "शेतात पाणी साचू देऊ नका; मुळांशी पाणी साचल्यास पीक सर्वात लवकर लाल पडते."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Drain the standing water, keep nitrogen to the recommended dose at squaring, and spray 1% magnesium sulphate (10 g per litre) with 2% DAP (20 g per litre) in the evening, twice, a week apart. Reddening after a cold spell in a well-fed crop usually passes on its own.",
+     "hi": "रुका पानी निकालें, गुड़ी बनते समय नाइट्रोजन सिफ़ारिश तक रखें, और शाम को 1% मैग्नीशियम सल्फेट (10 ग्राम प्रति लीटर) के साथ 2% डीएपी (20 ग्राम प्रति लीटर) एक-एक हफ़्ते के अंतर से दो बार छिड़कें। भरपूर खुराक वाली फसल में ठंड के बाद का लालपन अपने आप चला जाता है।",
+     "mr": "साचलेले पाणी काढा, पात्या लागताना नत्र शिफारशीइतकेच ठेवा आणि संध्याकाळी 1% मॅग्नेशियम सल्फेट (10 ग्रॅम प्रति लिटर) सोबत 2% डीएपी (20 ग्रॅम प्रति लिटर) आठवड्याच्या अंतराने दोनदा फवारा. चांगली खते दिलेल्या पिकातील थंडीनंतरचा लालपणा आपोआप जातो."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if bolls are shedding as well, or the patch keeps growing after two sprays — that points to wilt or a root problem, not stress.",
+   "hi": "अगर साथ में टिंडे भी झड़ रहे हों, या दो छिड़काव के बाद भी हिस्सा बढ़ता रहे, तो विशेषज्ञ को बुलाएँ — यह उकठा या जड़ की समस्या हो सकती है, केवल तनाव नहीं।",
+   "mr": "सोबत बोंडेही गळत असतील, किंवा दोन फवारण्यांनंतरही पट्टा वाढत राहिला तर तज्ज्ञांना बोलवा — हे मर रोग किंवा मुळांची समस्या असू शकते, केवळ ताण नाही."
+  },
+  "citations": [
+   {
+    "title": "Cotton crop protection and crop production technology",
+    "publisher": "ICAR-Central Institute for Cotton Research, Nagpur",
+    "url": "https://cicr.org.in"
+   },
+   {
+    "title": "AESA-based IPM Package: Cotton",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   }
+  ]
+ },
+ "cotton_herbicide_damage": {
+  "what_to_check": {
+   "en": "Walk the edge nearest a field sprayed in the last week and look at the newest leaves of 10 plants: cupped, strap-like or crinkled with pale veins, with plants further in looking better, means drift. Ask the neighbour what was sprayed and when.",
+   "hi": "पिछले हफ़्ते छिड़काव हुए खेत से लगे किनारे पर चलें और 10 पौधों की सबसे नई पत्तियाँ देखें: कटोरी जैसी, पट्टी जैसी या सिकुड़ी, शिराएँ फीकी, और अंदर के पौधे बेहतर — यह बहाव है। पड़ोसी से पूछें कि क्या और कब छिड़का गया।",
+   "mr": "गेल्या आठवड्यात फवारणी झालेल्या शेताशेजारील कडेने चाला आणि 10 झाडांची कोवळी पाने पाहा: वाटीसारखी, पट्ट्यासारखी किंवा सुरकुतलेली, शिरा फिकट, आणि आतली झाडे बरी — म्हणजे तणनाशक वाऱ्याने आले आहे. शेजाऱ्याला काय आणि कधी फवारले ते विचारा."
+  },
+  "what_to_avoid": [
+   {
+    "en": "Do not spray anything else on a damaged crop; a second spray on stressed plants makes it worse.",
+    "hi": "नुक़सान झेल रही फसल पर कुछ और न छिड़कें; तनाव में पौधों पर दूसरा छिड़काव हालत बिगाड़ता है।",
+    "mr": "इजा झालेल्या पिकावर दुसरे काही फवारू नका; ताणाखालील झाडांवर दुसरी फवारणी परिस्थिती बिघडवते."
+   },
+   {
+    "en": "Do not use a sprayer that has applied a weedicide on cotton until it is washed three times with clean water — what is left in it is enough to do this.",
+    "hi": "जिस पंप से खरपतवारनाशी छिड़की हो, उसे साफ़ पानी से तीन बार धोए बिना कपास पर न चलाएँ — उसमें बचा अंश ही इतना नुक़सान कर देता है।",
+    "mr": "ज्या पंपाने तणनाशक फवारले असेल तो स्वच्छ पाण्याने तीनदा धुतल्याशिवाय कापसावर वापरू नका — त्यात उरलेले अंशच एवढी इजा करतात."
+   }
+  ],
+  "ladder": [
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Give a light irrigation and spray 2% DAP (20 g per litre) or 1% urea (10 g per litre) in the evening to push new growth. Write down the date, which field was sprayed, with what, and which way the wind blew, and mark the damaged strip. Mild drift is usually outgrown in two to three weeks.",
+     "hi": "हल्की सिंचाई दें और नई बढ़वार के लिए शाम को 2% डीएपी (20 ग्राम प्रति लीटर) या 1% यूरिया (10 ग्राम प्रति लीटर) छिड़कें। तारीख़, किस खेत में क्या छिड़का गया और हवा किस ओर थी — सब लिख लें, और प्रभावित पट्टी को चिह्नित करें। हल्के बहाव से फसल दो-तीन हफ़्तों में उबर जाती है।",
+     "mr": "हलके पाणी द्या आणि नवीन वाढीसाठी संध्याकाळी 2% डीएपी (20 ग्रॅम प्रति लिटर) किंवा 1% युरिया (10 ग्रॅम प्रति लिटर) फवारा. तारीख, कोणत्या शेतात काय फवारले आणि वारा कोणत्या दिशेने होता हे लिहून ठेवा आणि बाधित पट्टा खुणावा. सौम्य इजेतून पीक दोन-तीन आठवड्यांत सावरते."
+    }
+   }
+  ],
+  "expert_trigger": {
+   "en": "Call an expert if the growing point is dead or more than a quarter of the field is hit — and get it recorded, because an officer's report is what any claim against the sprayer rests on.",
+   "hi": "अगर बढ़वार का सिरा मर गया हो या चौथाई से ज़्यादा खेत प्रभावित हो तो विशेषज्ञ को बुलाएँ — और इसे दर्ज कराएँ, क्योंकि छिड़काव करने वाले के विरुद्ध कोई भी दावा अधिकारी की रिपोर्ट पर ही टिकता है।",
+   "mr": "वाढीचा शेंडा मेला असेल किंवा एक चतुर्थांशापेक्षा जास्त शेत बाधित असेल तर तज्ज्ञांना बोलवा — आणि त्याची नोंद करून घ्या, कारण फवारणी करणाऱ्याविरुद्धचा कोणताही दावा अधिकाऱ्याच्या अहवालावरच उभा राहतो."
+  },
+  "citations": [
+   {
+    "title": "Cotton crop protection and crop production technology",
+    "publisher": "ICAR-Central Institute for Cotton Research, Nagpur",
+    "url": "https://cicr.org.in"
+   },
+   {
+    "title": "AESA-based IPM Package: Cotton",
+    "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
+    "url": "https://niphm.gov.in"
+   }
+  ]
  }
 }

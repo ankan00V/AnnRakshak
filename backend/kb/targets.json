@@ -792,5 +792,41 @@
    "mr": "प्रथम जुन्या, खालच्या पानांच्या कडा पिवळ्या होतात व पिवळेपणा आतल्या बाजूस सरकतो, मधला भाग व शिरा हिरव्याच राहतात; नंतर कडा वाळून करपतात. हे शेताच्या संपूर्ण पट्ट्यांत दिसते, सुट्या झाडांवर नाही."
   },
   "note": "Photo model from v5 (2026-09-23): 1,000+ Alabama field photos from ASDID (Wadkar et al., COMPAG 2022), leaves shot on the plant and laid on grass or card. New to the app with this import — treat the first season's calls as provisional and lean on the expert trigger."
+ },
+ {
+  "id": "cotton_leaf_reddening",
+  "crop": "cotton",
+  "kind": "disorder",
+  "tier": "diagnosable",
+  "agent": "Cold nights, magnesium or nitrogen shortage, or waterlogged roots (not an infection)",
+  "names": {
+   "en": "Leaf reddening",
+   "hi": "पत्तियों का लाल होना",
+   "mr": "पाने लाल होणे"
+  },
+  "signature": {
+   "en": "Whole leaves turn red or purple-red from the edge inward while the veins often stay green. The oldest leaves go first and a whole patch reddens together after cold nights or standing water. No spots, and nothing eaten.",
+   "hi": "पूरी पत्ती किनारे से अंदर की ओर लाल या बैंगनी-लाल हो जाती है, जबकि शिराएँ अक्सर हरी रहती हैं। पहले सबसे पुरानी पत्तियाँ, और ठंडी रातों या पानी भरने के बाद पूरा हिस्सा एक साथ लाल पड़ता है। न धब्बे, न कुछ कटा-खाया।",
+   "mr": "संपूर्ण पान कडेपासून आतल्या बाजूस लाल किंवा जांभळट-लाल होते, शिरा मात्र बहुधा हिरव्याच राहतात. आधी सर्वात जुनी पाने, आणि थंड रात्री किंवा पाणी साचल्यावर संपूर्ण पट्टा एकदम लाल पडतो. ठिपके नाहीत, कुरतडलेलेही नाही."
+  },
+  "note": "Photo model from v6 (2026-09-23): 579 photos from SAR-CLD-2024 (Mendeley b3jy2p6k8w). New to the app — the first season's calls are provisional."
+ },
+ {
+  "id": "cotton_herbicide_damage",
+  "crop": "cotton",
+  "kind": "disorder",
+  "tier": "diagnosable",
+  "agent": "Herbicide drift or an overdose (not an infection)",
+  "names": {
+   "en": "Herbicide damage",
+   "hi": "खरपतवारनाशी से नुकसान",
+   "mr": "तणनाशकामुळे झालेली इजा"
+  },
+  "signature": {
+   "en": "The new leaves come out cupped, strap-like or crinkled with pale veins and growth stalls, while the older leaves below look normal. It is worst along the edge facing a field that was sprayed recently, and fades further in.",
+   "hi": "नई पत्तियाँ कटोरी जैसी, पट्टी जैसी या सिकुड़ी हुई निकलती हैं, शिराएँ फीकी, और बढ़वार रुक जाती है; नीचे की पुरानी पत्तियाँ सामान्य दिखती हैं। हाल में छिड़काव हुए खेत की ओर वाले किनारे पर सबसे ज़्यादा, अंदर जाते-जाते कम।",
+   "mr": "कोवळी पाने वाटीसारखी, पट्ट्यासारखी किंवा सुरकुतलेली येतात, शिरा फिकट आणि वाढ खुंटते; खालची जुनी पाने मात्र सामान्य दिसतात. नुकतीच फवारणी झालेल्या शेताकडील कडेला सर्वाधिक, आत जाताना कमी होत जाते."
+  },
+  "note": "Photo model from v6 (2026-09-23): 281 photos from SAR-CLD-2024 (Mendeley b3jy2p6k8w). New to the app — the first season's calls are provisional."
  }
 ]

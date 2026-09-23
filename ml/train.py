@@ -65,6 +65,8 @@ EXTRA_MANIFEST = ROOT / "data" / "processed" / "extra_images.csv"
 MORE_MANIFEST = ROOT / "data" / "processed" / "more_images.csv"
 PADDY_MANIFEST = ROOT / "data" / "processed" / "paddy_images.csv"
 ASDID_MANIFEST = ROOT / "data" / "processed" / "asdid_images.csv"
+LOCAL_MANIFEST = ROOT / "data" / "processed" / "local_images.csv"
+COTTON_MANIFEST = ROOT / "data" / "processed" / "cotton_images.csv"
 ART = ROOT / "ml" / "artifacts"
 REP = ROOT / "ml" / "reports"
 SEED = 42
@@ -88,6 +90,14 @@ ASDID_CAP = {"train": 900, "val": 120, "test": 200}
 """ASDID is the second camera and the second country soybean has ever seen
 (data/ingest_asdid.py). Its three shared classes are capped like Paddy Doctor so
 Alabama cannot outvote the Indian photos, and its five new classes come in whole."""
+LOCAL_CAP = {"train": 900, "val": 120, "test": 200}
+"""The hand-downloaded rice sets (data/ingest_downloads.py): Bangladesh field
+photos for the four rice problems farmers send most, plus Brazilian soybean
+canopies for caterpillar damage. Capped like Paddy Doctor."""
+COTTON_CAP = {"train": 700, "val": 100, "test": 150}
+"""Three Mendeley cotton sets (data/ingest_cotton.py). Cotton had six classes
+from two sources; these bring jassid, which the app advised on without ever
+having seen it, and two problems that are not diseases at all."""
 MORE_CAP_EXISTING = {"train": 350, "val": 50, "test": 90}
 COMPOSITE_P = 0.85
 
@@ -135,12 +145,26 @@ def load_split():
 
 # 2 workers, not 4: on a 16 GB laptop the extra copies of the dataset cost more
 # in memory pressure than they save in decode time (an item takes ~4 ms).
+#
+# Give the machine a moment after a big import before starting a run. Writing
+# the 19k Paddy Doctor and ASDID files set Spotlight and the file-provider
+# daemon indexing them, and while that ran the training crawled at 0.3 img/s
+# and its loader workers were killed outright. It was not the data pipeline: a
+# synthetic MPS step measured 0.1 img/s at the time and 20.3 once the indexing
+# finished. data/raw and data/processed now carry .metadata_never_index so the
+# next import does not do it again.
 WORKERS = int(os.environ.get("ANNRAKSHAK_WORKERS", "2"))
 
 
 def loader(rows, class_idx, tf, shuffle, bs=16, sampler=None, **ds):
+    # timeout: a worker that the system kills under memory pressure takes the
+    # run with it — the parent waits on a queue nothing will ever fill. Twice
+    # on this laptop that looked like a training run still going after six
+    # hours with one epoch done. 120 s is many times a batch's worth of decode,
+    # so it fires only when a worker is really gone, and it fires as an error.
     return DataLoader(Images(rows, class_idx, tf, **ds), batch_size=bs, shuffle=shuffle and sampler is None,
-                      sampler=sampler, num_workers=WORKERS, persistent_workers=WORKERS > 0)
+                      sampler=sampler, num_workers=WORKERS, persistent_workers=WORKERS > 0,
+                      timeout=120 if WORKERS else 0)
 
 
 def balanced_sampler(rows, epoch_size, icar_share=0.5):
@@ -520,6 +544,10 @@ def main():
                     help="also Paddy Doctor field rice photos (data/processed/paddy_images.csv)")
     ap.add_argument("--with-asdid", action="store_true",
                     help="add the ASDID Alabama soybean photos (data/ingest_asdid.py)")
+    ap.add_argument("--with-local", action="store_true",
+                    help="add the hand-downloaded rice and soybean sets (data/ingest_downloads.py)")
+    ap.add_argument("--with-cotton", action="store_true",
+                    help="add the Mendeley cotton sets (data/ingest_cotton.py)")
     ap.add_argument("--with-more", action="store_true",
                     help="also the cotton, soybean and extra maize/rice sets (data/processed/more_images.csv)")
     ap.add_argument("--lr-feat", type=float, default=None,
@@ -714,6 +742,14 @@ def main_extra(args):
         e_tr, e_va, e_te = e_tr + a_tr, e_va + a_va, e_te + a_te
         print(f"with ASDID field soybean: {len(a_tr)}/{len(a_va)}/{len(a_te)} images over "
               f"{len({r['train_class'] for r in a_tr})} classes (data/ingest_asdid.py)")
+    for flag, manifest, cap, what in (
+            ("with_local", LOCAL_MANIFEST, LOCAL_CAP, "hand-downloaded rice and soybean (data/ingest_downloads.py)"),
+            ("with_cotton", COTTON_MANIFEST, COTTON_CAP, "Mendeley cotton (data/ingest_cotton.py)")):
+        if getattr(args, flag, False) and manifest.exists():
+            x_tr, x_va, x_te = load_extra_split(manifest, cap, cap, set())
+            e_tr, e_va, e_te = e_tr + x_tr, e_va + x_va, e_te + x_te
+            print(f"with {what}: {len(x_tr)}/{len(x_va)}/{len(x_te)} images over "
+                  f"{len({r['train_class'] for r in x_tr})} classes")
     if getattr(args, "with_confirmed", False):
         conf_csv = ROOT / "data" / "processed" / "confirmed.csv"
         if conf_csv.exists():
@@ -810,7 +846,9 @@ def main_extra(args):
 
     version = (f"icar+extra{'+more' if getattr(args, 'with_more', False) else ''}"
                f"{'+paddy' if getattr(args, 'with_paddy', False) else ''}"
-               f"{'+asdid' if getattr(args, 'with_asdid', False) else ''}-"
+               f"{'+asdid' if getattr(args, 'with_asdid', False) else ''}"
+               f"{'+local' if getattr(args, 'with_local', False) else ''}"
+               f"{'+cotton' if getattr(args, 'with_cotton', False) else ''}-"
                f"efficientnet_v2_s-{'warmstart' if init else 'finetune'}-"
                f"{datetime.now(UTC):%Y%m%d}")
     meta = {

@@ -343,5 +343,35 @@
   },
   "why": "Neck blast kills the node, which blackens and shrivels so the panicle droops; bacterial panicle blight leaves the node green and the panicle upright with empty, light-brown-based grains.",
   "source": "IRRI Rice Knowledge Bank; Cogent Food & Agriculture (2024)"
+ },
+ {
+  "id": "reddening_vs_wilt_veins",
+  "pair": [
+   "cotton_leaf_reddening",
+   "cotton_wilt"
+  ],
+  "yes_means": "cotton_leaf_reddening",
+  "question": {
+   "en": "Cut a main stem near the ground and look inside: is the wood still white and clean, with the red only on the leaves?",
+   "hi": "ज़मीन के पास मुख्य तना काटकर अंदर देखें: क्या लकड़ी अब भी सफ़ेद और साफ़ है, और लालपन सिर्फ़ पत्तियों पर है?",
+   "mr": "जमिनीजवळ मुख्य खोड कापून आत पाहा: लाकूड अजून पांढरे व स्वच्छ आहे का, आणि लालसरपणा फक्त पानांवरच आहे का?"
+  },
+  "why": "Wilt browns the vascular tissue inside the stem; reddening from cold, hunger or waterlogging leaves the stem clean.",
+  "source": "ICAR-CICR"
+ },
+ {
+  "id": "herbicide_vs_curl_newleaves",
+  "pair": [
+   "cotton_herbicide_damage",
+   "cotton_leaf_curl"
+  ],
+  "yes_means": "cotton_herbicide_damage",
+  "question": {
+   "en": "Is the damage worst along one edge of the field — the side facing a field sprayed recently — and better as you walk inward, with no thickened veins on the underside of the leaf?",
+   "hi": "क्या नुक़सान खेत के एक ही किनारे पर सबसे ज़्यादा है — उस ओर जहाँ हाल में छिड़काव हुआ — और अंदर जाते-जाते कम होता है, और पत्ती के नीचे मोटी उभरी शिराएँ नहीं हैं?",
+   "mr": "इजा शेताच्या एकाच कडेला सर्वाधिक आहे का — नुकतीच फवारणी झालेल्या शेताकडील बाजूस — आणि आत जाताना कमी होते का, आणि पानाच्या खालच्या बाजूस जाड उंचावलेल्या शिरा नाहीत ना?"
+  },
+  "why": "Drift follows the wind, so it makes a gradient from one edge; leaf curl virus is carried by whitefly, appears in scattered plants anywhere in the field, and thickens the veins on the leaf's underside.",
+  "source": "ICAR-CICR; AESA-based IPM Package: Cotton"
  }
 ]
