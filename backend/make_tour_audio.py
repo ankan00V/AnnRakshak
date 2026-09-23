@@ -39,6 +39,13 @@ OUT = T.ROOT / "frontend" / "landing" / "public" / "tour"
 TTS_URL = "https://api.sarvam.ai/text-to-speech"
 MODEL, SPEAKER, PACE = "bulbul:v3", "shubh", 0.92
 STOP = {"hi": "।", "bn": "।", "pa": "।"}  # the full stop each script writes
+SAY_AS = {"en": [("AnnRakshak", "Anna-Rakshak")]}
+"""Spelt for the voice, not for the screen.
+
+The name is anna — grain, the harvest — and rakshak, its protector. An English
+voice reading "AnnRakshak" says "Ann", a woman's name, which is not what the
+app is called. Every other language writes the name in its own script and says
+it right; English is the one that has to be told."""
 I18N_TS = T.ROOT / "frontend" / "landing" / "src" / "lib" / "i18n.ts"
 
 
@@ -62,7 +69,10 @@ def texts(lang: str) -> dict[str, str]:
     for step in STEPS:
         title, body = table.get(f"tour_{step}_t"), table.get(f"tour_{step}_b")
         if title and body:
-            out[step] = f"{title}{STOP.get(lang, '.')} {body}"
+            said = f"{title}{STOP.get(lang, '.')} {body}"
+            for written, spoken in SAY_AS.get(lang, ()):
+                said = said.replace(written, spoken)
+            out[step] = said
     return out
 
 

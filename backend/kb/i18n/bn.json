@@ -70,7 +70,7 @@
   "Bacterial leaf streak": "ব্যাকটেরিয়াল পাতার রেখা",
   "Bacterial panicle blight": "ব্যাকটেরিয়াল প্যানিকেল ব্লাইট",
   "Banded leaf and sheath blight": "ব্যান্ডযুক্ত পাতা ও কভারের দাগ",
-  "Based on your farm profile ({crop}, {district}) and live weather from {source}. Advice comes from the AnnRakshak knowledge base (IMD, FAO, ICAR sources); for any product dose, the printed label decides.": "আপনার খামার প্রোফাইল ({crop}, {district}) এবং {source} থেকে সরাসরি আবহাওয়ার উপর ভিত্তি করে পরামর্শ দেওয়া হচ্ছে। এই পরামর্শ AnnRakshak জ্ঞানভাণ্ডার (IMD, FAO, ICAR উৎস) থেকে নেওয়া হয়েছে; যেকোনো পণ্যের ডোজের জন্য, মুদ্রিত লেবেলটিই সিদ্ধান্ত নেবে।",
+  "Based on your farm profile ({crop}, {district}) and live weather from {source}. Advice comes from the AnnRakshak knowledge base (IMD, FAO, ICAR sources); for any product dose, the printed label decides.": "আপনার খামার প্রোফাইল ({crop}, {district}) এবং {source} থেকে সরাসরি আবহাওয়ার উপর ভিত্তি করে পরামর্শ দেওয়া হচ্ছে। এই পরামর্শ অন্নরক্ষক জ্ঞানভাণ্ডার (IMD, FAO, ICAR উৎস) থেকে নেওয়া হয়েছে; যেকোনো পণ্যের ডোজের জন্য, মুদ্রিত লেবেলটিই সিদ্ধান্ত নেবে।",
   "Before any spray, check the product in Spray check.": "যে কোনও স্প্রে করার আগে, স্প্রে চেক-এ পণ্যটি পরীক্ষা করে দেখুন।",
   "Best time to spray: {start}–{end}": "স্প্রে করার সেরা সময়: {start}–{end}",
   "Best time to spray: {when}": "স্প্রে করার সেরা সময়: {when}",
