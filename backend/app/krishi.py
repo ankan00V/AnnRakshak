@@ -557,7 +557,7 @@ def _weather_view(db: Session, kb: KB, farm: Farm, lang: str) -> dict | None:
     from app import notify  # noqa: PLC0415  (imports the push stack; only needed here)
 
     now = agroweather.now_ist()
-    stage, _ = kb.stage_for(farm.crop, farm.sowing_date, now.date())
+    stage, _ = kb.stage_of(farm, now.date())
     return agromet.view(b, kb.agromet, farm.crop, stage, now, lang, sprays=notify.recent_sprays(db, farm, now),
                         needs_spray=notify.needs_spray(db, farm))
 
@@ -568,7 +568,7 @@ def _crop(kb: KB, farm: Farm, lang: str) -> str:
 
 def _today(db: Session, kb: KB, farm: Farm, lang: str) -> dict:
     today = _today_ist()
-    stage, das = kb.stage_for(farm.crop, farm.sowing_date, today)
+    stage, das = kb.stage_of(farm, today)
     steps: list[str] = []
     alerts = db.scalars(select(Alert).where(Alert.farm_id == farm.id, Alert.outcome.is_(None),
                                             Alert.issued_on >= today - timedelta(days=2))
@@ -719,11 +719,12 @@ def facts(db: Session, kb: KB, user, farms: list[Farm], lang: str) -> str:
 
     today = _today_ist()
     for i, f in enumerate(farms, 1):
-        stage, das = kb.stage_for(f.crop, f.sowing_date, today)
+        stage, das = kb.stage_of(f, today)
         where = ", ".join(x for x in (f.village, f.taluka, f.district, f.state) if x)
         line = (f"Field {i}: {tr(kb.crops[f.crop]['names'], 'en')}"
                 f"{f' variety {f.variety}' if f.variety else ''}, {f.area_acres} acres, at {where}. "
-                f"Sown {f.sowing_date.strftime('%d %b %Y')}, {das} days ago, now at the "
+                f"{'Transplanted' if f.date_basis == 'transplanted' else 'Sown'} "
+                f"{f.sowing_date.strftime('%d %b %Y')}, {das} days after sowing, now at the "
                 f"{kb.stage_name(f.crop, stage, 'en')} stage.")
         if f.irrigation:
             line += f" Watered by: {f.irrigation}."
@@ -816,7 +817,7 @@ def _route(text: str, idx: Index, before: str | None = None) -> str | None:
 
 
 def _farm_line(db: Session, kb: KB, farm: Farm, lang: str) -> dict:
-    stage, das = kb.stage_for(farm.crop, farm.sowing_date, _today_ist())
+    stage, das = kb.stage_of(farm, _today_ist())
     place = ", ".join(x for x in (farm.village, farm.district) if x)
     crop = _crop(kb, farm, lang) + (f" ({farm.variety})" if farm.variety else "")
     text = _t("farm_line", lang, crop=crop,

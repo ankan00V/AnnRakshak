@@ -521,3 +521,54 @@ def test_translation_repairs_what_bhashini_breaks():
     assert colons("Crop: {crop}.", "শস্যঃ {crop}।") == "শস্য: {crop}।"
     assert colons("A sad day", "দুঃখের দিন") == "দুঃখের দিন"  # a real visarga stays
     assert restore("মাঠঃ <0 একর", ["area"]) == "মাঠঃ {area} একর"
+
+
+# --------------------------------------------------------------------------
+# Which date the farmer gave us
+# --------------------------------------------------------------------------
+
+
+class _Farm:
+    def __init__(self, crop, sowing_date, date_basis="sown"):
+        self.crop, self.sowing_date, self.date_basis = crop, sowing_date, date_basis
+
+
+def test_rice_transplanting_date_is_counted_back_to_the_nursery():
+    """The same date means two different crops depending on what it is.
+
+    Rice sits in the nursery about three weeks. A farmer who gives the
+    transplanting date (लावणी, the day they remember) is describing a crop three
+    weeks older than one who gives the nursery sowing — a whole stage, and every
+    risk rule and spray window is keyed to the stage."""
+    kb = get_kb()
+    given, today = date(2026, 6, 11), date(2026, 9, 23)
+    sown_stage, sown_das = kb.stage_of(_Farm("rice", given), today)
+    tp_stage, tp_das = kb.stage_of(_Farm("rice", given, "transplanted"), today)
+    assert sown_das == 104 and sown_stage == "grain_filling"
+    assert tp_das == 125 and tp_stage == "grain_filling"
+    assert tp_das - sown_das == kb.crops["rice"]["nursery_days"]
+
+
+def test_a_transplanted_rice_farm_reaches_maturity_three_weeks_earlier():
+    kb = get_kb()
+    given = date(2026, 6, 11)
+    on = date(2026, 9, 25)  # 106 days after the given date
+    assert kb.stage_of(_Farm("rice", given), on)[0] == "grain_filling"
+    assert kb.stage_of(_Farm("rice", given, "transplanted"), on)[0] == "maturity"
+
+
+def test_direct_sown_crops_ignore_the_basis():
+    """Maize, cotton and soybean are sown where they grow: one date, one meaning."""
+    kb = get_kb()
+    given, today = date(2026, 7, 4), date(2026, 9, 23)
+    for crop in ("maize", "cotton", "soybean"):
+        assert kb.crops[crop].get("nursery_days", 0) == 0
+        assert kb.stage_of(_Farm(crop, given), today) == kb.stage_of(_Farm(crop, given, "transplanted"), today)
+
+
+def test_a_farm_row_without_the_column_still_reads():
+    """Farms created before the question was asked default to 'sown'."""
+    kb = get_kb()
+    class Old:  # noqa: D106  a row from before date_basis existed
+        crop, sowing_date = "rice", date(2026, 6, 11)
+    assert kb.stage_of(Old(), date(2026, 9, 23))[1] == 104

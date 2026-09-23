@@ -103,6 +103,7 @@ function RegisterForm({ crops, onDone }: {
   const [irrigation, setIrrigation] = useState<Irrigation>('rainfed')
   const [crop, setCrop] = useState(crops[0]?.id ?? 'rice')
   const [sowing, setSowing] = useState(() => new Date(Date.now() - 60 * 864e5).toISOString().slice(0, 10))
+  const [basis, setBasis] = useState<'' | 'sown' | 'transplanted'>('')
   const [where, setWhere] = useState<Where>({
     state: me?.profile?.state ?? '', district: me?.profile?.district ?? '', village: me?.profile?.village ?? '',
     taluka: me?.profile?.taluka ?? '', lat: null, lon: null, fromGps: false,
@@ -137,6 +138,7 @@ function RegisterForm({ crops, onDone }: {
         lang,
         crop,
         sowing_date: sowing,
+        date_basis: basis || 'sown',
         state: where.state || null,
         district: where.district,
         lat: where.lat ?? coords?.lat,
@@ -168,7 +170,7 @@ function RegisterForm({ crops, onDone }: {
       <div className="grid grid-cols-2 gap-2">
         <label className="block text-xs text-soil-dark/60">
           {t('crop')}
-          <select className={field} value={crop} onChange={(e) => setCrop(e.target.value)}>
+          <select className={field} value={crop} onChange={(e) => { setCrop(e.target.value); setBasis('') }}>
             {crops.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
@@ -183,8 +185,17 @@ function RegisterForm({ crops, onDone }: {
       {selected && !selected.photo_diagnosis && (
         <p className="text-xs rounded-xl bg-sky-50 text-sky-800 p-2.5">{t('photoLater')}</p>
       )}
+      {!!selected?.nursery_days && (
+        <div className="text-xs text-soil-dark/60">
+          <p className="mb-1">{t('dateBasisAsk')}</p>
+          <Chips columns={2} value={basis ? [basis] : []} onChange={([v]) => setBasis(v)}
+            options={[{ id: 'sown' as const, label: t('dateBasisSown') },
+                      { id: 'transplanted' as const, label: t('dateBasisTransplanted') }]} />
+          <p className="mt-1 text-[11px] text-soil-dark/45">{t('dateBasisWhy')}</p>
+        </div>
+      )}
       <label className="block text-xs text-soil-dark/60">
-        {t('sowingDate')}
+        {basis === 'transplanted' ? t('transplantDate') : t('sowingDateOnly')}
         <input className={field} type="date" value={sowing} onChange={(e) => setSowing(e.target.value)} />
       </label>
       <WherePicker value={where} onChange={setWhere} />
@@ -207,7 +218,7 @@ function RegisterForm({ crops, onDone }: {
       {error && <ErrorBox error={error} />}
       <button
         onClick={submit}
-        disabled={busy || !name.trim() || !(parseFloat(area) > 0) || !phOk}
+        disabled={busy || !name.trim() || !(parseFloat(area) > 0) || !phOk || (!!selected?.nursery_days && !basis)}
         className="w-full min-h-[48px] rounded-full bg-leaf-deep text-cream text-sm font-medium disabled:opacity-50"
       >
         {t('save')}

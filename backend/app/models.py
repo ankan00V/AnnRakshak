@@ -124,6 +124,10 @@ class Farm(Base):
     crop: Mapped[str] = mapped_column(String(20))
     variety: Mapped[str | None] = mapped_column(String(80))
     sowing_date: Mapped[date] = mapped_column(Date)
+    date_basis: Mapped[str] = mapped_column(String(12), default="sown")
+    """What sowing_date is: 'sown' (seed in the ground, or in the nursery bed) or
+    'transplanted'. Only rice can be either, and the two are three weeks apart —
+    a whole growth stage — so the farmer is asked which one it is."""
     state: Mapped[str | None] = mapped_column(String(60))
     """Any state or union territory: the app is not one state's app."""
     district: Mapped[str] = mapped_column(String(60))

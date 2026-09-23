@@ -218,6 +218,10 @@ class FirstFarm(BaseModel):
     crop: str
     variety: str | None = Field(default=None, max_length=80)
     sowing_date: date
+    date_basis: Literal["sown", "transplanted"] = "sown"
+    """What sowing_date means. Rice is transplanted about three weeks after the
+    nursery is sown, so a rice farm must say which date this is; for every other
+    crop here there is only one date and it is the sowing."""
     area_acres: float = Field(gt=0, le=1000)
     irrigation: Irrigation
     soil_ph: float | None = Field(default=None, ge=3, le=11)
@@ -315,6 +319,7 @@ def signup_farmer(body: FarmerSignup, request: Request, response: Response, db: 
     for f in body.farms:  # one row per plot: each has its own crop stage, risks and advice
         db.add(Farm(user_id=user.id, farmer_name=name, phone=phone, email=ch.destination, lang=body.lang,
                     crop=f.crop, variety=(f.variety or "").strip() or None, sowing_date=f.sowing_date,
+                    date_basis=f.date_basis,
                     state=state, district=district, taluka=taluka, village=village, lat=lat, lon=lon,
                     area_acres=f.area_acres, irrigation=f.irrigation, soil_ph=f.soil_ph,
                     location_source="gps" if body.location_from_gps else "district",

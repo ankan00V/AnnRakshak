@@ -1,5 +1,5 @@
 {
- "_note": "Growth stages by days after sowing (rice: days after transplanting counted from the nursery sowing date for simplicity). Windows are typical for medium-duration kharif varieties in Maharashtra; a farm's stage is derived on read from its sowing date, never stored.",
+ "_note": "Growth stages by days after sowing. Windows are typical for medium-duration kharif varieties in Maharashtra; a farm's stage is derived on read from its sowing date, never stored. Rice is the one transplanted crop here: its stages are counted from the nursery sowing date, so a farm that gave its transplanting date instead (farm.date_basis == 'transplanted') has nursery_days added back before the stage is read. Asking which date it is costs one tap at sign-up and is worth it: the two are three weeks apart, which is a whole stage, and every risk rule and spray window is keyed to the stage.",
  "rice": {
   "names": {
    "en": "Rice (paddy)",
@@ -80,7 +80,8 @@
      "mr": "पक्वता"
     }
    }
-  ]
+  ],
+  "nursery_days": 21
  },
  "maize": {
   "names": {

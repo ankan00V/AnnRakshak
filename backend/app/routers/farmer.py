@@ -44,6 +44,8 @@ def _problem(db: Session, problem_id: int) -> Problem:
 def crops(lang: Lang = "en", kb: KB = Depends(get_kb)):
     return [
         {"id": cid, "name": tr(c["names"], lang), "photo_diagnosis": c["photo_diagnosis"],
+         # > 0 means the crop is transplanted, so the form asks which date it is being given
+         "nursery_days": c.get("nursery_days", 0),
          "stages": [{"key": s["key"], "name": tr(s["names"], lang), "das": s["das"]} for s in c["stages"]]}
         for cid, c in kb.crops.items()
     ]
@@ -122,6 +124,10 @@ class FarmIn(BaseModel):
     crop: str
     variety: str | None = None
     sowing_date: date
+    date_basis: Literal["sown", "transplanted"] = "sown"
+    """What sowing_date means. Rice is transplanted about three weeks after the
+    nursery is sown, so a rice farm must say which date this is; for every other
+    crop here there is only one date and it is the sowing."""
     district: str
     village: str | None = None
     lat: float = Field(ge=-90, le=90)

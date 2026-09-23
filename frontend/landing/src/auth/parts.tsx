@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type InputHTMLAttributes, type ReactNode } from 'react'
-import { Check, Loader2, MailCheck } from 'lucide-react'
+import { Check, Loader2, MailCheck, Volume2 } from 'lucide-react'
 import type { OtpSent } from '../api/types'
 import { ErrorBox } from '../ui/kit'
 import { useFarmer } from '../farmer/FarmerContext'
@@ -9,16 +9,22 @@ const input =
 
 /** A labelled input. `group` for a set of chips: a <label> would pass a tap
  *  on its title to the first chip inside it. */
-export function Field({ label, hint, error, optional, group = false, children }: {
-  label: string; hint?: string; error?: string | false; optional?: boolean; group?: boolean; children: ReactNode
+export function Field({ label, hint, error, optional, group = false, say, children }: {
+  label: string; hint?: string; error?: string | false; optional?: boolean; group?: boolean
+  /** An i18n key read aloud by the speaker button beside the label. */
+  say?: string
+  children: ReactNode
 }) {
   const { t } = useFarmer()
   const Tag = group ? 'div' : 'label'
   return (
     <Tag className="block" {...(group ? { role: 'group', 'aria-label': label } : {})}>
-      <span className="block text-[13px] font-medium text-soil-dark/80 mb-1">
-        {label}
-        {optional && <span className="font-normal text-soil-dark/45"> · {t('authOptional')}</span>}
+      <span className="flex items-center gap-2 text-[13px] font-medium text-soil-dark/80 mb-1">
+        <span className="flex-1">
+          {label}
+          {optional && <span className="font-normal text-soil-dark/45"> · {t('authOptional')}</span>}
+        </span>
+        {say && <Listen say={say} />}
       </span>
       {children}
       {error ? (
@@ -221,5 +227,49 @@ export function CodePanel({ sendLabel, request, verify, submitLabel }: {
         )}
       </p>
     </div>
+  )
+}
+
+/** A speaker button that reads one line of help aloud.
+ *
+ *  Sign-up is where a farmer is asked for the numbers everything else rests
+ *  on — which date, whose acres, what water — and it is the one screen they
+ *  reach before the app has said a single word to them. The clips are made
+ *  once (backend/make_tour_audio.py) and served as files, so they start at a
+ *  tap, work on a weak connection and cost no voice credit.
+ *
+ *  A missing clip is not an error: the button hides itself and the written
+ *  hint beside it still says the same thing.
+ */
+export function Listen({ say }: { say: string }) {
+  const { lang, t } = useFarmer()
+  const [playing, setPlaying] = useState(false)
+  const [gone, setGone] = useState(false)
+  const audio = useRef<HTMLAudioElement | null>(null)
+
+  useEffect(() => () => audio.current?.pause(), [])
+  if (gone) return null
+
+  const toggle = () => {
+    const a = (audio.current ??= new Audio())
+    if (playing) {
+      a.pause()
+      setPlaying(false)
+      return
+    }
+    a.src = `/help/${lang}/${say}.mp3`
+    a.onended = () => setPlaying(false)
+    a.onerror = () => { setPlaying(false); setGone(true) }
+    setPlaying(true)
+    void a.play().catch(() => { setPlaying(false); setGone(true) })
+  }
+
+  return (
+    <button type="button" onClick={toggle} onMouseDown={(e) => e.preventDefault()}
+      aria-label={t('listen')} title={t('listen')}
+      className={`shrink-0 w-9 h-9 rounded-full border flex items-center justify-center transition
+        ${playing ? 'bg-leaf-deep text-cream border-leaf-deep' : 'border-soil-dark/20 text-soil-dark/60 hover:border-leaf'}`}>
+      {playing ? <Volume2 className="w-4 h-4 animate-pulse" /> : <Volume2 className="w-4 h-4" />}
+    </button>
   )
 }

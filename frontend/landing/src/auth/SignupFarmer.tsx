@@ -18,6 +18,8 @@ interface FirstField {
   crop: string
   variety: string | null
   sowing_date: string
+  /** What sowing_date is. Rice can be either, and they are three weeks apart. */
+  date_basis: 'sown' | 'transplanted'
   area_acres: number
   irrigation: Irrigation
   soil_ph: number | null
@@ -35,7 +37,8 @@ function FieldList({ fields, crops, onRemove }: {
         <li key={i} className="flex items-center gap-2 rounded-xl bg-leaf/10 border border-leaf/30 px-3 py-2 text-[13px]">
           <span className="flex-1 min-w-0">
             <span className="font-medium">{crops?.find((c) => c.id === x.crop)?.name ?? x.crop}</span>
-            <span className="text-soil-dark/60"> · {x.area_acres} {t('acres')} · {x.sowing_date}</span>
+            <span className="text-soil-dark/60"> · {x.area_acres} {t('acres')} · {x.sowing_date}
+              {x.date_basis === 'transplanted' ? ` (${t('dateBasisTransplanted')})` : ''}</span>
           </span>
           <button type="button" onClick={() => onRemove(i)} aria-label={t('authRemoveField')} className="p-1 text-soil-dark/45">
             <X className="w-4 h-4" />
@@ -75,6 +78,7 @@ export default function SignupFarmer() {
   const [f, setF] = useState(() => ({
     name: '', phone: '', email: '', totalLand: '',
     crop: 'rice', variety: '', sowing: new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10),
+    basis: '' as '' | 'sown' | 'transplanted',
     area: '', irrigation: 'rainfed' as Irrigation, ph: '',
     consent: false,
   }))
@@ -95,12 +99,13 @@ export default function SignupFarmer() {
     totalLand: f.totalLand !== '' && !(parseFloat(f.totalLand) > 0),
     area: !(parseFloat(f.area) > 0 && parseFloat(f.area) <= 1000),
     sowing: !f.sowing || f.sowing > today(),
+    basis: !!crops.data?.find((c) => c.id === f.crop)?.nursery_days && !f.basis,
     ph: f.ph !== '' && !(parseFloat(f.ph) >= 3 && parseFloat(f.ph) <= 11),
   }
   const stepOk = [
     !bad.name && !bad.phone && !bad.email,
     !bad.where && !bad.totalLand,
-    !bad.area && !bad.sowing && !bad.ph,
+    !bad.area && !bad.sowing && !bad.ph && !bad.basis,
     f.consent,
   ]
   const next = () => {
@@ -127,6 +132,7 @@ export default function SignupFarmer() {
   /** The field on screen right now. */
   const current = (): FirstField => ({
     crop: f.crop, variety: f.variety.trim() || null, sowing_date: f.sowing, area_acres: parseFloat(f.area),
+    date_basis: f.basis || 'sown',
     irrigation: f.irrigation, soil_ph: f.ph ? parseFloat(f.ph) : null,
   })
 
@@ -134,7 +140,7 @@ export default function SignupFarmer() {
     setTouched(true)
     if (!stepOk[2]) return
     setFields((list) => [...list, current()])
-    setF((x) => ({ ...x, crop: crops.data?.find((c) => c.id !== x.crop)?.id ?? x.crop, variety: '', area: '', ph: '' }))
+    setF((x) => ({ ...x, crop: crops.data?.find((c) => c.id !== x.crop)?.id ?? x.crop, variety: '', area: '', ph: '', basis: '' }))
     setTouched(false)
     window.scrollTo(0, 0)
   }
@@ -187,7 +193,7 @@ export default function SignupFarmer() {
           {fields.length > 0 && <FieldList fields={fields} crops={crops.data} onRemove={(i) =>
             setFields((list) => list.filter((_, j) => j !== i))} />}
           {!crops.data ? <Spinner /> : (
-            <Field group label={t('crop')}>
+            <Field group label={t('crop')} say="helpCrop">
               <Chips columns={2} value={[f.crop]} onChange={([c]) => set('crop', c)}
                 options={crops.data.map((c) => ({ id: c.id, label: c.name }))} />
             </Field>
@@ -195,15 +201,24 @@ export default function SignupFarmer() {
           {selectedCrop && !selectedCrop.photo_diagnosis && (
             <p className="text-xs rounded-xl bg-sky-50 text-sky-800 p-2.5">{t('photoLater')}</p>
           )}
-          <Field label={t('area')} error={show('area') && t('authFixField')}>
+          <Field label={t('area')} say="helpArea" error={show('area') && t('authFixField')}>
             <Input value={f.area} onChange={(e) => set('area', e.target.value)} type="number" inputMode="decimal"
               min="0.1" step="0.1" invalid={show('area')} />
           </Field>
-          <Field label={t('sowingDate')} error={show('sowing') && t('authFixField')}>
+          {!!selectedCrop?.nursery_days && (
+            <Field group label={t('dateBasisAsk')} say="dateBasisWhy" error={show('basis') && t('dateBasisWhy')}>
+              <Chips columns={2} value={f.basis ? [f.basis] : []} onChange={([v]) => set('basis', v)}
+                options={[{ id: 'sown', label: t('dateBasisSown') }, { id: 'transplanted', label: t('dateBasisTransplanted') }]} />
+              <p className="mt-1 text-[11px] text-soil-dark/45">{t('dateBasisWhy')}</p>
+            </Field>
+          )}
+          <Field label={f.basis === 'transplanted' ? t('transplantDate') : t('sowingDateOnly')}
+            say={selectedCrop?.nursery_days ? undefined : 'helpSowing'}
+            error={show('sowing') && t('authFixField')}>
             <Input value={f.sowing} onChange={(e) => set('sowing', e.target.value)} type="date" max={today()}
               invalid={show('sowing')} />
           </Field>
-          <Field group label={t('authIrrigation')}>
+          <Field group label={t('authIrrigation')} say="helpIrrigation">
             <Chips columns={2} value={[f.irrigation]} onChange={([v]) => set('irrigation', v)}
               options={IRRIGATION.map((id) => ({ id, label: t(`irr_${id}`) }))} />
           </Field>
@@ -211,7 +226,8 @@ export default function SignupFarmer() {
             <Field label={t('authVariety')} optional>
               <Input value={f.variety} onChange={(e) => set('variety', e.target.value)} placeholder="Jaya, MTU 1010…" />
             </Field>
-            <Field label={t('soilPhCard')} hint={t('soilPhCardHint')} error={show('ph') && t('authFixField')}>
+            <Field label={t('soilPhCard')} hint={t('soilPhCardHint')} say="helpSoilPh"
+              error={show('ph') && t('authFixField')}>
               <Input value={f.ph} onChange={(e) => set('ph', e.target.value)} type="number" inputMode="decimal"
                 min="3" max="11" step="0.1" placeholder="6.8" invalid={show('ph')} />
             </Field>

@@ -153,7 +153,7 @@ def msg(code: str, lang: str) -> str:
 
 
 def farm_view(kb: KB, farm: Farm, lang: str, today: date | None = None) -> dict:
-    stage, das = kb.stage_for(farm.crop, farm.sowing_date, today)
+    stage, das = kb.stage_of(farm, today)
     return {
         "id": farm.id,
         "farmer_name": farm.farmer_name,
@@ -169,6 +169,7 @@ def farm_view(kb: KB, farm: Farm, lang: str, today: date | None = None) -> dict:
         "location_source": farm.location_source or "district",
         "area_acres": farm.area_acres,
         "sowing_date": farm.sowing_date.isoformat(),
+        "date_basis": farm.date_basis,
         "stage": stage,
         "stage_name": kb.stage_name(farm.crop, stage, lang),
         "das": das,

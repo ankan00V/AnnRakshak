@@ -35,7 +35,7 @@ log = logging.getLogger("annrakshak.watch")
 
 def issue_notices(db: Session, kb: KB, farm: Farm, bundle: dict | None, now: datetime,
                   extra: list[dict] | None = None) -> list[Notice]:
-    stage, _ = kb.stage_for(farm.crop, farm.sowing_date, now.date())
+    stage, _ = kb.stage_of(farm, now.date())
     advs = agromet.evaluate(bundle, kb.agromet, farm.crop, stage, now,
                             sprays=notify.recent_sprays(db, farm, now),
                             needs_spray=notify.needs_spray(db, farm)) if bundle else []
@@ -69,7 +69,7 @@ def ensure_polygon(db: Session, farm: Farm) -> str | None:
 
 
 def satellite_summary(db: Session, kb: KB, farm: Farm, now: datetime) -> dict:
-    stage, _ = kb.stage_for(farm.crop, farm.sowing_date, now.date())
+    stage, _ = kb.stage_of(farm, now.date())
     polyid = ensure_polygon(db, farm)
     if not polyid:
         return {"available": False, "reason": "not configured"}

@@ -15,6 +15,7 @@ export interface Farm {
   location_source: 'gps' | 'district'
   area_acres: number
   sowing_date: string
+  date_basis: 'sown' | 'transplanted'
   stage: string
   stage_name: string
   das: number
@@ -392,6 +393,9 @@ export interface CropInfo {
   id: string
   name: string
   photo_diagnosis: boolean
+  /** > 0 for a transplanted crop (rice): the days its nursery takes, and the
+   *  reason the form has to ask whether a date is the sowing or the planting out. */
+  nursery_days: number
   stages: { key: string; name: string; das: [number, number] }[]
 }
 

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
 from functools import lru_cache
 from pathlib import Path
 
@@ -83,8 +83,24 @@ class KB:
     def cue_for(self, a: str, b: str) -> dict | None:
         return self._cue_index.get(frozenset((a, b)))
 
-    def stage_for(self, crop: str, sowing: date, today: date | None = None) -> tuple[str, int]:
-        das = ((today or date.today()) - sowing).days
+    def sown_on(self, crop: str, given: date, date_basis: str | None = None) -> date:
+        """The date the growth clock starts from.
+
+        Every stage window is counted from sowing. Rice is transplanted, and the
+        date a rice farmer remembers is the transplanting (लावणी), about three
+        weeks after the seed went into the nursery bed — a whole stage. If that
+        is the date we were given, the nursery weeks are added back."""
+        if date_basis == "transplanted":
+            return given - timedelta(days=self.crops[crop].get("nursery_days", 0))
+        return given
+
+    def stage_of(self, farm, today: date | None = None) -> tuple[str, int]:
+        """The stage and days-after-sowing of a farm, from the date it gave us."""
+        return self.stage_for(farm.crop, farm.sowing_date, today, getattr(farm, "date_basis", None))
+
+    def stage_for(self, crop: str, sowing: date, today: date | None = None,
+                  date_basis: str | None = None) -> tuple[str, int]:
+        das = ((today or date.today()) - self.sown_on(crop, sowing, date_basis)).days
         stages = self.crops[crop]["stages"]
         for s in stages:
             lo, hi = s["das"]

@@ -68,6 +68,7 @@ ASDID_MANIFEST = ROOT / "data" / "processed" / "asdid_images.csv"
 LOCAL_MANIFEST = ROOT / "data" / "processed" / "local_images.csv"
 COTTON_MANIFEST = ROOT / "data" / "processed" / "cotton_images.csv"
 ART = ROOT / "ml" / "artifacts"
+CKPT = ROOT / "ml" / "artifacts" / "epoch_checkpoint.pt"
 REP = ROOT / "ml" / "reports"
 SEED = 42
 IMG = 300
@@ -392,6 +393,14 @@ def finetune(backbone, train, val, class_idx, device, quick, epochs, backgrounds
               f"[{time.time() - t0:.0f}s]", flush=True)
         if s["f1"] > best:
             best, best_state = s["f1"], {k: v.detach().clone() for k, v in net.state_dict().items()}
+        # An epoch here is a quarter of an hour, a run is most of a day, and a
+        # run has now been lost twice to something outside it — a killed loader
+        # worker, a stray signal. The best weights so far are written after
+        # every epoch so the next crash costs one epoch, not the day.
+        CKPT.parent.mkdir(parents=True, exist_ok=True)
+        torch.save({"epoch": epoch + 1, "best_f1": best, "history": history,
+                    "classes": sorted(class_idx, key=class_idx.get),
+                    "state": {k: v.cpu() for k, v in best_state.items()}}, CKPT)
         if device.type == "mps":  # a 16 GB laptop swaps without this
             torch.mps.empty_cache()
     net.load_state_dict(best_state)
@@ -538,6 +547,8 @@ def main():
                     help="with --with-extra: continue from the deployed model instead of ImageNet weights")
     ap.add_argument("--from-candidate", action="store_true",
                     help="continue from ml/artifacts/candidate (a run that did not pass the deploy gate)")
+    ap.add_argument("--resume", action="store_true",
+                    help="pick up the weights of the last finished epoch (ml/artifacts/epoch_checkpoint.pt)")
     ap.add_argument("--per-class", type=int, default=120,
                     help="with --with-extra: samples drawn per class per epoch")
     ap.add_argument("--with-paddy", action="store_true",
@@ -776,7 +787,11 @@ def main_extra(args):
           f"backgrounds train={ {c: len(v) for c, v in bgs['train'].items()} }")
 
     init, icar_share = None, 0.5
-    if args.warm_start or args.from_candidate:
+    if getattr(args, "resume", False) and CKPT.exists():
+        ck = torch.load(CKPT, map_location="cpu")
+        init, icar_share = (ck["state"], ck["classes"]), 0.75
+        print(f"resuming from epoch {ck['epoch']} of the run that stopped (val F1 {ck['best_f1']:.3f})")
+    elif args.warm_start or args.from_candidate:
         # --from-candidate continues a candidate that did not pass the deploy gate,
         # without touching the model the app is serving.
         src = cand_dir if args.from_candidate else ART
