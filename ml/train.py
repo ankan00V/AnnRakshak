@@ -135,6 +135,24 @@ class Images(Dataset):
         return x, self.class_idx[r["train_class"]]
 
 
+MERGED_CLASSES = {"maize_fall_armyworm_damage": "maize_fall_armyworm"}
+"""Two class names that are one answer.
+
+ICAR photographed the caterpillar and the whorl damage it leaves as separate
+folders, and CCMT's field photos went in beside the second. Both carry the
+target maize_fall_armyworm, so the app says the same thing either way — but the
+deploy gate scores recall per class, which counted "damage" for a "caterpillar"
+photo as a miss and held two thin classes (156 and 334) where the pest has 490
+photos. The manifests keep the names their sources used; the merge happens
+here, where the model is built, and undoing it is deleting a line."""
+
+
+def canon(rows: list[dict]) -> list[dict]:
+    for r in rows:
+        r["train_class"] = MERGED_CLASSES.get(r["train_class"], r["train_class"])
+    return rows
+
+
 def load_split():
     rows = list(csv.DictReader(MANIFEST.open()))
     labels = [r["train_class"] for r in rows]
@@ -768,6 +786,8 @@ def main_extra(args):
             confirmed = [r for r in csv.DictReader(conf_csv.open()) if r["train_class"] in known]
             e_tr = e_tr + confirmed  # all to training: the held-out sets stay comparable across runs
             print(f"with {len(confirmed)} expert-labelled field photos (ml/export_confirmed.py)")
+    i_tr, i_va, i_te = canon(i_tr), canon(i_va), canon(i_te)
+    e_tr, e_va, e_te = canon(e_tr), canon(e_va), canon(e_te)
     train, val = i_tr + e_tr, i_va + e_va
     classes = sorted({r["train_class"] for r in train + val + i_te + e_te})
     class_idx = {c: i for i, c in enumerate(classes)}
