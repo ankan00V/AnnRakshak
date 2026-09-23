@@ -5,7 +5,7 @@ import FarmerApp from './farmer/FarmerApp'
 import Home from './farmer/screens/Home'
 import { AuthProvider } from './auth/AuthContext'
 import RequireRole from './auth/RequireRole'
-import { Spinner } from './ui/kit'
+import { PageSkeleton } from './ui/kit'
 
 // Farmers load only their own screens on slow rural networks; the expert
 // console, the Leaflet-heavy officials' dashboard and the sign-up forms are
@@ -30,7 +30,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Suspense fallback={<Spinner />}>
+        <Suspense fallback={<PageSkeleton />}>
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route element={<AuthLayout />}>

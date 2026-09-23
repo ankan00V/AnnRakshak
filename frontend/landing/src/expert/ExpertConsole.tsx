@@ -7,7 +7,7 @@ import { api } from '../api/client'
 import type { CaseBundle, CaseListItem, CaseSatellite } from '../api/types'
 import { useAsync } from '../lib/hooks'
 import { useAuth } from '../auth/AuthContext'
-import { Card, ErrorBox, GradCamOverlay, Pill, Spinner } from '../ui/kit'
+import { Bone, BoneLines, Card, ErrorBox, GradCamOverlay, Loading, Pill } from '../ui/kit'
 import AccountMenu from '../auth/AccountMenu'
 import BrandMark from '../ui/BrandMark'
 
@@ -204,9 +204,56 @@ function useElapsed() {
 
 function CaseView({ id, onBack, onResolved }: { id: number; onBack: () => void; onResolved: () => void }) {
   const bundle = useAsync(() => api.caseBundle(id), [id])
-  if (bundle.loading && !bundle.data) return <Spinner />
+  if (bundle.loading && !bundle.data) return <CaseSkeleton />
   if (bundle.error) return <ErrorBox error={bundle.error} onRetry={bundle.reload} />
   return <CaseDetail key={id} b={bundle.data!} onBack={onBack} onResolved={() => { bundle.reload(); onResolved() }} />
+}
+
+
+/** The queue and the case, while they load. */
+function CaseRowBone() {
+  return (
+    <Card className="p-3 flex items-center gap-3">
+      <Bone className="w-10 h-10 rounded-xl shrink-0" />
+      <div className="flex-1 space-y-2">
+        <Bone className="h-3.5 w-3/5" />
+        <Bone className="h-2.5 w-2/5 rounded-full" />
+      </div>
+    </Card>
+  )
+}
+
+function QueueSkeleton() {
+  return (
+    <Loading label="Loading the queue">
+      <ul className="space-y-2">
+        {Array.from({ length: 5 }, (_, i) => <li key={i}><CaseRowBone /></li>)}
+      </ul>
+    </Loading>
+  )
+}
+
+function CaseSkeleton() {
+  return (
+    <Loading label="Loading the case">
+      <div className="space-y-4">
+        <Bone className="h-8 w-40" />
+        <div className="grid md:grid-cols-2 gap-4">
+          <Bone className="h-64 w-full rounded-2xl" />
+          <Card className="p-4 space-y-3">
+            <Bone className="h-4 w-36" />
+            <BoneLines lines={4} />
+          </Card>
+        </div>
+        {Array.from({ length: 2 }, (_, i) => (
+          <Card key={i} className="p-4 space-y-3">
+            <Bone className="h-4 w-44" />
+            <BoneLines lines={3} />
+          </Card>
+        ))}
+      </div>
+    </Loading>
+  )
 }
 
 function CaseDetail({ b, onBack, onResolved }: { b: CaseBundle; onBack: () => void; onResolved: () => void }) {

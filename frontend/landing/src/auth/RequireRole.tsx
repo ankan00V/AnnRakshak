@@ -4,7 +4,7 @@ import { ShieldAlert } from 'lucide-react'
 import type { Role } from '../api/types'
 import { FarmerProvider, useFarmer } from '../farmer/FarmerContext'
 import BrandMark from '../ui/BrandMark'
-import { Card, Spinner } from '../ui/kit'
+import { Card, PageSkeleton } from '../ui/kit'
 import { useAuth } from './AuthContext'
 import { homeOf } from './helpers'
 
@@ -14,7 +14,7 @@ import { homeOf } from './helpers'
 export default function RequireRole({ role, children }: { role: Role; children: ReactNode }) {
   const { me, loading } = useAuth()
   const { pathname, search } = useLocation()
-  if (loading) return <div className="min-h-screen bg-cream"><Spinner /></div>
+  if (loading) return <PageSkeleton />
   if (!me) return <Navigate to={`/login?role=${role}&next=${encodeURIComponent(pathname + search)}`} replace />
   if (me.role !== role) {
     return (

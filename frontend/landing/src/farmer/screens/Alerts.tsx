@@ -3,7 +3,8 @@ import { Bug, CheckCircle2, Cpu, Loader2 } from 'lucide-react'
 import type { TargetView } from '../../api/types'
 import { api } from '../../api/client'
 import { useAsync } from '../../lib/hooks'
-import { Card, ErrorBox, SectionTitle, Spinner } from '../../ui/kit'
+import { Card, ErrorBox, SectionTitle } from '../../ui/kit'
+import { AlertsSkeleton } from '../components/Skeletons'
 import AlertCard from '../components/AlertCard'
 import { NoticeInbox, NotifySettings } from '../components/NotifyPanels'
 import { useFarmer } from '../FarmerContext'
@@ -15,7 +16,7 @@ export default function Alerts() {
   const home = useAsync(() => api.home(farmId!, lang), [farmId, lang], ['home', farmId!, lang].join(':'))
   const alerts = useAsync(() => api.alerts(farmId!, lang), [farmId, lang], ['alerts', farmId!, lang].join(':'))
 
-  if ((alerts.loading && !alerts.data) || (home.loading && !home.data)) return <Spinner label={t('loading')} />
+  if ((alerts.loading && !alerts.data) || (home.loading && !home.data)) return <AlertsSkeleton />
   if (alerts.error) return <ErrorBox error={alerts.error} onRetry={alerts.reload} retryLabel={t('retry')} />
   const crop = home.data?.farm.crop ?? ''
   const open = alerts.data!.filter((a) => a.outcome === null || a.outcome === 'snoozed')

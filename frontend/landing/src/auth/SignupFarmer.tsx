@@ -6,7 +6,7 @@ import type { Irrigation } from '../api/types'
 import LanguagePicker from '../farmer/components/LanguagePicker'
 import { useFarmer } from '../farmer/FarmerContext'
 import { useAsync } from '../lib/hooks'
-import { Card, Spinner } from '../ui/kit'
+import { Bone, Card, Loading } from '../ui/kit'
 import { useAuth } from './AuthContext'
 import { emailOk, phoneOk } from './helpers'
 import { Chips, CodePanel, Field, Input, Primary, Secondary, Steps } from './parts'
@@ -192,7 +192,14 @@ export default function SignupFarmer() {
           <p className="text-sm text-soil-dark/60 -mt-2">{fields.length ? t('authFieldsHint') : t('authFirstField')}</p>
           {fields.length > 0 && <FieldList fields={fields} crops={crops.data} onRemove={(i) =>
             setFields((list) => list.filter((_, j) => j !== i))} />}
-          {!crops.data ? <Spinner /> : (
+          {!crops.data ? (
+            <Loading label={t('loading')}>
+              <Bone className="h-3 w-16 rounded-full mb-2" />
+              <div className="grid grid-cols-2 gap-2">
+                {Array.from({ length: 4 }, (_, i) => <Bone key={i} className="h-12 rounded-xl" />)}
+              </div>
+            </Loading>
+          ) : (
             <Field group label={t('crop')} say="helpCrop">
               <Chips columns={2} value={[f.crop]} onChange={([c]) => set('crop', c)}
                 options={crops.data.map((c) => ({ id: c.id, label: c.name }))} />

@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import type { ModelCard, OutlookRow, PesticideBaseline, RainfallPanel, Summary } from '../api/types'
 import { useAsync } from '../lib/hooks'
-import { Card, ErrorBox, Pill, Spinner } from '../ui/kit'
+import { Bone, BoneLines, Card, ErrorBox, Loading, Pill } from '../ui/kit'
 import HotspotMap from './HotspotMap'
 import AccountMenu from '../auth/AccountMenu'
 import BrandMark from '../ui/BrandMark'
@@ -65,7 +65,7 @@ export default function OfficerDashboard() {
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-5 space-y-5">
         {sweep && <div className="rounded-xl bg-leaf/10 text-leaf-deep text-sm px-4 py-2">{sweep}</div>}
         {summary.error && <ErrorBox error={summary.error} onRetry={refresh} />}
-        {summary.data && <Kpis s={summary.data} />}
+        {summary.data ? <Kpis s={summary.data} /> : !summary.error && <KpisSkeleton />}
 
         <div className="grid lg:grid-cols-[1.6fr_1fr] gap-5">
           <Card className="p-3 flex flex-col">
@@ -82,7 +82,7 @@ export default function OfficerDashboard() {
               </div>
             </div>
             <div className="h-[460px]">
-              {hotspots.data ? <HotspotMap data={hotspots.data} layers={layers} /> : <Spinner />}
+              {hotspots.data ? <HotspotMap data={hotspots.data} layers={layers} /> : <MapSkeleton />}
             </div>
             <div className="flex flex-wrap gap-3 px-1 pt-2 text-[11px] text-soil-dark/70">
               <Legend color="#b0472a" label="Expert-confirmed" />
@@ -93,18 +93,18 @@ export default function OfficerDashboard() {
           </Card>
 
           <div className="space-y-5">
-            {summary.data && <GatePanel s={summary.data} />}
-            {model.data && <ModelPanel m={model.data} />}
+            {summary.data ? <GatePanel s={summary.data} /> : !summary.error && <PanelBone rows={3} />}
+            {model.data ? <ModelPanel m={model.data} /> : <PanelBone rows={5} />}
           </div>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-5">
-          {summary.data && <DistrictTable s={summary.data} />}
-          {summary.data && <AccuracyPanel s={summary.data} />}
+          {summary.data ? <DistrictTable s={summary.data} /> : !summary.error && <PanelBone rows={6} />}
+          {summary.data ? <AccuracyPanel s={summary.data} /> : !summary.error && <PanelBone rows={4} />}
         </div>
 
         <div className="grid lg:grid-cols-[1.4fr_1fr] gap-5">
-          {outlook.data && <OutlookPanel rows={outlook.data} />}
+          {outlook.data ? <OutlookPanel rows={outlook.data} /> : <PanelBone rows={5} />}
           {pesticides.data?.available && <PesticidePanel p={pesticides.data} />}
         </div>
 
@@ -115,6 +115,47 @@ export default function OfficerDashboard() {
         )}
       </div>
     </div>
+  )
+}
+
+
+/** KPIs, map and side panels, while the six dashboard calls come back. */
+function PanelBone({ rows = 4 }: { rows?: number }) {
+  return (
+    <Card className="p-4 space-y-3">
+      <Bone className="h-4 w-40" />
+      <BoneLines lines={rows} />
+    </Card>
+  )
+}
+
+function KpisSkeleton() {
+  return (
+    <Loading label="Loading the district summary">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {Array.from({ length: 5 }, (_, i) => (
+          <Card key={i} className="p-4">
+            <Bone className="w-4 h-4 rounded-md" />
+            <Bone className="h-8 w-16 mt-2" />
+            <Bone className="h-3 w-24 mt-2 rounded-full" />
+            <Bone className="h-2.5 w-20 mt-1.5 rounded-full" />
+          </Card>
+        ))}
+      </div>
+    </Loading>
+  )
+}
+
+function MapSkeleton() {
+  return (
+    <Loading label="Loading the hotspot map" className="h-full">
+      <div className="relative h-full w-full overflow-hidden rounded-xl bg-soil-dark/[0.06] motion-safe:animate-pulse">
+        {/* Where the pins will be, so the card does not read as broken. */}
+        {[['28%', '34%'], ['52%', '58%'], ['68%', '30%'], ['40%', '72%']].map(([top, left]) => (
+          <span key={top + left} className="absolute w-3 h-3 rounded-full bg-soil-dark/15" style={{ top, left }} />
+        ))}
+      </div>
+    </Loading>
   )
 }
 

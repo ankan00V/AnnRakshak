@@ -12,6 +12,52 @@ export function Spinner({ label }: { label?: string }) {
   )
 }
 
+/** One grey block where content will land. Screens assemble these into the
+ *  shape of the real screen, so nothing jumps when the data arrives. Held still
+ *  for anyone who asked their system for less motion. */
+export function Bone({ className = '' }: { className?: string }) {
+  return <span aria-hidden className={`block rounded-xl bg-soil-dark/10 motion-safe:animate-pulse ${className}`} />
+}
+
+/** A paragraph of bones; the last line is short, the way text ends. */
+export function BoneLines({ lines = 3, className = '' }: { lines?: number; className?: string }) {
+  return (
+    <span aria-hidden className={`block space-y-2 ${className}`}>
+      {Array.from({ length: lines }, (_, i) => (
+        <Bone key={i} className={`h-3 rounded-full ${i === lines - 1 ? 'w-2/3' : 'w-full'}`} />
+      ))}
+    </span>
+  )
+}
+
+/** Wraps a screen's bones: one polite announcement for a screen reader, which
+ *  reads the label instead of the shapes. */
+export function Loading({ label, className = '', children }: {
+  label?: string; className?: string; children: ReactNode
+}) {
+  return (
+    <div role="status" aria-busy="true" aria-live="polite" className={`animate-fadein ${className}`}>
+      <span className="sr-only">{label ?? 'Loading'}</span>
+      {children}
+    </div>
+  )
+}
+
+export function PageSkeleton({ label }: { label?: string }) {
+  return (
+    <Loading label={label}>
+      <div className="min-h-screen bg-cream px-4 py-8">
+        <div className="max-w-md mx-auto space-y-5 lg:max-w-3xl">
+          <Bone className="h-8 w-1/2" />
+          <Bone className="h-36 w-full rounded-2xl" />
+          <Bone className="h-24 w-full rounded-2xl" />
+          <BoneLines lines={3} />
+        </div>
+      </div>
+    </Loading>
+  )
+}
+
 export function ErrorBox({ error, onRetry, retryLabel = 'Retry' }: {
   error: Error; onRetry?: () => void; retryLabel?: string
 }) {

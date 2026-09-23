@@ -2,7 +2,8 @@ import { ArrowLeft, UserCheck } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../../api/client'
 import { useAsync } from '../../lib/hooks'
-import { ErrorBox, Pill, Spinner } from '../../ui/kit'
+import { ErrorBox, Pill } from '../../ui/kit'
+import { HistorySkeleton, ProblemDetailSkeleton } from '../components/Skeletons'
 import AdvisoryView from '../components/AdvisoryView'
 import ProblemRow, { problemStatus } from '../components/ProblemRow'
 import { useFarmer } from '../FarmerContext'
@@ -10,7 +11,7 @@ import { useFarmer } from '../FarmerContext'
 export default function History() {
   const { farmId, lang, t } = useFarmer()
   const home = useAsync(() => api.home(farmId!, lang), [farmId, lang], ['home', farmId!, lang].join(':'))
-  if (home.loading && !home.data) return <Spinner label={t('loading')} />
+  if (home.loading && !home.data) return <HistorySkeleton />
   if (home.error) return <ErrorBox error={home.error} onRetry={home.reload} />
   const problems = home.data!.problems.filter((p) => p.gate_outcome !== 'retake')
   return (
@@ -29,7 +30,7 @@ export function ProblemDetail() {
   const { id } = useParams()
   const { lang, t } = useFarmer()
   const p = useAsync(() => api.problem(Number(id), lang), [id, lang])
-  if (p.loading && !p.data) return <Spinner label={t('loading')} />
+  if (p.loading && !p.data) return <ProblemDetailSkeleton />
   if (p.error) return <ErrorBox error={p.error} onRetry={p.reload} />
   const d = p.data!
   const s = problemStatus(d, t)

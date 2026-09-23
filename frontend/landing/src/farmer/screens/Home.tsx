@@ -5,7 +5,8 @@ import { api } from '../../api/client'
 import type { CropInfo, Home as HomeData } from '../../api/types'
 import { useAsync, useWide } from '../../lib/hooks'
 import { EYEBROW, MAIN, ROW, SIDE, SPLIT } from '../layout'
-import { Card, ErrorBox, SectionTitle, Spinner } from '../../ui/kit'
+import { Card, ErrorBox, SectionTitle } from '../../ui/kit'
+import { HomeSkeleton } from '../components/Skeletons'
 import AlertCard from '../components/AlertCard'
 import LocationAsk from '../components/LocationAsk'
 import ProblemRow from '../components/ProblemRow'
@@ -20,7 +21,7 @@ export default function Home() {
   const crops = useAsync(() => api.crops(lang), [lang], ['crops', lang].join(':'))
   const wide = useWide()
 
-  if (home.loading && !home.data) return <Spinner label={t('loading')} />
+  if (home.loading && !home.data) return <HomeSkeleton />
   if (home.error) return <ErrorBox error={home.error} onRetry={home.reload} retryLabel={t('retry')} />
   const d = home.data!
   const crop = crops.data?.find((c) => c.id === d.farm.crop)

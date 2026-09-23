@@ -5,6 +5,7 @@ import type { CropInfo, Farm } from '../../api/types'
 import WherePicker, { type Where } from '../../auth/WherePicker'
 import { useAsync } from '../../lib/hooks'
 import { Card, ErrorBox, ListenButton, Pill, Spinner } from '../../ui/kit'
+import { FarmPickerSkeleton } from '../components/Skeletons'
 import LanguagePicker from '../components/LanguagePicker'
 import { useFarmer } from '../FarmerContext'
 import { useAuth } from '../../auth/AuthContext'
@@ -58,7 +59,7 @@ export default function Onboard() {
         <LanguagePicker variant="grid" onPick={setLang} />
       </section>
 
-      {farms.loading && !farms.data && <Spinner />}
+      {farms.loading && !farms.data && <FarmPickerSkeleton />}
       {farms.error && <ErrorBox error={farms.error} onRetry={farms.reload} retryLabel={t('retry')} />}
 
       {crops.data && farms.data && (

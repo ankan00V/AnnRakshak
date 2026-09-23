@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import { api } from '../../api/client'
 import type { Lang, WeatherAdvisory, WeatherDay, WeatherHour, WeatherView } from '../../api/types'
 import { useAsync, useWide } from '../../lib/hooks'
-import { Card, ErrorBox, ListenButton, Pill, SectionTitle, Spinner } from '../../ui/kit'
+import { Card, ErrorBox, ListenButton, Pill, SectionTitle } from '../../ui/kit'
+import { WeatherSkeleton } from '../components/Skeletons'
 import { bcp47 } from '../../lib/i18n'
 import { useFarmer } from '../FarmerContext'
 import { MAIN, SIDE, SPLIT } from '../layout'
@@ -65,7 +66,7 @@ export default function Weather() {
   const { farmId, lang, t } = useFarmer()  // lang also feeds dates and the KCC month name
   const w = useAsync(() => api.weather(farmId!, lang), [farmId, lang], ['weather', farmId!, lang].join(':'))
   const wide = useWide()
-  if (w.loading && !w.data) return <Spinner label={t('loading')} />
+  if (w.loading && !w.data) return <WeatherSkeleton />
   if (w.error) return <ErrorBox error={w.error} onRetry={w.reload} retryLabel={t('retry')} />
   const v = w.data!
   const speech = v.advisories.filter((a) => a.rule !== 'spray_window').slice(0, 3).map((a) => `${a.title}. ${a.text}`).join(' ')
