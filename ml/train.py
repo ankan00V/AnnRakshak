@@ -822,7 +822,15 @@ def main_extra(args):
         if not src_meta or not (src / "model.pt").exists():
             sys.exit(f"warm start needs a model in {src}")
         init = (torch.load(src / "model.pt", map_location="cpu"), src_meta["classes"])
-        icar_share = 0.75  # the ICAR field photos anchor the classes both sources share
+        # The ICAR field photos anchor the classes both sources share. Raised
+        # from 0.75 on 24 Sep: the week's imports took the training set from
+        # 21k images to 47k, all of it rice, soybean and cotton, and inside a
+        # shared class like rice_leaf_blast the 50 ICAR photos were being drawn
+        # against thousands from Paddy Doctor and Bangladesh. The candidate that
+        # came out of that lost ICAR rice (0.879 -> 0.864) and maize
+        # (0.917 -> 0.883) and the gate refused it. ICAR's are the real field
+        # photographs and the ones the deploy checks measure.
+        icar_share = 0.85
     print("fine-tune — EfficientNetV2-S, ICAR + extra sources, background randomisation"
           f"{', warm start' if init else ''}:")
     net, f1, hist = finetune("efficientnet_v2_s", train, val, class_idx, device, args.quick, args.epochs,
