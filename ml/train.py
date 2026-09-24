@@ -347,7 +347,10 @@ def finetune(backbone, train, val, class_idx, device, quick, epochs, backgrounds
             lr_feat, lr_head, warm = 0.0, 2e-3, 0
         if lr_override:  # a continuation that must barely move the backbone
             lr_feat, lr_head, warm = lr_override[0], lr_override[1], 1
-        print(f"  warm start from the deployed model; new classes ({len(new)}): {new}")
+        # `new` is empty on a --resume, where the weights are the run's own and
+        # every class already has a head row: say where they came from truthfully.
+        print(f"  warm start from {'a checkpoint of this run' if not new else 'the deployed model'}"
+              f"; new classes ({len(new)}): {new}")
         print(f"  lr feat {lr_feat:g} head {lr_head:g} ({share_new:.0%} of classes are new)")
     if backgrounds:
         dl_tr = loader(train, class_idx, train_transform(IMG), shuffle=True,
