@@ -53,9 +53,16 @@ export function Card({ children, className = '', ...rest }: { children: ReactNod
   return <div {...rest} className={`rounded-2xl bg-white border border-soil-dark/10 ${className}`}>{children}</div>
 }
 
-/** Reads text aloud with Sarvam Bulbul via the backend (key stays server-side). */
-export function ListenButton({ text, lang, label, stopLabel, compact = false, tone = 'dark' }: {
-  text: string; lang: Lang; label: string; stopLabel: string; compact?: boolean; tone?: 'dark' | 'light'
+/** Reads text aloud with Sarvam Bulbul via the backend (key stays server-side).
+ *
+ *  `src` is a clip of this same text made ahead of time (public/help, built by
+ *  backend/make_tour_audio.py). Where one exists it plays at the tap, with no
+ *  request, no wait on a weak connection and no voice credit; if it is missing
+ *  or will not play, the button falls back to reading `text` live, so the
+ *  farmer still hears the same words either way. */
+export function ListenButton({ text, lang, label, stopLabel, src, compact = false, tone = 'dark' }: {
+  text: string; lang: Lang; label: string; stopLabel: string; src?: string
+  compact?: boolean; tone?: 'dark' | 'light'
 }) {
   const [state, setState] = useState<'idle' | 'loading' | 'playing' | 'error'>('idle')
   const audio = useRef<HTMLAudioElement | null>(null)
@@ -74,6 +81,17 @@ export function ListenButton({ text, lang, label, stopLabel, compact = false, to
     }
     setState('loading')
     try {
+      if (src) {
+        try {
+          audio.current = new Audio(src)
+          audio.current.onended = () => setState('idle')
+          await audio.current.play()
+          setState('playing')
+          return
+        } catch {
+          // no clip for this language yet, or it will not decode: read it live
+        }
+      }
       const blob = await api.tts(text, lang)
       if (url.current) URL.revokeObjectURL(url.current)
       url.current = URL.createObjectURL(blob)

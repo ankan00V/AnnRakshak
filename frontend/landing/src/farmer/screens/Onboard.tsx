@@ -4,18 +4,37 @@ import { api } from '../../api/client'
 import type { Farm } from '../../api/types'
 import WherePicker, { type Where } from '../../auth/WherePicker'
 import { useAsync } from '../../lib/hooks'
-import { Card, ErrorBox, Pill, Spinner } from '../../ui/kit'
+import { Card, ErrorBox, ListenButton, Pill, Spinner } from '../../ui/kit'
 import LanguagePicker from '../components/LanguagePicker'
 import { useFarmer } from '../FarmerContext'
 import { useAuth } from '../../auth/AuthContext'
 import { Chips } from '../../auth/parts'
 import type { Irrigation } from '../../api/types'
+import type { TKey } from '../../lib/i18n'
 
 const CROP_TINT: Record<string, string> = {
   rice: 'bg-leaf/15 text-leaf-deep',
   maize: 'bg-ochre/20 text-[#8a5a17]',
   cotton: 'bg-sky-100 text-sky-800',
   soybean: 'bg-lime-100 text-lime-800',
+}
+
+/** A field's title with the speaker that reads its help aloud — the same
+ *  control the sign-up form uses, so one screen does not teach a farmer a
+ *  button the next one contradicts. The span swallows the mousedown because
+ *  this sits inside a <label>: a tap reaching it would focus the field and
+ *  raise the keyboard over the help just asked for. */
+function Ask({ label, say }: { label: string; say: TKey }) {
+  const { t, lang } = useFarmer()
+  return (
+    <span className="flex items-center gap-2">
+      <span className="flex-1">{label}</span>
+      <span onMouseDown={(e) => e.preventDefault()}>
+        <ListenButton src={`/help/${lang}/${say}.mp3`} text={t(say)} lang={lang}
+          label={t('listen')} stopLabel={t('stop')} compact />
+      </span>
+    </span>
+  )
 }
 
 export default function Onboard() {
@@ -169,7 +188,7 @@ function RegisterForm({ crops, onDone }: {
       </label>
       <div className="grid grid-cols-2 gap-2">
         <label className="block text-xs text-soil-dark/60">
-          {t('crop')}
+          <Ask label={t('crop')} say="helpCrop" />
           <select className={field} value={crop} onChange={(e) => { setCrop(e.target.value); setBasis('') }}>
             {crops.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
@@ -177,7 +196,7 @@ function RegisterForm({ crops, onDone }: {
           </select>
         </label>
         <label className="block text-xs text-soil-dark/60">
-          {t('area')}
+          <Ask label={t('area')} say="helpArea" />
           <input className={field} type="number" inputMode="decimal" min="0.1" step="0.1" value={area}
             onChange={(e) => setArea(e.target.value)} />
         </label>
@@ -187,7 +206,7 @@ function RegisterForm({ crops, onDone }: {
       )}
       {!!selected?.nursery_days && (
         <div className="text-xs text-soil-dark/60">
-          <p className="mb-1">{t('dateBasisAsk')}</p>
+          <p className="mb-1"><Ask label={t('dateBasisAsk')} say="dateBasisWhy" /></p>
           <Chips columns={2} value={basis ? [basis] : []} onChange={([v]) => setBasis(v)}
             options={[{ id: 'sown' as const, label: t('dateBasisSown') },
                       { id: 'transplanted' as const, label: t('dateBasisTransplanted') }]} />
@@ -195,17 +214,19 @@ function RegisterForm({ crops, onDone }: {
         </div>
       )}
       <label className="block text-xs text-soil-dark/60">
-        {basis === 'transplanted' ? t('transplantDate') : t('sowingDateOnly')}
+        {selected?.nursery_days
+          ? (basis === 'transplanted' ? t('transplantDate') : t('sowingDateOnly'))
+          : <Ask label={t('sowingDateOnly')} say="helpSowing" />}
         <input className={field} type="date" value={sowing} onChange={(e) => setSowing(e.target.value)} />
       </label>
       <WherePicker value={where} onChange={setWhere} />
       <div className="text-xs text-soil-dark/60">
-        <p className="mb-1">{t('authIrrigation')}</p>
+        <p className="mb-1"><Ask label={t('authIrrigation')} say="helpIrrigation" /></p>
         <Chips columns={2} value={[irrigation]} onChange={([v]) => setIrrigation(v)}
           options={(['rainfed', 'canal', 'borewell', 'open_well', 'farm_pond', 'drip', 'sprinkler'] as const).map((id) => ({ id, label: t(`irr_${id}`) }))} />
       </div>
       <label className="block text-xs text-soil-dark/60">
-        {t('soilPhCard')}
+        <Ask label={t('soilPhCard')} say="helpSoilPh" />
         <input className={field} type="number" inputMode="decimal" min="3" max="11" step="0.1" value={ph}
           placeholder="6.8" onChange={(e) => setPh(e.target.value)} />
         <span className="block mt-1 text-[11px] text-soil-dark/45">{t('soilPhCardHint')}</span>
