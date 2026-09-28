@@ -631,7 +631,7 @@ def case_satellite(db: Session, kb: KB, farm: Farm) -> dict | None:
     if not satellite.configured() or not farm.agro_polygon_id:
         return None
     try:
-        stage, _ = kb.stage_of(farm, date.today())
+        stage, _ = kb.stage_for(farm.crop, farm.sowing_date, date.today())
         s = satellite.summarize(satellite.ndvi_series(farm.agro_polygon_id), farm.crop, stage)
     except satellite.SatelliteUnavailable:
         return None
@@ -787,7 +787,7 @@ def risk_scores(db: Session, kb: KB, farm: Farm, today: date, window,
 
     `satellite` is this farm's greenness-drop summary when the caller already
     has one (the watcher does); it only ever raises a level that already fired."""
-    stage, das = kb.stage_of(farm, today)
+    stage, das = kb.stage_for(farm.crop, farm.sowing_date, today)
     history = set(db.scalars(
         select(Problem.target).where(Problem.farm_id == farm.id, Problem.target.is_not(None))
     ).all())

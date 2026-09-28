@@ -82,4 +82,5 @@ def init_db(bind=None) -> None:
                 if eng.dialect.name == "postgresql":
                     typ = typ.replace("DATETIME", "TIMESTAMP")
                 if col not in have:
-                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {typ}"))
+                    # `case` is a reserved SQL keyword; quote the table name.
+                    conn.execute(text(f"ALTER TABLE \"{table}\" ADD COLUMN {col} {typ}"))
