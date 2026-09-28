@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ChevronRight, LocateFixed, Plus, Sprout } from 'lucide-react'
 import { api } from '../../api/client'
-import type { Farm } from '../../api/types'
+import type { CropInfo, Farm } from '../../api/types'
 import WherePicker, { type Where } from '../../auth/WherePicker'
 import { useAsync } from '../../lib/hooks'
 import { Card, ErrorBox, ListenButton, Pill, Spinner } from '../../ui/kit'
@@ -113,7 +113,10 @@ export default function Onboard() {
 }
 
 function RegisterForm({ crops, onDone }: {
-  crops: { id: string; name: string; photo_diagnosis: boolean }[]
+  // CropInfo itself, not a hand-copied shape of it: this form asks a different
+  // question for a transplanted crop, and it can only know which those are
+  // from nursery_days.
+  crops: CropInfo[]
   onDone: (id: number) => void
 }) {
   const { lang, t } = useFarmer()
