@@ -10,6 +10,13 @@ start_new_session=True calls setsid() in the child, so it leads its own session
 and process group and belongs to no terminal. macOS has no setsid binary, which
 is why this is a Python file and not a one-liner.
 
+A fourth run then died at epoch 6 because detaching it was only half the
+problem: the earlier `nohup` runs had been wrapped in `caffeinate -i`, that
+wrapper went away with them, and an idle Mac went to sleep under the training.
+So the run is started through `caffeinate -i -w <pid>`, which holds the
+assertion for exactly as long as the training lives and releases it when the
+run ends rather than leaving a laptop awake all night.
+
     .venv/bin/python ml/run_detached.py ml/train_v7.log ml/train.py --with-extra ...
 """
 
@@ -33,4 +40,10 @@ with log_path.open("wb") as log:
         env={**os.environ, "PYTHONUNBUFFERED": "1"},
         cwd=Path(__file__).resolve().parents[1],
     )
+    # -w waits on the training's pid, so the Mac stays awake for exactly as long
+    # as the run does. Detached the same way: it must not die with this shell
+    # either, or the sleep it was holding off arrives anyway.
+    subprocess.Popen(["caffeinate", "-i", "-w", str(child.pid)],
+                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                     start_new_session=True)
 print(f"{child.pid}")
