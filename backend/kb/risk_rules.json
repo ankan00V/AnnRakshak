@@ -1152,6 +1152,197 @@
      "लोंबीऐवजी पानांचा झुबका झाला असल्यास ती रोपे उपटून टाका, त्यांना दाणे येत नाहीत."
     ]
    }
+  },
+  "soybean_target_spot": {
+   "stages": [
+    "vegetative",
+    "flowering",
+    "pod_formation"
+   ],
+   "weather": {
+    "rh_min": 80,
+    "t_min": 22,
+    "t_max": 32,
+    "days": 3
+   },
+   "source": "Corynespora needs long leaf wetness and warm, humid weather; it starts on the shaded lower canopy and works up (Crop Protection Network).",
+   "tasks": {
+    "en": [
+     "Turn over the lower leaves of 10 plants and look for brown spots with rings inside them.",
+     "Check whether the lower canopy is staying wet into the morning, and thin or weed to let air through."
+    ],
+    "hi": [
+     "10 पौधों की नीचे की पत्तियाँ पलटकर अंदर छल्लों वाले भूरे धब्बे देखें।",
+     "देखें कि नीचे की फसल सुबह तक भीगी तो नहीं रहती; निराई कर हवा का रास्ता बनाएँ।"
+    ],
+    "mr": [
+     "10 झाडांची खालची पाने उलटून आत वलये असलेले तपकिरी ठिपके पाहा.",
+     "खालचा भाग सकाळपर्यंत ओला राहतो का पाहा; खुरपणी करून हवा खेळती ठेवा."
+    ]
+   }
+  },
+  "soybean_cercospora_leaf_blight": {
+   "stages": [
+    "flowering",
+    "pod_formation",
+    "pod_filling"
+   ],
+   "weather": {
+    "rh_min": 75,
+    "t_min": 25,
+    "t_max": 33,
+    "days": 3
+   },
+   "source": "Cercospora kikuchii builds up in warm, humid weather from flowering onward and shows on the sun-exposed top canopy (ICAR-IISR; Crop Protection Network).",
+   "tasks": {
+    "en": [
+     "Look down on the top canopy of 10 plants for a bronze-purple sheen rather than spots.",
+     "Open a few pods and check the seed coat for purple staining."
+    ],
+    "hi": [
+     "10 पौधों की ऊपरी फसल को ऊपर से देखें — धब्बों के बजाय ताँबई-बैंगनी चमक।",
+     "कुछ फलियाँ खोलकर बीज के छिलके पर बैंगनी दाग देखें।"
+    ],
+    "mr": [
+     "10 झाडांचा वरचा भाग वरून पाहा — ठिपक्यांऐवजी तांबूस-जांभळी झाक.",
+     "काही शेंगा फोडून बियांच्या सालीवर जांभळा डाग पाहा."
+    ]
+   }
+  },
+  "soybean_downy_mildew": {
+   "stages": [
+    "vegetative",
+    "flowering"
+   ],
+   "weather": {
+    "rh_min": 85,
+    "t_min": 20,
+    "t_max": 28,
+    "days": 3
+   },
+   "source": "Peronospora manshurica needs cool, very humid nights and free water on the leaf; it fades once the weather turns hot and dry (ICAR-IISR).",
+   "tasks": {
+    "en": [
+     "Turn 10 leaves over early in the morning and look for grey-violet fuzz under the pale patches.",
+     "Mark where the patches sit — low, damp corners of the field go first."
+    ],
+    "hi": [
+     "सुबह जल्दी 10 पत्तियाँ पलटकर हल्के धब्बों के नीचे धूसर-बैंगनी रोएँ देखें।",
+     "ध्यान रखें कि धब्बे कहाँ हैं — खेत के नीचे, नम कोने पहले प्रभावित होते हैं।"
+    ],
+    "mr": [
+     "सकाळी लवकर 10 पाने उलटून फिकट ठिपक्यांखाली राखाडी-जांभळट लव पाहा.",
+     "ठिपके कुठे आहेत ते नोंदवा — शेतातील सखल, दमट कोपरे आधी बाधित होतात."
+    ]
+   }
+  },
+  "soybean_bacterial_blight": {
+   "stages": [
+    "vegetative",
+    "flowering"
+   ],
+   "weather": {
+    "rh_min": 80,
+    "t_min": 18,
+    "t_max": 28,
+    "rain_min": 10,
+    "days": 2
+   },
+   "source": "Pseudomonas savastanoi pv. glycinea spreads when cool, windy rain drives bacteria into young leaves; hot dry weather stops it (Crop Protection Network).",
+   "tasks": {
+    "en": [
+     "Check the youngest top leaves of 10 plants for angular water-soaked spots with a yellow halo.",
+     "Keep out of the crop until the leaves dry, and wash hands and tools after working in an affected patch."
+    ],
+    "hi": [
+     "10 पौधों की सबसे नई ऊपरी पत्तियों पर पीले घेरे वाले कोणदार, पानी-भीगे धब्बे देखें।",
+     "पत्तियाँ सूखने तक फसल में न जाएँ; प्रभावित हिस्से में काम के बाद हाथ और औज़ार धोएँ।"
+    ],
+    "mr": [
+     "10 झाडांच्या सर्वात कोवळ्या वरच्या पानांवर पिवळ्या वलयाचे कोनाकृती पाणथळ ठिपके पाहा.",
+     "पाने वाळेपर्यंत पिकात जाऊ नका; बाधित भागात काम केल्यावर हात व अवजारे धुवा."
+    ]
+   }
+  },
+  "soybean_potassium_deficiency": {
+   "stages": [
+    "vegetative",
+    "flowering",
+    "pod_formation"
+   ],
+   "phenology": {
+    "das_min": 25,
+    "das_max": 75
+   },
+   "source": "Soybean takes up most of its potassium between flowering and pod filling, so a shortage shows first on the old leaves of light or sandy patches in that window (ICAR-IISR).",
+   "tasks": {
+    "en": [
+     "Look at the older lower leaves in the palest patch: yellow edges with a green middle mean potash, not disease.",
+     "Note the patch on the map and get a soil sample from it before the next sowing."
+    ],
+    "hi": [
+     "सबसे पीले हिस्से में पुरानी, नीचे की पत्तियाँ देखें: किनारे पीले और बीच हरा — यह पोटाश की कमी है, रोग नहीं।",
+     "उस हिस्से को नक्शे पर लिख लें और अगली बुवाई से पहले वहाँ से मिट्टी का नमूना लें।"
+    ],
+    "mr": [
+     "सर्वात फिकट पट्ट्यातील जुनी, खालची पाने पाहा: कडा पिवळ्या व मध्य हिरवा म्हणजे पालाशाची कमतरता, रोग नाही.",
+     "तो पट्टा नकाशावर नोंदवा आणि पुढील पेरणीपूर्वी तिथून मातीचा नमुना घ्या."
+    ]
+   }
+  },
+  "cotton_leaf_reddening": {
+   "stages": [
+    "squaring",
+    "flowering",
+    "boll_development"
+   ],
+   "weather": {
+    "rh_min": 50,
+    "t_min": 12,
+    "t_max": 24,
+    "days": 3
+   },
+   "source": "Cotton reddens when cool nights slow uptake in a crop short of magnesium or nitrogen, and in waterlogged patches; it is a stress response, not an infection (ICAR-CICR).",
+   "tasks": {
+    "en": [
+     "Look at the oldest leaves in the lowest-lying corner for whole-leaf red with green veins.",
+     "Check the drainage there, and plan an evening magnesium sulphate spray if more than a few plants have turned."
+    ],
+    "hi": [
+     "सबसे नीचे वाले कोने में पुरानी पत्तियों पर पूरी पत्ती का लालपन और हरी शिराएँ देखें।",
+     "वहाँ पानी निकासी देखें, और कुछ से ज़्यादा पौधे लाल हों तो शाम को मैग्नीशियम सल्फेट छिड़काव की योजना बनाएँ।"
+    ],
+    "mr": [
+     "सर्वात सखल कोपऱ्यातील जुन्या पानांवर संपूर्ण पान लाल व शिरा हिरव्या आहेत का पाहा.",
+     "तिथली पाण्याची निचरा व्यवस्था पाहा, आणि काहींपेक्षा जास्त झाडे लाल झाली असल्यास संध्याकाळी मॅग्नेशियम सल्फेट फवारणीचे नियोजन करा."
+    ]
+   }
+  },
+  "cotton_herbicide_damage": {
+   "stages": [
+    "vegetative",
+    "squaring",
+    "flowering"
+   ],
+   "phenology": {
+    "das_min": 15,
+    "das_max": 100
+   },
+   "source": "Weedicide is sprayed in neighbouring fields through the vegetative and squaring months; drift and sprayer residue show on the new growth within a week (ICAR-CICR).",
+   "tasks": {
+    "en": [
+     "Walk the field edge nearest any field sprayed this week and look at the newest leaves for cupping or strapping.",
+     "Check that your own sprayer was washed three times since it last carried a weedicide."
+    ],
+    "hi": [
+     "इस हफ़्ते छिड़काव हुए किसी खेत से लगे किनारे पर चलें और सबसे नई पत्तियों में कटोरी या पट्टी जैसी बनावट देखें।",
+     "देखें कि आपका पंप पिछली बार खरपतवारनाशी के बाद तीन बार धोया गया था या नहीं।"
+    ],
+    "mr": [
+     "या आठवड्यात फवारणी झालेल्या शेताशेजारील कडेने चाला आणि कोवळ्या पानांत वाटीसारखा किंवा पट्ट्यासारखा आकार दिसतो का पाहा.",
+     "तुमचा पंप मागच्या तणनाशकानंतर तीनदा धुतला गेला होता का ते तपासा."
+    ]
+   }
   }
  }
 }

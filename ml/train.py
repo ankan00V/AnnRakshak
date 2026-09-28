@@ -64,7 +64,11 @@ MANIFEST = ROOT / "data" / "processed" / "icar_images.csv"
 EXTRA_MANIFEST = ROOT / "data" / "processed" / "extra_images.csv"
 MORE_MANIFEST = ROOT / "data" / "processed" / "more_images.csv"
 PADDY_MANIFEST = ROOT / "data" / "processed" / "paddy_images.csv"
+ASDID_MANIFEST = ROOT / "data" / "processed" / "asdid_images.csv"
+LOCAL_MANIFEST = ROOT / "data" / "processed" / "local_images.csv"
+COTTON_MANIFEST = ROOT / "data" / "processed" / "cotton_images.csv"
 ART = ROOT / "ml" / "artifacts"
+CKPT = ROOT / "ml" / "artifacts" / "epoch_checkpoint.pt"
 REP = ROOT / "ml" / "reports"
 SEED = 42
 IMG = 300
@@ -83,6 +87,18 @@ PADDY_CAP = {"train": 900, "val": 120, "test": 200}
 """Paddy Doctor is rice photographed in the field on a phone — the closest
 thing we have to what a farmer sends — so it gets the largest cap, and its
 healthy plants become the backgrounds rice was short of (34 before)."""
+ASDID_CAP = {"train": 900, "val": 120, "test": 200}
+"""ASDID is the second camera and the second country soybean has ever seen
+(data/ingest_asdid.py). Its three shared classes are capped like Paddy Doctor so
+Alabama cannot outvote the Indian photos, and its five new classes come in whole."""
+LOCAL_CAP = {"train": 900, "val": 120, "test": 200}
+"""The hand-downloaded rice sets (data/ingest_downloads.py): Bangladesh field
+photos for the four rice problems farmers send most, plus Brazilian soybean
+canopies for caterpillar damage. Capped like Paddy Doctor."""
+COTTON_CAP = {"train": 700, "val": 100, "test": 150}
+"""Three Mendeley cotton sets (data/ingest_cotton.py). Cotton had six classes
+from two sources; these bring jassid, which the app advised on without ever
+having seen it, and two problems that are not diseases at all."""
 MORE_CAP_EXISTING = {"train": 350, "val": 50, "test": 90}
 COMPOSITE_P = 0.85
 
@@ -119,6 +135,24 @@ class Images(Dataset):
         return x, self.class_idx[r["train_class"]]
 
 
+MERGED_CLASSES = {"maize_fall_armyworm_damage": "maize_fall_armyworm"}
+"""Two class names that are one answer.
+
+ICAR photographed the caterpillar and the whorl damage it leaves as separate
+folders, and CCMT's field photos went in beside the second. Both carry the
+target maize_fall_armyworm, so the app says the same thing either way — but the
+deploy gate scores recall per class, which counted "damage" for a "caterpillar"
+photo as a miss and held two thin classes (156 and 334) where the pest has 490
+photos. The manifests keep the names their sources used; the merge happens
+here, where the model is built, and undoing it is deleting a line."""
+
+
+def canon(rows: list[dict]) -> list[dict]:
+    for r in rows:
+        r["train_class"] = MERGED_CLASSES.get(r["train_class"], r["train_class"])
+    return rows
+
+
 def load_split():
     rows = list(csv.DictReader(MANIFEST.open()))
     labels = [r["train_class"] for r in rows]
@@ -130,12 +164,26 @@ def load_split():
 
 # 2 workers, not 4: on a 16 GB laptop the extra copies of the dataset cost more
 # in memory pressure than they save in decode time (an item takes ~4 ms).
+#
+# Give the machine a moment after a big import before starting a run. Writing
+# the 19k Paddy Doctor and ASDID files set Spotlight and the file-provider
+# daemon indexing them, and while that ran the training crawled at 0.3 img/s
+# and its loader workers were killed outright. It was not the data pipeline: a
+# synthetic MPS step measured 0.1 img/s at the time and 20.3 once the indexing
+# finished. data/raw and data/processed now carry .metadata_never_index so the
+# next import does not do it again.
 WORKERS = int(os.environ.get("ANNRAKSHAK_WORKERS", "2"))
 
 
 def loader(rows, class_idx, tf, shuffle, bs=16, sampler=None, **ds):
+    # timeout: a worker that the system kills under memory pressure takes the
+    # run with it — the parent waits on a queue nothing will ever fill. Twice
+    # on this laptop that looked like a training run still going after six
+    # hours with one epoch done. 120 s is many times a batch's worth of decode,
+    # so it fires only when a worker is really gone, and it fires as an error.
     return DataLoader(Images(rows, class_idx, tf, **ds), batch_size=bs, shuffle=shuffle and sampler is None,
-                      sampler=sampler, num_workers=WORKERS, persistent_workers=WORKERS > 0)
+                      sampler=sampler, num_workers=WORKERS, persistent_workers=WORKERS > 0,
+                      timeout=120 if WORKERS else 0)
 
 
 def balanced_sampler(rows, epoch_size, icar_share=0.5):
@@ -299,7 +347,10 @@ def finetune(backbone, train, val, class_idx, device, quick, epochs, backgrounds
             lr_feat, lr_head, warm = 0.0, 2e-3, 0
         if lr_override:  # a continuation that must barely move the backbone
             lr_feat, lr_head, warm = lr_override[0], lr_override[1], 1
-        print(f"  warm start from the deployed model; new classes ({len(new)}): {new}")
+        # `new` is empty on a --resume, where the weights are the run's own and
+        # every class already has a head row: say where they came from truthfully.
+        print(f"  warm start from {'a checkpoint of this run' if not new else 'the deployed model'}"
+              f"; new classes ({len(new)}): {new}")
         print(f"  lr feat {lr_feat:g} head {lr_head:g} ({share_new:.0%} of classes are new)")
     if backgrounds:
         dl_tr = loader(train, class_idx, train_transform(IMG), shuffle=True,
@@ -363,6 +414,14 @@ def finetune(backbone, train, val, class_idx, device, quick, epochs, backgrounds
               f"[{time.time() - t0:.0f}s]", flush=True)
         if s["f1"] > best:
             best, best_state = s["f1"], {k: v.detach().clone() for k, v in net.state_dict().items()}
+        # An epoch here is a quarter of an hour, a run is most of a day, and a
+        # run has now been lost twice to something outside it — a killed loader
+        # worker, a stray signal. The best weights so far are written after
+        # every epoch so the next crash costs one epoch, not the day.
+        CKPT.parent.mkdir(parents=True, exist_ok=True)
+        torch.save({"epoch": epoch + 1, "best_f1": best, "history": history,
+                    "classes": sorted(class_idx, key=class_idx.get),
+                    "state": {k: v.cpu() for k, v in best_state.items()}}, CKPT)
         if device.type == "mps":  # a 16 GB laptop swaps without this
             torch.mps.empty_cache()
     net.load_state_dict(best_state)
@@ -374,17 +433,29 @@ def finetune(backbone, train, val, class_idx, device, quick, epochs, backgrounds
 # --------------------------------------------------------------------------
 
 def fit_temperature(logits: torch.Tensor, y: torch.Tensor) -> float:
+    """One scale for the whole model, fitted so its confidence matches how
+    often it is right — every class counting the same.
+
+    Counting rows instead lets the biggest classes set the scale. On 22 Sep the
+    validation set was 125 ICAR photos against 1,520 from the extra sources and
+    the fit came out at T=0.824; weighting every class the same — as the
+    training sampler already draws them — gives 0.858 on the same logits. It did
+    not change what the gate decided that day, and it stops the scale drifting
+    further as the Paddy Doctor and ASDID imports pile thousands of rows onto a
+    few classes."""
+    counts = torch.bincount(y, minlength=logits.shape[1]).clamp(min=1)
+    w = (1.0 / counts).to(logits.dtype)
     log_t = torch.zeros(1, requires_grad=True)
     opt = torch.optim.LBFGS([log_t], lr=0.1, max_iter=200)
 
     def closure():
         opt.zero_grad()
-        loss = F.cross_entropy(logits / log_t.exp(), y)
+        loss = F.cross_entropy(logits / log_t.exp(), y, weight=w)
         loss.backward()
         return loss
 
     opt.step(closure)
-    return float(log_t.exp().clamp(0.05, 20.0))
+    return float(log_t.exp().clamp(0.05, 20.0).detach())
 
 
 def ece(probs: np.ndarray, y: np.ndarray, bins: int = 10) -> float:
@@ -497,10 +568,18 @@ def main():
                     help="with --with-extra: continue from the deployed model instead of ImageNet weights")
     ap.add_argument("--from-candidate", action="store_true",
                     help="continue from ml/artifacts/candidate (a run that did not pass the deploy gate)")
+    ap.add_argument("--resume", action="store_true",
+                    help="pick up the weights of the last finished epoch (ml/artifacts/epoch_checkpoint.pt)")
     ap.add_argument("--per-class", type=int, default=120,
                     help="with --with-extra: samples drawn per class per epoch")
     ap.add_argument("--with-paddy", action="store_true",
                     help="also Paddy Doctor field rice photos (data/processed/paddy_images.csv)")
+    ap.add_argument("--with-asdid", action="store_true",
+                    help="add the ASDID Alabama soybean photos (data/ingest_asdid.py)")
+    ap.add_argument("--with-local", action="store_true",
+                    help="add the hand-downloaded rice and soybean sets (data/ingest_downloads.py)")
+    ap.add_argument("--with-cotton", action="store_true",
+                    help="add the Mendeley cotton sets (data/ingest_cotton.py)")
     ap.add_argument("--with-more", action="store_true",
                     help="also the cotton, soybean and extra maize/rice sets (data/processed/more_images.csv)")
     ap.add_argument("--lr-feat", type=float, default=None,
@@ -690,6 +769,19 @@ def main_extra(args):
         e_tr, e_va, e_te = e_tr + p_tr, e_va + p_va, e_te + p_te
         print(f"with Paddy Doctor field rice: {len(p_tr)}/{len(p_va)}/{len(p_te)} images over "
               f"{len({r['train_class'] for r in p_tr})} classes (data/ingest_paddy.py)")
+    if getattr(args, "with_asdid", False) and ASDID_MANIFEST.exists():
+        a_tr, a_va, a_te = load_extra_split(ASDID_MANIFEST, ASDID_CAP, ASDID_CAP, set())
+        e_tr, e_va, e_te = e_tr + a_tr, e_va + a_va, e_te + a_te
+        print(f"with ASDID field soybean: {len(a_tr)}/{len(a_va)}/{len(a_te)} images over "
+              f"{len({r['train_class'] for r in a_tr})} classes (data/ingest_asdid.py)")
+    for flag, manifest, cap, what in (
+            ("with_local", LOCAL_MANIFEST, LOCAL_CAP, "hand-downloaded rice and soybean (data/ingest_downloads.py)"),
+            ("with_cotton", COTTON_MANIFEST, COTTON_CAP, "Mendeley cotton (data/ingest_cotton.py)")):
+        if getattr(args, flag, False) and manifest.exists():
+            x_tr, x_va, x_te = load_extra_split(manifest, cap, cap, set())
+            e_tr, e_va, e_te = e_tr + x_tr, e_va + x_va, e_te + x_te
+            print(f"with {what}: {len(x_tr)}/{len(x_va)}/{len(x_te)} images over "
+                  f"{len({r['train_class'] for r in x_tr})} classes")
     if getattr(args, "with_confirmed", False):
         conf_csv = ROOT / "data" / "processed" / "confirmed.csv"
         if conf_csv.exists():
@@ -697,6 +789,8 @@ def main_extra(args):
             confirmed = [r for r in csv.DictReader(conf_csv.open()) if r["train_class"] in known]
             e_tr = e_tr + confirmed  # all to training: the held-out sets stay comparable across runs
             print(f"with {len(confirmed)} expert-labelled field photos (ml/export_confirmed.py)")
+    i_tr, i_va, i_te = canon(i_tr), canon(i_va), canon(i_te)
+    e_tr, e_va, e_te = canon(e_tr), canon(e_va), canon(e_te)
     train, val = i_tr + e_tr, i_va + e_va
     classes = sorted({r["train_class"] for r in train + val + i_te + e_te})
     class_idx = {c: i for i, c in enumerate(classes)}
@@ -716,7 +810,11 @@ def main_extra(args):
           f"backgrounds train={ {c: len(v) for c, v in bgs['train'].items()} }")
 
     init, icar_share = None, 0.5
-    if args.warm_start or args.from_candidate:
+    if getattr(args, "resume", False) and CKPT.exists():
+        ck = torch.load(CKPT, map_location="cpu")
+        init, icar_share = (ck["state"], ck["classes"]), 0.75
+        print(f"resuming from epoch {ck['epoch']} of the run that stopped (val F1 {ck['best_f1']:.3f})")
+    elif args.warm_start or args.from_candidate:
         # --from-candidate continues a candidate that did not pass the deploy gate,
         # without touching the model the app is serving.
         src = cand_dir if args.from_candidate else ART
@@ -724,7 +822,15 @@ def main_extra(args):
         if not src_meta or not (src / "model.pt").exists():
             sys.exit(f"warm start needs a model in {src}")
         init = (torch.load(src / "model.pt", map_location="cpu"), src_meta["classes"])
-        icar_share = 0.75  # the ICAR field photos anchor the classes both sources share
+        # The ICAR field photos anchor the classes both sources share. Raised
+        # from 0.75 on 24 Sep: the week's imports took the training set from
+        # 21k images to 47k, all of it rice, soybean and cotton, and inside a
+        # shared class like rice_leaf_blast the 50 ICAR photos were being drawn
+        # against thousands from Paddy Doctor and Bangladesh. The candidate that
+        # came out of that lost ICAR rice (0.879 -> 0.864) and maize
+        # (0.917 -> 0.883) and the gate refused it. ICAR's are the real field
+        # photographs and the ones the deploy checks measure.
+        icar_share = 0.85
     print("fine-tune — EfficientNetV2-S, ICAR + extra sources, background randomisation"
           f"{', warm start' if init else ''}:")
     net, f1, hist = finetune("efficientnet_v2_s", train, val, class_idx, device, args.quick, args.epochs,
@@ -785,7 +891,10 @@ def main_extra(args):
     deploy = not args.quick and all(ok for _, ok, _ in checks)
 
     version = (f"icar+extra{'+more' if getattr(args, 'with_more', False) else ''}"
-               f"{'+paddy' if getattr(args, 'with_paddy', False) else ''}-"
+               f"{'+paddy' if getattr(args, 'with_paddy', False) else ''}"
+               f"{'+asdid' if getattr(args, 'with_asdid', False) else ''}"
+               f"{'+local' if getattr(args, 'with_local', False) else ''}"
+               f"{'+cotton' if getattr(args, 'with_cotton', False) else ''}-"
                f"efficientnet_v2_s-{'warmstart' if init else 'finetune'}-"
                f"{datetime.now(UTC):%Y%m%d}")
     meta = {

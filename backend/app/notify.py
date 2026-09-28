@@ -248,7 +248,7 @@ def ensure_token(farm: Farm) -> None:
 def digest_data(db: Session, kb: KB, farm: Farm, bundle: dict, now: datetime) -> dict:
     """Everything the email says, from the farm profile and live data."""
     lang = farm.lang
-    stage, das = kb.stage_for(farm.crop, farm.sowing_date, now.date())
+    stage, das = kb.stage_of(farm, now.date())
     sprays = recent_sprays(db, farm, now)
     needs = needs_spray(db, farm)
     view = agromet.view(bundle, kb.agromet, farm.crop, stage, now, lang, sprays=sprays, needs_spray=needs)

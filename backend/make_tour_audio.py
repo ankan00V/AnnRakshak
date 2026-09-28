@@ -1,4 +1,4 @@
-"""Voice the app tour in every language, once, into static files.
+"""Voice the app tour and the sign-up help in every language, once, into files.
 
 The tour (frontend/landing/src/farmer/tour) plays one short clip per step:
 public/tour/<lang>/<step>.mp3, the step's title and caption read by Sarvam's
@@ -13,6 +13,9 @@ voice, about a third of the size.
 
     SARVAM_TOUR_KEYS=key1,key2 ../.venv/bin/python make_tour_audio.py
     ... make_tour_audio.py --lang ta,pa --force
+
+Two sets, the same voice: public/tour/<lang>/<step>.mp3 for the tour, and
+public/help/<lang>/<field>.mp3 for the lines beside the sign-up fields.
 """
 
 from __future__ import annotations
@@ -34,11 +37,24 @@ from app.config import SARVAM_LANG
 
 STEPS = ["welcome", "farm", "weather", "live", "scan", "checks", "spray", "alerts", "krishi", "lang", "done"]
 """Must match frontend/landing/src/farmer/tour/steps.ts."""
+HELP = ["helpCrop", "helpArea", "helpSowing", "dateBasisWhy", "helpIrrigation", "helpSoilPh"]
+"""The sign-up fields a farmer is asked to fill in before the app has said a
+word to them, read aloud by the speaker beside each one (auth/parts.tsx).
+dateBasisWhy is the rice question — which date this is — and is the reason the
+rest are here: a wrong answer there moves the crop a whole stage."""
 LANGS = ["en", "hi", "mr", "bn", "ta", "te", "kn", "ml", "gu", "pa"]
 OUT = T.ROOT / "frontend" / "landing" / "public" / "tour"
+HELP_OUT = T.ROOT / "frontend" / "landing" / "public" / "help"
 TTS_URL = "https://api.sarvam.ai/text-to-speech"
 MODEL, SPEAKER, PACE = "bulbul:v3", "shubh", 0.92
 STOP = {"hi": "।", "bn": "।", "pa": "।"}  # the full stop each script writes
+SAY_AS = {"en": [("AnnRakshak", "Anna-Rakshak")]}
+"""Spelt for the voice, not for the screen.
+
+The name is anna — grain, the harvest — and rakshak, its protector. An English
+voice reading "AnnRakshak" says "Ann", a woman's name, which is not what the
+app is called. Every other language writes the name in its own script and says
+it right; English is the one that has to be told."""
 I18N_TS = T.ROOT / "frontend" / "landing" / "src" / "lib" / "i18n.ts"
 
 
@@ -55,14 +71,27 @@ def authored(lang: str) -> dict[str, str]:
     return out
 
 
-def texts(lang: str) -> dict[str, str]:
-    table = authored(lang) if lang in ("en", "hi", "mr") else \
+def table_for(lang: str) -> dict[str, str]:
+    return authored(lang) if lang in ("en", "hi", "mr") else \
         json.loads((T.UI_OUT / f"{lang}.json").read_text(encoding="utf-8"))
+
+
+def help_texts(lang: str) -> dict[str, str]:
+    """One clip per sign-up field, straight from the hint the screen shows."""
+    table = table_for(lang)
+    return {k: table[k] for k in HELP if table.get(k)}
+
+
+def texts(lang: str) -> dict[str, str]:
+    table = table_for(lang)
     out = {}
     for step in STEPS:
         title, body = table.get(f"tour_{step}_t"), table.get(f"tour_{step}_b")
         if title and body:
-            out[step] = f"{title}{STOP.get(lang, '.')} {body}"
+            said = f"{title}{STOP.get(lang, '.')} {body}"
+            for written, spoken in SAY_AS.get(lang, ()):
+                said = said.replace(written, spoken)
+            out[step] = said
     return out
 
 
@@ -101,23 +130,26 @@ def main() -> None:
     if not keys:
         raise SystemExit("set SARVAM_TOUR_KEYS")
     voice = Voice(keys)
-    manifest_path = OUT / "manifest.json"
-    manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
-    for lang in args.lang.split(","):
-        made = 0
-        for step, text in texts(lang).items():
-            name = f"{lang}/{step}.mp3"
-            digest = hashlib.sha256(f"{MODEL}|{SPEAKER}|{PACE}|{text}".encode()).hexdigest()[:16]
-            path = OUT / name
-            if not args.force and manifest.get(name) == digest and path.exists():
-                continue
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(squeeze(voice.say(text, lang)))
-            manifest[name] = digest
-            made += 1
-        manifest_path.write_text(json.dumps(dict(sorted(manifest.items())), indent=1) + "\n")
-        size = sum(p.stat().st_size for p in (OUT / lang).glob("*.mp3")) // 1024 if (OUT / lang).exists() else 0
-        print(f"{lang}: {made} clip(s) made, {size} KB in all")
+    for out_dir, lines, what in ((OUT, texts, "tour"), (HELP_OUT, help_texts, "sign-up help")):
+        manifest_path = out_dir / "manifest.json"
+        manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
+        for lang in args.lang.split(","):
+            made = 0
+            for key, text in lines(lang).items():
+                name = f"{lang}/{key}.mp3"
+                digest = hashlib.sha256(f"{MODEL}|{SPEAKER}|{PACE}|{text}".encode()).hexdigest()[:16]
+                path = out_dir / name
+                if not args.force and manifest.get(name) == digest and path.exists():
+                    continue
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(squeeze(voice.say(text, lang)))
+                manifest[name] = digest
+                made += 1
+            manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            manifest_path.write_text(json.dumps(dict(sorted(manifest.items())), indent=1) + "\n")
+            here = out_dir / lang
+            size = sum(f.stat().st_size for f in here.glob("*.mp3")) // 1024 if here.exists() else 0
+            print(f"{what:13s} {lang}: {made} clip(s) made, {size} KB in all")
 
 
 if __name__ == "__main__":

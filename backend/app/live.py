@@ -100,7 +100,7 @@ def context(db: Session, kb: KB, farm: Farm, lat: float | None, lon: float | Non
     for s in services.risk_scores(db, kb, farm, today, window):
         risks.append(risk_view(kb, {"target": s.target, "level": s.level, "trigger": s.trigger,
                                     "reason_i18n": s.reason}, lang))
-    stage, das = kb.stage_for(farm.crop, farm.sowing_date, today)
+    stage, das = kb.stage_of(farm, today)
     return {
         "location": {"lat": round(lat, 5), "lon": round(lon, 5), "source": "gps" if gps else "farm",
                      "accuracy_m": accuracy_m, "km_from_farm": round(dist, 2),

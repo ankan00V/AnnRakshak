@@ -1,24 +1,40 @@
 import { useEffect, useRef, useState, type InputHTMLAttributes, type ReactNode } from 'react'
 import { Check, Loader2, MailCheck } from 'lucide-react'
 import type { OtpSent } from '../api/types'
-import { ErrorBox } from '../ui/kit'
+import { ErrorBox, ListenButton } from '../ui/kit'
 import { useFarmer } from '../farmer/FarmerContext'
+import type { TKey } from '../lib/i18n'
 
 const input =
   'w-full min-h-[48px] rounded-xl border px-3 bg-white text-[15px] focus:outline-none focus:ring-2 focus:ring-leaf/30'
 
 /** A labelled input. `group` for a set of chips: a <label> would pass a tap
  *  on its title to the first chip inside it. */
-export function Field({ label, hint, error, optional, group = false, children }: {
-  label: string; hint?: string; error?: string | false; optional?: boolean; group?: boolean; children: ReactNode
+export function Field({ label, hint, error, optional, group = false, say, children }: {
+  label: string; hint?: string; error?: string | false; optional?: boolean; group?: boolean
+  /** An i18n key read aloud by the speaker button beside the label. Typed, so
+   *  a key that does not exist is caught here and not as a silent missing clip. */
+  say?: TKey
+  children: ReactNode
 }) {
-  const { t } = useFarmer()
+  const { t, lang } = useFarmer()
   const Tag = group ? 'div' : 'label'
   return (
     <Tag className="block" {...(group ? { role: 'group', 'aria-label': label } : {})}>
-      <span className="block text-[13px] font-medium text-soil-dark/80 mb-1">
-        {label}
-        {optional && <span className="font-normal text-soil-dark/45"> · {t('authOptional')}</span>}
+      <span className="flex items-center gap-2 text-[13px] font-medium text-soil-dark/80 mb-1">
+        <span className="flex-1">
+          {label}
+          {optional && <span className="font-normal text-soil-dark/45"> · {t('authOptional')}</span>}
+        </span>
+        {/* The span swallows the mousedown: this sits inside a <label>, and a
+            tap that reaches it would focus the field and raise the keyboard
+            over the very help the farmer just asked to hear. */}
+        {say && (
+          <span onMouseDown={(e) => e.preventDefault()}>
+            <ListenButton src={`/help/${lang}/${say}.mp3`} text={t(say)} lang={lang}
+              label={t('listen')} stopLabel={t('stop')} compact />
+          </span>
+        )}
       </span>
       {children}
       {error ? (
@@ -223,3 +239,4 @@ export function CodePanel({ sendLabel, request, verify, submitLabel }: {
     </div>
   )
 }
+

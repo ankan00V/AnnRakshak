@@ -155,7 +155,8 @@ export const api = {
   labelNote: (farmId: number, product: string, lang: Lang, problemId?: number) =>
     req<{ suggestion: string | null }>('/api/labelcheck/note', json({ farm_id: farmId, product, lang, problem_id: problemId })),
 
-  cases: (status: 'open' | 'resolved' | 'all' = 'open') => req<CaseListItem[]>(`/api/cases?status=${status}`),
+  cases: (status: 'open' | 'resolved' | 'all' = 'open', scope: 'mine' | 'all' = 'all') =>
+    req<CaseListItem[]>(`/api/cases?status=${status}&scope=${scope}`),
   caseBundle: (id: number) => req<CaseBundle>(`/api/cases/${id}`),
   resolveCase: (id: number, body: Record<string, unknown>) =>
     req<{ verdict: string; final_label: string; model_label: string | null; spread_alerts: number }>(

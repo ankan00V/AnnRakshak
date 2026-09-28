@@ -2,7 +2,7 @@ import { Link, Navigate, Outlet, useSearchParams } from 'react-router-dom'
 import { FarmerProvider, useFarmer } from '../farmer/FarmerContext'
 import LanguagePicker from '../farmer/components/LanguagePicker'
 import BrandMark from '../ui/BrandMark'
-import { Spinner } from '../ui/kit'
+import { PageSkeleton } from '../ui/kit'
 import { useAuth } from './AuthContext'
 import { homeOf, safeNext } from './helpers'
 import Krishi from '../krishi/Krishi'
@@ -21,7 +21,7 @@ function Frame() {
   const { setLang } = useFarmer()
   const { me, loading } = useAuth()
   const [params] = useSearchParams()
-  if (loading) return <Spinner />
+  if (loading) return <PageSkeleton />
   if (me) return <Navigate to={safeNext(params.get('next')) ?? homeOf(me.role)} replace />
   return (
     <div className="min-h-screen bg-cream text-soil-dark">

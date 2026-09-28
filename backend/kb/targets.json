@@ -702,5 +702,131 @@
    "hi": "मोटी, मुड़ी हुई, हल्की पीली पत्तियाँ और बाली की जगह पत्तों का गुच्छा, दाना नहीं; पानी भरे हिस्सों में सबसे ज़्यादा।",
    "mr": "जाड, वळलेली, फिकट पिवळी पाने आणि लोंबीऐवजी पानांचा झुबका, दाणे नाहीत; पाणी साचलेल्या भागात सर्वाधिक."
   }
+ },
+ {
+  "id": "soybean_target_spot",
+  "crop": "soybean",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Corynespora cassiicola (fungus)",
+  "names": {
+   "en": "Target spot",
+   "hi": "टारगेट स्पॉट (छल्लेदार धब्बा)",
+   "mr": "टार्गेट स्पॉट (वलयी ठिपका)"
+  },
+  "signature": {
+   "en": "Round brown spots with a pale centre and darker rings inside, like a target, with a yellow ring outside. Lower leaves go first and drop early.",
+   "hi": "गोल भूरे धब्बे — बीच हल्का, अंदर गहरे छल्ले, निशाने जैसे — बाहर पीला घेरा। पहले नीचे की पत्तियाँ, जो जल्दी झड़ जाती हैं।",
+   "mr": "गोल तपकिरी ठिपके — मध्य फिकट, आत गडद वलये, लक्ष्यासारखे — बाहेर पिवळे वलय. आधी खालची पाने, ती लवकर गळतात."
+  },
+  "note": "Photo model from v5 (2026-09-23): 1,000+ Alabama field photos from ASDID (Wadkar et al., COMPAG 2022), leaves shot on the plant and laid on grass or card. New to the app with this import — treat the first season's calls as provisional and lean on the expert trigger."
+ },
+ {
+  "id": "soybean_cercospora_leaf_blight",
+  "crop": "soybean",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Cercospora kikuchii (fungus)",
+  "names": {
+   "en": "Cercospora leaf blight",
+   "hi": "सर्कोस्पोरा पत्ती झुलसा",
+   "mr": "सर्कोस्पोरा पानकरपा"
+  },
+  "signature": {
+   "en": "The sunlit top leaves turn leathery and purple-bronze all over instead of spotting; leaf stalks darken and the seed can carry a purple stain.",
+   "hi": "धूप वाली ऊपरी पत्तियाँ धब्बों के बजाय पूरी की पूरी चमड़े जैसी और बैंगनी-ताँबई हो जाती हैं; डंठल गहरे पड़ते हैं और बीज पर बैंगनी दाग आ सकता है।",
+   "mr": "उन्हातील वरची पाने ठिपके न पडता संपूर्णपणे चामड्यासारखी व जांभळट-तांबूस होतात; देठ गडद होतात आणि बियांवर जांभळा डाग येऊ शकतो."
+  },
+  "note": "Photo model from v5 (2026-09-23): 1,000+ Alabama field photos from ASDID (Wadkar et al., COMPAG 2022), leaves shot on the plant and laid on grass or card. New to the app with this import — treat the first season's calls as provisional and lean on the expert trigger."
+ },
+ {
+  "id": "soybean_downy_mildew",
+  "crop": "soybean",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Peronospora manshurica (oomycete)",
+  "names": {
+   "en": "Downy mildew",
+   "hi": "मृदुरोमिल आसिता (डाउनी मिल्ड्यू)",
+   "mr": "केवडा (डाउनी मिल्ड्यू)"
+  },
+  "signature": {
+   "en": "Pale yellow-green patches on the upper side of the leaf, with a grey-violet felt of mould underneath in damp weather; old patches turn brown.",
+   "hi": "पत्ती के ऊपर हल्के पीले-हरे धब्बे, और नमी में नीचे की ओर धूसर-बैंगनी रोएँदार फफूँद; पुराने धब्बे भूरे हो जाते हैं।",
+   "mr": "पानाच्या वरच्या बाजूस फिकट पिवळसर-हिरवे ठिपके आणि दमट हवेत खालच्या बाजूस राखाडी-जांभळट लवदार बुरशी; जुने ठिपके तपकिरी होतात."
+  },
+  "note": "Photo model from v5 (2026-09-23): 1,000+ Alabama field photos from ASDID (Wadkar et al., COMPAG 2022), leaves shot on the plant and laid on grass or card. New to the app with this import — treat the first season's calls as provisional and lean on the expert trigger."
+ },
+ {
+  "id": "soybean_bacterial_blight",
+  "crop": "soybean",
+  "kind": "disease",
+  "tier": "diagnosable",
+  "agent": "Pseudomonas savastanoi pv. glycinea (bacterium)",
+  "names": {
+   "en": "Bacterial blight",
+   "hi": "जीवाणु झुलसा",
+   "mr": "जिवाणू करपा"
+  },
+  "signature": {
+   "en": "Small angular water-soaked spots with a yellow halo on the young top leaves; they dry dark brown and the dead centres tear out, leaving the leaf ragged. Worst after cool windy rain.",
+   "hi": "ऊपर की नई पत्तियों पर छोटे कोणदार, पानी-भीगे धब्बे जिनके चारों ओर पीला घेरा; सूखकर गहरे भूरे होते हैं और बीच का मरा भाग फटकर गिर जाता है, पत्ती कटी-फटी लगती है। ठंडी, हवा वाली बारिश के बाद सबसे ज़्यादा।",
+   "mr": "वरच्या कोवळ्या पानांवर लहान कोनाकृती पाणथळ ठिपके, भोवती पिवळे वलय; वाळून गडद तपकिरी होतात व मधला मेलेला भाग फाटून पडतो, पान फाटके दिसते. थंड, वाऱ्याच्या पावसानंतर सर्वाधिक."
+  },
+  "note": "Photo model from v5 (2026-09-23): 1,000+ Alabama field photos from ASDID (Wadkar et al., COMPAG 2022), leaves shot on the plant and laid on grass or card. New to the app with this import — treat the first season's calls as provisional and lean on the expert trigger."
+ },
+ {
+  "id": "soybean_potassium_deficiency",
+  "crop": "soybean",
+  "kind": "deficiency",
+  "tier": "diagnosable",
+  "agent": "Potassium shortage in the soil (not an infection)",
+  "names": {
+   "en": "Potassium deficiency",
+   "hi": "पोटाश (पोटैशियम) की कमी",
+   "mr": "पालाश (पोटॅशियम) ची कमतरता"
+  },
+  "signature": {
+   "en": "The older lower leaves yellow along the edge first, the yellow creeping inward while the middle and veins stay green; the edges then dry and scorch. It covers whole patches of the field, not scattered plants.",
+   "hi": "पहले पुरानी, नीचे की पत्तियों के किनारे पीले पड़ते हैं और पीलापन अंदर की ओर बढ़ता है, जबकि बीच और शिराएँ हरी रहती हैं; फिर किनारे सूखकर झुलस जाते हैं। यह खेत के पूरे हिस्सों में दिखता है, इक्का-दुक्का पौधों पर नहीं।",
+   "mr": "प्रथम जुन्या, खालच्या पानांच्या कडा पिवळ्या होतात व पिवळेपणा आतल्या बाजूस सरकतो, मधला भाग व शिरा हिरव्याच राहतात; नंतर कडा वाळून करपतात. हे शेताच्या संपूर्ण पट्ट्यांत दिसते, सुट्या झाडांवर नाही."
+  },
+  "note": "Photo model from v5 (2026-09-23): 1,000+ Alabama field photos from ASDID (Wadkar et al., COMPAG 2022), leaves shot on the plant and laid on grass or card. New to the app with this import — treat the first season's calls as provisional and lean on the expert trigger."
+ },
+ {
+  "id": "cotton_leaf_reddening",
+  "crop": "cotton",
+  "kind": "disorder",
+  "tier": "diagnosable",
+  "agent": "Cold nights, magnesium or nitrogen shortage, or waterlogged roots (not an infection)",
+  "names": {
+   "en": "Leaf reddening",
+   "hi": "पत्तियों का लाल होना",
+   "mr": "पाने लाल होणे"
+  },
+  "signature": {
+   "en": "Whole leaves turn red or purple-red from the edge inward while the veins often stay green. The oldest leaves go first and a whole patch reddens together after cold nights or standing water. No spots, and nothing eaten.",
+   "hi": "पूरी पत्ती किनारे से अंदर की ओर लाल या बैंगनी-लाल हो जाती है, जबकि शिराएँ अक्सर हरी रहती हैं। पहले सबसे पुरानी पत्तियाँ, और ठंडी रातों या पानी भरने के बाद पूरा हिस्सा एक साथ लाल पड़ता है। न धब्बे, न कुछ कटा-खाया।",
+   "mr": "संपूर्ण पान कडेपासून आतल्या बाजूस लाल किंवा जांभळट-लाल होते, शिरा मात्र बहुधा हिरव्याच राहतात. आधी सर्वात जुनी पाने, आणि थंड रात्री किंवा पाणी साचल्यावर संपूर्ण पट्टा एकदम लाल पडतो. ठिपके नाहीत, कुरतडलेलेही नाही."
+  },
+  "note": "Photo model from v6 (2026-09-23): 579 photos from SAR-CLD-2024 (Mendeley b3jy2p6k8w). New to the app — the first season's calls are provisional."
+ },
+ {
+  "id": "cotton_herbicide_damage",
+  "crop": "cotton",
+  "kind": "disorder",
+  "tier": "diagnosable",
+  "agent": "Herbicide drift or an overdose (not an infection)",
+  "names": {
+   "en": "Herbicide damage",
+   "hi": "खरपतवारनाशी से नुकसान",
+   "mr": "तणनाशकामुळे झालेली इजा"
+  },
+  "signature": {
+   "en": "The new leaves come out cupped, strap-like or crinkled with pale veins and growth stalls, while the older leaves below look normal. It is worst along the edge facing a field that was sprayed recently, and fades further in.",
+   "hi": "नई पत्तियाँ कटोरी जैसी, पट्टी जैसी या सिकुड़ी हुई निकलती हैं, शिराएँ फीकी, और बढ़वार रुक जाती है; नीचे की पुरानी पत्तियाँ सामान्य दिखती हैं। हाल में छिड़काव हुए खेत की ओर वाले किनारे पर सबसे ज़्यादा, अंदर जाते-जाते कम।",
+   "mr": "कोवळी पाने वाटीसारखी, पट्ट्यासारखी किंवा सुरकुतलेली येतात, शिरा फिकट आणि वाढ खुंटते; खालची जुनी पाने मात्र सामान्य दिसतात. नुकतीच फवारणी झालेल्या शेताकडील कडेला सर्वाधिक, आत जाताना कमी होत जाते."
+  },
+  "note": "Photo model from v6 (2026-09-23): 281 photos from SAR-CLD-2024 (Mendeley b3jy2p6k8w). New to the app — the first season's calls are provisional."
  }
 ]

@@ -141,6 +141,10 @@ MAX_RISK_ALERTS_PER_FARM_PER_DAY = 3
 """Weather/phenology alerts per farm per day. Spread and trap alerts bypass
 this: a confirmed neighbour or a trap over threshold is stronger evidence."""
 
+SATELLITE_MAX_AGE_DAYS = 10
+"""A greenness drop older than this no longer corroborates today's weather rule:
+monsoon cloud can leave the last clear scene a fortnight behind."""
+
 WEATHER_PAST_DAYS = 7
 WEATHER_FORECAST_DAYS = 7
 WEATHER_TIMEOUT_S = 10

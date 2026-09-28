@@ -2,12 +2,13 @@
 network stubbed so tests never depend on a weather API being up."""
 
 import io
-from datetime import date, timedelta
+from collections import Counter
+from datetime import date, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app import geo, services
 from app.db import Base, SessionLocal, engine
@@ -54,6 +55,75 @@ def diagnose(c, farm_id, scenario, img=None):
     return c.post(f"/api/farms/{farm_id}/diagnose",
                   files={"image": ("x.jpg", img or _leaf_jpeg(), "image/jpeg")},
                   data={"lang": "en", "demo_scenario": scenario}).json()
+
+
+def _officers(n=5, district="Bhandara", verified=True):
+    """n verified officers covering one district."""
+    from app.models import ExpertProfile, User
+    ids = []
+    with SessionLocal() as db:
+        for i in range(n):
+            u = User(role="expert", name=f"Officer {i + 1}", email=f"officer{i + 1}@kvk.test")
+            db.add(u)
+            db.flush()
+            db.add(ExpertProfile(user_id=u.id, designation="kvk_scientist", organisation="KVK",
+                                 employee_id=f"E{i}", qualification="msc_agri", experience_years=5,
+                                 districts=[district], crops=["rice"], specialities=["plant_pathology"],
+                                 languages=["en"], verified=verified))
+            ids.append(u.id)
+        db.commit()
+    return ids
+
+
+def test_cases_spread_across_the_districts_officers(client):
+    """Five officers, five escalations: nobody is handed a second while another
+    is still empty."""
+    ids = _officers(5)
+    for _ in range(5):
+        r = diagnose(client, 1, "unsure")
+        assert r["gate"]["outcome"] == "escalate"
+    with SessionLocal() as db:
+        from app.models import Case
+        holding = Counter(c.assigned_to for c in db.scalars(select(Case)).all())
+    assert set(holding) == set(ids) and set(holding.values()) == {1}
+
+
+def test_next_case_goes_to_the_officer_holding_least(client):
+    ids = _officers(5)
+    first = diagnose(client, 1, "unsure")  # a real problem to hang the load on
+    with SessionLocal() as db:
+        from app.models import Case
+        problem_id = db.get(Case, first["case"]["id"]).problem_id
+        # 4, 6, 8, 2, 5 open cases, as if the morning had already happened.
+        for uid, load in zip(ids, [4, 6, 8, 2, 5], strict=True):
+            held = db.scalar(select(func.count(Case.id)).where(
+                Case.assigned_to == uid, Case.status == "open")) or 0
+            for _ in range(load - held):
+                db.add(Case(problem_id=problem_id, reason="BELOW_FLOOR", status="open",
+                            assigned_to=uid, assigned_at=datetime.now()))
+        db.commit()
+    r = diagnose(client, 1, "unsure")
+    with SessionLocal() as db:
+        from app.models import Case
+        case = db.get(Case, r["case"]["id"])
+        assert case.assigned_to == ids[3]  # the one holding 2
+
+
+def test_a_case_in_a_district_with_no_officer_stays_in_everyones_queue(client):
+    _officers(2, district="Nagpur")  # nobody covers Bhandara...
+    r = diagnose(client, 1, "unsure")
+    with SessionLocal() as db:
+        from app.models import Case
+        # ...so it still gets routed rather than stranded: the fallback is every officer.
+        assert db.get(Case, r["case"]["id"]).assigned_to is not None
+
+
+def test_unverified_officers_are_never_given_cases(client):
+    _officers(3, verified=False)
+    r = diagnose(client, 1, "unsure")
+    with SessionLocal() as db:
+        from app.models import Case
+        assert db.get(Case, r["case"]["id"]).assigned_to is None
 
 
 def test_stub_is_always_labelled(client):

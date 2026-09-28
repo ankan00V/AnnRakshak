@@ -29,13 +29,17 @@ sys.path.insert(0, str(ROOT / "backend"))
 from app.engine.model import Classifier  # noqa: E402
 
 ART = ROOT / "ml" / "artifacts"
-MANIFESTS = ["icar_images.csv", "extra_images.csv", "more_images.csv"]
+MANIFESTS = ["icar_images.csv", "extra_images.csv", "more_images.csv",
+             "paddy_images.csv", "asdid_images.csv"]
 
 
 def labels() -> dict[str, str]:
     out = {}
     for name in MANIFESTS:
-        for r in csv.DictReader(open(ROOT / "data" / "processed" / name)):
+        path = ROOT / "data" / "processed" / name
+        if not path.exists():  # a source this model was not trained on
+            continue
+        for r in csv.DictReader(path.open()):
             out[r["path"]] = r["train_class"]
     return out
 

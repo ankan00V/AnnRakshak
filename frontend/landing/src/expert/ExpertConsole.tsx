@@ -4,10 +4,10 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
-import type { CaseBundle, CaseListItem } from '../api/types'
+import type { CaseBundle, CaseListItem, CaseSatellite } from '../api/types'
 import { useAsync } from '../lib/hooks'
 import { useAuth } from '../auth/AuthContext'
-import { Card, ErrorBox, GradCamOverlay, Pill, Spinner } from '../ui/kit'
+import { Bone, BoneLines, Card, ErrorBox, GradCamOverlay, Loading, Pill } from '../ui/kit'
 import AccountMenu from '../auth/AccountMenu'
 import BrandMark from '../ui/BrandMark'
 
@@ -27,7 +27,8 @@ const REASON_LABEL: Record<string, string> = {
 
 export default function ExpertConsole() {
   const [tab, setTab] = useState<'open' | 'resolved'>('open')
-  const list = useAsync(() => api.cases(tab), [tab])
+  const [scope, setScope] = useState<'mine' | 'all'>('mine')
+  const list = useAsync(() => api.cases(tab, scope), [tab, scope])
   const [selected, setSelected] = useState<number | null>(null)
 
   return (
@@ -56,7 +57,18 @@ export default function ExpertConsole() {
               </button>
             ))}
           </div>
-          {list.loading && !list.data && <Spinner />}
+          <div className="flex items-center justify-between gap-2 mb-3 px-1">
+            <div className="flex rounded-full bg-white border border-soil-dark/10 p-0.5 text-xs">
+              {([['mine', 'My queue'], ['all', 'All district']] as const).map(([k, label]) => (
+                <button key={k} onClick={() => { setScope(k); setSelected(null) }}
+                  className={`rounded-full px-3 py-1 font-medium ${scope === k ? 'bg-leaf-deep text-cream' : 'text-soil-dark/60'}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            {list.data && <span className="text-xs text-soil-dark/60">{list.data.length} case{list.data.length === 1 ? '' : 's'}</span>}
+          </div>
+          {list.loading && !list.data && <QueueSkeleton />}
           {list.error && <ErrorBox error={list.error} onRetry={list.reload} />}
           {list.data && list.data.length === 0 && (
             <Card className="p-6 text-center text-sm text-soil-dark/60">
@@ -91,6 +103,68 @@ export default function ExpertConsole() {
   )
 }
 
+
+/** Evidence the photo cannot give: is the whole field losing vigour, or only
+ *  the leaf in the picture? Clear Sentinel-2 / Landsat 8 scenes, newest last. */
+function SatelliteEvidence({ s }: { s: CaseSatellite }) {
+  const pts = s.series.length > 1 ? s.series : []
+  const means = pts.map((p) => p.mean)
+  const lo = Math.min(...means, s.latest.mean)
+  const hi = Math.max(...means, s.latest.mean)
+  const span = hi - lo || 0.1
+  const W = 260
+  const H = 48
+  const x = (i: number) => (pts.length < 2 ? W : (i / (pts.length - 1)) * W)
+  const y = (v: number) => H - ((v - lo) / span) * (H - 6) - 3
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.mean).toFixed(1)}`).join(' ')
+  const falling = s.drop || (s.change ?? 0) < 0
+
+  return (
+    <Card className="p-4">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-soil-dark/50">
+          Field greenness (NDVI)
+        </h3>
+        <span className="text-[11px] text-soil-dark/50">
+          {s.latest.source} · {s.age_days === 0 ? 'today' : `${s.age_days}d ago`}
+        </span>
+      </div>
+
+      <p className="mt-2 text-sm">
+        <span className="font-semibold tabular-nums">{s.latest.mean.toFixed(2)}</span>
+        {s.previous && (
+          <span className="text-soil-dark/70">
+            {' '}from {s.previous.mean.toFixed(2)} on {s.previous.on}
+            {s.change != null && (
+              <span className={falling ? 'text-ember font-medium' : 'text-leaf-deep font-medium'}>
+                {' '}({s.change > 0 ? '+' : ''}{s.change.toFixed(2)})
+              </span>
+            )}
+          </span>
+        )}
+      </p>
+
+      {pts.length > 1 && (
+        <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 w-full h-12" role="img"
+          aria-label={`Greenness over the last ${pts.length} clear scenes, ending at ${s.latest.mean.toFixed(2)}`}>
+          <path d={line} fill="none" stroke={falling ? '#b0472a' : '#3d6b4a'} strokeWidth="1.5"
+            strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx={x(pts.length - 1)} cy={y(pts[pts.length - 1].mean)} r="2.5"
+            fill={falling ? '#b0472a' : '#3d6b4a'} />
+        </svg>
+      )}
+
+      <p className="mt-2 text-xs text-soil-dark/70">
+        {s.drop
+          ? 'The field lost greenness between two clear scenes — the whole field is under stress, not just this leaf.'
+          : s.quiet_stage
+            ? 'The crop is at a stage where greenness falls anyway, so this is not read as stress.'
+            : 'No unusual fall in greenness: whatever this is, it has not spread across the field yet.'}
+      </p>
+    </Card>
+  )
+}
+
 function CaseRow({ c, active, onClick }: { c: CaseListItem; active: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick}
@@ -108,6 +182,9 @@ function CaseRow({ c, active, onClick }: { c: CaseListItem; active: boolean; onC
           <Pill tone={active ? 'dark' : 'sky'}>{REASON_LABEL[c.reason] ?? c.reason}</Pill>
           {c.model_top && <Pill tone={active ? 'dark' : 'neutral'}>{c.model_top.name} {Math.round((c.model_top.confidence ?? 0) * 100)}%</Pill>}
           {c.severity === 'high' && <Pill tone="ember">high</Pill>}
+          {c.assigned_name
+            ? <Pill tone={active ? 'dark' : 'leaf'}>{c.assigned_name}</Pill>
+            : <Pill tone={active ? 'dark' : 'ochre'}>unassigned</Pill>}
         </span>
       </span>
     </button>
@@ -127,9 +204,56 @@ function useElapsed() {
 
 function CaseView({ id, onBack, onResolved }: { id: number; onBack: () => void; onResolved: () => void }) {
   const bundle = useAsync(() => api.caseBundle(id), [id])
-  if (bundle.loading && !bundle.data) return <Spinner />
+  if (bundle.loading && !bundle.data) return <CaseSkeleton />
   if (bundle.error) return <ErrorBox error={bundle.error} onRetry={bundle.reload} />
   return <CaseDetail key={id} b={bundle.data!} onBack={onBack} onResolved={() => { bundle.reload(); onResolved() }} />
+}
+
+
+/** The queue and the case, while they load. */
+function CaseRowBone() {
+  return (
+    <Card className="p-3 flex items-center gap-3">
+      <Bone className="w-10 h-10 rounded-xl shrink-0" />
+      <div className="flex-1 space-y-2">
+        <Bone className="h-3.5 w-3/5" />
+        <Bone className="h-2.5 w-2/5 rounded-full" />
+      </div>
+    </Card>
+  )
+}
+
+function QueueSkeleton() {
+  return (
+    <Loading label="Loading the queue">
+      <ul className="space-y-2">
+        {Array.from({ length: 5 }, (_, i) => <li key={i}><CaseRowBone /></li>)}
+      </ul>
+    </Loading>
+  )
+}
+
+function CaseSkeleton() {
+  return (
+    <Loading label="Loading the case">
+      <div className="space-y-4">
+        <Bone className="h-8 w-40" />
+        <div className="grid md:grid-cols-2 gap-4">
+          <Bone className="h-64 w-full rounded-2xl" />
+          <Card className="p-4 space-y-3">
+            <Bone className="h-4 w-36" />
+            <BoneLines lines={4} />
+          </Card>
+        </div>
+        {Array.from({ length: 2 }, (_, i) => (
+          <Card key={i} className="p-4 space-y-3">
+            <Bone className="h-4 w-44" />
+            <BoneLines lines={3} />
+          </Card>
+        ))}
+      </div>
+    </Loading>
+  )
 }
 
 function CaseDetail({ b, onBack, onResolved }: { b: CaseBundle; onBack: () => void; onResolved: () => void }) {
@@ -260,6 +384,8 @@ function CaseDetail({ b, onBack, onResolved }: { b: CaseBundle; onBack: () => vo
           </ul>
         </Card>
       </div>
+
+      {b.satellite && <SatelliteEvidence s={b.satellite} />}
 
       {b.icar_referral?.length > 0 && <IcarReferral b={b} />}
 

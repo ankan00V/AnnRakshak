@@ -2,12 +2,12 @@
 
 import copy
 import io
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 
 from app.config import FLOOR, GATE, MARGIN, PRIOR_MAX_BIAS
-from app.engine import advisory, doubt, labelcheck, prior, risk, vision
+from app.engine import advisory, assign, doubt, labelcheck, prior, risk, vision
 from app.engine.gate import Prediction, TopK, decide
 from app.engine.weather import Day, Window
 from app.kb import KB, get_kb, validate
@@ -249,12 +249,12 @@ def _window(days, rh, tmin, tmax, rain=0.0, start=date(2026, 9, 1)):
     return Window([Day(start + timedelta(i), rh, tmin, tmax, rain) for i in range(days)], "test", None)
 
 
-def _score(target, window, stage, das, history=False):
+def _score(target, window, stage, das, history=False, satellite=None):
     t = kb.targets[target]
     stage_names = next(s["names"] for s in kb.crops[t["crop"]]["stages"] if s["key"] == stage)
     return risk.score_rule(target, kb.rules[target], target_name=t["names"], stage=stage,
                            stage_name=stage_names, das=das, window=window, has_history=history,
-                           today=date(2026, 9, 14))
+                           today=date(2026, 9, 14), satellite=satellite)
 
 
 def test_weather_rule_fires_on_consecutive_run_and_says_why():
@@ -281,6 +281,41 @@ def test_history_bumps_level():
     assert _score("rice_brown_spot", _window(5, 90, 23, 31), "flowering", 80, history=True).level == "high"
 
 
+DROP = {"before": 0.62, "after": 0.49, "d1": "2026-09-05", "d2": "2026-09-14"}
+
+
+def test_satellite_drop_bumps_a_fired_rule_and_says_so():
+    """Weather suspects it; the field is measurably losing greenness. Both agree."""
+    plain = _score("rice_brown_spot", _window(5, 90, 23, 31), "flowering", 80)
+    s = _score("rice_brown_spot", _window(5, 90, 23, 31), "flowering", 80, satellite=DROP)
+    assert plain.level == "medium" and s.level == "high"
+    assert "0.62" in s.reason["en"] and "0.49" in s.reason["en"]
+    assert s.reason["mr"] != s.reason["en"] and s.reason["hi"] != s.reason["en"]
+    assert s.detail["satellite_bump"] == DROP
+
+
+def test_satellite_drop_never_fires_a_rule_by_itself():
+    """A falling NDVI says the crop is struggling, not what is wrong with it."""
+    assert not _score("rice_brown_spot", _window(2, 90, 23, 31), "flowering", 80, satellite=DROP).fired
+    assert not _score("rice_brown_spot", _window(10, 95, 23, 31), "nursery", 10, satellite=DROP).fired
+
+
+def test_satellite_and_history_together_stay_within_the_bands():
+    s = _score("rice_brown_spot", _window(5, 90, 23, 31), "flowering", 80, history=True, satellite=DROP)
+    assert s.level == "high"  # bumps cap at the top band
+
+
+def test_stale_or_absent_scenes_do_not_corroborate():
+    from app import services
+    assert services.satellite_drop(None) is None
+    assert services.satellite_drop({"available": False}) is None
+    assert services.satellite_drop({"available": True, "drop": False}) is None
+    fresh = {"available": True, "drop": True, "age_days": 3,
+             "latest": {"mean": 0.49, "on": "2026-09-14"}, "previous": {"mean": 0.62, "on": "2026-09-05"}}
+    assert services.satellite_drop(fresh) == DROP
+    assert services.satellite_drop(fresh | {"age_days": 30}) is None
+
+
 def test_trap_rule_needs_consecutive_nights_over_etl():
     rule = kb.rules["cotton_pink_bollworm"]
     d = date(2026, 9, 14)
@@ -288,6 +323,50 @@ def test_trap_rule_needs_consecutive_nights_over_etl():
     assert risk.score_traps("cotton_pink_bollworm", rule, over, d).fired
     gap = over[:1] + [{"recorded_on": d - timedelta(1), "count": 3, "traps": 3, "nights": 1}] + over[2:]
     assert not risk.score_traps("cotton_pink_bollworm", rule, gap, d).fired
+
+
+# --- routing a case to an officer -------------------------------------------
+
+def _cand(uid, load, last=None):
+    return assign.Candidate(uid, load, last)
+
+
+def test_case_goes_to_the_officer_carrying_least():
+    """4, 6, 8, 2, 5 open cases — the next one goes to the officer holding 2."""
+    board = [_cand(1, 4), _cand(2, 6), _cand(3, 8), _cand(4, 2), _cand(5, 5)]
+    assert assign.pick(board) == 4
+
+
+def test_equal_load_goes_to_whoever_has_been_free_longest():
+    now = datetime(2026, 9, 24, 12, 0)
+    board = [
+        _cand(1, 3, now - timedelta(hours=2)),
+        _cand(2, 3, now - timedelta(days=3)),   # free longest
+        _cand(3, 3, now - timedelta(minutes=5)),
+    ]
+    assert assign.pick(board) == 2
+
+
+def test_an_officer_who_never_held_a_case_is_the_most_free():
+    now = datetime(2026, 9, 24, 12, 0)
+    board = [_cand(1, 0, now - timedelta(days=9)), _cand(2, 0, None)]
+    assert assign.pick(board) == 2
+
+
+def test_load_beats_idleness():
+    """Idle for a month does not help an officer already holding the most work."""
+    now = datetime(2026, 9, 24, 12, 0)
+    board = [_cand(1, 7, now - timedelta(days=30)), _cand(2, 1, now)]
+    assert assign.pick(board) == 2
+
+
+def test_no_officers_means_no_assignment():
+    assert assign.pick([]) is None
+
+
+def test_ties_are_broken_the_same_way_every_time():
+    board = [_cand(3, 2, None), _cand(1, 2, None), _cand(2, 2, None)]
+    assert assign.pick(board) == assign.pick(list(reversed(board))) == 1
 
 
 # --- vegetation check (reject non-crop photos before trusting the softmax) --
@@ -442,3 +521,54 @@ def test_translation_repairs_what_bhashini_breaks():
     assert colons("Crop: {crop}.", "শস্যঃ {crop}।") == "শস্য: {crop}।"
     assert colons("A sad day", "দুঃখের দিন") == "দুঃখের দিন"  # a real visarga stays
     assert restore("মাঠঃ <0 একর", ["area"]) == "মাঠঃ {area} একর"
+
+
+# --------------------------------------------------------------------------
+# Which date the farmer gave us
+# --------------------------------------------------------------------------
+
+
+class _Farm:
+    def __init__(self, crop, sowing_date, date_basis="sown"):
+        self.crop, self.sowing_date, self.date_basis = crop, sowing_date, date_basis
+
+
+def test_rice_transplanting_date_is_counted_back_to_the_nursery():
+    """The same date means two different crops depending on what it is.
+
+    Rice sits in the nursery about three weeks. A farmer who gives the
+    transplanting date (लावणी, the day they remember) is describing a crop three
+    weeks older than one who gives the nursery sowing — a whole stage, and every
+    risk rule and spray window is keyed to the stage."""
+    kb = get_kb()
+    given, today = date(2026, 6, 11), date(2026, 9, 23)
+    sown_stage, sown_das = kb.stage_of(_Farm("rice", given), today)
+    tp_stage, tp_das = kb.stage_of(_Farm("rice", given, "transplanted"), today)
+    assert sown_das == 104 and sown_stage == "grain_filling"
+    assert tp_das == 125 and tp_stage == "grain_filling"
+    assert tp_das - sown_das == kb.crops["rice"]["nursery_days"]
+
+
+def test_a_transplanted_rice_farm_reaches_maturity_three_weeks_earlier():
+    kb = get_kb()
+    given = date(2026, 6, 11)
+    on = date(2026, 9, 25)  # 106 days after the given date
+    assert kb.stage_of(_Farm("rice", given), on)[0] == "grain_filling"
+    assert kb.stage_of(_Farm("rice", given, "transplanted"), on)[0] == "maturity"
+
+
+def test_direct_sown_crops_ignore_the_basis():
+    """Maize, cotton and soybean are sown where they grow: one date, one meaning."""
+    kb = get_kb()
+    given, today = date(2026, 7, 4), date(2026, 9, 23)
+    for crop in ("maize", "cotton", "soybean"):
+        assert kb.crops[crop].get("nursery_days", 0) == 0
+        assert kb.stage_of(_Farm(crop, given), today) == kb.stage_of(_Farm(crop, given, "transplanted"), today)
+
+
+def test_a_farm_row_without_the_column_still_reads():
+    """Farms created before the question was asked default to 'sown'."""
+    kb = get_kb()
+    class Old:  # noqa: D106  a row from before date_basis existed
+        crop, sowing_date = "rice", date(2026, 6, 11)
+    assert kb.stage_of(Old(), date(2026, 9, 23))[1] == 104

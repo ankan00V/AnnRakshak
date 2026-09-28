@@ -7,7 +7,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app import auth, services
@@ -19,11 +19,17 @@ router = APIRouter(prefix="/api/cases", tags=["expert"], dependencies=[Depends(a
 
 
 @router.get("")
-def list_cases(status: Literal["open", "resolved", "all"] = "open", lang: str = "en",
-               db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+def list_cases(status: Literal["open", "resolved", "all"] = "open",
+               scope: Literal["mine", "all"] = "all", lang: str = "en",
+               request: Request = None, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    """`scope=mine` is this officer's queue: the cases routed to them, plus any
+    the router could not place, which stay everybody's to pick up."""
     q = select(Case).order_by(Case.id)
     if status != "all":
         q = q.where(Case.status == status)
+    if scope == "mine":
+        me = auth.current_user(request, db)
+        q = q.where(or_(Case.assigned_to == (me.id if me else None), Case.assigned_to.is_(None)))
     out = []
     for c in db.scalars(q).all():
         problem = db.get(Problem, c.problem_id)

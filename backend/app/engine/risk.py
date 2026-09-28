@@ -13,6 +13,7 @@ from datetime import date, timedelta
 from app.engine.weather import Day, Window
 from app.i18n import LANGS
 from app.kb import tr
+from app.config import SATELLITE_MAX_AGE_DAYS
 
 LEVELS = ("low", "medium", "high")
 
@@ -26,6 +27,11 @@ REASONS = {
         "en": "Your crop is {das} days old ({stage}) — the stage when {name} usually attacks. Check before damage shows.",
         "hi": "आपकी फसल {das} दिन की है ({stage}) — इसी अवस्था में {name} का हमला होता है। नुकसान दिखने से पहले जाँचें।",
         "mr": "तुमचे पीक {das} दिवसांचे आहे ({stage}) — याच अवस्थेत {name} चा प्रादुर्भाव होतो. नुकसान दिसण्यापूर्वी तपासा.",
+    },
+    "satellite": {
+        "en": " The satellite saw this field lose greenness too — {before} to {after} between {d1} and {d2}.",
+        "hi": " उपग्रह चित्र में भी इस खेत की हरियाली घटी है — {d1} से {d2} तक {before} से {after}।",
+        "mr": " उपग्रह चित्रातही या शेताची हिरवळ घटली आहे — {d1} ते {d2} या काळात {before} वरून {after}.",
     },
     "trap": {
         "en": "Your traps caught {rate} moths per trap per night for {n} nights in a row — above the action level of {etl}.",
@@ -151,6 +157,7 @@ def score_rule(
     das: int,
     window: Window | None,
     has_history: bool,
+    satellite: dict | None = None,
     today: date | None = None,
 ) -> Score:
     """Weather and/or phenology. Trap and spread are scored separately because
@@ -197,6 +204,11 @@ def score_rule(
         level = _bump(level)
         parts.append({"key": "history"})
         detail["history_bump"] = True
+
+    if satellite:
+        level = _bump(level)
+        parts.append({"key": "satellite", "args": dict(satellite)})
+        detail["satellite_bump"] = satellite
 
     return Score(target, True, level, trigger, reason_of(parts), detail)
 

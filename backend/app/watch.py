@@ -35,7 +35,7 @@ log = logging.getLogger("annrakshak.watch")
 
 def issue_notices(db: Session, kb: KB, farm: Farm, bundle: dict | None, now: datetime,
                   extra: list[dict] | None = None) -> list[Notice]:
-    stage, _ = kb.stage_for(farm.crop, farm.sowing_date, now.date())
+    stage, _ = kb.stage_of(farm, now.date())
     advs = agromet.evaluate(bundle, kb.agromet, farm.crop, stage, now,
                             sprays=notify.recent_sprays(db, farm, now),
                             needs_spray=notify.needs_spray(db, farm)) if bundle else []
@@ -69,7 +69,7 @@ def ensure_polygon(db: Session, farm: Farm) -> str | None:
 
 
 def satellite_summary(db: Session, kb: KB, farm: Farm, now: datetime) -> dict:
-    stage, _ = kb.stage_for(farm.crop, farm.sowing_date, now.date())
+    stage, _ = kb.stage_of(farm, now.date())
     polyid = ensure_polygon(db, farm)
     if not polyid:
         return {"available": False, "reason": "not configured"}
@@ -93,12 +93,19 @@ def farm_cycle(db: Session, kb: KB, farm: Farm, now: datetime, fetch=agroweather
     except agroweather.AgroWeatherUnavailable:
         out["no_weather"] += 1
         bundle = None
-    sat = satellite_advisory(db, kb, farm, now)
+    sat_summary = None
+    if satellite.configured():
+        try:
+            sat_summary = satellite_summary(db, kb, farm, now)
+        except satellite.SatelliteUnavailable as e:
+            log.info("watch: satellite for farm %s: %s", farm.id, e)
+    sat = satellite.evaluate(sat_summary, now) if sat_summary else None
     out["satellite"] += sat is not None
     new = issue_notices(db, kb, farm, bundle, now, [sat] if sat else [])
     out["notices"] += len(new)
     before = set(db.scalars(select(Alert.id).where(Alert.farm_id == farm.id)).all())
-    services.run_risk(db, kb, farm, now.date())
+    services.run_risk(db, kb, farm, now.date(),
+                      satellite=services.satellite_drop(sat_summary))
     new_alerts = db.scalars(select(Alert).where(Alert.farm_id == farm.id, Alert.id.not_in(list(before) or [0]))).all()
     out["alerts"] += len(new_alerts)
     notify.publish_new(kb, farm, new, list(new_alerts), now)

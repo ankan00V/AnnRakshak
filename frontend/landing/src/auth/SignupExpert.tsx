@@ -6,7 +6,7 @@ import type { Lang } from '../api/types'
 import { useFarmer } from '../farmer/FarmerContext'
 import { LANGS } from '../lib/i18n'
 import { useAsync } from '../lib/hooks'
-import { Card, ErrorBox, Spinner } from '../ui/kit'
+import { Bone, Card, ErrorBox, Loading } from '../ui/kit'
 import { useAuth } from './AuthContext'
 import { emailOk, phoneOk } from './helpers'
 import { Chips, CodePanel, Field, Input, Primary, Secondary, Select, Steps } from './parts'
@@ -71,7 +71,22 @@ export default function SignupExpert() {
   const name = (list: { id: string; name: string }[] | undefined, id: string) => list?.find((x) => x.id === id)?.name ?? id
 
   if (options.error) return <ErrorBox error={options.error} onRetry={options.reload} retryLabel={t('retry')} />
-  if (!o) return <Spinner />
+  if (!o) {
+    return (
+      <Loading label={t('loading')}>
+        <Bone className="h-2 w-full rounded-full" />
+        <div className="mt-5 space-y-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="space-y-2">
+              <Bone className="h-3 w-24 rounded-full" />
+              <Bone className="h-12 w-full rounded-xl" />
+            </div>
+          ))}
+          <Bone className="h-12 w-full rounded-full" />
+        </div>
+      </Loading>
+    )
+  }
 
   return (
     <div>

@@ -65,7 +65,7 @@ def weather(farm_id: int, lang: str = "en", db: Session = Depends(get_db), kb: K
     farm = _farm(db, farm_id)
     b = _bundle(farm)
     now = agroweather.now_ist()
-    stage, das = kb.stage_for(farm.crop, farm.sowing_date, now.date())
+    stage, das = kb.stage_of(farm, now.date())
     v = agromet.view(b, kb.agromet, farm.crop, stage, now, lang, sprays=notify.recent_sprays(db, farm, now),
                      needs_spray=notify.needs_spray(db, farm))
     risks = services.risk_scores(db, kb, farm, now.date(), services.weather_for(db, farm))

@@ -25,11 +25,12 @@ from app.config import (
     FOLLOWUP_DUE_DAYS,
     KB_DIR,
     MAX_RISK_ALERTS_PER_FARM_PER_DAY,
+    SATELLITE_MAX_AGE_DAYS,
     SPREAD_RADIUS_KM,
     UPLOAD_DIR,
 )
 from app.engine import advisory as advisory_engine
-from app.engine import doubt, gate, prior, risk, vision
+from app.engine import assign, doubt, gate, prior, risk, vision
 from app.engine.weather import WeatherUnavailable, fetch_month_rain, fetch_window, merge_rain, merge_sensor
 from app.kb import KB, tr, trl
 from app.models import (
@@ -38,6 +39,7 @@ from app.models import (
     Case,
     Confirmation,
     Diagnosis,
+    ExpertProfile,
     Farm,
     FollowUp,
     LabelPrior,
@@ -45,6 +47,7 @@ from app.models import (
     Problem,
     SensorReading,
     TrapReading,
+    User,
 )
 
 HEALTHY_NAME = {"en": "Healthy {crop}", "hi": "स्वस्थ {crop}", "mr": "निरोगी {crop}"}
@@ -150,7 +153,7 @@ def msg(code: str, lang: str) -> str:
 
 
 def farm_view(kb: KB, farm: Farm, lang: str, today: date | None = None) -> dict:
-    stage, das = kb.stage_for(farm.crop, farm.sowing_date, today)
+    stage, das = kb.stage_of(farm, today)
     return {
         "id": farm.id,
         "farmer_name": farm.farmer_name,
@@ -166,6 +169,7 @@ def farm_view(kb: KB, farm: Farm, lang: str, today: date | None = None) -> dict:
         "location_source": farm.location_source or "district",
         "area_acres": farm.area_acres,
         "sowing_date": farm.sowing_date.isoformat(),
+        "date_basis": farm.date_basis,
         "stage": stage,
         "stage_name": kb.stage_name(farm.crop, stage, lang),
         "das": das,
@@ -241,13 +245,55 @@ def _queue_position(db: Session, case: Case) -> int:
 
 def case_brief(db: Session, case: Case) -> dict:
     pos = _queue_position(db, case) if case.status == "open" else 0
+    officer = db.get(User, case.assigned_to) if case.assigned_to else None
     return {
         "id": case.id,
         "status": case.status,
         "reason": case.reason,
         "queue_position": pos,
         "eta_minutes": pos * CASE_ETA_MINUTES_PER_POSITION,
+        "assigned_to": case.assigned_to,
+        "assigned_name": officer.name if officer else None,
     }
+
+
+def officers_for(db: Session, district: str | None) -> list[assign.Candidate]:
+    """Verified officers who cover this district, with the load each is carrying.
+
+    Nobody covering the district? Fall back to every verified officer, so a case
+    is never stranded because a district has no name against it yet."""
+    rows = db.execute(
+        select(User.id, ExpertProfile.districts)
+        .join(ExpertProfile, ExpertProfile.user_id == User.id)
+        .where(User.role == "expert", ExpertProfile.verified.is_(True))
+    ).all()
+    covering = [uid for uid, districts in rows if district and district in (districts or [])]
+    user_ids = covering or [uid for uid, _ in rows]
+    if not user_ids:
+        return []
+
+    open_counts = dict(db.execute(
+        select(Case.assigned_to, func.count(Case.id))
+        .where(Case.assigned_to.in_(user_ids), Case.status == "open")
+        .group_by(Case.assigned_to)
+    ).all())
+    # Last activity: the most recent case they were handed or finished.
+    last_active = dict(db.execute(
+        select(Case.assigned_to, func.max(func.coalesce(Case.resolved_at, Case.assigned_at)))
+        .where(Case.assigned_to.in_(user_ids))
+        .group_by(Case.assigned_to)
+    ).all())
+    return [assign.Candidate(uid, open_counts.get(uid, 0), last_active.get(uid)) for uid in user_ids]
+
+
+def assign_case(db: Session, case: Case, farm: Farm) -> int | None:
+    """Route a case to the officer who can reach it soonest (app.engine.assign)."""
+    picked = assign.pick(officers_for(db, farm.district))
+    if picked is not None:
+        case.assigned_to = picked
+        case.assigned_at = datetime.now()
+        db.flush()
+    return picked
 
 
 def escalate(db: Session, problem: Problem, reason: str) -> Case:
@@ -257,6 +303,7 @@ def escalate(db: Session, problem: Problem, reason: str) -> Case:
     case = Case(problem_id=problem.id, reason=reason)
     db.add(case)
     db.flush()
+    assign_case(db, case, problem.farm)
     return case
 
 
@@ -569,6 +616,32 @@ def case_bundle(db: Session, kb: KB, case: Case, lang: str = "en") -> dict:
             kb.target_view(t, lang) for t, v in kb.targets.items() if v["crop"] == farm.crop
         ],
         "icar_referral": icar_referral(kb, [p["target"] for p in (last.topk if last else [])], farm.crop, lang),
+        "satellite": case_satellite(db, kb, farm),
+    }
+
+
+def case_satellite(db: Session, kb: KB, farm: Farm) -> dict | None:
+    """This field's greenness trend, for the expert reading the case.
+
+    Evidence the photo cannot give: whether the whole field is losing vigour, or
+    only the leaf in the picture. Best-effort — no key, no clear scene or a
+    provider outage simply means the card is not shown."""
+    from app.engine import satellite  # noqa: PLC0415  optional, and it reaches the network
+
+    if not satellite.configured() or not farm.agro_polygon_id:
+        return None
+    try:
+        stage, _ = kb.stage_for(farm.crop, farm.sowing_date, date.today())
+        s = satellite.summarize(satellite.ndvi_series(farm.agro_polygon_id), farm.crop, stage)
+    except satellite.SatelliteUnavailable:
+        return None
+    if not s.get("available"):
+        return None
+    return {
+        "latest": s["latest"], "previous": s.get("previous"), "change": s.get("change"),
+        "band": s.get("band"), "drop": s.get("drop"), "age_days": s.get("age_days"),
+        "quiet_stage": s.get("quiet_stage"),
+        "series": [{"on": p["on"], "mean": p["mean"], "source": p.get("source")} for p in s.get("series", [])],
     }
 
 
@@ -698,8 +771,22 @@ def weather_for(db: Session, farm: Farm):
     return window
 
 
-def risk_scores(db: Session, kb: KB, farm: Farm, today: date, window) -> list[risk.Score]:
-    """Every rule that fires for this farm today, highest level first. Read-only."""
+def satellite_drop(summary: dict | None) -> dict | None:
+    """The greenness drop to quote in a reason, or None. Shaped for risk.REASONS."""
+    if not summary or not summary.get("available") or not summary.get("drop"):
+        return None
+    if summary.get("age_days") is not None and summary["age_days"] > SATELLITE_MAX_AGE_DAYS:
+        return None  # the last clear scene is too old to say anything about today
+    last, prev = summary["latest"], summary["previous"]
+    return {"before": prev["mean"], "after": last["mean"], "d1": prev["on"], "d2": last["on"]}
+
+
+def risk_scores(db: Session, kb: KB, farm: Farm, today: date, window,
+                satellite: dict | None = None) -> list[risk.Score]:
+    """Every rule that fires for this farm today, highest level first. Read-only.
+
+    `satellite` is this farm's greenness-drop summary when the caller already
+    has one (the watcher does); it only ever raises a level that already fired."""
     stage, das = kb.stage_for(farm.crop, farm.sowing_date, today)
     history = set(db.scalars(
         select(Problem.target).where(Problem.farm_id == farm.id, Problem.target.is_not(None))
@@ -715,6 +802,7 @@ def risk_scores(db: Session, kb: KB, farm: Farm, today: date, window) -> list[ri
             stage=stage,
             stage_name=next(x["names"] for x in kb.crops[farm.crop]["stages"] if x["key"] == stage),
             das=das, window=window, has_history=target in history, today=today,
+            satellite=satellite,
         )
         if s.fired:
             scores.append(s)
@@ -735,11 +823,12 @@ def risk_scores(db: Session, kb: KB, farm: Farm, today: date, window) -> list[ri
     return scores
 
 
-def run_risk(db: Session, kb: KB, farm: Farm, today: date | None = None, window=...) -> dict:
+def run_risk(db: Session, kb: KB, farm: Farm, today: date | None = None, window=...,
+             satellite: dict | None = None) -> dict:
     today = today or date.today()
     if window is ...:
         window = weather_for(db, farm)
-    scores = risk_scores(db, kb, farm, today, window)
+    scores = risk_scores(db, kb, farm, today, window, satellite=satellite)
     issued = []
     # The cap is per farm per DAY, so alerts from an earlier run today count.
     calendar_count = db.scalar(select(func.count(Alert.id)).where(
@@ -772,6 +861,7 @@ def run_risk(db: Session, kb: KB, farm: Farm, today: date | None = None, window=
         "evaluated": len([t for t in kb.rules if kb.targets[t]["crop"] == farm.crop]),
         "fired": [{"target": s.target, "level": s.level, "trigger": s.trigger, "detail": s.detail} for s in scores],
         "weather_source": window.source if window else "unavailable",
+        "satellite_bump": bool(satellite),
     }
 
 

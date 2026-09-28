@@ -124,6 +124,10 @@ class Farm(Base):
     crop: Mapped[str] = mapped_column(String(20))
     variety: Mapped[str | None] = mapped_column(String(80))
     sowing_date: Mapped[date] = mapped_column(Date)
+    date_basis: Mapped[str] = mapped_column(String(12), default="sown")
+    """What sowing_date is: 'sown' (seed in the ground, or in the nursery bed) or
+    'transplanted'. Only rice can be either, and the two are three weeks apart —
+    a whole growth stage — so the farmer is asked which one it is."""
     state: Mapped[str | None] = mapped_column(String(60))
     """Any state or union territory: the app is not one state's app."""
     district: Mapped[str] = mapped_column(String(60))
@@ -239,6 +243,11 @@ class Case(Base):
     reason: Mapped[str] = mapped_column(String(40))
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime)
+    assigned_to: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    """The officer this case was routed to (app.engine.assign). None when the
+    district has no verified officer yet: the case stays in everyone's queue
+    rather than waiting for a name."""
+    assigned_at: Mapped[datetime | None] = mapped_column(DateTime)
 
 
 class Confirmation(Base):

@@ -12,6 +12,52 @@ export function Spinner({ label }: { label?: string }) {
   )
 }
 
+/** One grey block where content will land. Screens assemble these into the
+ *  shape of the real screen, so nothing jumps when the data arrives. Held still
+ *  for anyone who asked their system for less motion. */
+export function Bone({ className = '' }: { className?: string }) {
+  return <span aria-hidden className={`block rounded-xl bg-soil-dark/10 motion-safe:animate-pulse ${className}`} />
+}
+
+/** A paragraph of bones; the last line is short, the way text ends. */
+export function BoneLines({ lines = 3, className = '' }: { lines?: number; className?: string }) {
+  return (
+    <span aria-hidden className={`block space-y-2 ${className}`}>
+      {Array.from({ length: lines }, (_, i) => (
+        <Bone key={i} className={`h-3 rounded-full ${i === lines - 1 ? 'w-2/3' : 'w-full'}`} />
+      ))}
+    </span>
+  )
+}
+
+/** Wraps a screen's bones: one polite announcement for a screen reader, which
+ *  reads the label instead of the shapes. */
+export function Loading({ label, className = '', children }: {
+  label?: string; className?: string; children: ReactNode
+}) {
+  return (
+    <div role="status" aria-busy="true" aria-live="polite" className={`animate-fadein ${className}`}>
+      <span className="sr-only">{label ?? 'Loading'}</span>
+      {children}
+    </div>
+  )
+}
+
+export function PageSkeleton({ label }: { label?: string }) {
+  return (
+    <Loading label={label}>
+      <div className="min-h-screen bg-cream px-4 py-8">
+        <div className="max-w-md mx-auto space-y-5 lg:max-w-3xl">
+          <Bone className="h-8 w-1/2" />
+          <Bone className="h-36 w-full rounded-2xl" />
+          <Bone className="h-24 w-full rounded-2xl" />
+          <BoneLines lines={3} />
+        </div>
+      </div>
+    </Loading>
+  )
+}
+
 export function ErrorBox({ error, onRetry, retryLabel = 'Retry' }: {
   error: Error; onRetry?: () => void; retryLabel?: string
 }) {
@@ -53,9 +99,16 @@ export function Card({ children, className = '', ...rest }: { children: ReactNod
   return <div {...rest} className={`rounded-2xl bg-white border border-soil-dark/10 ${className}`}>{children}</div>
 }
 
-/** Reads text aloud with Sarvam Bulbul via the backend (key stays server-side). */
-export function ListenButton({ text, lang, label, stopLabel, compact = false, tone = 'dark' }: {
-  text: string; lang: Lang; label: string; stopLabel: string; compact?: boolean; tone?: 'dark' | 'light'
+/** Reads text aloud with Sarvam Bulbul via the backend (key stays server-side).
+ *
+ *  `src` is a clip of this same text made ahead of time (public/help, built by
+ *  backend/make_tour_audio.py). Where one exists it plays at the tap, with no
+ *  request, no wait on a weak connection and no voice credit; if it is missing
+ *  or will not play, the button falls back to reading `text` live, so the
+ *  farmer still hears the same words either way. */
+export function ListenButton({ text, lang, label, stopLabel, src, compact = false, tone = 'dark' }: {
+  text: string; lang: Lang; label: string; stopLabel: string; src?: string
+  compact?: boolean; tone?: 'dark' | 'light'
 }) {
   const [state, setState] = useState<'idle' | 'loading' | 'playing' | 'error'>('idle')
   const audio = useRef<HTMLAudioElement | null>(null)
@@ -74,6 +127,17 @@ export function ListenButton({ text, lang, label, stopLabel, compact = false, to
     }
     setState('loading')
     try {
+      if (src) {
+        try {
+          audio.current = new Audio(src)
+          audio.current.onended = () => setState('idle')
+          await audio.current.play()
+          setState('playing')
+          return
+        } catch {
+          // no clip for this language yet, or it will not decode: read it live
+        }
+      }
       const blob = await api.tts(text, lang)
       if (url.current) URL.revokeObjectURL(url.current)
       url.current = URL.createObjectURL(blob)

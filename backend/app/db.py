@@ -58,8 +58,10 @@ ADDED_COLUMNS = {
     "farm": {"soil_ph": "FLOAT", "soil_ph_on": "DATE", "email": "VARCHAR(200)",
              "email_pref": "VARCHAR(10) DEFAULT 'warnings'", "email_token": "VARCHAR(40)",
              "agro_polygon_id": "VARCHAR(40)", "user_id": "INTEGER REFERENCES app_user(id)",
-             "irrigation": "VARCHAR(20)", "location_source": "VARCHAR(10)", "state": "VARCHAR(60)", "taluka": "VARCHAR(80)"},
+             "irrigation": "VARCHAR(20)", "location_source": "VARCHAR(10)", "state": "VARCHAR(60)", "taluka": "VARCHAR(80)",
+             "date_basis": "VARCHAR(12) DEFAULT 'sown'"},
     "alert": {"notified_at": "DATETIME", "emailed_at": "DATETIME"},
+    "case": {"assigned_to": "INTEGER REFERENCES app_user(id)", "assigned_at": "DATETIME"},
     "farmer_profile": {"state": "VARCHAR(60)"},
     "sensor_reading": {"soil_ph": "FLOAT", "soil_moisture_pct": "FLOAT"},
 }
@@ -80,4 +82,5 @@ def init_db(bind=None) -> None:
                 if eng.dialect.name == "postgresql":
                     typ = typ.replace("DATETIME", "TIMESTAMP")
                 if col not in have:
-                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {typ}"))
+                    # `case` is a reserved SQL keyword; quote the table name.
+                    conn.execute(text(f"ALTER TABLE \"{table}\" ADD COLUMN {col} {typ}"))

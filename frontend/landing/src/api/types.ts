@@ -15,6 +15,7 @@ export interface Farm {
   location_source: 'gps' | 'district'
   area_acres: number
   sowing_date: string
+  date_basis: 'sown' | 'transplanted'
   stage: string
   stage_name: string
   das: number
@@ -100,6 +101,21 @@ export interface CaseBrief {
   reason: string
   queue_position: number
   eta_minutes: number
+  /** The officer this case was routed to; null when no officer covers the district yet. */
+  assigned_to: number | null
+  assigned_name: string | null
+}
+
+/** This field's greenness from clear Sentinel-2 / Landsat 8 scenes. */
+export interface CaseSatellite {
+  latest: { on: string; mean: number; source: string }
+  previous: { on: string; mean: number; source: string } | null
+  change: number | null
+  band: string | null
+  drop: boolean
+  age_days: number
+  quiet_stage: boolean
+  series: { on: string; mean: number; source?: string }[]
 }
 
 export interface Heatmap {
@@ -281,6 +297,7 @@ export interface CaseBundle {
   farm_history: { final_label: string; verdict: string; on: string | null }[]
   candidate_labels: TargetView[]
   icar_referral: IcarTech[]
+  satellite: CaseSatellite | null
 }
 
 export interface Summary {
@@ -376,6 +393,9 @@ export interface CropInfo {
   id: string
   name: string
   photo_diagnosis: boolean
+  /** > 0 for a transplanted crop (rice): the days its nursery takes, and the
+   *  reason the form has to ask whether a date is the sowing or the planting out. */
+  nursery_days: number
   stages: { key: string; name: string; das: [number, number] }[]
 }
 
