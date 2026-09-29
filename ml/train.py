@@ -67,6 +67,9 @@ PADDY_MANIFEST = ROOT / "data" / "processed" / "paddy_images.csv"
 ASDID_MANIFEST = ROOT / "data" / "processed" / "asdid_images.csv"
 LOCAL_MANIFEST = ROOT / "data" / "processed" / "local_images.csv"
 COTTON_MANIFEST = ROOT / "data" / "processed" / "cotton_images.csv"
+PESTS_MANIFEST = ROOT / "data" / "processed" / "pests_images.csv"
+DHAN_MANIFEST = ROOT / "data" / "processed" / "dhan_images.csv"
+RICEBD_MANIFEST = ROOT / "data" / "processed" / "ricebd_images.csv"
 ART = ROOT / "ml" / "artifacts"
 CKPT = ROOT / "ml" / "artifacts" / "epoch_checkpoint.pt"
 REP = ROOT / "ml" / "reports"
@@ -96,6 +99,12 @@ LOCAL_CAP = {"train": 900, "val": 120, "test": 200}
 photos for the four rice problems farmers send most, plus Brazilian soybean
 canopies for caterpillar damage. Capped like Paddy Doctor."""
 COTTON_CAP = {"train": 700, "val": 100, "test": 150}
+THIN_CAP = {"train": 900, "val": 120, "test": 200}
+"""The three sets fetched on 29 Sep for classes that had about fifty photographs
+each — rice leaf folder and sheath blight above all. Those classes are why the
+candidate of that morning missed its last deploy check by four photos, two of
+them leaf folder read as something else. Nothing here is capped below what it
+brought, because the point of fetching it was that there was not enough."""
 """Three Mendeley cotton sets (data/ingest_cotton.py). Cotton had six classes
 from two sources; these bring jassid, which the app advised on without ever
 having seen it, and two problems that are not diseases at all."""
@@ -586,6 +595,12 @@ def main():
                     help="add the hand-downloaded rice and soybean sets (data/ingest_downloads.py)")
     ap.add_argument("--with-cotton", action="store_true",
                     help="add the Mendeley cotton sets (data/ingest_cotton.py)")
+    ap.add_argument("--with-pests", action="store_true",
+                    help="add the rice leaf folder photos (data/ingest_pests.py)")
+    ap.add_argument("--with-dhan", action="store_true",
+                    help="add Dhan-Shomadhan rice, sheath blight above all (data/ingest_dhan.py)")
+    ap.add_argument("--with-ricebd", action="store_true",
+                    help="add the Sirajganj/Pabna rice set (data/ingest_ricebd.py)")
     ap.add_argument("--with-more", action="store_true",
                     help="also the cotton, soybean and extra maize/rice sets (data/processed/more_images.csv)")
     ap.add_argument("--lr-feat", type=float, default=None,
@@ -782,7 +797,10 @@ def main_extra(args):
               f"{len({r['train_class'] for r in a_tr})} classes (data/ingest_asdid.py)")
     for flag, manifest, cap, what in (
             ("with_local", LOCAL_MANIFEST, LOCAL_CAP, "hand-downloaded rice and soybean (data/ingest_downloads.py)"),
-            ("with_cotton", COTTON_MANIFEST, COTTON_CAP, "Mendeley cotton (data/ingest_cotton.py)")):
+            ("with_cotton", COTTON_MANIFEST, COTTON_CAP, "Mendeley cotton (data/ingest_cotton.py)"),
+            ("with_pests", PESTS_MANIFEST, THIN_CAP, "rice leaf folder (data/ingest_pests.py)"),
+            ("with_dhan", DHAN_MANIFEST, THIN_CAP, "Dhan-Shomadhan rice (data/ingest_dhan.py)"),
+            ("with_ricebd", RICEBD_MANIFEST, THIN_CAP, "Sirajganj/Pabna rice (data/ingest_ricebd.py)")):
         if getattr(args, flag, False) and manifest.exists():
             x_tr, x_va, x_te = load_extra_split(manifest, cap, cap, set())
             e_tr, e_va, e_te = e_tr + x_tr, e_va + x_va, e_te + x_te
@@ -900,7 +918,8 @@ def main_extra(args):
                f"{'+paddy' if getattr(args, 'with_paddy', False) else ''}"
                f"{'+asdid' if getattr(args, 'with_asdid', False) else ''}"
                f"{'+local' if getattr(args, 'with_local', False) else ''}"
-               f"{'+cotton' if getattr(args, 'with_cotton', False) else ''}-"
+               f"{'+cotton' if getattr(args, 'with_cotton', False) else ''}"
+               f"{'+thin' if getattr(args, 'with_dhan', False) else ''}-"
                f"efficientnet_v2_s-{'warmstart' if init else 'finetune'}-"
                f"{datetime.now(UTC):%Y%m%d}")
     meta = {
