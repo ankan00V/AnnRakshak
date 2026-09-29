@@ -172,6 +172,12 @@ def load_split():
 # synthetic MPS step measured 0.1 img/s at the time and 20.3 once the indexing
 # finished. data/raw and data/processed now carry .metadata_never_index so the
 # next import does not do it again.
+#
+# Four workers then lost a run at epoch five to "DataLoader worker killed by
+# signal: Killed: 9" — SIGKILL, which is the system reclaiming memory, not a
+# crash in the run. Swap was at 10.6 GB of 12 GB with a browser, a database and
+# two other projects' servers up. Check free memory before raising this; on a
+# busy machine two workers that finish beat four that get killed at hour three.
 WORKERS = int(os.environ.get("ANNRAKSHAK_WORKERS", "2"))
 
 
