@@ -1,5 +1,6 @@
-"""Read-only surveillance for agriculture officials: where problems are, how
-the system is performing in the field, and what the weather is doing to risk.
+"""Surveillance for agriculture officials: where problems are, how the system is
+performing in the field, what the weather is doing to risk — and the two levers
+the office actually pulls: sweep the risk rules, and route the case backlog.
 """
 
 from __future__ import annotations
@@ -8,8 +9,8 @@ import json
 from collections import Counter, defaultdict
 from datetime import UTC, date, datetime, timedelta
 
-from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, Request
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app import auth, services
@@ -260,6 +261,26 @@ def model_card():
     keep = ("model_version", "backbone", "head", "img_size", "classes", "temperature", "trained_at",
             "dataset", "split", "test", "gate_on_test", "benchmark", "quick")
     return {"is_stub": False, **{k: meta.get(k) for k in keep}}
+
+
+@router.get("/workload")
+def officer_workload(request: Request, db: Session = Depends(get_db)):
+    """Who is carrying what, so a supervisor can see a queue building up."""
+    demo = bool((me := auth.current_user(request, db)) and me.is_demo)
+    rows = services.workload(db, demo=demo)
+    unplaced = db.scalar(
+        select(func.count(Case.id)).join(Problem, Problem.id == Case.problem_id)
+        .join(Farm, Farm.id == Problem.farm_id)
+        .where(Case.status == "open", Case.assigned_to.is_(None), Farm.is_demo.is_(demo))) or 0
+    return {"officers": rows, "unassigned": unplaced,
+            "open_total": sum(r["open_cases"] for r in rows) + unplaced}
+
+
+@router.post("/cases/route")
+def route_cases(request: Request, db: Session = Depends(get_db)):
+    """Give every unplaced open case to whichever officer is freest."""
+    me = auth.current_user(request, db)
+    return services.route_unassigned(db, demo=bool(me and me.is_demo))
 
 
 @router.post("/risk/run-all")

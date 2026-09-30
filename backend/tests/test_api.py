@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from PIL import Image
 from sqlalchemy import func, select
 
-from app import geo, services
+from app import cache, geo, services
 from app.db import Base, SessionLocal, engine
 from app.engine.weather import Day, Window
 from app.main import app
@@ -38,6 +38,7 @@ def client(monkeypatch):
     # and any point reverse-geocodes to Kapurthala, Punjab.
     monkeypatch.setattr(geo, "locate", lambda state, district, village=None: {"lat": 21.168, "lon": 79.649})
     monkeypatch.setattr(geo, "reverse", lambda lat, lon: {"state": "Punjab", "district": "Kapurthala", "village": "Phagwara"})
+    cache._counts.clear()  # rate-limit windows are process-wide; don't bill the next test
     Base.metadata.drop_all(bind=engine)
     with TestClient(app) as c:
         with SessionLocal() as db:
@@ -124,6 +125,105 @@ def test_unverified_officers_are_never_given_cases(client):
     with SessionLocal() as db:
         from app.models import Case
         assert db.get(Case, r["case"]["id"]).assigned_to is None
+
+
+def test_supervisor_can_route_a_backlog_and_see_the_load(client):
+    """Cases raised before any officer existed are not stranded: the office
+    presses route once and they land on the freest desks."""
+    for _ in range(4):
+        diagnose(client, 1, "unsure")
+    before = client.get("/api/officials/workload").json()
+    assert before["unassigned"] == 4 and before["officers"] == []
+
+    ids = _officers(2)
+    routed = client.post("/api/officials/cases/route").json()
+    assert routed == {"considered": 4, "assigned": 4}
+
+    after = client.get("/api/officials/workload").json()
+    assert after["unassigned"] == 0 and after["open_total"] == 4
+    assert sorted(o["open_cases"] for o in after["officers"]) == [2, 2]  # split evenly
+    assert {o["user_id"] for o in after["officers"]} == set(ids)
+    assert all(o["oldest_wait_hours"] is not None for o in after["officers"])
+
+
+def test_an_officer_can_hand_a_case_to_a_named_colleague(client):
+    ids = _officers(3)
+    r = diagnose(client, 1, "unsure")
+    case_id = r["case"]["id"]
+    out = client.post(f"/api/cases/{case_id}/reassign", json={"to_user_id": ids[2]}).json()
+    assert out["assigned_to"] == ids[2]
+    assert client.get(f"/api/cases/{case_id}").json()["case"]["assigned_to"] == ids[2]
+
+
+def test_handing_a_case_on_without_a_name_finds_the_freest_officer(client):
+    ids = _officers(2)
+    first = diagnose(client, 1, "unsure")["case"]["id"]
+    second = diagnose(client, 1, "unsure")["case"]["id"]
+    # Both officers now hold one. Handing the first on must not give it back to
+    # its current holder while the other is equally free.
+    holder = client.get(f"/api/cases/{first}").json()["case"]["assigned_to"]
+    out = client.post(f"/api/cases/{first}/reassign", json={}).json()
+    assert out["assigned_to"] in ids and out["assigned_to"] != holder
+    assert client.get(f"/api/cases/{second}").json()["case"]["assigned_to"] is not None
+
+
+def test_the_only_officer_in_a_district_keeps_a_case_handed_on(client):
+    """Nobody else to give it to: better the same desk than nobody's."""
+    ids = _officers(1)
+    case_id = diagnose(client, 1, "unsure")["case"]["id"]
+    assert client.post(f"/api/cases/{case_id}/reassign", json={}).json()["assigned_to"] == ids[0]
+
+
+def test_a_resolved_case_cannot_be_handed_on(client):
+    _officers(2)
+    case_id = diagnose(client, 1, "unsure")["case"]["id"]
+    client.post(f"/api/cases/{case_id}/resolve", json={
+        "verdict": "confirmed", "final_label": "rice_brown_spot", "expert_name": "Dr. Kale"})
+    assert client.post(f"/api/cases/{case_id}/reassign", json={}).status_code == 409
+
+
+def test_expert_can_record_a_healthy_plant(client):
+    """The model saw a disease; the officer looked and the crop is fine."""
+    _officers(2)
+    case_id = diagnose(client, 1, "unsure")["case"]["id"]
+    out = client.post(f"/api/cases/{case_id}/resolve", json={
+        "verdict": "confirmed", "final_label": "healthy", "expert_name": "Dr. Kale"}).json()
+    assert out["final_label"] == "healthy"
+    assert out["verdict"] == "corrected"      # the model put forward a disease and was wrong
+    assert out["spread_alerts"] == 0          # nobody is warned about a healthy field
+    assert out["followup"] is None            # and there is nothing to follow up
+
+
+def test_expert_can_record_something_the_app_cannot_name(client):
+    _officers(2)
+    case_id = diagnose(client, 1, "unsure")["case"]["id"]
+    out = client.post(f"/api/cases/{case_id}/resolve", json={
+        "verdict": "corrected", "final_label": "other", "expert_name": "Dr. Kale",
+        "notes": "Zinc deficiency — interveinal chlorosis on the older leaves."}).json()
+    assert out["final_label"] == "other" and out["spread_alerts"] == 0
+    # No authored advisory exists for it, so the app offers none.
+    assert out["followup"] is None
+
+
+def test_something_else_must_be_named(client):
+    _officers(2)
+    case_id = diagnose(client, 1, "unsure")["case"]["id"]
+    r = client.post(f"/api/cases/{case_id}/resolve", json={
+        "verdict": "corrected", "final_label": "other", "expert_name": "Dr. Kale"})
+    assert r.status_code == 422 and "note" in r.json()["detail"]
+
+
+def test_a_sentinel_verdict_teaches_the_prior_nothing(client):
+    """'Healthy' is not a label the model can be nudged towards."""
+    from app.models import LabelPrior
+    _officers(2)
+    case_id = diagnose(client, 1, "unsure")["case"]["id"]
+    client.post(f"/api/cases/{case_id}/resolve", json={
+        "verdict": "confirmed", "final_label": "healthy", "expert_name": "Dr. Kale"})
+    with SessionLocal() as db:
+        rows = db.scalars(select(LabelPrior)).all()
+        assert all(r.target not in ("healthy", "other") for r in rows)
+        assert all(r.confirmed == 0 for r in rows)  # only the model's own guess was marked wrong
 
 
 def test_stub_is_always_labelled(client):

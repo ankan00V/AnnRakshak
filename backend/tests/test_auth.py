@@ -8,10 +8,10 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from app import config
+from app import config, services
 from app.db import Base, SessionLocal, engine
 from app.main import app
-from app.models import ExpertProfile, Farm, FarmerProfile, OtpChallenge, User, UserSession
+from app.models import ExpertProfile, Farm, FarmerProfile, OtpChallenge, Problem, User, UserSession
 from app.routers import auth as auth_router
 
 SOWN = (date.today() - timedelta(days=40)).isoformat()
@@ -324,6 +324,61 @@ def test_older_long_sessions_also_end_at_24_hours(client, mail):
     assert client.get("/api/auth/me").status_code == 401
 
 
+def _real_case(district="Bhandara"):
+    """A case on a real farmer's field, with a real officer covering it."""
+    from app.models import Case, Diagnosis, ExpertProfile, Farm, Problem, User
+    with SessionLocal() as db:
+        farm = Farm(farmer_name="Real farmer", crop="rice", district=district,
+                    sowing_date=date.today() - timedelta(days=50), lat=21.17, lon=79.65)
+        db.add(farm)
+        db.flush()
+        p = Problem(farm_id=farm.id, status="open")
+        db.add(p)
+        db.flush()
+        db.add(Diagnosis(problem_id=p.id, topk=[{"target": "rice_brown_spot", "confidence": 0.5}],
+                         gate_outcome="escalate", gate_reason="BELOW_GATE", confidence=0.5,
+                         model_version="test", is_stub=True))
+        c = Case(problem_id=p.id, status="open", reason="BELOW_GATE")
+        db.add(c)
+        db.flush()
+        case_id = c.id
+        db.commit()
+    return case_id
+
+
+def test_a_demo_reviewer_never_sees_a_real_farmers_case(client, mail):
+    """Whoever tapped 'try the demo' is not shown a real farmer's field."""
+    case_id = _real_case()
+    assert client.post("/api/auth/demo", json={"role": "expert"}).status_code == 200
+    assert client.get("/api/cases?status=open&scope=all").json() == []
+    assert client.get(f"/api/cases/{case_id}").status_code == 404      # not by id either
+    assert client.post(f"/api/cases/{case_id}/reassign", json={}).status_code == 404
+    assert client.post(f"/api/cases/{case_id}/resolve", json={
+        "verdict": "confirmed", "final_label": "rice_brown_spot",
+        "expert_name": "Demo expert"}).status_code == 404
+
+
+def test_a_real_officer_is_not_shown_showcase_data(client, mail):
+    """The boundary holds both ways: demo farms are not a real officer's work."""
+    assert expert_signup(client, mail).status_code == 201
+    listed = client.get("/api/cases?status=open&scope=all").json()
+    assert listed == []  # the only farm in this fixture is the demo one
+    case_id = _real_case()
+    assert [c["id"] for c in client.get("/api/cases?status=open&scope=all").json()] == [case_id]
+
+
+def test_a_real_farmers_case_is_never_routed_to_a_demo_officer(client, mail):
+    from app.models import Case
+    client.post("/api/auth/demo", json={"role": "expert"})   # a demo officer exists and is verified
+    case_id = _real_case()
+    with SessionLocal() as db:
+        case = db.get(Case, case_id)
+        farm = db.get(Problem, case.problem_id).farm
+        picked = services.assign_case(db, case, farm)
+        db.commit()
+    assert picked is None  # no real officer yet, and the demo one is not eligible
+
+
 def test_voice_needs_a_signed_in_user(client):
     assert client.post("/api/voice/tts", json={"text": "hello", "lang": "en"}).status_code == 401
 
@@ -340,7 +395,12 @@ def test_verdict_carries_the_signed_in_expert(client, mail):
     from app.models import Case, Confirmation, Diagnosis, Problem
 
     with SessionLocal() as db:
-        p = Problem(farm_id=1, target="rice_brown_spot", status="open")
+        # A real farmer's field: a signed-up expert never reviews demo data.
+        farm = Farm(farmer_name="Real", crop="rice", sowing_date=date.today() - timedelta(days=50),
+                    district="Bhandara", lat=21.17, lon=79.65)
+        db.add(farm)
+        db.flush()
+        p = Problem(farm_id=farm.id, target="rice_brown_spot", status="open")
         db.add(p)
         db.flush()
         db.add(Diagnosis(problem_id=p.id, topk=[{"target": "rice_brown_spot", "confidence": 0.5}],
