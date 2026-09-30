@@ -159,6 +159,10 @@ export interface AdvisoryRow {
   level: string
   note: string | null
   farms: number
+  /** What came back: an advisory nobody answers is worth seeing. */
+  inspected: number
+  found: number
+  still_waiting: number
 }
 
 export interface PendingOfficer {
@@ -475,6 +479,8 @@ export interface Hotspots {
     name: string | null
     status: 'confirmed' | 'suspected' | 'awaiting_expert'
     on: string | null
+    farm_id: number
+    farmer_name: string
   }[]
   active_alerts: {
     lat: number

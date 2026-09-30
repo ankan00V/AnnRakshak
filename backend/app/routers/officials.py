@@ -141,6 +141,8 @@ def hotspots(days: int = 45, lang: str = "en", db: Session = Depends(get_db), kb
             "problem_id": p.id, "lat": f.lat, "lon": f.lon, "district": f.district, "crop": f.crop,
             "target": target, "name": tr(kb.targets[target]["names"], lang) if target in kb.targets else None,
             "status": status, "on": p.opened_at.date().isoformat() if p.opened_at else None,
+            # A pin nobody can open is a picture: carry the field it stands for.
+            "farm_id": f.id, "farmer_name": f.farmer_name,
         })
     farms = {f.id: f for f in db.scalars(select(Farm)).all()}
     alerts = [

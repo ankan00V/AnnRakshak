@@ -119,6 +119,24 @@ def test_the_office_keeps_a_record_of_what_it_sent(client):
         assert office.history(db, demo=True)[0]["issued_by"] == officer.name
 
 
+def test_the_history_says_whether_anyone_acted_on_it(client):
+    """An advisory nobody answers is the thing worth seeing."""
+    from app.models import Alert
+    officer = _officer()
+    with SessionLocal() as db:
+        office.issue(db, get_kb(), target="rice_brown_spot", crop="rice", districts=["Bhandara"],
+                     kind="advisory", level="high", note=None, officer=officer, demo=True)
+        alerts = db.scalars(select(Alert).where(Alert.trigger == "officer")).all()
+        assert len(alerts) == 3
+        alerts[0].outcome = "found"            # one farmer looked and found it
+        alerts[1].outcome = "nothing_found"    # one looked and did not
+        db.commit()                            # the third never answered
+
+        row = office.history(db, demo=True)[0]
+        assert row["farms"] == 3
+        assert row["inspected"] == 2 and row["found"] == 1 and row["still_waiting"] == 1
+
+
 def test_a_problem_with_no_authored_tasks_cannot_be_broadcast(client):
     """Every alert carries something to check; without that it is just noise."""
     officer = _officer()

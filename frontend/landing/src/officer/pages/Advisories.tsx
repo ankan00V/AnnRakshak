@@ -230,7 +230,21 @@ export default function Advisories() {
                       </span>
                       {h.note && <span className="block text-[11px] text-soil-dark/50 truncate">“{h.note}”</span>}
                     </span>
-                    <span className="text-xs tabular-nums text-soil-dark/70 shrink-0">{h.farms} farms</span>
+                    <span className="text-right shrink-0">
+                      <span className="block text-xs tabular-nums text-soil-dark/70">{h.farms} farms</span>
+                      {h.farms > 0 && (
+                        <span className="mt-1 block text-[11px] tabular-nums">
+                          {h.inspected === 0 ? (
+                            <span className="text-ember">none checked yet</span>
+                          ) : (
+                            <>
+                              <span className="text-leaf-deep">{h.inspected} checked</span>
+                              {h.found > 0 && <span className="text-ember"> · {h.found} found it</span>}
+                            </>
+                          )}
+                        </span>
+                      )}
+                    </span>
                   </li>
                 ))}
               </ul>

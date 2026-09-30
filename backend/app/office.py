@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import csv
 import io
+from collections import Counter
 from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import func, select
@@ -158,18 +159,51 @@ def issue(db: Session, kb: KB, *, target: str, crop: str, districts: list[str], 
 
 
 def history(db: Session, *, demo: bool, limit: int = 40) -> list[dict]:
-    """What the office has issued, most recent first."""
+    """What the office has issued, most recent first — and what came back.
+
+    An advisory that nobody acts on is worth knowing about: the alerts it
+    created carry the farmer's answer, so each row can say how many went and
+    looked and how many found the thing. That is the only honest measure of
+    whether sending it was worth anything."""
     rows = db.execute(
         select(OfficerAdvisory, User.name)
         .join(User, User.id == OfficerAdvisory.issued_by)
         .where(OfficerAdvisory.is_demo.is_(demo))
         .order_by(OfficerAdvisory.id.desc()).limit(limit)
     ).all()
-    return [{
-        "id": a.id, "issued_by": name, "issued_at": a.issued_at.isoformat() if a.issued_at else None,
-        "target": a.target, "crop": a.crop, "districts": a.districts or [], "kind": a.kind,
-        "level": a.level, "note": a.note, "farms": a.farms,
-    } for a, name in rows]
+    if not rows:
+        return []
+
+    # One query for every outcome behind these advisories, matched on what the
+    # issue actually created: same target, same trigger, same day.
+    keys = {(a.target, "officer" if a.kind == "advisory" else "inspection",
+             a.issued_at.date() if a.issued_at else None) for a, _ in rows}
+    counts: dict[tuple, Counter] = {}
+    for target, trigger, day in keys:
+        if day is None:
+            continue
+        outcomes = db.execute(
+            select(Alert.outcome, func.count(Alert.id))
+            .join(Farm, Farm.id == Alert.farm_id)
+            .where(Alert.target == target, Alert.trigger == trigger, Alert.issued_on == day,
+                   Farm.is_demo.is_(demo))
+            .group_by(Alert.outcome)
+        ).all()
+        counts[(target, trigger, day)] = Counter({o: n for o, n in outcomes})
+
+    out = []
+    for a, name in rows:
+        day = a.issued_at.date() if a.issued_at else None
+        c = counts.get((a.target, "officer" if a.kind == "advisory" else "inspection", day), Counter())
+        inspected = c.get("found", 0) + c.get("nothing_found", 0)
+        out.append({
+            "id": a.id, "issued_by": name, "issued_at": a.issued_at.isoformat() if a.issued_at else None,
+            "target": a.target, "crop": a.crop, "districts": a.districts or [], "kind": a.kind,
+            "level": a.level, "note": a.note, "farms": a.farms,
+            "inspected": inspected, "found": c.get("found", 0),
+            "still_waiting": max(a.farms - inspected, 0),
+        })
+    return out
 
 
 # --------------------------------------------------------------------------
