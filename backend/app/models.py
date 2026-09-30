@@ -252,6 +252,9 @@ class Case(Base):
     district has no verified officer yet: the case stays in everyone's queue
     rather than waiting for a name."""
     assigned_at: Mapped[datetime | None] = mapped_column(DateTime)
+    snoozed_until: Mapped[datetime | None] = mapped_column(DateTime)
+    """Set aside until a time — waiting on a lab, or on the farmer sending a
+    better photo. Out of the queue, never out of the record: it comes back."""
 
 
 class OfficerAction(Base):
@@ -336,6 +339,11 @@ class Alert(Base):
     outcome: Mapped[str | None] = mapped_column(String(20))
     outcome_at: Mapped[datetime | None] = mapped_column(DateTime)
     source_case_id: Mapped[int | None] = mapped_column(ForeignKey("case.id"))
+    advisory_id: Mapped[int | None] = mapped_column(ForeignKey("officer_advisory.id"), index=True)
+    """The officer advisory that raised this alert, when one did. Outcomes are
+    read back through this: matching on (target, trigger, day) looked right and
+    broke silently once the issuing timestamp and the issue date fell on
+    different sides of midnight UTC."""
     notified_at: Mapped[datetime | None] = mapped_column(DateTime)
     """When the phone / in-app notification for this alert went out."""
     emailed_at: Mapped[datetime | None] = mapped_column(DateTime)

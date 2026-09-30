@@ -1,7 +1,7 @@
 """What the district office can do: issue an advisory, ask for an inspection,
 let an officer in, plan the indent, and see what the model cannot name."""
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -201,6 +201,68 @@ def test_everything_the_indent_hands_the_screen_is_printable(client):
                 assert isinstance(s["quantity"], str)
 
 
+def test_an_advisory_can_go_only_to_the_farms_already_alerted(client):
+    """The blunt instrument is every farm of a crop; this is the sharp one."""
+    from app.models import Alert
+    officer = _officer()
+    with SessionLocal() as db:
+        kb = get_kb()
+        farms = db.scalars(select(Farm).where(Farm.district == "Bhandara", Farm.crop == "rice")).all()
+        db.add(Alert(farm_id=farms[0].id, target="rice_brown_spot", trigger="weather", level="high",
+                     reason={"en": "x"}, tasks={"en": ["look"]}, issued_on=date.today()))
+        db.commit()
+
+        everyone = office.preview(db, kb, target="rice_brown_spot", crop="rice", districts=["Bhandara"],
+                                  kind="advisory", note=None, officer="x", demo=True, audience="all")
+        alerted = office.preview(db, kb, target="rice_brown_spot", crop="rice", districts=["Bhandara"],
+                                 kind="advisory", note=None, officer="x", demo=True, audience="alerted")
+        assert everyone["farms"] == 3 and alerted["farms"] == 1
+
+        out = office.issue(db, kb, target="rice_brown_spot", crop="rice", districts=["Bhandara"],
+                           kind="advisory", level="high", note=None, officer=officer, demo=True,
+                           audience="alerted")
+        assert out["sent"] == 1
+
+
+def test_an_officer_can_record_what_a_farmer_reported(client):
+    """Most farmers ring the office. The answer belongs on the alert either way."""
+    from app.models import Alert
+    officer = _officer()
+    with SessionLocal() as db:
+        office.issue(db, get_kb(), target="rice_brown_spot", crop="rice", districts=["Bhandara"],
+                     kind="advisory", level="high", note=None, officer=officer, demo=True)
+        alert = db.scalars(select(Alert)).first()
+        alert.outcome = "found"
+        db.commit()
+        row = office.history(db, demo=True)[0]
+        assert row["inspected"] == 1 and row["found"] == 1 and row["still_waiting"] == 2
+
+
+def test_trends_say_whether_it_is_getting_worse(client):
+    from app.models import Case, Problem
+    with SessionLocal() as db:
+        farm = db.scalar(select(Farm))
+        for days_ago in (1, 2, 10):
+            p = Problem(farm_id=farm.id, status="open")
+            db.add(p)
+            db.flush()
+            db.add(Case(problem_id=p.id, status="open", reason="BELOW_FLOOR",
+                        created_at=datetime.now() - timedelta(days=days_ago)))
+        db.commit()
+        t = office.trends(db, demo=True)
+    assert len(t["cases"]["series"]) == 14
+    assert t["cases"]["this_week"] == 2 and t["cases"]["last_week"] == 1
+    assert t["cases"]["change_pct"] == 100
+
+
+def test_the_weekly_report_is_a_file_the_office_can_file(client):
+    with SessionLocal() as db:
+        text = office.weekly_report(db, get_kb(), demo=True)
+    assert "AnnRakshak — week to" in text
+    assert "District,Farms,Open cases" in text
+    assert "Bhandara" in text and "Gondia" in text
+
+
 def test_the_worklist_puts_the_longest_wait_first(client):
     """Cases past the 24-hour mark, oldest first — that is the queue that matters."""
     from app.models import Case, Problem
@@ -211,7 +273,7 @@ def test_the_worklist_puts_the_longest_wait_first(client):
             db.add(p)
             db.flush()
             c = Case(problem_id=p.id, status="open", reason="BELOW_FLOOR",
-                     created_at=date.today() and __import__("datetime").datetime.now() - timedelta(hours=hours))
+                     created_at=datetime.now() - timedelta(hours=hours))
             db.add(c)
             db.flush()
             ids.append((hours, c.id))

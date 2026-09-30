@@ -8,7 +8,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app import auth, office, services
@@ -24,7 +24,8 @@ router = APIRouter(prefix="/api/cases", tags=["expert"],
 def list_cases(status: Literal["open", "resolved", "all"] = "open",
                scope: Literal["mine", "all", "unassigned"] = "all",
                district: str | None = None, crop: str | None = None, target: str | None = None,
-               severity: str | None = None, overdue: bool = False, q_text: str | None = None,
+               severity: str | None = None, overdue: bool = False, snoozed: bool = False,
+               q_text: str | None = None,
                sort: Literal["oldest", "newest", "waiting"] = "oldest",
                lang: str = "en",
                request: Request = None, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
@@ -54,6 +55,9 @@ def list_cases(status: Literal["open", "resolved", "all"] = "open",
         q = q.where(Problem.target == target)
     if overdue:
         q = q.where(Case.created_at < datetime.now() - timedelta(hours=office.SLA_HOURS))
+    # A snoozed case is out of the way until its time comes, not gone.
+    q = (q.where(Case.snoozed_until.is_not(None), Case.snoozed_until > datetime.now()) if snoozed
+         else q.where(or_(Case.snoozed_until.is_(None), Case.snoozed_until <= datetime.now())))
     if q_text:
         like = f"%{q_text.strip()}%"
         q = q.where(or_(Farm.farmer_name.ilike(like), Farm.village.ilike(like), Farm.district.ilike(like)))
@@ -128,6 +132,47 @@ def bulk_assign(body: BulkIn, request: Request, db: Session = Depends(get_db)):
                       detail={"moved": moved, "to_user_id": body.to_user_id})
     db.commit()
     return {"moved": moved, "skipped": skipped}
+
+
+class SnoozeIn(BaseModel):
+    hours: int = Field(default=24, ge=1, le=24 * 30)
+    note: str | None = Field(default=None, max_length=200)
+
+
+@router.post("/{case_id}/snooze")
+def snooze(case_id: int, body: SnoozeIn, request: Request, db: Session = Depends(get_db)):
+    """Set a case aside — waiting on a lab, or on a better photo — and have it
+    come back on its own rather than be forgotten at the bottom of a list."""
+    case = _case_for(request, db, case_id)
+    if case.status != "open":
+        raise HTTPException(409, "case is already resolved")
+    case.snoozed_until = datetime.now() + timedelta(hours=body.hours)
+    office.record(db, actor=auth.current_user(request, db), action="snooze", subject="case",
+                  subject_id=case.id, detail={"hours": body.hours, "note": body.note})
+    db.commit()
+    return services.case_brief(db, case) | {"snoozed_until": case.snoozed_until.isoformat()}
+
+
+@router.post("/{case_id}/wake")
+def wake(case_id: int, request: Request, db: Session = Depends(get_db)):
+    """Back into the queue now."""
+    case = _case_for(request, db, case_id)
+    case.snoozed_until = None
+    db.commit()
+    return services.case_brief(db, case)
+
+
+@router.get("/since/{case_id}")
+def since(case_id: int, request: Request, db: Session = Depends(get_db)):
+    """How many cases have arrived since the one the screen last saw, so an open
+    queue can say "three new" instead of quietly going stale."""
+    me = auth.current_user(request, db)
+    q = (select(func.count(Case.id)).join(Problem, Problem.id == Case.problem_id)
+         .join(Farm, Farm.id == Problem.farm_id)
+         .where(Case.id > case_id, Case.status == "open"))
+    if me is not None:
+        q = q.where(Farm.is_demo.is_(me.is_demo))
+    return {"new_cases": db.scalar(q) or 0}
 
 
 class ReassignIn(BaseModel):

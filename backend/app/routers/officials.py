@@ -328,6 +328,9 @@ class AdvisoryIn(BaseModel):
     kind: Literal["advisory", "inspection"] = "advisory"
     level: Literal["low", "medium", "high"] = "high"
     note: str | None = Field(default=None, max_length=400)
+    audience: Literal["all", "alerted", "nearby", "stage"] = "all"
+    """Who it reaches: everyone of this crop, only farms already alerted for the
+    problem, only farms near a confirmed case, or only farms at a susceptible stage."""
 
 
 @router.post("/advisories/preview")
@@ -340,7 +343,7 @@ def advisory_preview(body: AdvisoryIn, request: Request,
     return office.preview(db, kb, target=body.target, crop=body.crop, districts=body.districts,
                           kind=body.kind, note=body.note,
                           officer=me.name if me else "The district office",
-                          demo=bool(me and me.is_demo))
+                          demo=bool(me and me.is_demo), audience=body.audience)
 
 
 @router.post("/advisories")
@@ -356,7 +359,7 @@ def issue_advisory(body: AdvisoryIn, request: Request,
     try:
         return office.issue(db, kb, target=body.target, crop=body.crop, districts=body.districts,
                             kind=body.kind, level=body.level, note=body.note, officer=me,
-                            demo=me.is_demo)
+                            demo=me.is_demo, audience=body.audience)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 
@@ -395,6 +398,47 @@ def farm_dossier(farm_id: int, request: Request, lang: str = "en",
     if farm is None or (me is not None and farm.is_demo != me.is_demo):
         raise HTTPException(404, "farm not found")
     return office.farm_dossier(db, kb, farm, lang)
+
+
+class OutcomeIn(BaseModel):
+    outcome: Literal["found", "nothing_found"]
+    note: str | None = Field(default=None, max_length=200)
+
+
+@router.post("/alerts/{alert_id}/outcome")
+def record_inspection(alert_id: int, body: OutcomeIn, request: Request, db: Session = Depends(get_db)):
+    """A farmer rings the office, or a scout walks the block: the answer belongs
+    on the alert whether or not the farmer opened the app."""
+    alert = db.get(Alert, alert_id)
+    me = _me(request, db)
+    farm = db.get(Farm, alert.farm_id) if alert else None
+    if alert is None or farm is None or (me is not None and farm.is_demo != me.is_demo):
+        raise HTTPException(404, "alert not found")
+    alert.outcome, alert.outcome_at = body.outcome, datetime.now()
+    office.record(db, actor=me, action="record_inspection", subject="alert", subject_id=alert.id,
+                  detail={"outcome": body.outcome, "note": body.note, "farm_id": farm.id})
+    db.commit()
+    return {"id": alert.id, "outcome": alert.outcome}
+
+
+@router.get("/trends")
+def trends(request: Request, db: Session = Depends(get_db)):
+    """A fortnight of daily counts, and this week against the last."""
+    return office.trends(db, demo=_demo(request, db))
+
+
+@router.get("/performance")
+def performance(request: Request, db: Session = Depends(get_db)):
+    """What each officer cleared, how long it waited, how often they agreed."""
+    return office.performance(db, demo=_demo(request, db))
+
+
+@router.get("/report")
+def weekly_report(request: Request, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    """The week as a file, for what the office files upward."""
+    csv_text = office.weekly_report(db, kb, demo=_demo(request, db))
+    return Response(csv_text, media_type="text/csv", headers={
+        "Content-Disposition": f'attachment; filename="annrakshak-week-{date.today().isoformat()}.csv"'})
 
 
 @router.get("/actions")

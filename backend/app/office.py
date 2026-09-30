@@ -72,19 +72,68 @@ def targets_for(kb: KB, crop: str) -> list[dict]:
     return [kb.target_view(t, "en") for t, v in kb.targets.items() if v["crop"] == crop]
 
 
-def farms_matching(db: Session, *, crop: str, districts: list[str], demo: bool) -> list[Farm]:
+AUDIENCES = ("all", "alerted", "nearby", "stage")
+"""Who an advisory goes to:
+
+  all      every farm of this crop in the chosen districts;
+  alerted  only farms already carrying an open alert for this problem — the
+           ones the risk engine has picked out, so the message lands where
+           something is actually happening;
+  nearby   farms within the spread radius of a case an expert has confirmed;
+  stage    farms whose crop is at a stage this problem attacks.
+
+"all" is the blunt instrument. The other three are why an officer would rather
+send to two hundred farms than to four thousand."""
+
+
+def farms_matching(db: Session, *, crop: str, districts: list[str], demo: bool,
+                   audience: str = "all", target: str | None = None, kb: KB | None = None) -> list[Farm]:
     """Every farm the advisory would reach. Demo and real never mix, here least
     of all: this sends a message to a person."""
     q = select(Farm).where(Farm.crop == crop, Farm.is_demo.is_(demo))
     if districts:
         q = q.where(Farm.district.in_(districts))
-    return list(db.scalars(q).all())
+    farms = list(db.scalars(q).all())
+    if audience == "all" or not target:
+        return farms
+
+    if audience == "alerted":
+        alerted = {fid for (fid,) in db.execute(
+            select(Alert.farm_id).where(Alert.target == target, Alert.outcome.is_(None),
+                                        Alert.issued_on >= date.today() - timedelta(days=14))
+        ).all()}
+        return [f for f in farms if f.id in alerted]
+
+    if audience == "nearby":
+        from app import services  # noqa: PLC0415
+
+        origins = db.execute(
+            select(Farm.lat, Farm.lon)
+            .join(Problem, Problem.farm_id == Farm.id)
+            .join(Confirmation, Confirmation.problem_id == Problem.id)
+            .where(Confirmation.final_label == target, Farm.is_demo.is_(demo))
+        ).all()
+        if not origins:
+            return []
+        return [f for f in farms
+                if any(services.haversine_km(f.lat, f.lon, lat, lon) <= services.SPREAD_RADIUS_KM
+                       for lat, lon in origins)]
+
+    if audience == "stage" and kb is not None:
+        stages = set(kb.rules.get(target, {}).get("stages") or [])
+        if not stages:
+            return farms
+        return [f for f in farms if kb.stage_of(f, date.today())[0] in stages]
+
+    return farms
 
 
 def preview(db: Session, kb: KB, *, target: str, crop: str, districts: list[str],
-            kind: str, note: str | None, officer: str, demo: bool) -> dict:
+            kind: str, note: str | None, officer: str, demo: bool,
+            audience: str = "all") -> dict:
     """What would be sent, to how many, in every language — before it is sent."""
-    farms = farms_matching(db, crop=crop, districts=districts, demo=demo)
+    farms = farms_matching(db, crop=crop, districts=districts, demo=demo,
+                           audience=audience, target=target, kb=kb)
     rule = kb.rules.get(target, {})
     names = kb.targets[target]["names"]
     where = ", ".join(districts) if districts else "your district"
@@ -96,7 +145,7 @@ def preview(db: Session, kb: KB, *, target: str, crop: str, districts: list[str]
     }
     return {
         "target": target, "name": tr(names, "en"), "crop": crop, "kind": kind,
-        "districts": districts, "farms": len(farms),
+        "districts": districts, "farms": len(farms), "audience": audience,
         "over_limit": len(farms) > MAX_FARMS_PER_ISSUE,
         "reason": reason,
         "tasks": rule.get("tasks") or {},
@@ -113,7 +162,7 @@ def _count_by_district(farms: list[Farm]) -> dict[str, int]:
 
 def issue(db: Session, kb: KB, *, target: str, crop: str, districts: list[str], kind: str,
           level: str, note: str | None, officer: User, demo: bool,
-          today: date | None = None) -> dict:
+          audience: str = "all", today: date | None = None) -> dict:
     """Send it. One alert per farm, skipping any farm that already has this
     officer advisory today, so a double click does not double the message."""
     if kind not in ADVISORY_REASON:
@@ -126,13 +175,16 @@ def issue(db: Session, kb: KB, *, target: str, crop: str, districts: list[str], 
     if not (rule.get("tasks") or {}).get("en"):
         raise ValueError("no inspection tasks are authored for this target")
 
+    if audience not in AUDIENCES:
+        raise ValueError("unknown audience")
     today = today or date.today()
     view = preview(db, kb, target=target, crop=crop, districts=districts, kind=kind,
-                   note=note, officer=officer.name, demo=demo)
+                   note=note, officer=officer.name, demo=demo, audience=audience)
     if view["over_limit"]:
         raise ValueError(f"{view['farms']} farms is more than one advisory may reach")
 
-    farms = farms_matching(db, crop=crop, districts=districts, demo=demo)
+    farms = farms_matching(db, crop=crop, districts=districts, demo=demo,
+                           audience=audience, target=target, kb=kb)
     trigger = "officer" if kind == "advisory" else "inspection"
     already = {
         fid for (fid,) in db.execute(
@@ -141,19 +193,22 @@ def issue(db: Session, kb: KB, *, target: str, crop: str, districts: list[str], 
                 Alert.farm_id.in_([f.id for f in farms]))
         ).all()
     }
+    row = OfficerAdvisory(
+        issued_by=officer.id, issued_at=datetime.now(UTC), target=target, crop=crop,
+        districts=districts, kind=kind, level=level, note=note, farms=0, is_demo=demo,
+    )
+    db.add(row)
+    db.flush()
+
     sent = 0
     for farm in farms:
         if farm.id in already:
             continue
         db.add(Alert(farm_id=farm.id, target=target, trigger=trigger, level=level,
-                     reason=view["reason"], tasks=rule["tasks"], issued_on=today))
+                     reason=view["reason"], tasks=rule["tasks"], issued_on=today,
+                     advisory_id=row.id))
         sent += 1
-
-    row = OfficerAdvisory(
-        issued_by=officer.id, issued_at=datetime.now(UTC), target=target, crop=crop,
-        districts=districts, kind=kind, level=level, note=note, farms=sent, is_demo=demo,
-    )
-    db.add(row)
+    row.farms = sent
     db.flush()
     record(db, actor=officer, action=f"issue_{kind}", subject="advisory", subject_id=row.id,
            detail={"target": target, "districts": districts, "farms": sent})
@@ -178,27 +233,19 @@ def history(db: Session, *, demo: bool, limit: int = 40) -> list[dict]:
     if not rows:
         return []
 
-    # One query for every outcome behind these advisories, matched on what the
-    # issue actually created: same target, same trigger, same day.
-    keys = {(a.target, "officer" if a.kind == "advisory" else "inspection",
-             a.issued_at.date() if a.issued_at else None) for a, _ in rows}
-    counts: dict[tuple, Counter] = {}
-    for target, trigger, day in keys:
-        if day is None:
-            continue
-        outcomes = db.execute(
-            select(Alert.outcome, func.count(Alert.id))
-            .join(Farm, Farm.id == Alert.farm_id)
-            .where(Alert.target == target, Alert.trigger == trigger, Alert.issued_on == day,
-                   Farm.is_demo.is_(demo))
-            .group_by(Alert.outcome)
-        ).all()
-        counts[(target, trigger, day)] = Counter({o: n for o, n in outcomes})
+    # One query for every outcome behind these advisories, read through the
+    # alerts the issue actually created.
+    counts: dict[int, Counter] = {}
+    for advisory_id, outcome, n in db.execute(
+        select(Alert.advisory_id, Alert.outcome, func.count(Alert.id))
+        .where(Alert.advisory_id.in_([a.id for a, _ in rows]))
+        .group_by(Alert.advisory_id, Alert.outcome)
+    ).all():
+        counts.setdefault(advisory_id, Counter())[outcome] = n
 
     out = []
     for a, name in rows:
-        day = a.issued_at.date() if a.issued_at else None
-        c = counts.get((a.target, "officer" if a.kind == "advisory" else "inspection", day), Counter())
+        c = counts.get(a.id, Counter())
         inspected = c.get("found", 0) + c.get("nothing_found", 0)
         out.append({
             "id": a.id, "issued_by": name, "issued_at": a.issued_at.isoformat() if a.issued_at else None,
@@ -377,6 +424,128 @@ def indent_csv(rows: list[dict]) -> str:
                         r["high"], s["input"], s.get("institute") or "", s["quantity"],
                         s.get("order_by") or ""])
     return buf.getvalue()
+
+
+# --------------------------------------------------------------------------
+# Is it getting better or worse?
+# --------------------------------------------------------------------------
+
+def trends(db: Session, *, demo: bool, days: int = 14) -> dict:
+    """A number without a direction is a poster. Daily counts for the fortnight,
+    and this week against the one before it."""
+    start = date.today() - timedelta(days=days - 1)
+    farm_ids = {f for (f,) in db.execute(select(Farm.id).where(Farm.is_demo.is_(demo))).all()}
+
+    def blank() -> dict[str, int]:
+        return {(start + timedelta(days=i)).isoformat(): 0 for i in range(days)}
+
+    cases, alerts, verdicts = blank(), blank(), blank()
+    for c, opened in db.execute(
+        select(Case.id, Case.created_at).join(Problem, Problem.id == Case.problem_id)
+        .where(Problem.farm_id.in_(farm_ids), Case.created_at.is_not(None))
+    ).all():
+        key = opened.date().isoformat()
+        if key in cases:
+            cases[key] += 1
+    for issued, n in db.execute(
+        select(Alert.issued_on, func.count(Alert.id))
+        .where(Alert.farm_id.in_(farm_ids), Alert.issued_on >= start).group_by(Alert.issued_on)
+    ).all():
+        key = issued.isoformat()
+        if key in alerts:
+            alerts[key] = n
+    for made, in db.execute(
+        select(Confirmation.created_at).join(Problem, Problem.id == Confirmation.problem_id)
+        .where(Problem.farm_id.in_(farm_ids), Confirmation.created_at.is_not(None))
+    ).all():
+        key = made.date().isoformat()
+        if key in verdicts:
+            verdicts[key] += 1
+
+    def split(series: dict[str, int]) -> dict:
+        values = list(series.values())
+        half = len(values) // 2
+        before, now = sum(values[:half]), sum(values[half:])
+        return {"series": values, "this_week": now, "last_week": before,
+                "change_pct": None if not before else round((now - before) / before * 100)}
+
+    return {"from": start.isoformat(), "cases": split(cases), "alerts": split(alerts),
+            "verdicts": split(verdicts)}
+
+
+def performance(db: Session, *, demo: bool) -> list[dict]:
+    """How each officer is actually doing: what they cleared, how long a case
+    waited on their desk, and how often they agreed with the model.
+
+    Agreement is not a score out of ten — an officer only sees what the gate was
+    unsure about — but a desk that agrees with everything, or nothing, is worth
+    a conversation."""
+    rows = db.execute(
+        select(User.id, User.name)
+        .join(ExpertProfile, ExpertProfile.user_id == User.id)
+        .where(User.role == "expert", ExpertProfile.verified.is_(True), User.is_demo.is_(demo))
+    ).all()
+    out = []
+    for uid, name in rows:
+        done = db.execute(
+            select(Case.created_at, Case.resolved_at)
+            .where(Case.assigned_to == uid, Case.status == "resolved",
+                   Case.resolved_at.is_not(None), Case.created_at.is_not(None))
+        ).all()
+        hours = sorted((r.total_seconds() / 3600 for r in
+                        ((resolved.replace(tzinfo=None) - created) for created, resolved in done)))
+        verdicts = db.execute(
+            select(Confirmation.verdict, func.count(Confirmation.id))
+            .join(Case, Case.id == Confirmation.case_id)
+            .where(Case.assigned_to == uid).group_by(Confirmation.verdict)
+        ).all()
+        counts = {v: n for v, n in verdicts}
+        agreed, corrected = counts.get("confirmed", 0), counts.get("corrected", 0)
+        out.append({
+            "user_id": uid, "name": name, "resolved": len(done),
+            "median_hours": round(hours[len(hours) // 2], 1) if hours else None,
+            "agreed": agreed, "corrected": corrected,
+            "agreement": round(agreed / (agreed + corrected), 2) if agreed + corrected else None,
+        })
+    return sorted(out, key=lambda r: -r["resolved"])
+
+
+def weekly_report(db: Session, kb: KB, *, demo: bool) -> str:
+    """The week, as a file the office can attach to what it files upward."""
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    since = date.today() - timedelta(days=7)
+    farms = _farms_by_district(db, demo)
+    w.writerow(["AnnRakshak — week to", date.today().isoformat()])
+    w.writerow([])
+    w.writerow(["District", "Farms", "Open cases", "Resolved this week", "High alerts", "Inspected", "Found"])
+    for district, ids in sorted(farms.items()):
+        cases = db.execute(
+            select(Case.status, Case.resolved_at).join(Problem, Problem.id == Case.problem_id)
+            .where(Problem.farm_id.in_(ids))
+        ).all()
+        alerts = db.scalars(select(Alert).where(Alert.farm_id.in_(ids), Alert.issued_on >= since)).all()
+        answered = [a for a in alerts if a.outcome in ("found", "nothing_found")]
+        w.writerow([
+            district, len(ids),
+            sum(1 for s, _ in cases if s == "open"),
+            sum(1 for s, r in cases if s == "resolved" and r and r.date() >= since),
+            sum(1 for a in alerts if a.level == "high"),
+            len(answered), sum(1 for a in answered if a.outcome == "found"),
+        ])
+    w.writerow([])
+    w.writerow(["Problem", "Farms alerted", "Districts"])
+    for row in indent(db, kb, demo=demo):
+        w.writerow([row["name"], row["farms"], "; ".join(row["districts"])])
+    return buf.getvalue()
+
+
+def _farms_by_district(db: Session, demo: bool) -> dict[str, list[int]]:
+    out: dict[str, list[int]] = {}
+    for fid, district in db.execute(
+            select(Farm.id, Farm.district).where(Farm.is_demo.is_(demo))).all():
+        out.setdefault(district, []).append(fid)
+    return out
 
 
 # --------------------------------------------------------------------------
