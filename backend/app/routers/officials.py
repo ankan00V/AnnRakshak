@@ -16,13 +16,15 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
-from app import auth, office, services
+from app import auth, config, office, services
+from app.limits import limit
 from app.db import get_db
 from app.engine import vision
 from app.kb import KB, get_kb, tr
 from app.models import Advisory, Alert, Case, Confirmation, Diagnosis, Farm, Problem, User
 
-router = APIRouter(prefix="/api/officials", tags=["officials"], dependencies=[Depends(auth.require("expert"))])
+router = APIRouter(prefix="/api/officials", tags=["officials"],
+                   dependencies=[Depends(auth.require("expert")), Depends(auth.require_verified)])
 
 # One representative point per Maharashtra IMD subdivision for the rainfall panel.
 SUBDIVISION_POINTS = {
@@ -281,11 +283,16 @@ def officer_workload(request: Request, db: Session = Depends(get_db)):
             "open_total": sum(r["open_cases"] for r in rows) + unplaced}
 
 
-@router.post("/cases/route")
+@router.post("/cases/route", dependencies=[Depends(auth.require_supervisor)])
 def route_cases(request: Request, db: Session = Depends(get_db)):
     """Give every unplaced open case to whichever officer is freest."""
     me = auth.current_user(request, db)
-    return services.route_unassigned(db, demo=bool(me and me.is_demo))
+    out = services.route_unassigned(db, demo=bool(me and me.is_demo))
+    if out["assigned"]:
+        office.record(db, actor=me, action="route_backlog", subject="cases",
+                      detail={"assigned": out["assigned"]})
+        db.commit()
+    return out
 
 
 @router.post("/risk/run-all")
@@ -343,6 +350,9 @@ def issue_advisory(body: AdvisoryIn, request: Request,
     me = _me(request, db)
     if me is None:
         raise HTTPException(401, "sign in")
+    # An advisory is a message to thousands of people; a slip of the hand, or a
+    # script, should not be able to send twenty of them in a minute.
+    limit(f"advisory:{me.id}", config.MAX_ADVISORIES_PER_OFFICER_PER_HOUR, 3600)
     try:
         return office.issue(db, kb, target=body.target, crop=body.crop, districts=body.districts,
                             kind=body.kind, level=body.level, note=body.note, officer=me,
@@ -366,12 +376,14 @@ class VerifyIn(BaseModel):
     verified: bool = True
 
 
-@router.post("/officers/{user_id}/verify")
-def verify_officer(user_id: int, body: VerifyIn, db: Session = Depends(get_db)):
+@router.post("/officers/{user_id}/verify", dependencies=[Depends(auth.require_supervisor)])
+def verify_officer(user_id: int, body: VerifyIn, request: Request, db: Session = Depends(get_db)):
+    """A supervisor lets an officer in — never themselves, and never across the
+    line between showcase data and real farmers."""
     try:
-        return office.set_verified(db, user_id, body.verified)
+        return office.set_verified(db, user_id, body.verified, by=_me(request, db))
     except ValueError as exc:
-        raise HTTPException(404, str(exc)) from exc
+        raise HTTPException(409 if "own" in str(exc) else 404, str(exc)) from exc
 
 
 @router.get("/farms/{farm_id}")
@@ -383,6 +395,12 @@ def farm_dossier(farm_id: int, request: Request, lang: str = "en",
     if farm is None or (me is not None and farm.is_demo != me.is_demo):
         raise HTTPException(404, "farm not found")
     return office.farm_dossier(db, kb, farm, lang)
+
+
+@router.get("/actions")
+def office_actions(request: Request, db: Session = Depends(get_db)):
+    """Who did what: verifications, routings and advisories, newest first."""
+    return office.actions(db, demo=_demo(request, db))
 
 
 @router.get("/gaps")

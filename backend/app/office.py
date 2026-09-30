@@ -39,6 +39,7 @@ from app.models import (
     Confirmation,
     ExpertProfile,
     Farm,
+    OfficerAction,
     OfficerAdvisory,
     Problem,
     User,
@@ -153,6 +154,9 @@ def issue(db: Session, kb: KB, *, target: str, crop: str, districts: list[str], 
         districts=districts, kind=kind, level=level, note=note, farms=sent, is_demo=demo,
     )
     db.add(row)
+    db.flush()
+    record(db, actor=officer, action=f"issue_{kind}", subject="advisory", subject_id=row.id,
+           detail={"target": target, "districts": districts, "farms": sent})
     db.commit()
     return {"id": row.id, "sent": sent, "skipped": len(farms) - sent,
             "districts": districts, "target": target, "kind": kind}
@@ -228,12 +232,50 @@ def pending_officers(db: Session, *, demo: bool) -> list[dict]:
     } for u, p in rows]
 
 
-def set_verified(db: Session, user_id: int, verified: bool) -> dict:
-    """Let an officer in, or take the badge back."""
+def record(db: Session, *, actor: User | None, action: str, subject: str | None = None,
+           subject_id: int | None = None, detail: dict | None = None) -> None:
+    """Write one line into the office's own record of who did what.
+
+    Flushed with the change it describes, so an action and its audit line are
+    the same transaction: there is no state where one exists without the other."""
+    db.add(OfficerAction(
+        actor_id=actor.id if actor else None,
+        actor_name=actor.name if actor else "system",
+        action=action, subject=subject, subject_id=subject_id, detail=detail,
+        at=datetime.now(UTC), is_demo=bool(actor and actor.is_demo),
+    ))
+    db.flush()
+
+
+def actions(db: Session, *, demo: bool, limit: int = 60) -> list[dict]:
+    """The office's record, most recent first."""
+    rows = db.scalars(
+        select(OfficerAction).where(OfficerAction.is_demo.is_(demo))
+        .order_by(OfficerAction.id.desc()).limit(limit)
+    ).all()
+    return [{"id": a.id, "actor": a.actor_name, "action": a.action, "subject": a.subject,
+             "subject_id": a.subject_id, "detail": a.detail or {},
+             "at": a.at.isoformat() if a.at else None} for a in rows]
+
+
+def set_verified(db: Session, user_id: int, verified: bool, *, by: User | None = None) -> dict:
+    """Let an officer in, or take the badge back.
+
+    Never yourself: an officer who can verify their own account has not been
+    verified by anybody. Never across the demo line either — a showcase
+    supervisor has no business over a real district's staff."""
     profile = db.get(ExpertProfile, user_id)
     if profile is None:
         raise ValueError("not an officer")
+    if by is not None and by.id == user_id:
+        raise ValueError("an officer cannot verify their own account")
+    subject = db.get(User, user_id)
+    if by is not None and subject is not None and subject.is_demo != by.is_demo:
+        raise ValueError("not an officer")   # same answer as an id that is not there
     profile.verified = verified
+    record(db, actor=by, action="verify_officer" if verified else "unverify_officer",
+           subject="officer", subject_id=user_id,
+           detail={"name": subject.name if subject else None})
     db.commit()
     return {"user_id": user_id, "verified": verified}
 

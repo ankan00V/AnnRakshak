@@ -63,6 +63,7 @@ ADDED_COLUMNS = {
     "alert": {"notified_at": "DATETIME", "emailed_at": "DATETIME"},
     "case": {"assigned_to": "INTEGER REFERENCES app_user(id)", "assigned_at": "DATETIME"},
     "farmer_profile": {"state": "VARCHAR(60)"},
+    "expert_profile": {"supervisor": "BOOLEAN DEFAULT FALSE"},
     "sensor_reading": {"soil_ph": "FLOAT", "soil_moisture_pct": "FLOAT"},
 }
 

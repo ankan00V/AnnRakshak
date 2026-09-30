@@ -402,7 +402,7 @@ def demo(body: DemoIn, request: Request, response: Response, db: Session = Depen
             db.add(ExpertProfile(user_id=user.id, designation="kvk_scientist", organisation="Demo KVK",
                                  employee_id="DEMO", qualification="msc_agri", experience_years=10,
                                  districts=_districts(), crops=list(kb.crops), specialities=list(SPECIALITIES),
-                                 languages=["en", "hi", "mr"], verified=True))
+                                 languages=["en", "hi", "mr"], verified=True, supervisor=True))
     auth.start_session(db, user, response, request.headers.get("user-agent"))
     db.commit()
     return _me(db, user)

@@ -51,6 +51,14 @@ MESSAGES = {
                    "mr": "AnnRakshak चा हा भाग {role} साठी आहे."},
     "not_your_farm": {"en": "This farm belongs to someone else.", "hi": "यह खेत किसी और का है।",
                       "mr": "हे शेत दुसऱ्या कोणाचे आहे."},
+    "await_verification": {
+        "en": "The district office has not verified your account yet, so no case can be opened.",
+        "hi": "जिला कार्यालय ने अभी आपका खाता सत्यापित नहीं किया है, इसलिए कोई केस नहीं खोला जा सकता।",
+        "mr": "जिल्हा कार्यालयाने अद्याप तुमचे खाते पडताळलेले नाही, त्यामुळे कोणतेही प्रकरण उघडता येणार नाही."},
+    "supervisor_only": {
+        "en": "Only a supervisor can do that.",
+        "hi": "यह केवल पर्यवेक्षक कर सकते हैं।",
+        "mr": "हे फक्त पर्यवेक्षक करू शकतात."},
     "otp_wait": {"en": "Please wait {s} seconds before asking for a new code.",
                  "hi": "नया कोड माँगने से पहले {s} सेकंड रुकें।", "mr": "नवीन कोड मागण्यापूर्वी {s} सेकंद थांबा."},
     "otp_invalid": {"en": "This code is not valid. Ask for a new code.", "hi": "यह कोड मान्य नहीं है। नया कोड माँगें।",
@@ -277,6 +285,39 @@ def guard(request: HTTPConnection, db: Session, role: str | None = None) -> User
             if farm is not None and not can_open_farm(user, farm):
                 raise AuthError(403, say("not_your_farm"))
     return user
+
+
+def expert_profile(db: Session, user: User | None):
+    """The officer record behind a signed-in expert, or None."""
+    from app.models import ExpertProfile  # noqa: PLC0415  (models imports auth's siblings)
+
+    return db.get(ExpertProfile, user.id) if user and user.role == "expert" else None
+
+
+def require_verified(conn: HTTPConnection, db: Session = Depends(get_db)) -> None:
+    """An expert the district office has not verified reviews nothing.
+
+    Verification used to gate only routing, which made it a label rather than a
+    permission: an unverified sign-up could still open a farmer's case and file
+    a verdict on it."""
+    if not config.AUTH_ENFORCE:
+        return
+    user = current_user(conn, db)
+    profile = expert_profile(db, user)
+    if profile is not None and not profile.verified:
+        raise AuthError(403, say("await_verification"))
+
+
+def require_supervisor(conn: HTTPConnection, db: Session = Depends(get_db)) -> None:
+    """Verifying a colleague, routing a backlog and moving another officer's
+    cases are supervisor decisions. Without this an officer can verify
+    themselves, which is the same as having no verification at all."""
+    if not config.AUTH_ENFORCE:
+        return
+    user = current_user(conn, db)
+    profile = expert_profile(db, user)
+    if profile is None or not profile.supervisor:
+        raise AuthError(403, say("supervisor_only"))
 
 
 def require(role: str | None = None):

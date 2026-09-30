@@ -358,6 +358,93 @@ def test_a_demo_reviewer_never_sees_a_real_farmers_case(client, mail):
         "expert_name": "Demo expert"}).status_code == 404
 
 
+def _expert(client, mail, *, verified: bool, supervisor: bool = False,
+            email="new.officer@kvk.org.in", phone="9000000001"):
+    """A signed-up officer in whatever state the district office left them."""
+    r = client.post("/api/auth/otp", json={"role": "expert", "purpose": "signup",
+                                           "email": email, "phone": phone})
+    client.post("/api/auth/signup/expert", json={
+        "challenge_id": r.json()["challenge_id"], "code": code_of(mail), "name": "New Officer",
+        "phone": phone, "designation": "agri_officer", "organisation": "DAO",
+        "employee_id": "E-1", "qualification": "bsc_agri", "experience_years": 3,
+        "districts": ["Bhandara"], "crops": ["rice"], "specialities": ["entomology"],
+        "languages": ["mr"]})
+    with SessionLocal() as db:
+        user = db.scalar(select(User).where(User.email == email))
+        prof = db.get(ExpertProfile, user.id)
+        prof.verified, prof.supervisor = verified, supervisor
+        db.commit()
+        return user.id
+
+
+def test_an_unverified_officer_reviews_nothing(client, mail):
+    """Verification used to be a label. An unverified sign-up could open a real
+    farmer's case and file a verdict on it."""
+    _expert(client, mail, verified=False)
+    case_id = _real_case()
+    assert client.get("/api/cases?status=open").status_code == 403
+    assert client.get(f"/api/cases/{case_id}").status_code == 403
+    assert client.post(f"/api/cases/{case_id}/resolve", json={
+        "verdict": "confirmed", "final_label": "rice_brown_spot",
+        "expert_name": "New Officer"}).status_code == 403
+    assert client.get("/api/officials/summary").status_code == 403
+
+
+def test_an_officer_cannot_verify_themselves(client, mail):
+    """The whole point of verification is that somebody else did it."""
+    uid = _expert(client, mail, verified=True, supervisor=True)
+    r = client.post(f"/api/officials/officers/{uid}/verify", json={"verified": True})
+    assert r.status_code == 409 and "own account" in r.json()["detail"]
+
+
+def _colleague(name="Colleague", email="second@kvk.org.in", demo=False) -> int:
+    """Another officer on the books — made directly, so the caller keeps their session."""
+    with SessionLocal() as db:
+        u = User(role="expert", name=name, email=email, is_demo=demo)
+        db.add(u)
+        db.flush()
+        db.add(ExpertProfile(user_id=u.id, designation="agri_officer", organisation="DAO",
+                             employee_id="E-2", qualification="bsc_agri", experience_years=4,
+                             districts=["Bhandara"], crops=["rice"], specialities=[], languages=["mr"],
+                             verified=False))
+        db.commit()
+        return u.id
+
+
+def test_verifying_and_routing_are_supervisor_work(client, mail):
+    uid = _expert(client, mail, verified=True, supervisor=False)
+    other = _colleague()
+    assert uid != other
+    assert client.post(f"/api/officials/officers/{other}/verify", json={"verified": True}).status_code == 403
+    assert client.post("/api/officials/cases/route").status_code == 403
+    assert client.post("/api/cases/bulk/assign", json={"case_ids": [1]}).status_code == 403
+    # A verified officer still does their own job.
+    assert client.get("/api/cases?status=open").status_code == 200
+
+
+def test_a_supervisor_cannot_reach_across_the_demo_line(client, mail):
+    """A showcase supervisor has no business over a real district's staff."""
+    real = _expert(client, mail, verified=False)
+    client.post("/api/auth/logout")
+    client.post("/api/auth/demo", json={"role": "expert"})    # demo supervisor
+    assert client.post(f"/api/officials/officers/{real}/verify", json={"verified": True}).status_code == 404
+    with SessionLocal() as db:
+        assert db.get(ExpertProfile, real).verified is False
+
+
+def test_the_office_keeps_a_record_of_who_did_what(client, mail):
+    uid = _expert(client, mail, verified=False)
+    client.post("/api/auth/logout")
+    client.post("/api/auth/demo", json={"role": "expert"})
+    with SessionLocal() as db:          # make the new officer demo-side so the demo supervisor may act
+        db.get(User, uid).is_demo = True
+        db.commit()
+    assert client.post(f"/api/officials/officers/{uid}/verify", json={"verified": True}).status_code == 200
+    log = client.get("/api/officials/actions").json()
+    assert log[0]["action"] == "verify_officer"
+    assert log[0]["subject_id"] == uid and log[0]["actor"] == "Demo expert"
+
+
 def test_a_bulk_move_cannot_reach_across_the_demo_line(client, mail):
     """The boundary holds for a selection, not only for one case at a time."""
     case_id = _real_case()

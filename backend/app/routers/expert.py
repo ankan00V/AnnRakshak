@@ -16,7 +16,8 @@ from app.db import get_db
 from app.kb import KB, get_kb
 from app.models import Case, Farm, Problem
 
-router = APIRouter(prefix="/api/cases", tags=["expert"], dependencies=[Depends(auth.require("expert"))])
+router = APIRouter(prefix="/api/cases", tags=["expert"],
+                   dependencies=[Depends(auth.require("expert")), Depends(auth.require_verified)])
 
 
 @router.get("")
@@ -110,7 +111,7 @@ class BulkIn(BaseModel):
     """None = give each case to whichever officer is freest at that moment."""
 
 
-@router.post("/bulk/assign")
+@router.post("/bulk/assign", dependencies=[Depends(auth.require_supervisor)])
 def bulk_assign(body: BulkIn, request: Request, db: Session = Depends(get_db)):
     """Move a selection of cases at once — a morning's triage in one press."""
     me = auth.current_user(request, db)
@@ -122,6 +123,9 @@ def bulk_assign(body: BulkIn, request: Request, db: Session = Depends(get_db)):
             continue
         services.reassign_case(db, case, body.to_user_id)
         moved += 1
+    if moved:
+        office.record(db, actor=me, action="bulk_assign", subject="cases",
+                      detail={"moved": moved, "to_user_id": body.to_user_id})
     db.commit()
     return {"moved": moved, "skipped": skipped}
 
@@ -141,6 +145,8 @@ def reassign(case_id: int, body: ReassignIn, request: Request, db: Session = Dep
         picked = services.reassign_case(db, case, body.to_user_id)
     except ValueError:
         raise HTTPException(400, "not an officer") from None
+    office.record(db, actor=auth.current_user(request, db), action="reassign", subject="case",
+                  subject_id=case.id, detail={"to_user_id": picked})
     db.commit()
     return services.case_brief(db, case) | {"assigned_to": picked}
 

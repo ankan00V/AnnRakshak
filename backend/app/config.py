@@ -141,6 +141,10 @@ MAX_RISK_ALERTS_PER_FARM_PER_DAY = 3
 """Weather/phenology alerts per farm per day. Spread and trap alerts bypass
 this: a confirmed neighbour or a trap over threshold is stronger evidence."""
 
+MAX_ADVISORIES_PER_OFFICER_PER_HOUR = 12
+"""An advisory reaches every farm of a crop in a district. A dozen an hour is a
+busy outbreak; more than that is a mistake or a script."""
+
 SATELLITE_MAX_AGE_DAYS = 10
 """A greenness drop older than this no longer corroborates today's weather rule:
 monsoon cloud can leave the last clear scene a fortnight behind."""
