@@ -9,15 +9,18 @@ import json
 from collections import Counter, defaultdict
 from datetime import UTC, date, datetime, timedelta
 
-from fastapi import APIRouter, Depends, Request
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
-from app import auth, services
+from app import auth, office, services
 from app.db import get_db
 from app.engine import vision
 from app.kb import KB, get_kb, tr
-from app.models import Advisory, Alert, Case, Confirmation, Diagnosis, Farm, Problem
+from app.models import Advisory, Alert, Case, Confirmation, Diagnosis, Farm, Problem, User
 
 router = APIRouter(prefix="/api/officials", tags=["officials"], dependencies=[Depends(auth.require("expert"))])
 
@@ -288,3 +291,99 @@ def run_all(db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
     results = [services.run_risk(db, kb, f) for f in db.scalars(select(Farm)).all()]
     return {"farms": len(results), "alerts_issued": sum(len(r["issued"]) for r in results),
             "weather_sources": dict(Counter(r["weather_source"] for r in results))}
+
+
+# --------------------------------------------------------------------------
+# What the office does, not just what it sees (app/office.py)
+# --------------------------------------------------------------------------
+
+def _me(request: Request, db: Session) -> User | None:
+    return auth.current_user(request, db)
+
+
+def _demo(request: Request, db: Session) -> bool:
+    me = _me(request, db)
+    return bool(me and me.is_demo)
+
+
+@router.get("/worklist")
+def worklist(request: Request, lang: str = "en", db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    """Today, as a list of things to do rather than numbers to admire."""
+    return office.worklist(db, kb, demo=_demo(request, db), lang=lang)
+
+
+class AdvisoryIn(BaseModel):
+    target: str
+    crop: str
+    districts: list[str] = Field(default_factory=list)
+    kind: Literal["advisory", "inspection"] = "advisory"
+    level: Literal["low", "medium", "high"] = "high"
+    note: str | None = Field(default=None, max_length=400)
+
+
+@router.post("/advisories/preview")
+def advisory_preview(body: AdvisoryIn, request: Request,
+                     db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    """Exactly what would be sent, to how many farms, in every language."""
+    me = _me(request, db)
+    if body.target not in kb.targets:
+        raise HTTPException(422, "unknown target")
+    return office.preview(db, kb, target=body.target, crop=body.crop, districts=body.districts,
+                          kind=body.kind, note=body.note,
+                          officer=me.name if me else "The district office",
+                          demo=bool(me and me.is_demo))
+
+
+@router.post("/advisories")
+def issue_advisory(body: AdvisoryIn, request: Request,
+                   db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    """Send it. Every farm of that crop in those districts gets the alert."""
+    me = _me(request, db)
+    if me is None:
+        raise HTTPException(401, "sign in")
+    try:
+        return office.issue(db, kb, target=body.target, crop=body.crop, districts=body.districts,
+                            kind=body.kind, level=body.level, note=body.note, officer=me,
+                            demo=me.is_demo)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@router.get("/advisories")
+def advisory_history(request: Request, db: Session = Depends(get_db)):
+    return office.history(db, demo=_demo(request, db))
+
+
+@router.get("/officers/pending")
+def pending_officers(request: Request, db: Session = Depends(get_db)):
+    """Sign-ups waiting for the district office to let them in."""
+    return office.pending_officers(db, demo=_demo(request, db))
+
+
+class VerifyIn(BaseModel):
+    verified: bool = True
+
+
+@router.post("/officers/{user_id}/verify")
+def verify_officer(user_id: int, body: VerifyIn, db: Session = Depends(get_db)):
+    try:
+        return office.set_verified(db, user_id, body.verified)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
+@router.get("/gaps")
+def gaps(request: Request, db: Session = Depends(get_db)):
+    """Problems officers named that the model cannot: the training backlog."""
+    return office.gaps(db, demo=_demo(request, db))
+
+
+@router.get("/indent")
+def indent(request: Request, lang: str = "en", fmt: Literal["json", "csv"] = "json",
+           db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    """What to stock for what is building, with the 45-day Tricho-card lead."""
+    rows = office.indent(db, kb, demo=_demo(request, db), lang=lang)
+    if fmt == "csv":
+        return Response(office.indent_csv(rows), media_type="text/csv",
+                        headers={"Content-Disposition": 'attachment; filename="indent.csv"'})
+    return rows

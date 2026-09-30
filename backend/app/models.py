@@ -250,6 +250,28 @@ class Case(Base):
     assigned_at: Mapped[datetime | None] = mapped_column(DateTime)
 
 
+class OfficerAdvisory(Base):
+    """One thing the district office sent out, and who sent it.
+
+    An advisory reaches farmers' phones, so it is not enough that the alerts
+    exist: the office needs a record of what was issued, to whom and by whom."""
+
+    __tablename__ = "officer_advisory"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    issued_by: Mapped[int] = mapped_column(ForeignKey("app_user.id"))
+    issued_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    target: Mapped[str] = mapped_column(String(60))
+    crop: Mapped[str] = mapped_column(String(30))
+    districts: Mapped[list] = mapped_column(JSON)
+    kind: Mapped[str] = mapped_column(String(20))
+    """'advisory' — this is building, check your field; 'inspection' — go and look."""
+    level: Mapped[str] = mapped_column(String(10))
+    note: Mapped[str | None] = mapped_column(Text)
+    farms: Mapped[int] = mapped_column(Integer, default=0)
+    is_demo: Mapped[bool] = mapped_column(default=False)
+
+
 class Confirmation(Base):
     """An expert's verdict. The labelled record that 'learns from field
     confirmations' reads — hotspots, the local prior and field accuracy."""
