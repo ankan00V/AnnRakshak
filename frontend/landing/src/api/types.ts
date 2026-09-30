@@ -106,6 +106,99 @@ export interface CaseBrief {
   assigned_name: string | null
 }
 
+/** The district office's own work: what needs a person today. */
+export interface Worklist {
+  overdue_cases: { id: number; district: string; hours: number }[]
+  overdue_count: number
+  unrouted: number[]
+  pending_officers: number
+  building: { target: string; name: string; crop: string; farms: number }[]
+  unnamed_problems: number
+  sla_hours: number
+}
+
+export interface AdvisoryDraft {
+  target: string
+  crop: string
+  districts: string[]
+  kind: 'advisory' | 'inspection'
+  level: 'low' | 'medium' | 'high'
+  note?: string | null
+}
+
+export interface AdvisoryPreview {
+  target: string
+  name: string
+  crop: string
+  kind: string
+  districts: string[]
+  farms: number
+  over_limit: boolean
+  reason: Record<string, string>
+  tasks: Record<string, string[]>
+  by_district: Record<string, number>
+}
+
+export interface AdvisoryIssued {
+  id: number
+  sent: number
+  skipped: number
+  districts: string[]
+  target: string
+  kind: string
+}
+
+export interface AdvisoryRow {
+  id: number
+  issued_by: string
+  issued_at: string | null
+  target: string
+  crop: string
+  districts: string[]
+  kind: string
+  level: string
+  note: string | null
+  farms: number
+}
+
+export interface PendingOfficer {
+  user_id: number
+  name: string
+  email: string | null
+  phone: string | null
+  designation: string
+  organisation: string
+  employee_id: string
+  qualification: string
+  experience_years: number
+  districts: string[]
+  crops: string[]
+}
+
+/** A problem an officer named that the model cannot: the training backlog. */
+export interface GapRow {
+  id: number
+  on: string | null
+  district: string
+  crop: string
+  model_label: string | null
+  expert: string
+  note: string | null
+  referred_to_lab: boolean
+}
+
+export interface IndentRow {
+  target: string
+  name: string
+  crop: string
+  farms: number
+  acres: number
+  districts: string[]
+  high: number
+  inputs: { id: string; short: string; institute?: string | null }[]
+  suggested: { input: string; institute?: string | null; quantity: string; order_by: string | null }[]
+}
+
 export interface OfficerLoad {
   user_id: number
   name: string

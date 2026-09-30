@@ -1,4 +1,8 @@
 import type {
+  AdvisoryDraft,
+  AdvisoryIssued,
+  AdvisoryPreview,
+  AdvisoryRow,
   AlertView,
   AuthOptions,
   CaseBrief,
@@ -10,8 +14,10 @@ import type {
   DiagnoseResult,
   EmailPref,
   Farm,
+  GapRow,
   Home,
   Hotspots,
+  IndentRow,
   KccPanel,
   KrishiAnswer,
   KrishiChip,
@@ -24,6 +30,7 @@ import type {
   OfficerLoad,
   OtpSent,
   OutlookRow,
+  PendingOfficer,
   PesticideBaseline,
   PlaceHit,
   ProblemView,
@@ -36,6 +43,7 @@ import type {
   TargetView,
   TrapReading,
   WeatherView,
+  Worklist,
   Workload,
 } from './types'
 
@@ -166,6 +174,15 @@ export const api = {
   reassignCase: (id: number, toUserId: number | null) =>
     req<CaseBrief>(`/api/cases/${id}/reassign`, json({ to_user_id: toUserId })),
   workload: () => req<Workload>('/api/officials/workload'),
+  worklist: () => req<Worklist>('/api/officials/worklist'),
+  advisoryPreview: (d: AdvisoryDraft) => req<AdvisoryPreview>('/api/officials/advisories/preview', json(d)),
+  issueAdvisory: (d: AdvisoryDraft) => req<AdvisoryIssued>('/api/officials/advisories', json(d)),
+  advisoryHistory: () => req<AdvisoryRow[]>('/api/officials/advisories'),
+  pendingOfficers: () => req<PendingOfficer[]>('/api/officials/officers/pending'),
+  verifyOfficer: (userId: number, verified: boolean) =>
+    req<{ user_id: number; verified: boolean }>(`/api/officials/officers/${userId}/verify`, json({ verified })),
+  gaps: () => req<GapRow[]>('/api/officials/gaps'),
+  indent: () => req<IndentRow[]>('/api/officials/indent'),
   routeCases: () => req<{ considered: number; assigned: number }>('/api/officials/cases/route', { method: 'POST' }),
   resolveCase: (id: number, body: Record<string, unknown>) =>
     req<{ verdict: string; final_label: string; model_label: string | null; spread_alerts: number }>(

@@ -1,130 +1,15 @@
 import { useState } from 'react'
 import {
-  Activity, BrainCircuit, CalendarRange, CloudRain, FlaskConical, Gauge, Layers, Loader2, Map as MapIcon, RefreshCw, ShieldCheck, Stethoscope, Target, TriangleAlert, Users,
+  Activity, BrainCircuit, CalendarRange, CloudRain, FlaskConical, Gauge, Loader2, RefreshCw, ShieldCheck, Stethoscope, Target, TriangleAlert, Users,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import type { ModelCard, OutlookRow, PesticideBaseline, RainfallPanel, Summary } from '../api/types'
 import { useAsync } from '../lib/hooks'
 import { Bone, BoneLines, Card, ErrorBox, Loading, Pill } from '../ui/kit'
-import HotspotMap from './HotspotMap'
-import AccountMenu from '../auth/AccountMenu'
-import BrandMark from '../ui/BrandMark'
 
-const pct = (n: number | null | undefined, d = 0) => (n == null ? '—' : `${(n * 100).toFixed(d)}%`)
+export const pct = (n: number | null | undefined, d = 0) => (n == null ? '—' : `${(n * 100).toFixed(d)}%`)
 
-export default function OfficerDashboard() {
-  const summary = useAsync(() => api.summary(), [])
-  const hotspots = useAsync(() => api.hotspots(), [])
-  const rainfall = useAsync(() => api.rainfall(), [])
-  const model = useAsync(() => api.modelCard(), [])
-  const outlook = useAsync(() => api.outlook(), [])
-  const pesticides = useAsync(() => api.pesticideBaseline(), [])
-  const [layers, setLayers] = useState({ cases: true, alerts: true, radius: true })
-  const [sweep, setSweep] = useState<string | null>(null)
-  const [sweeping, setSweeping] = useState(false)
-
-  const refresh = () => {
-    summary.reload()
-    hotspots.reload()
-    outlook.reload()
-  }
-  const runSweep = async () => {
-    setSweeping(true)
-    try {
-      const r = await api.runAll()
-      const src = Object.entries(r.weather_sources).map(([k, v]) => `${v} ${k}`).join(', ')
-      setSweep(`${r.alerts_issued} new alerts across ${r.farms} farms · weather: ${src}`)
-      refresh()
-    } finally {
-      setSweeping(false)
-    }
-  }
-
-  return (
-    <div className="min-h-screen bg-[#f3efe6] text-soil-dark">
-      <header className="bg-leaf-deep text-cream">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex flex-wrap gap-3 items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight"><BrandMark size={30} />AnnRakshak</Link>
-            <span className="text-cream/40">/</span>
-            <span className="text-sm">Crop-health surveillance · Maharashtra</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link to="/expert" className="text-sm text-cream/70 hover:text-cream px-2">Expert queue</Link>
-            <button onClick={runSweep} disabled={sweeping}
-              className="flex items-center gap-2 rounded-full bg-ochre text-cream text-sm font-medium px-4 py-2 disabled:opacity-60">
-              {sweeping ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              Run risk sweep
-            </button>
-            <AccountMenu />
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-5 space-y-5">
-        {sweep && <div className="rounded-xl bg-leaf/10 text-leaf-deep text-sm px-4 py-2">{sweep}</div>}
-        {summary.error && <ErrorBox error={summary.error} onRetry={refresh} />}
-        {summary.data ? <Kpis s={summary.data} /> : !summary.error && <KpisSkeleton />}
-
-        <div className="grid lg:grid-cols-[1.6fr_1fr] gap-5">
-          <Card className="p-3 flex flex-col">
-            <div className="flex flex-wrap items-center justify-between gap-2 px-1 pb-2">
-              <h2 className="font-semibold flex items-center gap-2"><MapIcon className="w-4 h-4 text-leaf" /> Hotspot map</h2>
-              <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                <Layers className="w-3.5 h-3.5 text-soil-dark/50" />
-                {([['cases', 'Cases'], ['alerts', 'Risk alerts'], ['radius', '5 km spread radius']] as const).map(([k, l]) => (
-                  <button key={k} onClick={() => setLayers((s) => ({ ...s, [k]: !s[k] }))}
-                    className={`px-2.5 py-1 rounded-full border ${layers[k] ? 'bg-leaf-deep text-cream border-leaf-deep' : 'border-soil-dark/20 text-soil-dark/60'}`}>
-                    {l}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="h-[460px]">
-              {hotspots.data ? <HotspotMap data={hotspots.data} layers={layers} /> : <MapSkeleton />}
-            </div>
-            <div className="flex flex-wrap gap-3 px-1 pt-2 text-[11px] text-soil-dark/70">
-              <Legend color="#b0472a" label="Expert-confirmed" />
-              <Legend color="#2f6fa8" label="Awaiting expert" />
-              <Legend color="#c8862d" label="AI-advised (unconfirmed)" />
-              <Legend color="#c8862d" label="Risk alert (dashed)" hollow />
-            </div>
-          </Card>
-
-          <div className="space-y-5">
-            <OfficerLoadPanel />
-            {summary.data ? <GatePanel s={summary.data} /> : !summary.error && <PanelBone rows={3} />}
-            {model.data ? <ModelPanel m={model.data} /> : <PanelBone rows={5} />}
-          </div>
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-5">
-          {summary.data ? <DistrictTable s={summary.data} /> : !summary.error && <PanelBone rows={6} />}
-          {summary.data ? <AccuracyPanel s={summary.data} /> : !summary.error && <PanelBone rows={4} />}
-        </div>
-
-        <div className="grid lg:grid-cols-[1.4fr_1fr] gap-5">
-          {outlook.data ? <OutlookPanel rows={outlook.data} /> : <PanelBone rows={5} />}
-          {pesticides.data?.available && <PesticidePanel p={pesticides.data} />}
-        </div>
-
-        {rainfall.data && <RainfallSection r={rainfall.data} />}
-
-        {summary.data?.includes_demo_data && (
-          <p className="text-xs text-soil-dark/50">Includes demo farms seeded for the showcase. Every case, confirmation and alert shown was produced by running the real flows.</p>
-        )}
-      </div>
-    </div>
-  )
-}
-
-
-
-/** Who is carrying what, and the one lever that fixes a backlog. A queue
- *  building on one desk while another sits empty is the thing a supervisor is
- *  there to catch. */
-function OfficerLoadPanel() {
+export function OfficerLoadPanel() {
   const w = useAsync(() => api.workload(), [])
   const [busy, setBusy] = useState(false)
   const [said, setSaid] = useState<string | null>(null)
@@ -216,8 +101,9 @@ function OfficerLoadPanel() {
   )
 }
 
-/** KPIs, map and side panels, while the six dashboard calls come back. */
-function PanelBone({ rows = 4 }: { rows?: number }) {
+/** The panels the officer pages are built from. Each one fetches what it
+ *  needs, so a page is a choice of panels rather than one giant loader. */
+export function PanelBone({ rows = 4 }: { rows?: number }) {
   return (
     <Card className="p-4 space-y-3">
       <Bone className="h-4 w-40" />
@@ -226,7 +112,7 @@ function PanelBone({ rows = 4 }: { rows?: number }) {
   )
 }
 
-function KpisSkeleton() {
+export function KpisSkeleton() {
   return (
     <Loading label="Loading the district summary">
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -243,7 +129,7 @@ function KpisSkeleton() {
   )
 }
 
-function MapSkeleton() {
+export function MapSkeleton() {
   return (
     <Loading label="Loading the hotspot map" className="h-full">
       <div className="relative h-full w-full overflow-hidden rounded-xl bg-soil-dark/[0.06] motion-safe:animate-pulse">
@@ -256,7 +142,7 @@ function MapSkeleton() {
   )
 }
 
-function Legend({ color, label, hollow }: { color: string; label: string; hollow?: boolean }) {
+export function Legend({ color, label, hollow }: { color: string; label: string; hollow?: boolean }) {
   return (
     <span className="flex items-center gap-1.5">
       <span className="w-3 h-3 rounded-full" style={hollow ? { border: `1.5px dashed ${color}` } : { background: color }} />
@@ -265,7 +151,7 @@ function Legend({ color, label, hollow }: { color: string; label: string; hollow
   )
 }
 
-function Kpis({ s }: { s: Summary }) {
+export function Kpis({ s }: { s: Summary }) {
   const t = s.totals
   const foundRate = t.alerts_answered ? t.alerts_found / t.alerts_answered : null
   const items = [
@@ -291,7 +177,7 @@ function Kpis({ s }: { s: Summary }) {
   )
 }
 
-function GatePanel({ s }: { s: Summary }) {
+export function GatePanel({ s }: { s: Summary }) {
   const g = s.gate_outcomes
   const total = (g.advise ?? 0) + (g.clarify ?? 0) + (g.escalate ?? 0) + (g.retake ?? 0)
   const seg = [
@@ -324,7 +210,7 @@ function GatePanel({ s }: { s: Summary }) {
   )
 }
 
-function ModelPanel({ m }: { m: ModelCard }) {
+export function ModelPanel({ m }: { m: ModelCard }) {
   if (m.is_stub) {
     return (
       <Card className="p-4 border-ochre/40">
@@ -365,7 +251,7 @@ function ModelPanel({ m }: { m: ModelCard }) {
   )
 }
 
-function Stat({ v, l, strong }: { v: string; l: string; strong?: boolean }) {
+export function Stat({ v, l, strong }: { v: string; l: string; strong?: boolean }) {
   return (
     <div className={`rounded-xl p-2 ${strong ? 'bg-leaf/10' : 'bg-cream'}`}>
       <p className={`text-xl font-semibold ${strong ? 'text-leaf-deep' : ''}`}>{v}</p>
@@ -374,7 +260,7 @@ function Stat({ v, l, strong }: { v: string; l: string; strong?: boolean }) {
   )
 }
 
-function DistrictTable({ s }: { s: Summary }) {
+export function DistrictTable({ s }: { s: Summary }) {
   return (
     <Card className="p-4">
       <h2 className="font-semibold flex items-center gap-2"><Target className="w-4 h-4 text-leaf" /> Districts</h2>
@@ -401,7 +287,7 @@ function DistrictTable({ s }: { s: Summary }) {
   )
 }
 
-function AccuracyPanel({ s }: { s: Summary }) {
+export function AccuracyPanel({ s }: { s: Summary }) {
   return (
     <Card className="p-4">
       <h2 className="font-semibold flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-leaf" /> Learning from field confirmations</h2>
@@ -436,7 +322,7 @@ function AccuracyPanel({ s }: { s: Summary }) {
   )
 }
 
-function Sparkline({ series }: { series: [number, number | null, number | null][] }) {
+export function Sparkline({ series }: { series: [number, number | null, number | null][] }) {
   const pts = series.filter((s) => s[2] != null).slice(-60)
   if (pts.length < 2) return null
   const w = 260, h = 56
@@ -456,7 +342,7 @@ function Sparkline({ series }: { series: [number, number | null, number | null][
   )
 }
 
-function RainfallSection({ r }: { r: RainfallPanel }) {
+export function RainfallSection({ r }: { r: RainfallPanel }) {
   return (
     <Card className="p-4">
       <h2 className="font-semibold flex items-center gap-2"><CloudRain className="w-4 h-4 text-leaf" /> Rainfall against the IMD normal</h2>
@@ -489,7 +375,7 @@ const TRIGGER_LABEL: Record<string, string> = {
   weather: 'weather', 'weather+phenology': 'weather + stage', phenology: 'crop stage', trap: 'trap count', spread: 'confirmed nearby',
 }
 
-function OutlookPanel({ rows }: { rows: OutlookRow[] }) {
+export function OutlookPanel({ rows }: { rows: OutlookRow[] }) {
   return (
     <Card className="p-4">
       <h2 className="font-semibold flex items-center gap-2"><CalendarRange className="w-4 h-4 text-leaf" /> Risk outlook — plan preventive action</h2>
@@ -529,7 +415,7 @@ function OutlookPanel({ rows }: { rows: OutlookRow[] }) {
   )
 }
 
-function PesticidePanel({ p }: { p: PesticideBaseline }) {
+export function PesticidePanel({ p }: { p: PesticideBaseline }) {
   const max = Math.max(...p.chemical.map((c) => c[1]), 1)
   const latest = p.chemical[p.chemical.length - 1]
   return (
