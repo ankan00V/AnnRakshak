@@ -5,6 +5,7 @@ import {
 import { api } from '../api/client'
 import type { ModelCard, OutlookRow, PesticideBaseline, RainfallPanel, Summary } from '../api/types'
 import { useAsync } from '../lib/hooks'
+import { Link } from 'react-router-dom'
 import { Bone, BoneLines, Card, ErrorBox, Loading, Pill } from '../ui/kit'
 
 export const pct = (n: number | null | undefined, d = 0) => (n == null ? '—' : `${(n * 100).toFixed(d)}%`)
@@ -151,27 +152,31 @@ export function Legend({ color, label, hollow }: { color: string; label: string;
   )
 }
 
+/** A number that is only a number is a poster. Each tile is the way into the
+ *  queue it counts. */
 export function Kpis({ s }: { s: Summary }) {
   const t = s.totals
   const foundRate = t.alerts_answered ? t.alerts_found / t.alerts_answered : null
   const items = [
-    { icon: Users, label: 'Farms monitored', value: t.farms, sub: `${s.by_district.length} districts` },
-    { icon: Stethoscope, label: 'Photo diagnoses', value: t.diagnoses, sub: `${s.gate_outcomes.advise ?? 0} advised directly` },
+    { icon: Users, label: 'Farms monitored', value: t.farms, sub: `${s.by_district.length} districts`, to: '/officer/map' },
+    { icon: Stethoscope, label: 'Photo diagnoses', value: t.diagnoses, sub: `${s.gate_outcomes.advise ?? 0} advised directly`, to: '/officer/model' },
     // Experts only see what the gate sent them — the hard cases — so this is
     // agreement on escalations, not overall accuracy. Low here = gate did its job.
-    { icon: ShieldCheck, label: 'Expert agreed with AI', value: pct(t.field_accuracy), sub: `${t.confirmed} confirmed · ${t.corrected} corrected, on cases AI flagged unsure` },
-    { icon: Activity, label: 'Expert queue', value: t.open_cases, sub: `${t.resolved_cases} resolved · ${t.referred_to_lab} to lab` },
-    { icon: TriangleAlert, label: 'Risk alerts issued', value: t.alerts_issued, sub: `${t.alerts_answered} inspected · ${pct(foundRate)} found something` },
+    { icon: ShieldCheck, label: 'Expert agreed with AI', value: pct(t.field_accuracy), sub: `${t.confirmed} confirmed · ${t.corrected} corrected, on cases AI flagged unsure`, to: '/officer/model' },
+    { icon: Activity, label: 'Expert queue', value: t.open_cases, sub: `${t.resolved_cases} resolved · ${t.referred_to_lab} to lab`, to: '/officer/queue' },
+    { icon: TriangleAlert, label: 'Risk alerts issued', value: t.alerts_issued, sub: `${t.alerts_answered} inspected · ${pct(foundRate)} found something`, to: '/officer/advisories' },
   ]
   return (
     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-      {items.map(({ icon: Icon, label, value, sub }) => (
-        <Card key={label} className="p-4">
-          <Icon className="w-4 h-4 text-leaf" />
-          <p className="mt-2 text-3xl font-semibold leading-none">{value}</p>
-          <p className="mt-1 text-xs font-medium">{label}</p>
-          <p className="text-[11px] text-soil-dark/50 mt-0.5">{sub}</p>
-        </Card>
+      {items.map(({ icon: Icon, label, value, sub, to }) => (
+        <Link key={label} to={to} className="group">
+          <Card className="p-4 h-full transition-colors group-hover:border-leaf/40 group-hover:bg-leaf/[0.03]">
+            <Icon className="w-4 h-4 text-leaf" />
+            <p className="mt-2 text-3xl font-semibold leading-none">{value}</p>
+            <p className="mt-1 text-xs font-medium">{label}</p>
+            <p className="text-[11px] text-soil-dark/60 mt-0.5">{sub}</p>
+          </Card>
+        </Link>
       ))}
     </div>
   )
@@ -272,7 +277,10 @@ export function DistrictTable({ s }: { s: Summary }) {
           <tbody>
             {s.by_district.map((d) => (
               <tr key={d.district} className="border-t border-soil-dark/5">
-                <td className="py-1.5">{d.district}</td>
+                <td className="py-1.5">
+                  <Link to={`/officer/queue?district=${encodeURIComponent(d.district)}`}
+                    className="hover:text-leaf-deep hover:underline underline-offset-2">{d.district}</Link>
+                </td>
                 <td className="text-right">{d.farms}</td>
                 <td className={`text-right ${d.confirmed ? 'text-ember font-semibold' : ''}`}>{d.confirmed}</td>
                 <td className="text-right">{d.suspected}</td>

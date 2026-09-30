@@ -304,6 +304,56 @@ def indent_csv(rows: list[dict]) -> str:
 
 
 # --------------------------------------------------------------------------
+# One farm, everything the office knows about it
+# --------------------------------------------------------------------------
+
+def farm_dossier(db: Session, kb: KB, farm: Farm, lang: str = "en") -> dict:
+    """What an officer needs before ringing a farmer or sending a scout: the
+    field, what has been found on it, what it has been warned about, and
+    whether anybody went and looked."""
+    from app import services  # noqa: PLC0415  (services imports office's siblings)
+
+    problems = db.scalars(
+        select(Problem).where(Problem.farm_id == farm.id).order_by(Problem.id.desc())
+    ).all()
+    alerts = db.scalars(
+        select(Alert).where(Alert.farm_id == farm.id).order_by(Alert.issued_on.desc(), Alert.id.desc())
+    ).all()[:15]
+    cases = db.execute(
+        select(Case, Problem.target)
+        .join(Problem, Problem.id == Case.problem_id)
+        .where(Problem.farm_id == farm.id).order_by(Case.id.desc())
+    ).all()
+    confirmations = db.scalars(
+        select(Confirmation).join(Problem, Problem.id == Confirmation.problem_id)
+        .where(Problem.farm_id == farm.id).order_by(Confirmation.id.desc())
+    ).all()[:10]
+    answered = [a for a in alerts if a.outcome in ("found", "nothing_found")]
+    return {
+        "farm": services.farm_view(kb, farm, lang),
+        "open_problems": sum(1 for p in problems if p.status == "open"),
+        "problems": [{"id": p.id, "target": p.target,
+                      "name": tr(kb.targets[p.target]["names"], lang) if p.target in kb.targets else None,
+                      "status": p.status, "severity": p.severity,
+                      "opened": p.opened_at.date().isoformat() if p.opened_at else None}
+                     for p in problems[:10]],
+        "cases": [{"id": c.id, "status": c.status, "reason": c.reason, "target": target,
+                   "assigned_to": c.assigned_to,
+                   "created": c.created_at.isoformat() if c.created_at else None} for c, target in cases[:10]],
+        "alerts": [{"id": a.id, "target": a.target,
+                    "name": tr(kb.targets[a.target]["names"], lang) if a.target in kb.targets else a.target,
+                    "level": a.level, "trigger": a.trigger, "issued_on": a.issued_on.isoformat(),
+                    "outcome": a.outcome} for a in alerts],
+        "inspection_rate": round(len(answered) / len(alerts), 2) if alerts else None,
+        "found_rate": round(sum(1 for a in answered if a.outcome == "found") / len(answered), 2)
+        if answered else None,
+        "confirmations": [{"final_label": c.final_label, "verdict": c.verdict, "expert": c.expert_name,
+                           "on": c.created_at.date().isoformat() if c.created_at else None,
+                           "notes": c.notes} for c in confirmations],
+    }
+
+
+# --------------------------------------------------------------------------
 # The worklist
 # --------------------------------------------------------------------------
 

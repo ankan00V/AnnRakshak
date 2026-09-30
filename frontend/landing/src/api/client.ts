@@ -8,12 +8,14 @@ import type {
   CaseBrief,
   CaseBundle,
   CaseListItem,
+  CaseQuery,
   ClarifyResult,
   Contact,
   CropInfo,
   DiagnoseResult,
   EmailPref,
   Farm,
+  FarmDossier,
   GapRow,
   Home,
   Hotspots,
@@ -166,8 +168,16 @@ export const api = {
   labelNote: (farmId: number, product: string, lang: Lang, problemId?: number) =>
     req<{ suggestion: string | null }>('/api/labelcheck/note', json({ farm_id: farmId, product, lang, problem_id: problemId })),
 
-  cases: (status: 'open' | 'resolved' | 'all' = 'open', scope: 'mine' | 'all' = 'all') =>
-    req<CaseListItem[]>(`/api/cases?status=${status}&scope=${scope}`),
+  cases: (query: CaseQuery = {}) => {
+    const p = new URLSearchParams()
+    for (const [k, v] of Object.entries(query)) {
+      if (v !== undefined && v !== null && v !== '' && v !== false) p.set(k, String(v))
+    }
+    return req<CaseListItem[]>(`/api/cases?${p.toString()}`)
+  },
+  bulkAssign: (caseIds: number[], toUserId: number | null) =>
+    req<{ moved: number; skipped: number }>('/api/cases/bulk/assign', json({ case_ids: caseIds, to_user_id: toUserId })),
+  farmDossier: (id: number) => req<FarmDossier>(`/api/officials/farms/${id}`),
   caseBundle: (id: number) => req<CaseBundle>(`/api/cases/${id}`),
   officers: (district?: string) =>
     req<OfficerLoad[]>(`/api/cases/officers/list${district ? `?district=${encodeURIComponent(district)}` : ''}`),

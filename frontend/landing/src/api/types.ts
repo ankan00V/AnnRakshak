@@ -199,6 +199,29 @@ export interface IndentRow {
   suggested: { input: string; institute?: string | null; quantity: string; order_by: string | null }[]
 }
 
+export interface CaseQuery {
+  status?: 'open' | 'resolved' | 'all'
+  scope?: 'mine' | 'all' | 'unassigned'
+  district?: string
+  crop?: string
+  target?: string
+  severity?: string
+  overdue?: boolean
+  q_text?: string
+  sort?: 'oldest' | 'newest'
+}
+
+export interface FarmDossier {
+  farm: Farm
+  open_problems: number
+  problems: { id: number; target: string | null; name: string | null; status: string; severity: string; opened: string | null }[]
+  cases: { id: number; status: string; reason: string; target: string | null; assigned_to: number | null; created: string | null }[]
+  alerts: { id: number; target: string; name: string; level: string; trigger: string; issued_on: string; outcome: string | null }[]
+  inspection_rate: number | null
+  found_rate: number | null
+  confirmations: { final_label: string; verdict: string; expert: string; on: string | null; notes: string | null }[]
+}
+
 export interface OfficerLoad {
   user_id: number
   name: string

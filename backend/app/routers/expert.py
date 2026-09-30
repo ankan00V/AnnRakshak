@@ -3,6 +3,7 @@ decisions. Every verdict becomes a labelled field confirmation."""
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -10,7 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app import auth, services
+from app import auth, office, services
 from app.db import get_db
 from app.kb import KB, get_kb
 from app.models import Case, Farm, Problem
@@ -20,13 +21,19 @@ router = APIRouter(prefix="/api/cases", tags=["expert"], dependencies=[Depends(a
 
 @router.get("")
 def list_cases(status: Literal["open", "resolved", "all"] = "open",
-               scope: Literal["mine", "all"] = "all", lang: str = "en",
+               scope: Literal["mine", "all", "unassigned"] = "all",
+               district: str | None = None, crop: str | None = None, target: str | None = None,
+               severity: str | None = None, overdue: bool = False, q_text: str | None = None,
+               sort: Literal["oldest", "newest", "waiting"] = "oldest",
+               lang: str = "en",
                request: Request = None, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
-    """`scope=mine` is this officer's queue: the cases routed to them, plus any
-    the router could not place, which stay everybody's to pick up."""
+    """The district's queue, filtered the way an officer actually narrows it:
+    their own desk, one district, one crop, one problem, or only what has been
+    waiting too long. `scope=mine` also keeps unplaced cases, which stay
+    everybody's to pick up."""
     me = auth.current_user(request, db)
     q = (select(Case).join(Problem, Problem.id == Case.problem_id)
-         .join(Farm, Farm.id == Problem.farm_id).order_by(Case.id))
+         .join(Farm, Farm.id == Problem.farm_id))
     if me is not None:
         # Showcase data and real farmers' fields never appear in the same queue.
         q = q.where(Farm.is_demo.is_(me.is_demo))
@@ -34,6 +41,22 @@ def list_cases(status: Literal["open", "resolved", "all"] = "open",
         q = q.where(Case.status == status)
     if scope == "mine":
         q = q.where(or_(Case.assigned_to == (me.id if me else None), Case.assigned_to.is_(None)))
+    elif scope == "unassigned":
+        q = q.where(Case.assigned_to.is_(None))
+    if district:
+        q = q.where(Farm.district == district)
+    if crop:
+        q = q.where(Farm.crop == crop)
+    if severity:
+        q = q.where(Problem.severity == severity)
+    if target:
+        q = q.where(Problem.target == target)
+    if overdue:
+        q = q.where(Case.created_at < datetime.now() - timedelta(hours=office.SLA_HOURS))
+    if q_text:
+        like = f"%{q_text.strip()}%"
+        q = q.where(or_(Farm.farmer_name.ilike(like), Farm.village.ilike(like), Farm.district.ilike(like)))
+    q = q.order_by(Case.created_at.asc() if sort in ("oldest", "waiting") else Case.created_at.desc())
     cases = db.scalars(q).all()
     # One trip for the briefs, one for the problems and their farms and photos:
     # the queue is read over a remote database, so per-case queries show.
@@ -79,6 +102,28 @@ def _case_for(request: Request, db: Session, case_id: int) -> Case:
 def get_case(case_id: int, request: Request, lang: str = "en",
              db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
     return services.case_bundle(db, kb, _case_for(request, db, case_id), lang)
+
+
+class BulkIn(BaseModel):
+    case_ids: list[int] = Field(min_length=1, max_length=200)
+    to_user_id: int | None = None
+    """None = give each case to whichever officer is freest at that moment."""
+
+
+@router.post("/bulk/assign")
+def bulk_assign(body: BulkIn, request: Request, db: Session = Depends(get_db)):
+    """Move a selection of cases at once — a morning's triage in one press."""
+    me = auth.current_user(request, db)
+    moved, skipped = 0, 0
+    for case_id in body.case_ids:
+        case = db.get(Case, case_id)
+        if case is None or case.status != "open" or not services.case_is_visible_to(db, case, me):
+            skipped += 1
+            continue
+        services.reassign_case(db, case, body.to_user_id)
+        moved += 1
+    db.commit()
+    return {"moved": moved, "skipped": skipped}
 
 
 class ReassignIn(BaseModel):

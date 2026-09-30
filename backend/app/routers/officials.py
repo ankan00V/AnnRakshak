@@ -372,6 +372,17 @@ def verify_officer(user_id: int, body: VerifyIn, db: Session = Depends(get_db)):
         raise HTTPException(404, str(exc)) from exc
 
 
+@router.get("/farms/{farm_id}")
+def farm_dossier(farm_id: int, request: Request, lang: str = "en",
+                 db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    """One farm, everything the office knows about it."""
+    farm = db.get(Farm, farm_id)
+    me = _me(request, db)
+    if farm is None or (me is not None and farm.is_demo != me.is_demo):
+        raise HTTPException(404, "farm not found")
+    return office.farm_dossier(db, kb, farm, lang)
+
+
 @router.get("/gaps")
 def gaps(request: Request, db: Session = Depends(get_db)):
     """Problems officers named that the model cannot: the training backlog."""

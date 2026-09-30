@@ -358,6 +358,14 @@ def test_a_demo_reviewer_never_sees_a_real_farmers_case(client, mail):
         "expert_name": "Demo expert"}).status_code == 404
 
 
+def test_a_bulk_move_cannot_reach_across_the_demo_line(client, mail):
+    """The boundary holds for a selection, not only for one case at a time."""
+    case_id = _real_case()
+    assert client.post("/api/auth/demo", json={"role": "expert"}).status_code == 200
+    out = client.post("/api/cases/bulk/assign", json={"case_ids": [case_id], "to_user_id": None}).json()
+    assert out == {"moved": 0, "skipped": 1}
+
+
 def test_a_real_officer_is_not_shown_showcase_data(client, mail):
     """The boundary holds both ways: demo farms are not a real officer's work."""
     assert expert_signup(client, mail).status_code == 201

@@ -226,6 +226,42 @@ def test_a_sentinel_verdict_teaches_the_prior_nothing(client):
         assert all(r.confirmed == 0 for r in rows)  # only the model's own guess was marked wrong
 
 
+def test_the_queue_narrows_the_way_an_officer_narrows_it(client):
+    """District, crop, search and 'past the SLA' are how a queue becomes work."""
+    _officers(2)
+    for _ in range(2):
+        diagnose(client, 1, "unsure")          # farm 1: rice, Bhandara
+    diagnose(client, 4, "unsure")              # farm 4: cotton, Yavatmal
+
+    def ids(**q):
+        return {c["id"] for c in client.get("/api/cases", params={"status": "open", **q}).json()}
+
+    everything = ids()
+    assert len(everything) == 3
+    assert len(ids(district="Bhandara")) == 2
+    assert len(ids(crop="cotton")) == 1
+    assert ids(district="Bhandara") | ids(district="Yavatmal") == everything
+    assert ids(q_text="Yavatmal") == ids(district="Yavatmal")
+    assert ids(overdue=True) == set()          # nothing has been waiting a day yet
+
+
+def test_a_morning_of_triage_moves_in_one_press(client):
+    ids = _officers(3)
+    cases = [diagnose(client, 1, "unsure")["case"]["id"] for _ in range(4)]
+    with SessionLocal() as db:
+        from app.models import Case
+        for c in db.scalars(select(Case)).all():      # pile them all on one desk
+            c.assigned_to = ids[0]
+        db.commit()
+
+    out = client.post("/api/cases/bulk/assign", json={"case_ids": cases, "to_user_id": None}).json()
+    assert out == {"moved": 4, "skipped": 0}
+    with SessionLocal() as db:
+        from app.models import Case
+        holders = Counter(db.get(Case, cid).assigned_to for cid in cases)
+    assert max(holders.values()) <= 2 and len(holders) >= 2   # spread, not stacked
+
+
 def test_stub_is_always_labelled(client):
     r = diagnose(client, 1, "clear")
     assert r["is_stub"] is True and r["model_version"] == "stub-0"

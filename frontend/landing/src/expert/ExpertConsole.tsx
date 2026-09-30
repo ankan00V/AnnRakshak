@@ -27,7 +27,7 @@ export default function ExpertConsole() {
   const [tab, setTab] = useState<'open' | 'resolved'>('open')
   // The district's queue is the default view; an officer narrows to their own.
   const [scope, setScope] = useState<'mine' | 'all'>('all')
-  const list = useAsync(() => api.cases(tab, scope), [tab, scope])
+  const list = useAsync(() => api.cases({ status: tab, scope }), [tab, scope])
   const [selected, setSelected] = useState<number | null>(null)
 
   return (
@@ -229,7 +229,17 @@ function HandOff({ b, onDone }: { b: CaseBundle; onDone: () => void }) {
   )
 }
 
-function CaseRow({ c, active, onClick }: { c: CaseListItem; active: boolean; onClick: () => void }) {
+/** How long this farmer has been waiting. Past a day it is the first thing an
+ *  officer should see about a case. */
+function Waiting({ c, active }: { c: CaseListItem; active: boolean }) {
+  if (!c.created_at || c.status !== 'open') return null
+  const hours = (Date.now() - new Date(c.created_at).getTime()) / 3.6e6
+  if (hours < 6) return null
+  const label = hours < 48 ? `${Math.round(hours)} h` : `${Math.round(hours / 24)} days`
+  return <Pill tone={active ? 'dark' : hours > 24 ? 'ember' : 'neutral'}>waiting {label}</Pill>
+}
+
+export function CaseRow({ c, active, onClick }: { c: CaseListItem; active: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick}
       className={`w-full text-left flex gap-3 rounded-2xl p-3 border transition-colors ${active ? 'bg-leaf-deep text-cream border-leaf-deep' : 'bg-white border-soil-dark/10 hover:border-leaf/40'}`}>
@@ -249,6 +259,7 @@ function CaseRow({ c, active, onClick }: { c: CaseListItem; active: boolean; onC
           {c.assigned_name
             ? <Pill tone={active ? 'dark' : 'leaf'}>{c.assigned_name}</Pill>
             : <Pill tone={active ? 'dark' : 'ochre'}>unassigned</Pill>}
+          <Waiting c={c} active={active} />
         </span>
       </span>
     </button>
@@ -266,7 +277,7 @@ function useElapsed() {
   return { s, label: `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` }
 }
 
-function CaseView({ id, onBack, onResolved }: { id: number; onBack: () => void; onResolved: () => void }) {
+export function CaseView({ id, onBack, onResolved }: { id: number; onBack: () => void; onResolved: () => void }) {
   const bundle = useAsync(() => api.caseBundle(id), [id])
   if (bundle.loading && !bundle.data) return <CaseSkeleton />
   if (bundle.error) return <ErrorBox error={bundle.error} onRetry={bundle.reload} />
@@ -287,7 +298,7 @@ function CaseRowBone() {
   )
 }
 
-function QueueSkeleton() {
+export function QueueSkeleton() {
   return (
     <Loading label="Loading the queue">
       <ul className="space-y-2">
@@ -338,7 +349,10 @@ function CaseDetail({ b, onBack, onResolved }: { b: CaseBundle; onBack: () => vo
           <h1 className="font-instrument-serif text-3xl leading-tight">Case #{b.case.id}</h1>
           <p className="text-sm text-soil-dark/60 flex items-center gap-1">
             <MapPin className="w-3.5 h-3.5" />
-            {b.farm.farmer_name} · {b.farm.crop_name} · {b.farm.district} · {b.farm.stage_name} ({b.farm.das} days) · {b.farm.area_acres} acres
+            <Link to={`/officer/farm/${b.farm.id}`} className="font-medium text-soil-dark hover:text-leaf-deep hover:underline underline-offset-2">
+              {b.farm.farmer_name}
+            </Link>
+            · {b.farm.crop_name} · {b.farm.district} · {b.farm.stage_name} ({b.farm.das} days) · {b.farm.area_acres} acres
           </p>
         </div>
         <div className="flex items-center gap-2">

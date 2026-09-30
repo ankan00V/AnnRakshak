@@ -21,6 +21,8 @@ const ProblemDetail = lazy(() => import('./farmer/screens/History').then((m) => 
 const ExpertConsole = lazy(() => import('./expert/ExpertConsole'))
 const OfficerShell = lazy(() => import('./officer/OfficerShell'))
 const OfficerToday = lazy(() => import('./officer/pages/Today'))
+const OfficerQueue = lazy(() => import('./officer/pages/Queue'))
+const OfficerFarm = lazy(() => import('./officer/pages/FarmPage'))
 const OfficerMap = lazy(() => import('./officer/pages/MapPage'))
 const OfficerAdvisories = lazy(() => import('./officer/pages/Advisories'))
 const OfficerInputs = lazy(() => import('./officer/pages/Inputs'))
@@ -60,6 +62,8 @@ export default function App() {
             <Route path="/expert" element={<RequireRole role="expert"><ExpertConsole /></RequireRole>} />
             <Route path="/officer" element={<RequireRole role="expert"><OfficerShell /></RequireRole>}>
               <Route index element={<OfficerToday />} />
+              <Route path="queue" element={<OfficerQueue />} />
+              <Route path="farm/:id" element={<OfficerFarm />} />
               <Route path="map" element={<OfficerMap />} />
               <Route path="advisories" element={<OfficerAdvisories />} />
               <Route path="inputs" element={<OfficerInputs />} />

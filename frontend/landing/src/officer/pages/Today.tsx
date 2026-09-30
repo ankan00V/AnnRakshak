@@ -26,6 +26,14 @@ export default function Today() {
     }
   }
 
+  // Four rows reading "0" is a scoreboard again; say it once instead.
+  const clear = !work.data ? [] : [
+    work.data.overdue_count === 0,
+    work.data.unrouted.length === 0,
+    work.data.pending_officers === 0,
+    work.data.unnamed_problems === 0,
+  ].filter(Boolean)
+
   return (
     <>
       {work.error && <Card className="p-4"><ErrorBox error={work.error} onRetry={work.reload} /></Card>}
@@ -38,7 +46,13 @@ export default function Today() {
               A farmer who has waited more than {work.data.sla_hours} hours for a human has waited too long.
             </p>
 
-            <ul className="mt-4 divide-y divide-soil-dark/10">
+            {clear.length === 4 ? (
+              <p className="mt-4 rounded-2xl bg-leaf/5 border border-leaf/25 p-4 text-sm text-leaf-deep">
+                All clear: nothing overdue, every case on a desk, no officer waiting to be verified,
+                and no problem the model could not name.
+              </p>
+            ) : null}
+            <ul className={`mt-4 divide-y divide-soil-dark/10 ${clear.length === 4 ? 'hidden' : ''}`}>
               <Row
                 icon={AlertTriangle}
                 tone={work.data.overdue_count > 0 ? 'ember' : 'leaf'}
@@ -104,8 +118,11 @@ export default function Today() {
                       <span className="block text-sm font-medium truncate">{b.name}</span>
                       <span className="block text-[11px] text-soil-dark/60">{b.crop}</span>
                     </span>
-                    <span className="flex items-center gap-3 shrink-0">
-                      <span className="text-sm tabular-nums text-soil-dark/70">{b.farms} farms</span>
+                    <span className="flex items-center gap-2 shrink-0">
+                      <Link to={`/officer/queue?target=${b.target}`}
+                        className="text-xs tabular-nums text-soil-dark/70 hover:text-leaf-deep hover:underline underline-offset-2">
+                        {b.farms} farms
+                      </Link>
                       <Link to={`/officer/advisories?target=${b.target}&crop=${b.crop}`}
                         className="rounded-full bg-ochre/15 text-[#8a5a17] text-xs font-medium px-3 py-1.5 hover:bg-ochre/25">
                         Advise

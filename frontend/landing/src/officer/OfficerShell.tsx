@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BookOpen, BrainCircuit, ClipboardList, Loader2, Map as MapIcon, Megaphone, Package, RefreshCw, Users } from 'lucide-react'
+import { BookOpen, BrainCircuit, ClipboardCheck, ClipboardList, Loader2, Map as MapIcon, Megaphone, Package, RefreshCw, Users } from 'lucide-react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { api } from '../api/client'
 import AccountMenu from '../auth/AccountMenu'
@@ -9,6 +9,7 @@ import BrandMark from '../ui/BrandMark'
  *  the whole district's surveillance no longer arrives as a single scroll. */
 const TABS = [
   { to: '/officer', end: true, icon: ClipboardList, label: 'Today' },
+  { to: '/officer/queue', icon: ClipboardCheck, label: 'Queue' },
   { to: '/officer/map', icon: MapIcon, label: 'Map' },
   { to: '/officer/advisories', icon: Megaphone, label: 'Advisories' },
   { to: '/officer/inputs', icon: Package, label: 'Inputs' },
@@ -45,7 +46,6 @@ export default function OfficerShell() {
             <span className="text-sm">Crop-health surveillance · Maharashtra</span>
           </div>
           <div className="flex items-center gap-2">
-            <Link to="/expert" className="text-sm text-cream/70 hover:text-cream px-2">Expert queue</Link>
             <button onClick={runSweep} disabled={sweeping}
               className="flex items-center gap-2 rounded-full bg-ochre text-cream text-sm font-medium px-4 py-2 disabled:opacity-60">
               {sweeping ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
