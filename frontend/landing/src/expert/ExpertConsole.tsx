@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import {
-  ArrowLeft, Bug, CheckCircle2, ClipboardList, FlaskRound, HelpCircle, Inbox, Loader2, MapPin, Send, Timer, UserCheck,
-} from 'lucide-react'
+import { ArrowLeft, Bug, CheckCircle2, ClipboardList, FlaskRound, HelpCircle, Inbox, Loader2, MapPin, Send, Timer, UserCheck, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import type { CaseBundle, CaseListItem, CaseSatellite } from '../api/types'
@@ -27,7 +25,8 @@ const REASON_LABEL: Record<string, string> = {
 
 export default function ExpertConsole() {
   const [tab, setTab] = useState<'open' | 'resolved'>('open')
-  const [scope, setScope] = useState<'mine' | 'all'>('mine')
+  // The district's queue is the default view; an officer narrows to their own.
+  const [scope, setScope] = useState<'mine' | 'all'>('all')
   const list = useAsync(() => api.cases(tab, scope), [tab, scope])
   const [selected, setSelected] = useState<number | null>(null)
 
@@ -165,6 +164,71 @@ function SatelliteEvidence({ s }: { s: CaseSatellite }) {
   )
 }
 
+
+/** "Bhandara, Gondia +3" — a roving officer covers too many to list. */
+function districtLabel(districts: string[]): string {
+  if (districts.length === 0) return 'no district'
+  const shown = districts.slice(0, 2).join(', ')
+  return districts.length > 2 ? `${shown} +${districts.length - 2}` : shown
+}
+
+/** Hand a case on: wrong speciality, a queue too long, or off for the day. */
+function HandOff({ b, onDone }: { b: CaseBundle; onDone: () => void }) {
+  const officers = useAsync(() => api.officers(b.farm.district), [b.farm.district])
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const hand = async (to: number | null) => {
+    setBusy(true)
+    setError(null)
+    try {
+      await api.reassignCase(b.case.id, to)
+      setOpen(false)
+      onDone()
+    } catch (e) {
+      setError(e as Error)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const others = (officers.data ?? []).filter((o) => o.user_id !== b.case.assigned_to)
+  return (
+    <div className="relative">
+      <button onClick={() => setOpen((v) => !v)} disabled={busy}
+        className="flex items-center gap-1.5 text-xs font-medium text-soil-dark/70 hover:text-soil-dark rounded-full border border-soil-dark/15 px-3 py-1.5 disabled:opacity-50">
+        {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Users className="w-3.5 h-3.5" />}
+        {b.case.assigned_name ? `With ${b.case.assigned_name}` : 'Unassigned'} · hand on
+      </button>
+      {open && (
+        <div className="absolute right-0 z-20 mt-1 w-72 rounded-2xl border border-soil-dark/15 bg-white shadow-xl p-2">
+          <button onClick={() => hand(null)}
+            className="w-full text-left rounded-xl px-3 py-2 text-sm hover:bg-cream">
+            <span className="font-medium">Whoever is freest</span>
+            <span className="block text-[11px] text-soil-dark/60">Routes by open cases, then who has waited longest</span>
+          </button>
+          <div className="my-1 border-t border-soil-dark/10" />
+          {others.length === 0 && (
+            <p className="px-3 py-2 text-xs text-soil-dark/60">No other officer is verified yet.</p>
+          )}
+          {others.map((o) => (
+            <button key={o.user_id} onClick={() => hand(o.user_id)}
+              className="w-full text-left rounded-xl px-3 py-2 text-sm hover:bg-cream flex items-center justify-between gap-2">
+              <span>
+                {o.name}
+                <span className="block text-[11px] text-soil-dark/60">{districtLabel(o.districts)}</span>
+              </span>
+              <span className="text-[11px] tabular-nums text-soil-dark/60 shrink-0">{o.open_cases} open</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {error && <p className="mt-1 text-[11px] text-ember">{error.message}</p>}
+    </div>
+  )
+}
+
 function CaseRow({ c, active, onClick }: { c: CaseListItem; active: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick}
@@ -277,11 +341,14 @@ function CaseDetail({ b, onBack, onResolved }: { b: CaseBundle; onBack: () => vo
             {b.farm.farmer_name} · {b.farm.crop_name} · {b.farm.district} · {b.farm.stage_name} ({b.farm.das} days) · {b.farm.area_acres} acres
           </p>
         </div>
-        {open && (
-          <span className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ${timer.s > 180 ? 'bg-ember/10 text-ember' : 'bg-leaf/10 text-leaf-deep'}`}>
-            <Timer className="w-4 h-4" /> {timer.label} <span className="text-xs opacity-70">/ 3:00 target</span>
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {open && <HandOff b={b} onDone={onResolved} />}
+          {open && (
+            <span className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ${timer.s > 180 ? 'bg-ember/10 text-ember' : 'bg-leaf/10 text-leaf-deep'}`}>
+              <Timer className="w-4 h-4" /> {timer.label} <span className="text-xs opacity-70">/ 3:00 target</span>
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-[1.1fr_1fr] gap-4">
@@ -404,7 +471,7 @@ function Decision({ b, top, elapsed, onResolved }: { b: CaseBundle; top?: string
   const [notes, setNotes] = useState('')
   const [lab, setLab] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [done, setDone] = useState<{ verdict: string; spread: number; secs: number } | null>(null)
+  const [done, setDone] = useState<{ verdict: string; spread: number; secs: number; label: string } | null>(null)
   const [error, setError] = useState<Error | null>(null)
   const groups = useMemo(() => {
     const photo = b.candidate_labels.filter((c) => c.tier === 'diagnosable')
@@ -420,7 +487,7 @@ function Decision({ b, top, elapsed, onResolved }: { b: CaseBundle; top?: string
       const r = await api.resolveCase(b.case.id, {
         verdict: label === top ? 'confirmed' : 'corrected', final_label: label, expert_name: name, notes: notes || null, referred_to_lab: lab,
       })
-      setDone({ verdict: r.verdict, spread: r.spread_alerts, secs: elapsed })
+      setDone({ verdict: r.verdict, spread: r.spread_alerts, secs: elapsed, label })
       onResolved()
     } catch (e) {
       setError(e as Error)
@@ -434,9 +501,23 @@ function Decision({ b, top, elapsed, onResolved }: { b: CaseBundle; top?: string
       <Card className="p-5 border-leaf/40 bg-leaf/5">
         <p className="flex items-center gap-2 font-semibold text-leaf-deep"><CheckCircle2 className="w-5 h-5" /> {done.verdict === 'confirmed' ? 'Confirmed' : 'Corrected'} in {Math.floor(done.secs / 60)}:{String(done.secs % 60).padStart(2, '0')}</p>
         <ul className="mt-2 text-sm space-y-1 text-soil-dark/80">
-          <li>• The farmer now sees the expert-confirmed advisory in their language.</li>
-          <li>• {done.spread} nearby {b.farm.crop} farm{done.spread === 1 ? '' : 's'} within 5 km received an inspection alert.</li>
-          <li>• District confirmation counts updated — this is how the system learns from field confirmations.</li>
+          {done.label === 'healthy' ? (
+            <>
+              <li>• The farmer is told their crop is fine — no treatment, nothing to buy.</li>
+              <li>• No neighbour was warned, and the model's guess is on record as wrong.</li>
+            </>
+          ) : done.label === 'other' ? (
+            <>
+              <li>• The farmer sees your note and the referral, and no advisory the app cannot stand behind.</li>
+              <li>• Logged as a problem the model cannot yet name.</li>
+            </>
+          ) : (
+            <>
+              <li>• The farmer now sees the expert-confirmed advisory in their language.</li>
+              <li>• {done.spread} nearby {b.farm.crop} farm{done.spread === 1 ? '' : 's'} within 5 km received an inspection alert.</li>
+              <li>• District confirmation counts updated — this is how the system learns from field confirmations.</li>
+            </>
+          )}
         </ul>
       </Card>
     )
@@ -455,6 +536,12 @@ function Decision({ b, top, elapsed, onResolved }: { b: CaseBundle; top?: string
                 {items.map((c) => <option key={c.id} value={c.id}>{c.name}{c.id === top ? ' — model top guess' : ''}</option>)}
               </optgroup>
             ))}
+            {/* The model only knows what it was trained on. A crop can be fine,
+                and a real problem can sit outside the knowledge base entirely. */}
+            <optgroup label="Neither">
+              <option value="healthy">Healthy — nothing wrong with this crop</option>
+              <option value="other">Something else — not in this list</option>
+            </optgroup>
           </select>
         </label>
         <label className="block text-xs text-soil-dark/60">
@@ -463,18 +550,34 @@ function Decision({ b, top, elapsed, onResolved }: { b: CaseBundle; top?: string
         </label>
       </div>
       <label className="block text-xs text-soil-dark/60">
-        Note to farmer (optional)
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="mt-1 w-full rounded-xl border border-soil-dark/20 px-3 py-2 bg-cream/50 text-sm" />
+        {label === 'other' ? 'What is it? (required — the farmer is shown this)' : 'Note to farmer (optional)'}
+        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
+          placeholder={label === 'other' ? 'Name the problem, e.g. "Zinc deficiency — interveinal chlorosis on older leaves"' : undefined}
+          className={`mt-1 w-full rounded-xl border px-3 py-2 bg-cream/50 text-sm ${
+            label === 'other' && !notes.trim() ? 'border-ember/50' : 'border-soil-dark/20'}`} />
       </label>
+      {label === 'healthy' && (
+        <p className="text-xs rounded-xl bg-leaf/10 text-leaf-deep p-2.5">
+          Recorded as healthy: no advisory, no spread alert, and the model's guess is marked wrong.
+        </p>
+      )}
+      {label === 'other' && (
+        <p className="text-xs rounded-xl bg-ochre/10 text-[#8a5a17] p-2.5">
+          Outside the knowledge base, so the app offers no treatment of its own — the farmer sees your
+          note and the referral. It is logged as a gap for the team.
+        </p>
+      )}
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={lab} onChange={(e) => setLab(e.target.checked)} className="w-4 h-4 accent-leaf-deep" />
         <FlaskRound className="w-4 h-4 text-soil-dark/60" /> Refer sample to a diagnostic lab / KVK
       </label>
       {error && <ErrorBox error={error} />}
-      <button onClick={submit} disabled={busy || !label || !name.trim()}
+      <button onClick={submit} disabled={busy || !label || !name.trim() || (label === 'other' && !notes.trim())}
         className="w-full min-h-[48px] rounded-full bg-leaf-deep text-cream text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50">
         {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-        {label === top ? 'Confirm model diagnosis' : 'Correct and send'}
+        {label === 'healthy' ? 'Record as healthy'
+          : label === 'other' ? 'Record and refer'
+            : label === top ? 'Confirm model diagnosis' : 'Correct and send'}
       </button>
     </Card>
   )

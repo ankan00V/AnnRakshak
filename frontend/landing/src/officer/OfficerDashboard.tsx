@@ -93,6 +93,7 @@ export default function OfficerDashboard() {
           </Card>
 
           <div className="space-y-5">
+            <OfficerLoadPanel />
             {summary.data ? <GatePanel s={summary.data} /> : !summary.error && <PanelBone rows={3} />}
             {model.data ? <ModelPanel m={model.data} /> : <PanelBone rows={5} />}
           </div>
@@ -118,6 +119,102 @@ export default function OfficerDashboard() {
   )
 }
 
+
+
+/** Who is carrying what, and the one lever that fixes a backlog. A queue
+ *  building on one desk while another sits empty is the thing a supervisor is
+ *  there to catch. */
+function OfficerLoadPanel() {
+  const w = useAsync(() => api.workload(), [])
+  const [busy, setBusy] = useState(false)
+  const [said, setSaid] = useState<string | null>(null)
+
+  const route = async () => {
+    setBusy(true)
+    try {
+      const r = await api.routeCases()
+      setSaid(r.assigned === 0
+        ? 'Nothing waiting to be routed.'
+        : `${r.assigned} case${r.assigned === 1 ? '' : 's'} routed to the freest officers.`)
+      w.reload()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (w.error) return <Card className="p-4"><ErrorBox error={w.error} onRetry={w.reload} /></Card>
+  if (!w.data) return <PanelBone rows={5} />
+  // A district office cares about the desks carrying work, longest wait first.
+  // Eighty idle names below them is not information.
+  const officers = w.data.officers
+  const carrying = officers
+    .filter((o) => o.open_cases > 0)
+    .sort((a, b) => b.open_cases - a.open_cases || (b.oldest_wait_hours ?? 0) - (a.oldest_wait_hours ?? 0))
+    .slice(0, 8)
+  const idle = officers.length - officers.filter((o) => o.open_cases > 0).length
+  const busiest = Math.max(1, ...carrying.map((o) => o.open_cases))
+  const districts = new Set(officers.flatMap((o) => o.districts)).size
+
+  return (
+    <Card className="p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-semibold flex items-center gap-2"><Users className="w-4 h-4 text-leaf" /> District officers</h2>
+        <span className="text-xs text-soil-dark/60">
+          {officers.length} officers · {districts} districts · {w.data.open_total} open
+        </span>
+      </div>
+
+      {officers.length === 0 ? (
+        <p className="mt-3 text-sm text-soil-dark/70">
+          No verified officer yet. Cases stay in everyone's queue until the district office verifies one.
+        </p>
+      ) : carrying.length === 0 ? (
+        <p className="mt-3 text-sm text-soil-dark/70">Every desk is clear — no case is waiting on a person.</p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {carrying.map((o) => (
+            <li key={o.user_id} className="flex items-center gap-3">
+              <span className="w-40 shrink-0 truncate text-sm">
+                {o.name}
+                <span className="block text-[11px] text-soil-dark/60 truncate">
+                  {o.districts.length > 2 ? `${o.districts.slice(0, 2).join(', ')} +${o.districts.length - 2}` : (o.districts.join(', ') || 'no district')}
+                </span>
+              </span>
+              <span className="flex-1 h-2.5 rounded-full bg-soil-dark/10 overflow-hidden" role="img"
+                aria-label={`${o.open_cases} open cases`}>
+                <span className={`block h-full rounded-full ${o.open_cases >= busiest && busiest > 1 ? 'bg-ember' : 'bg-leaf'}`}
+                  style={{ width: `${(o.open_cases / busiest) * 100}%` }} />
+              </span>
+              <span className="w-24 shrink-0 text-right text-xs tabular-nums text-soil-dark/70">
+                {o.open_cases} open
+                {o.oldest_wait_hours != null && (
+                  <span className={`block ${o.oldest_wait_hours > 24 ? 'text-ember' : 'text-soil-dark/50'}`}>
+                    {o.oldest_wait_hours < 1 ? 'under an hour' : `${Math.round(o.oldest_wait_hours)} h waiting`}
+                  </span>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {idle > 0 && carrying.length > 0 && (
+        <p className="mt-3 text-xs text-soil-dark/60">
+          {idle} other officer{idle === 1 ? '' : 's'} holding nothing.
+        </p>
+      )}
+
+      {w.data.unassigned > 0 && (
+        <button onClick={route} disabled={busy}
+          className="mt-4 w-full min-h-[44px] rounded-full bg-leaf-deep text-cream text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-60">
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+          Route {w.data.unassigned} waiting case{w.data.unassigned === 1 ? '' : 's'}
+        </button>
+      )}
+      {said && <p className="mt-2 text-xs text-leaf-deep">{said}</p>}
+    </Card>
+  )
+}
 
 /** KPIs, map and side panels, while the six dashboard calls come back. */
 function PanelBone({ rows = 4 }: { rows?: number }) {

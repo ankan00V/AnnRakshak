@@ -106,6 +106,22 @@ export interface CaseBrief {
   assigned_name: string | null
 }
 
+export interface OfficerLoad {
+  user_id: number
+  name: string
+  designation: string
+  districts: string[]
+  open_cases: number
+  resolved_cases: number
+  oldest_wait_hours: number | null
+}
+
+export interface Workload {
+  officers: OfficerLoad[]
+  unassigned: number
+  open_total: number
+}
+
 /** This field's greenness from clear Sentinel-2 / Landsat 8 scenes. */
 export interface CaseSatellite {
   latest: { on: string; mean: number; source: string }
