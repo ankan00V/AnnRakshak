@@ -1,11 +1,27 @@
-import { useMemo, useState } from 'react'
-import { CheckSquare, Filter, Loader2, Search, Square, Timer, Users, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  Bell, BookmarkPlus, CheckSquare, Clock, Filter, Keyboard, Loader2, Search, Square, Timer, Users, X,
+} from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../../api/client'
 import type { CaseQuery } from '../../api/types'
 import { useAsync } from '../../lib/hooks'
 import { Card, ErrorBox } from '../../ui/kit'
+import { useToast } from '../../ui/Toast'
 import { CaseRow, CaseView, QueueSkeleton } from '../../expert/ExpertConsole'
+
+const VIEWS_KEY = 'ar.officer.views'
+const POLL_MS = 30000
+
+type SavedView = { name: string; query: string }
+
+function savedViews(): SavedView[] {
+  try {
+    return JSON.parse(localStorage.getItem(VIEWS_KEY) || '[]') as SavedView[]
+  } catch {
+    return []
+  }
+}
 
 const CROPS = ['rice', 'maize', 'cotton', 'soybean']
 const SLA_HOURS = 24
@@ -22,7 +38,11 @@ export default function Queue() {
   const [selected, setSelected] = useState<number | null>(null)
   const [picked, setPicked] = useState<Set<number>>(new Set())
   const [busy, setBusy] = useState(false)
-  const [said, setSaid] = useState<string | null>(null)
+  const [views, setViews] = useState<SavedView[]>(savedViews)
+  const [fresh, setFresh] = useState(0)
+  const [showKeys, setShowKeys] = useState(false)
+  const { say, complain } = useToast()
+  const cursor = useRef(0)
 
   const query: CaseQuery = useMemo(() => ({
     status: (params.get('status') as CaseQuery['status']) ?? 'open',
@@ -45,7 +65,6 @@ export default function Queue() {
     else next.set(k, v)
     setParams(next, { replace: true })
     setPicked(new Set())
-    setSaid(null)
   }
 
   const rows = list.data ?? []
@@ -60,18 +79,104 @@ export default function Queue() {
   })
 
   const move = async (toUserId: number | null) => {
+    const ids = [...picked]
+    const before = new Map(rows.filter((c) => picked.has(c.id)).map((c) => [c.id, c.assigned_to]))
     setBusy(true)
     try {
-      const r = await api.bulkAssign([...picked], toUserId)
-      setSaid(`${r.moved} case${r.moved === 1 ? '' : 's'} moved${r.skipped ? `, ${r.skipped} skipped` : ''}.`)
+      const r = await api.bulkAssign(ids, toUserId)
       setPicked(new Set())
       list.reload()
+      say(`${r.moved} case${r.moved === 1 ? '' : 's'} moved${r.skipped ? `, ${r.skipped} skipped` : ''}.`,
+        async () => {
+          // Put each one back where it was, one call per previous holder.
+          const groups = new Map<number | null, number[]>()
+          for (const [id, holder] of before) groups.set(holder, [...(groups.get(holder) ?? []), id])
+          for (const [holder, list_] of groups) await api.bulkAssign(list_, holder)
+          list.reload()
+        })
+    } catch (e) {
+      complain((e as Error).message)
     } finally {
       setBusy(false)
     }
   }
 
+  const snooze = useCallback(async (id: number) => {
+    try {
+      await api.snoozeCase(id, 24)
+      list.reload()
+      say('Set aside until tomorrow.', async () => { await api.wakeCase(id); list.reload() })
+    } catch (e) {
+      complain((e as Error).message)
+    }
+  }, [list, say, complain])
+
+  const takeIt = useCallback(async (id: number) => {
+    try {
+      const me = await api.me()
+      await api.reassignCase(id, me.id)
+      list.reload()
+      say('On your desk.')
+    } catch (e) {
+      complain((e as Error).message)
+    }
+  }, [list, say, complain])
+
   const activeFilters = ['district', 'crop', 'target', 'overdue', 'q'].filter((k) => params.get(k))
+
+  // A queue that never changes while you watch it looks broken. Ask quietly,
+  // only while the tab is in front of somebody.
+  useEffect(() => {
+    const newest = rows[rows.length - 1]?.id ?? 0
+    if (!newest) return
+    const tick = async () => {
+      if (document.hidden) return
+      try {
+        const { new_cases } = await api.newCasesSince(newest)
+        setFresh(new_cases)
+      } catch { /* a queue that cannot count is still a queue */ }
+    }
+    const id = setInterval(tick, POLL_MS)
+    return () => clearInterval(id)
+  }, [rows])
+
+  // Triage is a keyboard job: j and k walk the list, a takes the case, s sets
+  // it aside, x picks it for a bulk move, and ? says so.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement
+      if (el && ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) return
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      const at = Math.max(0, rows.findIndex((c) => c.id === selected))
+      const go = (i: number) => {
+        const next = rows[Math.min(Math.max(i, 0), rows.length - 1)]
+        if (next) {
+          setSelected(next.id)
+          cursor.current = rows.indexOf(next)
+        }
+      }
+      if (e.key === 'j') { e.preventDefault(); go(selected == null ? 0 : at + 1) }
+      else if (e.key === 'k') { e.preventDefault(); go(selected == null ? 0 : at - 1) }
+      else if (e.key === '?') { e.preventDefault(); setShowKeys((v) => !v) }
+      else if (e.key === 'Escape') setSelected(null)
+      else if (selected != null && e.key === 'a') { e.preventDefault(); void takeIt(selected) }
+      else if (selected != null && e.key === 's') { e.preventDefault(); void snooze(selected) }
+      else if (selected != null && e.key === 'x') { e.preventDefault(); toggle(selected) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [rows, selected, takeIt, snooze])
+
+  const saveView = () => {
+    const name = window.prompt('Name this view', params.toString() ? 'My district, overdue' : 'Everything')
+    if (!name) return
+    const next = [...views.filter((v) => v.name !== name), { name, query: params.toString() }]
+    setViews(next)
+    try {
+      localStorage.setItem(VIEWS_KEY, JSON.stringify(next))
+    } catch { /* private mode: the view lasts this session */ }
+    say(`Saved “${name}”.`)
+  }
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(320px,400px)_1fr] items-start">
@@ -128,6 +233,28 @@ export default function Queue() {
           )}
         </Card>
 
+        {(views.length > 0 || activeFilters.length > 0) && (
+          <div className="flex flex-wrap items-center gap-1.5 px-1">
+            {views.map((v) => (
+              <button key={v.name} onClick={() => { setParams(new URLSearchParams(v.query), { replace: true }) }}
+                className="rounded-full border border-soil-dark/15 bg-white px-2.5 py-1 text-xs hover:border-leaf/50">
+                {v.name}
+              </button>
+            ))}
+            <button onClick={saveView}
+              className="flex items-center gap-1 rounded-full px-2 py-1 text-xs text-soil-dark/60 hover:text-soil-dark">
+              <BookmarkPlus className="w-3.5 h-3.5" /> Save this view
+            </button>
+          </div>
+        )}
+
+        {fresh > 0 && (
+          <button onClick={() => { setFresh(0); list.reload() }}
+            className="w-full flex items-center justify-center gap-2 rounded-full bg-leaf-deep text-cream text-xs font-medium py-2">
+            <Bell className="w-3.5 h-3.5" /> {fresh} new case{fresh === 1 ? '' : 's'} — show
+          </button>
+        )}
+
         {picked.size > 0 && (
           <Card className="p-3 border-leaf/40 bg-leaf/5">
             <p className="text-xs font-medium flex items-center gap-1.5">
@@ -148,20 +275,36 @@ export default function Queue() {
           </Card>
         )}
 
-        {said && <p className="px-1 text-xs text-leaf-deep">{said}</p>}
+        {showKeys && (
+          <Card className="p-3 text-xs text-soil-dark/75 space-y-1">
+            <p><kbd className="font-semibold">j</kbd> / <kbd className="font-semibold">k</kbd> — next, previous case</p>
+            <p><kbd className="font-semibold">a</kbd> — put it on my desk · <kbd className="font-semibold">s</kbd> — set aside until tomorrow</p>
+            <p><kbd className="font-semibold">x</kbd> — pick for a bulk move · <kbd className="font-semibold">Esc</kbd> — close the case</p>
+          </Card>
+        )}
 
         <div className="flex items-center justify-between px-1">
           <span className="text-xs text-soil-dark/60 flex items-center gap-1.5">
             <Filter className="w-3.5 h-3.5" />
             {list.data ? `${rows.length} case${rows.length === 1 ? '' : 's'}` : 'Loading…'}
           </span>
-          {rows.length > 0 && (
-            <button onClick={() => setPicked(picked.size === rows.length ? new Set() : new Set(rows.map((c) => c.id)))}
-              className="text-xs text-soil-dark/60 hover:text-soil-dark flex items-center gap-1">
-              {picked.size === rows.length ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
-              Select all
+          <span className="flex items-center gap-3">
+            <button onClick={() => set('snoozed', params.get('snoozed') ? null : '1')}
+              className={`flex items-center gap-1 text-xs ${params.get('snoozed') ? 'text-ochre font-medium' : 'text-soil-dark/60 hover:text-soil-dark'}`}>
+              <Clock className="w-3.5 h-3.5" /> Set aside
             </button>
-          )}
+            <button onClick={() => setShowKeys((v) => !v)} aria-label="Keyboard shortcuts"
+              className="text-xs text-soil-dark/60 hover:text-soil-dark flex items-center gap-1">
+              <Keyboard className="w-3.5 h-3.5" /> keys
+            </button>
+            {rows.length > 0 && (
+              <button onClick={() => setPicked(picked.size === rows.length ? new Set() : new Set(rows.map((c) => c.id)))}
+                className="text-xs text-soil-dark/60 hover:text-soil-dark flex items-center gap-1">
+                {picked.size === rows.length ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
+                Select all
+              </button>
+            )}
+          </span>
         </div>
 
         {list.error && <ErrorBox error={list.error} onRetry={list.reload} />}

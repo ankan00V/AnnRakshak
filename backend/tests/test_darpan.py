@@ -97,6 +97,37 @@ def test_it_says_what_is_building_and_offers_the_advisory(client):
     assert any("advisories?target=rice_brown_spot" in g["to"] for g in out["go"])
 
 
+def test_it_says_who_is_carrying_what(client):
+    """The intent that shipped broken because no test asked it anything."""
+    _case()
+    out = ask("who is free")
+    assert out["intent"] == "officers"
+    assert out["lines"]
+    assert any(g["to"] == "/officer/officers" for g in out["go"])
+
+
+def test_every_intent_answers_without_falling_over(client):
+    """One question per intent, so a wrong module name cannot ship again."""
+    _case()
+    for question, expected in [
+        ("how is the queue", "queue"),
+        ("how is bhandara doing", "district"),
+        ("what is building", "building"),
+        ("advisories issued", "advisories"),
+        ("who has the most cases", "officers"),
+        ("how accurate is the model", "model"),
+        ("what can the model not name", "gaps"),
+        ("what should i order", "inputs"),
+        ("how is the rain", "rainfall"),
+        ("find sunita", "farm"),
+        ("what can you do", "help"),
+    ]:
+        out = ask(question)
+        assert out["intent"] == expected, (question, out["intent"])
+        assert out["lines"] and all(isinstance(line, str) for line in out["lines"])
+        assert all({"label", "to"} <= set(g) for g in out["go"])
+
+
 def test_it_reports_whether_an_advisory_was_acted_on(client):
     officer = _officer()
     with SessionLocal() as db:

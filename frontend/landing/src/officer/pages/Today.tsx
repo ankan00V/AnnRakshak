@@ -5,6 +5,7 @@ import { api } from '../../api/client'
 import { useAsync } from '../../lib/hooks'
 import { Card, ErrorBox } from '../../ui/kit'
 import { Kpis, KpisSkeleton, PanelBone } from '../panels'
+import { Download } from 'lucide-react'
 
 /** What needs a person today, in the order it should be dealt with. The numbers
  *  come after: a supervisor opens this to find work, not to admire a total. */
@@ -137,7 +138,59 @@ export default function Today() {
       )}
 
       {summary.data ? <Kpis s={summary.data} /> : !summary.error && <KpisSkeleton />}
+      <TrendStrip />
     </>
+  )
+}
+
+/** A number with no direction is a poster. This week against the last, and the
+ *  fortnight behind it. */
+function TrendStrip() {
+  const t = useAsync(() => api.trends(), [])
+  if (!t.data) return <PanelBone rows={3} />
+  const items = [
+    { label: 'New cases', s: t.data.cases },
+    { label: 'Alerts raised', s: t.data.alerts },
+    { label: 'Expert verdicts', s: t.data.verdicts },
+  ]
+  return (
+    <Card className="p-4 md:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 className="font-semibold">This week against last</h2>
+          <p className="text-xs text-soil-dark/60 mt-0.5">The fortnight to date, a bar a day.</p>
+        </div>
+        <a href="/api/officials/report" download
+          className="flex items-center gap-1.5 rounded-full border border-soil-dark/20 px-3 py-1.5 text-xs font-medium hover:bg-soil-dark/5">
+          <Download className="w-3.5 h-3.5" /> The week as a file
+        </a>
+      </div>
+      <div className="mt-4 grid gap-5 sm:grid-cols-3">
+        {items.map(({ label, s }) => {
+          const top = Math.max(1, ...s.series)
+          const up = (s.change_pct ?? 0) > 0
+          return (
+            <div key={label}>
+              <p className="text-xs text-soil-dark/60">{label}</p>
+              <p className="mt-0.5 flex items-baseline gap-2">
+                <span className="text-2xl font-semibold tabular-nums">{s.this_week}</span>
+                {s.change_pct != null && (
+                  <span className={`text-xs font-medium ${up ? 'text-ember' : 'text-leaf-deep'}`}>
+                    {up ? '+' : ''}{s.change_pct}% on last week
+                  </span>
+                )}
+              </p>
+              <div className="mt-2 flex items-end gap-[3px] h-10" aria-hidden>
+                {s.series.map((n, i) => (
+                  <span key={i} className={`flex-1 rounded-sm ${i >= s.series.length / 2 ? 'bg-leaf-deep/70' : 'bg-soil-dark/15'}`}
+                    style={{ height: `${Math.max(6, (n / top) * 100)}%` }} />
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </Card>
   )
 }
 

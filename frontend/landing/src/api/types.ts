@@ -124,6 +124,9 @@ export interface AdvisoryDraft {
   kind: 'advisory' | 'inspection'
   level: 'low' | 'medium' | 'high'
   note?: string | null
+  /** Everyone of this crop, only those already alerted, only those near a
+   *  confirmed case, or only those at a susceptible stage. */
+  audience?: 'all' | 'alerted' | 'nearby' | 'stage'
 }
 
 export interface AdvisoryPreview {
@@ -131,6 +134,7 @@ export interface AdvisoryPreview {
   name: string
   crop: string
   kind: string
+  audience?: string
   districts: string[]
   farms: number
   over_limit: boolean
@@ -203,6 +207,49 @@ export interface IndentRow {
   suggested: { input: string; institute?: string | null; quantity: string; order_by: string | null }[]
 }
 
+/** Darpan's answer: lines built from the district's own rows, and the screens
+ *  those numbers came from. */
+export interface DarpanAnswer {
+  intent: string
+  asked: string
+  lines: string[]
+  go: { label: string; to: string }[]
+}
+
+export interface Trends {
+  from: string
+  cases: TrendSeries
+  alerts: TrendSeries
+  verdicts: TrendSeries
+}
+
+export interface TrendSeries {
+  series: number[]
+  this_week: number
+  last_week: number
+  change_pct: number | null
+}
+
+export interface OfficerPerformance {
+  user_id: number
+  name: string
+  resolved: number
+  median_hours: number | null
+  agreed: number
+  corrected: number
+  agreement: number | null
+}
+
+export interface OfficeAction {
+  id: number
+  actor: string
+  action: string
+  subject: string | null
+  subject_id: number | null
+  detail: Record<string, unknown>
+  at: string | null
+}
+
 export interface CaseQuery {
   status?: 'open' | 'resolved' | 'all'
   scope?: 'mine' | 'all' | 'unassigned'
@@ -211,6 +258,7 @@ export interface CaseQuery {
   target?: string
   severity?: string
   overdue?: boolean
+  snoozed?: boolean
   q_text?: string
   sort?: 'oldest' | 'newest'
 }

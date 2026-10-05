@@ -24,7 +24,7 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import llm, office
+from app import llm, office, services
 from app.kb import KB, tr
 from app.models import Alert, Case, Confirmation, ExpertProfile, Farm, Problem, User
 
@@ -286,7 +286,7 @@ def _advisories(db, kb, *, demo, args, officer, text):
 
 
 def _officers(db, kb, *, demo, args, officer, text):
-    load = office.workload(db, demo=demo)
+    load = services.workload(db, demo=demo)
     pending = office.pending_officers(db, demo=demo)
     carrying = sorted([o for o in load if o["open_cases"]], key=lambda o: -o["open_cases"])
     lines = []
@@ -358,8 +358,6 @@ def _inputs(db, kb, *, demo, args, officer, text):
 
 
 def _rainfall(db, kb, *, demo, args, officer, text):
-    from app import services  # noqa: PLC0415
-
     normals = services.rainfall_normals()
     lines = []
     for sub in list(normals.get("subdivisions", {}))[:4]:

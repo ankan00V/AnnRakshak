@@ -3,6 +3,8 @@ import { BookOpen, BrainCircuit, ClipboardCheck, ClipboardList, Loader2, Map as 
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { api } from '../api/client'
 import AccountMenu from '../auth/AccountMenu'
+import Darpan from './Darpan'
+import { Toasts } from '../ui/Toast'
 import BrandMark from '../ui/BrandMark'
 
 /** The officer console is a workplace, not a poster: one screen per job, and
@@ -35,6 +37,7 @@ export default function OfficerShell() {
   }
 
   return (
+    <Toasts>
     <div className="min-h-screen bg-[#f3efe6] text-soil-dark">
       <header className="bg-leaf-deep text-cream">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex flex-wrap gap-3 items-center justify-between">
@@ -73,6 +76,10 @@ export default function OfficerShell() {
           <Outlet />
         </div>
       </div>
+
+      {/* The officers' own assistant. Krishi belongs to the farmers. */}
+      <Darpan />
     </div>
+    </Toasts>
   )
 }

@@ -27,6 +27,7 @@ export default function Advisories() {
   const [kind, setKind] = useState<'advisory' | 'inspection'>('advisory')
   const [level, setLevel] = useState<'low' | 'medium' | 'high'>('high')
   const [note, setNote] = useState('')
+  const [audience, setAudience] = useState<'all' | 'alerted' | 'nearby' | 'stage'>('alerted')
   const [lang, setLang] = useState('mr')
   const [preview, setPreview] = useState<AdvisoryPreview | null>(null)
   const [busy, setBusy] = useState(false)
@@ -34,8 +35,8 @@ export default function Advisories() {
   const [error, setError] = useState<Error | null>(null)
 
   const draft: AdvisoryDraft = useMemo(
-    () => ({ target, crop, districts, kind, level, note: note || null }),
-    [target, crop, districts, kind, level, note])
+    () => ({ target, crop, districts, kind, level, note: note || null, audience }),
+    [target, crop, districts, kind, level, note, audience])
 
   // The problems this crop can have, taken from what is actually building when
   // the outlook knows, and from the knowledge base otherwise.
@@ -47,7 +48,7 @@ export default function Advisories() {
   useEffect(() => {
     setPreview(null)
     setSent(null)
-  }, [target, crop, districts, kind, note])
+  }, [target, crop, districts, kind, note, audience])
 
   const look = async () => {
     if (!target) return
@@ -124,6 +125,25 @@ export default function Advisories() {
                 </button>
               )
             })}
+          </div>
+        </fieldset>
+
+        <fieldset className="mt-4">
+          <legend className="text-xs text-soil-dark/70">Who it reaches</legend>
+          <div className="mt-2 grid sm:grid-cols-2 gap-1.5">
+            {([
+              ['alerted', 'Already alerted', 'farms the risk engine has flagged for this problem'],
+              ['nearby', 'Near a confirmed case', 'within the 5 km spread radius'],
+              ['stage', 'At a susceptible stage', 'the crop is at the stage this attacks'],
+              ['all', 'Every farm of this crop', 'the blunt instrument'],
+            ] as const).map(([k, label, why]) => (
+              <button key={k} type="button" onClick={() => setAudience(k)}
+                className={`text-left rounded-xl border px-3 py-2 ${audience === k
+                  ? 'border-leaf-deep bg-leaf/[0.06]' : 'border-soil-dark/15 hover:border-leaf/40'}`}>
+                <span className="block text-sm font-medium">{label}</span>
+                <span className="block text-[11px] text-soil-dark/60">{why}</span>
+              </button>
+            ))}
           </div>
         </fieldset>
 

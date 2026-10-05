@@ -1,11 +1,45 @@
+import { useState } from 'react'
 import { ArrowLeft, MapPin, Phone, Sprout } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../../api/client'
 import { useAsync } from '../../lib/hooks'
 import { Card, ErrorBox, Pill } from '../../ui/kit'
+import { useToast } from '../../ui/Toast'
 import { PanelBone, pct } from '../panels'
 
 const LEVEL: Record<string, 'ember' | 'ochre' | 'neutral'> = { high: 'ember', medium: 'ochre', low: 'neutral' }
+
+/** Most farmers ring the office rather than open the app. The answer belongs on
+ *  the alert either way, which is also the only way the follow-up numbers stop
+ *  reading zero. */
+function RecordIt({ alertId, onDone }: { alertId: number; onDone: () => void }) {
+  const [busy, setBusy] = useState(false)
+  const { say, complain } = useToast()
+  const record = async (outcome: 'found' | 'nothing_found') => {
+    setBusy(true)
+    try {
+      await api.recordInspection(alertId, outcome)
+      say(outcome === 'found' ? 'Recorded: they found it.' : 'Recorded: nothing found.')
+      onDone()
+    } catch (e) {
+      complain((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <span className="flex items-center gap-1">
+      <button onClick={() => record('found')} disabled={busy}
+        className="rounded-full border border-ember/40 text-ember px-2 py-0.5 text-[11px] font-medium hover:bg-ember/5 disabled:opacity-50">
+        found it
+      </button>
+      <button onClick={() => record('nothing_found')} disabled={busy}
+        className="rounded-full border border-soil-dark/20 px-2 py-0.5 text-[11px] hover:bg-soil-dark/5 disabled:opacity-50">
+        nothing
+      </button>
+    </span>
+  )
+}
 
 /** One farm, everything the office knows about it — what an officer wants in
  *  front of them before they ring the farmer or send somebody out. */
@@ -70,7 +104,7 @@ export default function FarmPage() {
                       ? <Pill tone={a.outcome === 'found' ? 'ember' : 'leaf'}>
                           {a.outcome === 'found' ? 'found it' : a.outcome === 'nothing_found' ? 'nothing found' : a.outcome}
                         </Pill>
-                      : <Pill tone="neutral">not yet checked</Pill>}
+                      : <RecordIt alertId={a.id} onDone={d.reload} />}
                   </span>
                 </li>
               ))}
