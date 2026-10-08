@@ -253,7 +253,7 @@
    "hi": "सोयाबीन",
    "mr": "सोयाबीन"
   },
-  "photo_diagnosis": false,
+  "photo_diagnosis": true,
   "stages": [
    {
     "key": "emergence",
