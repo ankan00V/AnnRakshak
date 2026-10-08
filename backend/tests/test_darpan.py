@@ -175,3 +175,26 @@ def test_demo_and_real_districts_are_answered_separately(client):
         db.commit()
     assert "1 open case" in ask("how is the queue", demo=True)["lines"][0]
     assert "1 open case" in ask("how is the queue", demo=False)["lines"][0]
+
+
+def test_a_question_that_is_only_filler_still_routes(client):
+    """"what can you do" is what, can, you and do — every one a stop word.
+
+    Scoring strips filler, so this question emptied out, scored against nothing
+    and fell through to the model. That worked wherever there was an API key and
+    answered "unknown" everywhere else: CI, an offline laptop, a rate-limited
+    morning. It is also the first question a new officer asks. An example phrase
+    now routes to its own intent before any scoring, and without a network call.
+    """
+    from app import llm
+
+    seen = []
+    real = llm.enabled
+    llm.enabled = lambda: (seen.append(1), False)[1]  # the model must not be asked
+    try:
+        for question, want in (("what can you do", "help"), ("help", "help"),
+                               ("who are you", "help"), ("monsoon", "rainfall")):
+            assert ask(question)["intent"] == want, question
+    finally:
+        llm.enabled = real
+    assert not seen, "routed through the model for a phrase it already knows"

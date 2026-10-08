@@ -128,6 +128,17 @@ def route(text: str, db: Session) -> tuple[str, dict]:
             args["district"] = d
             break
 
+    # An example phrase routes to its own intent, always. Scoring strips filler
+    # words, and some of these questions are nothing but filler: "what can you
+    # do" is what, can, you and do, every one of them a stop word, so it scored
+    # against nothing and fell through to the model — which answered correctly
+    # wherever there was an API key, and left CI, an offline laptop and a
+    # rate-limited morning answering "unknown" to the one question a new officer
+    # is most likely to ask first.
+    for intent, spec in INTENTS.items():
+        if any(_norm(example) == t for example in spec["says"]):
+            return intent, args
+
     asked = _content(text)
     scores = Counter()
     for intent, spec in INTENTS.items():
