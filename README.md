@@ -1,7 +1,6 @@
 # AnnRakshak
 
 **Early detection and management of crop diseases and pest infestations.**
-Smart India Hackathon 2026 · PS 26131 · Government of Maharashtra.
 
 A farmer photographs a sick plant or gets a "go look here" alert. AnnRakshak
 either gives safe, cited advice in Marathi/Hindi, asks one field question when
