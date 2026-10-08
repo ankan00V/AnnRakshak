@@ -583,6 +583,8 @@ def main():
                     help="with --with-extra: continue from the deployed model instead of ImageNet weights")
     ap.add_argument("--from-candidate", action="store_true",
                     help="continue from ml/artifacts/candidate (a run that did not pass the deploy gate)")
+    ap.add_argument("--score-only", action="store_true",
+                    help="skip training: score the epoch checkpoint and write the candidate and report")
     ap.add_argument("--resume", action="store_true",
                     help="pick up the weights of the last finished epoch (ml/artifacts/epoch_checkpoint.pt)")
     ap.add_argument("--per-class", type=int, default=120,
@@ -855,12 +857,30 @@ def main_extra(args):
         # (0.917 -> 0.883) and the gate refused it. ICAR's are the real field
         # photographs and the ones the deploy checks measure.
         icar_share = 0.85
-    print("fine-tune — EfficientNetV2-S, ICAR + extra sources, background randomisation"
-          f"{', warm start' if init else ''}:")
-    net, f1, hist = finetune("efficientnet_v2_s", train, val, class_idx, device, args.quick, args.epochs,
-                             backgrounds=bgs["train"], val_backgrounds=bgs["val"], epoch_size=epoch_size or None,
-                             init=init, icar_share=icar_share, freeze_all=args.freeze_backbone,
-                             lr_override=(args.lr_feat, args.lr_head) if args.lr_feat else None)
+    if getattr(args, "score_only", False):
+        # Everything below — temperature, the held-out sets, the background
+        # swap, the gate simulation, the deploy checks, the report — is the
+        # same code a finished run goes through. Only the training is skipped,
+        # so a checkpoint whose run was interrupted can still be judged, and
+        # judged by exactly the bar a complete run would have faced.
+        if not CKPT.exists():
+            sys.exit(f"--score-only needs {CKPT.relative_to(ROOT)}")
+        ck = torch.load(CKPT, map_location="cpu")
+        if ck["classes"] != classes:
+            sys.exit(f"checkpoint has {len(ck['classes'])} classes, this data makes {len(classes)}")
+        net = Net("efficientnet_v2_s", len(classes), "finetune", pretrained=False)
+        net.load_state_dict(ck["state"])
+        net.to(device)
+        f1, hist = ck["best_f1"], ck["history"]
+        print(f"scoring the checkpoint of epoch {ck['epoch']} without training it further "
+              f"(validation macro-F1 {f1:.4f})")
+    else:
+        print("fine-tune — EfficientNetV2-S, ICAR + extra sources, background randomisation"
+              f"{', warm start' if init else ''}:")
+        net, f1, hist = finetune("efficientnet_v2_s", train, val, class_idx, device, args.quick, args.epochs,
+                                 backgrounds=bgs["train"], val_backgrounds=bgs["val"], epoch_size=epoch_size or None,
+                                 init=init, icar_share=icar_share, freeze_all=args.freeze_backbone,
+                                 lr_override=(args.lr_feat, args.lr_head) if args.lr_feat else None)
 
     dl_va = loader(val, class_idx, test_transform(IMG), shuffle=False, backgrounds=bgs["val"], deterministic=True)
     lv, yv = logits_of(net, dl_va, device)
