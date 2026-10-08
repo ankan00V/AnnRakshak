@@ -572,3 +572,49 @@ def test_a_farm_row_without_the_column_still_reads():
     class Old:  # noqa: D106  a row from before date_basis existed
         crop, sowing_date = "rice", date(2026, 6, 11)
     assert kb.stage_of(Old(), date(2026, 9, 23))[1] == 104
+
+
+def test_the_nursery_is_as_long_as_that_state_transplants():
+    """Three weeks in Maharashtra, a month in the Cauvery delta.
+
+    The gap between sowing a rice nursery and planting it out is regional, and
+    it is the gap this app adds back when a farmer gives the transplanting
+    date. ICAR puts Maharashtra's medium-duration kharif nursery at 21 to 25
+    days; 319 paddy plots in the SICKLE dataset measure the Cauvery delta's at
+    a median of 31. On the same date that is a whole stage of difference."""
+    kb = get_kb()
+    given, today = date(2026, 6, 11), date(2026, 9, 23)
+
+    def farm(state):
+        return type("F", (), {"crop": "rice", "sowing_date": given,
+                              "date_basis": "transplanted", "state": state})()
+
+    assert kb.nursery_days("rice", "Maharashtra") == 21
+    assert kb.nursery_days("rice", "Tamil Nadu") == 31
+    assert kb.nursery_days("rice", "a state we have never seen") == 21
+
+    mh_stage, mh_das = kb.stage_of(farm("Maharashtra"), today)
+    tn_stage, tn_das = kb.stage_of(farm("Tamil Nadu"), today)
+    assert tn_das - mh_das == 10
+    assert mh_stage == "grain_filling"
+    assert tn_stage == "maturity"
+
+
+def test_a_state_only_matters_when_the_date_is_a_transplanting():
+    """A farmer who sowed where the crop grows gave us the clock's own start."""
+    kb = get_kb()
+    given, today = date(2026, 6, 11), date(2026, 9, 23)
+
+    def farm(state):
+        return type("F", (), {"crop": "rice", "sowing_date": given,
+                              "date_basis": "sown", "state": state})()
+
+    assert kb.stage_of(farm("Tamil Nadu"), today) == kb.stage_of(farm("Maharashtra"), today)
+
+
+def test_a_farm_with_no_state_still_reads():
+    """Rows from before the column, and farms whose state we never captured."""
+    kb = get_kb()
+    class NoState:  # noqa: D106
+        crop, sowing_date, date_basis = "rice", date(2026, 6, 11), "transplanted"
+    assert kb.stage_of(NoState(), date(2026, 9, 23))[1] == 125

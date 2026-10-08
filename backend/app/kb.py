@@ -83,24 +83,37 @@ class KB:
     def cue_for(self, a: str, b: str) -> dict | None:
         return self._cue_index.get(frozenset((a, b)))
 
-    def sown_on(self, crop: str, given: date, date_basis: str | None = None) -> date:
+    def nursery_days(self, crop: str, state: str | None = None) -> int:
+        """How long this crop sits in the nursery before it is planted out.
+
+        Regional. Maharashtra transplants medium-duration kharif rice at 21 to
+        25 days (ICAR); the Cauvery delta transplants samba with older
+        seedlings, and 319 plots there measure a median of 31. A state we have
+        not been shown gets the default."""
+        c = self.crops[crop]
+        return int((c.get("nursery_days_by_state") or {}).get(state or "", c.get("nursery_days", 0)))
+
+    def sown_on(self, crop: str, given: date, date_basis: str | None = None,
+                state: str | None = None) -> date:
         """The date the growth clock starts from.
 
         Every stage window is counted from sowing. Rice is transplanted, and the
-        date a rice farmer remembers is the transplanting (लावणी), about three
-        weeks after the seed went into the nursery bed — a whole stage. If that
-        is the date we were given, the nursery weeks are added back."""
+        date a rice farmer remembers is the transplanting (लावणी), weeks after
+        the seed went into the nursery bed — a whole stage. If that is the date
+        we were given, those weeks are added back, as many as that state's
+        nursery actually takes."""
         if date_basis == "transplanted":
-            return given - timedelta(days=self.crops[crop].get("nursery_days", 0))
+            return given - timedelta(days=self.nursery_days(crop, state))
         return given
 
     def stage_of(self, farm, today: date | None = None) -> tuple[str, int]:
         """The stage and days-after-sowing of a farm, from the date it gave us."""
-        return self.stage_for(farm.crop, farm.sowing_date, today, getattr(farm, "date_basis", None))
+        return self.stage_for(farm.crop, farm.sowing_date, today,
+                              getattr(farm, "date_basis", None), getattr(farm, "state", None))
 
     def stage_for(self, crop: str, sowing: date, today: date | None = None,
-                  date_basis: str | None = None) -> tuple[str, int]:
-        das = ((today or date.today()) - self.sown_on(crop, sowing, date_basis)).days
+                  date_basis: str | None = None, state: str | None = None) -> tuple[str, int]:
+        das = ((today or date.today()) - self.sown_on(crop, sowing, date_basis, state)).days
         stages = self.crops[crop]["stages"]
         for s in stages:
             lo, hi = s["das"]

@@ -1,5 +1,5 @@
 {
- "_note": "Growth stages by days after sowing. Windows are typical for medium-duration kharif varieties in Maharashtra; a farm's stage is derived on read from its sowing date, never stored. Rice is the one transplanted crop here: its stages are counted from the nursery sowing date, so a farm that gave its transplanting date instead (farm.date_basis == 'transplanted') has nursery_days added back before the stage is read. Asking which date it is costs one tap at sign-up and is worth it: the two are three weeks apart, which is a whole stage, and every risk rule and spray window is keyed to the stage. nursery_days is 21 for medium-duration kharif rice in Maharashtra (ICAR guidance 21-25 days). It is regional, not universal: 34 paddy plots in the SICKLE dataset (Cauvery delta, Tamil Nadu, both sowing and transplanting dates recorded) show a median nursery of 31 days, range 28-35, because samba there is transplanted with older seedlings. Their whole season ran a median 129 days, which the maturity window here (from day 126) matches. If the app is taken to a state that transplants older seedlings, this number moves with it.",
+ "_note": "Growth stages by days after sowing. Windows are typical for medium-duration kharif varieties in Maharashtra; a farm's stage is derived on read from its sowing date, never stored. Rice is the one transplanted crop here: its stages are counted from the nursery sowing date, so a farm that gave its transplanting date instead (farm.date_basis == 'transplanted') has nursery_days added back before the stage is read. Asking which date it is costs one tap at sign-up and is worth it: the two are three weeks apart, which is a whole stage, and every risk rule and spray window is keyed to the stage. nursery_days is 21 for medium-duration kharif rice in Maharashtra (ICAR guidance 21-25 days). It is regional, not universal, so nursery_days_by_state overrides it where we have been shown otherwise: 319 paddy plots in the SICKLE dataset (Cauvery delta, both sowing and transplanting dates recorded) put the nursery at a median of 31 days, quartiles 31/31/33, and that holds across all five of its seasons even though season length swings from 111 days to 158 — samba there is transplanted with older seedlings. A state not listed gets the 21-day default. Their whole seasons ran 104 to 190 days, which the maturity window here (from day 126) sits inside.",
  "rice": {
   "names": {
    "en": "Rice (paddy)",
@@ -81,7 +81,11 @@
     }
    }
   ],
-  "nursery_days": 21
+  "nursery_days": 21,
+  "nursery_days_by_state": {
+   "Tamil Nadu": 31,
+   "Puducherry": 31
+  }
  },
  "maize": {
   "names": {
