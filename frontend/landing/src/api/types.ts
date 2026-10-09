@@ -106,6 +106,190 @@ export interface CaseBrief {
   assigned_name: string | null
 }
 
+/** The district office's own work: what needs a person today. */
+export interface Worklist {
+  overdue_cases: { id: number; district: string; hours: number }[]
+  overdue_count: number
+  unrouted: number[]
+  pending_officers: number
+  building: { target: string; name: string; crop: string; farms: number }[]
+  unnamed_problems: number
+  sla_hours: number
+}
+
+export interface AdvisoryDraft {
+  target: string
+  crop: string
+  districts: string[]
+  kind: 'advisory' | 'inspection'
+  level: 'low' | 'medium' | 'high'
+  note?: string | null
+  /** Everyone of this crop, only those already alerted, only those near a
+   *  confirmed case, or only those at a susceptible stage. */
+  audience?: 'all' | 'alerted' | 'nearby' | 'stage'
+}
+
+export interface AdvisoryPreview {
+  target: string
+  name: string
+  crop: string
+  kind: string
+  audience?: string
+  districts: string[]
+  farms: number
+  over_limit: boolean
+  reason: Record<string, string>
+  tasks: Record<string, string[]>
+  by_district: Record<string, number>
+}
+
+export interface AdvisoryIssued {
+  id: number
+  sent: number
+  skipped: number
+  districts: string[]
+  target: string
+  kind: string
+}
+
+export interface AdvisoryRow {
+  id: number
+  issued_by: string
+  issued_at: string | null
+  target: string
+  crop: string
+  districts: string[]
+  kind: string
+  level: string
+  note: string | null
+  farms: number
+  /** What came back: an advisory nobody answers is worth seeing. */
+  inspected: number
+  found: number
+  still_waiting: number
+}
+
+export interface PendingOfficer {
+  user_id: number
+  name: string
+  email: string | null
+  phone: string | null
+  designation: string
+  organisation: string
+  employee_id: string
+  qualification: string
+  experience_years: number
+  districts: string[]
+  crops: string[]
+}
+
+/** A problem an officer named that the model cannot: the training backlog. */
+export interface GapRow {
+  id: number
+  on: string | null
+  district: string
+  crop: string
+  model_label: string | null
+  expert: string
+  note: string | null
+  referred_to_lab: boolean
+}
+
+export interface IndentRow {
+  target: string
+  name: string
+  crop: string
+  farms: number
+  acres: number
+  districts: string[]
+  high: number
+  inputs: { id: string; short: string; institute?: string | null }[]
+  suggested: { input: string; institute?: string | null; quantity: string; order_by: string | null }[]
+}
+
+/** Darpan's answer: lines built from the district's own rows, and the screens
+ *  those numbers came from. */
+export interface DarpanAnswer {
+  intent: string
+  asked: string
+  lines: string[]
+  go: { label: string; to: string }[]
+}
+
+export interface Trends {
+  from: string
+  cases: TrendSeries
+  alerts: TrendSeries
+  verdicts: TrendSeries
+}
+
+export interface TrendSeries {
+  series: number[]
+  this_week: number
+  last_week: number
+  change_pct: number | null
+}
+
+export interface OfficerPerformance {
+  user_id: number
+  name: string
+  resolved: number
+  median_hours: number | null
+  agreed: number
+  corrected: number
+  agreement: number | null
+}
+
+export interface OfficeAction {
+  id: number
+  actor: string
+  action: string
+  subject: string | null
+  subject_id: number | null
+  detail: Record<string, unknown>
+  at: string | null
+}
+
+export interface CaseQuery {
+  status?: 'open' | 'resolved' | 'all'
+  scope?: 'mine' | 'all' | 'unassigned'
+  district?: string
+  crop?: string
+  target?: string
+  severity?: string
+  overdue?: boolean
+  snoozed?: boolean
+  q_text?: string
+  sort?: 'oldest' | 'newest'
+}
+
+export interface FarmDossier {
+  farm: Farm
+  open_problems: number
+  problems: { id: number; target: string | null; name: string | null; status: string; severity: string; opened: string | null }[]
+  cases: { id: number; status: string; reason: string; target: string | null; assigned_to: number | null; created: string | null }[]
+  alerts: { id: number; target: string; name: string; level: string; trigger: string; issued_on: string; outcome: string | null }[]
+  inspection_rate: number | null
+  found_rate: number | null
+  confirmations: { final_label: string; verdict: string; expert: string; on: string | null; notes: string | null }[]
+}
+
+export interface OfficerLoad {
+  user_id: number
+  name: string
+  designation: string
+  districts: string[]
+  open_cases: number
+  resolved_cases: number
+  oldest_wait_hours: number | null
+}
+
+export interface Workload {
+  officers: OfficerLoad[]
+  unassigned: number
+  open_total: number
+}
+
 /** This field's greenness from clear Sentinel-2 / Landsat 8 scenes. */
 export interface CaseSatellite {
   latest: { on: string; mean: number; source: string }
@@ -343,6 +527,8 @@ export interface Hotspots {
     name: string | null
     status: 'confirmed' | 'suspected' | 'awaiting_expert'
     on: string | null
+    farm_id: number
+    farmer_name: string
   }[]
   active_alerts: {
     lat: number

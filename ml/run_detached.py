@@ -27,6 +27,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+STALL_S = 25 * 60
+"""No new line in the log for this long means stuck, not slow."""
+
 if len(sys.argv) < 3:
     raise SystemExit(__doc__)
 
@@ -44,6 +47,29 @@ with log_path.open("wb") as log:
     # as the run does. Detached the same way: it must not die with this shell
     # either, or the sleep it was holding off arrives anyway.
     subprocess.Popen(["caffeinate", "-i", "-w", str(child.pid)],
+                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                     start_new_session=True)
+    # A stall watchdog, because a run that stops making progress does not stop
+    # costing. One hung at batch 300 for three hours, burning CPU in
+    # uninterruptible wait and holding the Mac awake all night to advance
+    # nothing. The training writes a progress line every hundred batches; if the
+    # log stops growing for STALL_S it is not slow, it is stuck, and the run is
+    # killed so the machine is released and the epoch checkpoint is the last
+    # word. Generous by design: a slow epoch under load is not a stall.
+    watchdog = (
+        "import os, sys, time; p, f, limit = int(sys.argv[1]), sys.argv[2], float(sys.argv[3]);\n"
+        "last = 0.0\n"
+        "while True:\n"
+        "    time.sleep(60)\n"
+        "    try: os.kill(p, 0)\n"
+        "    except OSError: break\n"
+        "    try: m = os.path.getmtime(f)\n"
+        "    except OSError: continue\n"
+        "    if last and time.time() - m > limit:\n"
+        "        os.kill(p, 15); break\n"
+        "    last = m\n"
+    )
+    subprocess.Popen([sys.executable, "-c", watchdog, str(child.pid), str(log_path), str(STALL_S)],
                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                      start_new_session=True)
 print(f"{child.pid}")

@@ -8,10 +8,10 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from app import config
+from app import config, services
 from app.db import Base, SessionLocal, engine
 from app.main import app
-from app.models import ExpertProfile, Farm, FarmerProfile, OtpChallenge, User, UserSession
+from app.models import ExpertProfile, Farm, FarmerProfile, OtpChallenge, Problem, User, UserSession
 from app.routers import auth as auth_router
 
 SOWN = (date.today() - timedelta(days=40)).isoformat()
@@ -324,6 +324,156 @@ def test_older_long_sessions_also_end_at_24_hours(client, mail):
     assert client.get("/api/auth/me").status_code == 401
 
 
+def _real_case(district="Bhandara"):
+    """A case on a real farmer's field, with a real officer covering it."""
+    from app.models import Case, Diagnosis, ExpertProfile, Farm, Problem, User
+    with SessionLocal() as db:
+        farm = Farm(farmer_name="Real farmer", crop="rice", district=district,
+                    sowing_date=date.today() - timedelta(days=50), lat=21.17, lon=79.65)
+        db.add(farm)
+        db.flush()
+        p = Problem(farm_id=farm.id, status="open")
+        db.add(p)
+        db.flush()
+        db.add(Diagnosis(problem_id=p.id, topk=[{"target": "rice_brown_spot", "confidence": 0.5}],
+                         gate_outcome="escalate", gate_reason="BELOW_GATE", confidence=0.5,
+                         model_version="test", is_stub=True))
+        c = Case(problem_id=p.id, status="open", reason="BELOW_GATE")
+        db.add(c)
+        db.flush()
+        case_id = c.id
+        db.commit()
+    return case_id
+
+
+def test_a_demo_reviewer_never_sees_a_real_farmers_case(client, mail):
+    """Whoever tapped 'try the demo' is not shown a real farmer's field."""
+    case_id = _real_case()
+    assert client.post("/api/auth/demo", json={"role": "expert"}).status_code == 200
+    assert client.get("/api/cases?status=open&scope=all").json() == []
+    assert client.get(f"/api/cases/{case_id}").status_code == 404      # not by id either
+    assert client.post(f"/api/cases/{case_id}/reassign", json={}).status_code == 404
+    assert client.post(f"/api/cases/{case_id}/resolve", json={
+        "verdict": "confirmed", "final_label": "rice_brown_spot",
+        "expert_name": "Demo expert"}).status_code == 404
+
+
+def _expert(client, mail, *, verified: bool, supervisor: bool = False,
+            email="new.officer@kvk.org.in", phone="9000000001"):
+    """A signed-up officer in whatever state the district office left them."""
+    r = client.post("/api/auth/otp", json={"role": "expert", "purpose": "signup",
+                                           "email": email, "phone": phone})
+    client.post("/api/auth/signup/expert", json={
+        "challenge_id": r.json()["challenge_id"], "code": code_of(mail), "name": "New Officer",
+        "phone": phone, "designation": "agri_officer", "organisation": "DAO",
+        "employee_id": "E-1", "qualification": "bsc_agri", "experience_years": 3,
+        "districts": ["Bhandara"], "crops": ["rice"], "specialities": ["entomology"],
+        "languages": ["mr"]})
+    with SessionLocal() as db:
+        user = db.scalar(select(User).where(User.email == email))
+        prof = db.get(ExpertProfile, user.id)
+        prof.verified, prof.supervisor = verified, supervisor
+        db.commit()
+        return user.id
+
+
+def test_an_unverified_officer_reviews_nothing(client, mail):
+    """Verification used to be a label. An unverified sign-up could open a real
+    farmer's case and file a verdict on it."""
+    _expert(client, mail, verified=False)
+    case_id = _real_case()
+    assert client.get("/api/cases?status=open").status_code == 403
+    assert client.get(f"/api/cases/{case_id}").status_code == 403
+    assert client.post(f"/api/cases/{case_id}/resolve", json={
+        "verdict": "confirmed", "final_label": "rice_brown_spot",
+        "expert_name": "New Officer"}).status_code == 403
+    assert client.get("/api/officials/summary").status_code == 403
+
+
+def test_an_officer_cannot_verify_themselves(client, mail):
+    """The whole point of verification is that somebody else did it."""
+    uid = _expert(client, mail, verified=True, supervisor=True)
+    r = client.post(f"/api/officials/officers/{uid}/verify", json={"verified": True})
+    assert r.status_code == 409 and "own account" in r.json()["detail"]
+
+
+def _colleague(name="Colleague", email="second@kvk.org.in", demo=False) -> int:
+    """Another officer on the books — made directly, so the caller keeps their session."""
+    with SessionLocal() as db:
+        u = User(role="expert", name=name, email=email, is_demo=demo)
+        db.add(u)
+        db.flush()
+        db.add(ExpertProfile(user_id=u.id, designation="agri_officer", organisation="DAO",
+                             employee_id="E-2", qualification="bsc_agri", experience_years=4,
+                             districts=["Bhandara"], crops=["rice"], specialities=[], languages=["mr"],
+                             verified=False))
+        db.commit()
+        return u.id
+
+
+def test_verifying_and_routing_are_supervisor_work(client, mail):
+    uid = _expert(client, mail, verified=True, supervisor=False)
+    other = _colleague()
+    assert uid != other
+    assert client.post(f"/api/officials/officers/{other}/verify", json={"verified": True}).status_code == 403
+    assert client.post("/api/officials/cases/route").status_code == 403
+    assert client.post("/api/cases/bulk/assign", json={"case_ids": [1]}).status_code == 403
+    # A verified officer still does their own job.
+    assert client.get("/api/cases?status=open").status_code == 200
+
+
+def test_a_supervisor_cannot_reach_across_the_demo_line(client, mail):
+    """A showcase supervisor has no business over a real district's staff."""
+    real = _expert(client, mail, verified=False)
+    client.post("/api/auth/logout")
+    client.post("/api/auth/demo", json={"role": "expert"})    # demo supervisor
+    assert client.post(f"/api/officials/officers/{real}/verify", json={"verified": True}).status_code == 404
+    with SessionLocal() as db:
+        assert db.get(ExpertProfile, real).verified is False
+
+
+def test_the_office_keeps_a_record_of_who_did_what(client, mail):
+    uid = _expert(client, mail, verified=False)
+    client.post("/api/auth/logout")
+    client.post("/api/auth/demo", json={"role": "expert"})
+    with SessionLocal() as db:          # make the new officer demo-side so the demo supervisor may act
+        db.get(User, uid).is_demo = True
+        db.commit()
+    assert client.post(f"/api/officials/officers/{uid}/verify", json={"verified": True}).status_code == 200
+    log = client.get("/api/officials/actions").json()
+    assert log[0]["action"] == "verify_officer"
+    assert log[0]["subject_id"] == uid and log[0]["actor"] == "Demo expert"
+
+
+def test_a_bulk_move_cannot_reach_across_the_demo_line(client, mail):
+    """The boundary holds for a selection, not only for one case at a time."""
+    case_id = _real_case()
+    assert client.post("/api/auth/demo", json={"role": "expert"}).status_code == 200
+    out = client.post("/api/cases/bulk/assign", json={"case_ids": [case_id], "to_user_id": None}).json()
+    assert out == {"moved": 0, "skipped": 1}
+
+
+def test_a_real_officer_is_not_shown_showcase_data(client, mail):
+    """The boundary holds both ways: demo farms are not a real officer's work."""
+    assert expert_signup(client, mail).status_code == 201
+    listed = client.get("/api/cases?status=open&scope=all").json()
+    assert listed == []  # the only farm in this fixture is the demo one
+    case_id = _real_case()
+    assert [c["id"] for c in client.get("/api/cases?status=open&scope=all").json()] == [case_id]
+
+
+def test_a_real_farmers_case_is_never_routed_to_a_demo_officer(client, mail):
+    from app.models import Case
+    client.post("/api/auth/demo", json={"role": "expert"})   # a demo officer exists and is verified
+    case_id = _real_case()
+    with SessionLocal() as db:
+        case = db.get(Case, case_id)
+        farm = db.get(Problem, case.problem_id).farm
+        picked = services.assign_case(db, case, farm)
+        db.commit()
+    assert picked is None  # no real officer yet, and the demo one is not eligible
+
+
 def test_voice_needs_a_signed_in_user(client):
     assert client.post("/api/voice/tts", json={"text": "hello", "lang": "en"}).status_code == 401
 
@@ -340,7 +490,12 @@ def test_verdict_carries_the_signed_in_expert(client, mail):
     from app.models import Case, Confirmation, Diagnosis, Problem
 
     with SessionLocal() as db:
-        p = Problem(farm_id=1, target="rice_brown_spot", status="open")
+        # A real farmer's field: a signed-up expert never reviews demo data.
+        farm = Farm(farmer_name="Real", crop="rice", sowing_date=date.today() - timedelta(days=50),
+                    district="Bhandara", lat=21.17, lon=79.65)
+        db.add(farm)
+        db.flush()
+        p = Problem(farm_id=farm.id, target="rice_brown_spot", status="open")
         db.add(p)
         db.flush()
         db.add(Diagnosis(problem_id=p.id, topk=[{"target": "rice_brown_spot", "confidence": 0.5}],

@@ -11,7 +11,9 @@ What it does, through the public API only:
      would (the ICAR label says which lesion it is);
   4. resolves escalated cases with the ICAR ground-truth label, under a
      reviewer name that says exactly that — except a few left open for the
-     expert console.
+     expert console;
+  5. signs in as the demo officer and writes down what came back from the
+     alerts that were actually walked.
 
 So the officials' dashboard shows the model's real behaviour on unseen photos:
 how often it advised, asked or escalated, and how often the "expert" (ground
@@ -40,6 +42,12 @@ ROOT = HERE.parent
 REVIEWER = "Demo reviewer (ICAR ground-truth label)"
 PHOTOS_PER_FARM = 2
 LEAVE_OPEN = 3  # escalated cases left unresolved, so the expert console has a queue
+
+# A high alert gets somebody out to look far more often than a low one does,
+# and what they find follows the same slope. Without this the follow-up column
+# reads zero everywhere and the console looks like nobody ever acted.
+WALKED = {"high": 0.75, "medium": 0.45, "low": 0.15}
+FOUND = {"high": 0.70, "medium": 0.45, "low": 0.20}
 
 
 def class_to_target() -> dict[str, str]:
@@ -109,7 +117,30 @@ def main() -> None:
                     stats["advised_correct" if top == truth else "advised_wrong"] += 1
                 print(f"  {farm['farmer_name']:22s} {farm['crop']:6s} truth={truth:32s} "
                       f"top={top:32s} → {outcome}")
+        record_inspections(c, farms, rng, stats)
     print("\nstory:", dict(stats))
+
+
+def record_inspections(c, farms, rng, stats) -> None:
+    """Most farmers ring the office rather than open the app, and a scout walks
+    the worst blocks either way. The answer belongs on the alert, so the demo
+    carries the same record a real district would after a fortnight."""
+    r = c.post("/api/auth/demo", json={"role": "expert"})
+    if r.status_code != 200:
+        print("demo sign-in is off — leaving the alert follow-up blank")
+        return
+    for farm in farms:
+        d = c.get(f"/api/officials/farms/{farm['id']}")
+        if d.status_code != 200:
+            continue
+        for a in d.json()["alerts"]:
+            if a["outcome"] or rng.random() > WALKED.get(a["level"], 0.3):
+                continue
+            outcome = "found" if rng.random() < FOUND.get(a["level"], 0.4) else "nothing_found"
+            if c.post(f"/api/officials/alerts/{a['id']}/outcome",
+                      json={"outcome": outcome}).status_code == 200:
+                stats[f"inspected_{outcome}"] += 1
+    c.post("/api/auth/logout")
 
 
 if __name__ == "__main__":

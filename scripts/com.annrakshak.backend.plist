@@ -12,6 +12,11 @@
   <array>
     <string>/Users/ankanghosh/Developer/SIH/.venv/bin/uvicorn</string>
     <string>app.main:app</string>
+    <!-- Reload on edit: without it the service serves whatever it imported at
+         boot, and a code change looks like it did nothing. -->
+    <string>--reload</string>
+    <string>--reload-dir</string>
+    <string>backend/app</string>
     <string>--port</string>
     <string>8010</string>
     <string>--app-dir</string>

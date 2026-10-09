@@ -67,6 +67,9 @@ PADDY_MANIFEST = ROOT / "data" / "processed" / "paddy_images.csv"
 ASDID_MANIFEST = ROOT / "data" / "processed" / "asdid_images.csv"
 LOCAL_MANIFEST = ROOT / "data" / "processed" / "local_images.csv"
 COTTON_MANIFEST = ROOT / "data" / "processed" / "cotton_images.csv"
+PESTS_MANIFEST = ROOT / "data" / "processed" / "pests_images.csv"
+DHAN_MANIFEST = ROOT / "data" / "processed" / "dhan_images.csv"
+RICEBD_MANIFEST = ROOT / "data" / "processed" / "ricebd_images.csv"
 ART = ROOT / "ml" / "artifacts"
 CKPT = ROOT / "ml" / "artifacts" / "epoch_checkpoint.pt"
 REP = ROOT / "ml" / "reports"
@@ -96,6 +99,12 @@ LOCAL_CAP = {"train": 900, "val": 120, "test": 200}
 photos for the four rice problems farmers send most, plus Brazilian soybean
 canopies for caterpillar damage. Capped like Paddy Doctor."""
 COTTON_CAP = {"train": 700, "val": 100, "test": 150}
+THIN_CAP = {"train": 900, "val": 120, "test": 200}
+"""The three sets fetched on 29 Sep for classes that had about fifty photographs
+each — rice leaf folder and sheath blight above all. Those classes are why the
+candidate of that morning missed its last deploy check by four photos, two of
+them leaf folder read as something else. Nothing here is capped below what it
+brought, because the point of fetching it was that there was not enough."""
 """Three Mendeley cotton sets (data/ingest_cotton.py). Cotton had six classes
 from two sources; these bring jassid, which the app advised on without ever
 having seen it, and two problems that are not diseases at all."""
@@ -172,6 +181,12 @@ def load_split():
 # synthetic MPS step measured 0.1 img/s at the time and 20.3 once the indexing
 # finished. data/raw and data/processed now carry .metadata_never_index so the
 # next import does not do it again.
+#
+# Four workers then lost a run at epoch five to "DataLoader worker killed by
+# signal: Killed: 9" — SIGKILL, which is the system reclaiming memory, not a
+# crash in the run. Swap was at 10.6 GB of 12 GB with a browser, a database and
+# two other projects' servers up. Check free memory before raising this; on a
+# busy machine two workers that finish beat four that get killed at hour three.
 WORKERS = int(os.environ.get("ANNRAKSHAK_WORKERS", "2"))
 
 
@@ -568,6 +583,8 @@ def main():
                     help="with --with-extra: continue from the deployed model instead of ImageNet weights")
     ap.add_argument("--from-candidate", action="store_true",
                     help="continue from ml/artifacts/candidate (a run that did not pass the deploy gate)")
+    ap.add_argument("--score-only", action="store_true",
+                    help="skip training: score the epoch checkpoint and write the candidate and report")
     ap.add_argument("--resume", action="store_true",
                     help="pick up the weights of the last finished epoch (ml/artifacts/epoch_checkpoint.pt)")
     ap.add_argument("--per-class", type=int, default=120,
@@ -580,6 +597,12 @@ def main():
                     help="add the hand-downloaded rice and soybean sets (data/ingest_downloads.py)")
     ap.add_argument("--with-cotton", action="store_true",
                     help="add the Mendeley cotton sets (data/ingest_cotton.py)")
+    ap.add_argument("--with-pests", action="store_true",
+                    help="add the rice leaf folder photos (data/ingest_pests.py)")
+    ap.add_argument("--with-dhan", action="store_true",
+                    help="add Dhan-Shomadhan rice, sheath blight above all (data/ingest_dhan.py)")
+    ap.add_argument("--with-ricebd", action="store_true",
+                    help="add the Sirajganj/Pabna rice set (data/ingest_ricebd.py)")
     ap.add_argument("--with-more", action="store_true",
                     help="also the cotton, soybean and extra maize/rice sets (data/processed/more_images.csv)")
     ap.add_argument("--lr-feat", type=float, default=None,
@@ -776,7 +799,10 @@ def main_extra(args):
               f"{len({r['train_class'] for r in a_tr})} classes (data/ingest_asdid.py)")
     for flag, manifest, cap, what in (
             ("with_local", LOCAL_MANIFEST, LOCAL_CAP, "hand-downloaded rice and soybean (data/ingest_downloads.py)"),
-            ("with_cotton", COTTON_MANIFEST, COTTON_CAP, "Mendeley cotton (data/ingest_cotton.py)")):
+            ("with_cotton", COTTON_MANIFEST, COTTON_CAP, "Mendeley cotton (data/ingest_cotton.py)"),
+            ("with_pests", PESTS_MANIFEST, THIN_CAP, "rice leaf folder (data/ingest_pests.py)"),
+            ("with_dhan", DHAN_MANIFEST, THIN_CAP, "Dhan-Shomadhan rice (data/ingest_dhan.py)"),
+            ("with_ricebd", RICEBD_MANIFEST, THIN_CAP, "Sirajganj/Pabna rice (data/ingest_ricebd.py)")):
         if getattr(args, flag, False) and manifest.exists():
             x_tr, x_va, x_te = load_extra_split(manifest, cap, cap, set())
             e_tr, e_va, e_te = e_tr + x_tr, e_va + x_va, e_te + x_te
@@ -831,12 +857,30 @@ def main_extra(args):
         # (0.917 -> 0.883) and the gate refused it. ICAR's are the real field
         # photographs and the ones the deploy checks measure.
         icar_share = 0.85
-    print("fine-tune — EfficientNetV2-S, ICAR + extra sources, background randomisation"
-          f"{', warm start' if init else ''}:")
-    net, f1, hist = finetune("efficientnet_v2_s", train, val, class_idx, device, args.quick, args.epochs,
-                             backgrounds=bgs["train"], val_backgrounds=bgs["val"], epoch_size=epoch_size or None,
-                             init=init, icar_share=icar_share, freeze_all=args.freeze_backbone,
-                             lr_override=(args.lr_feat, args.lr_head) if args.lr_feat else None)
+    if getattr(args, "score_only", False):
+        # Everything below — temperature, the held-out sets, the background
+        # swap, the gate simulation, the deploy checks, the report — is the
+        # same code a finished run goes through. Only the training is skipped,
+        # so a checkpoint whose run was interrupted can still be judged, and
+        # judged by exactly the bar a complete run would have faced.
+        if not CKPT.exists():
+            sys.exit(f"--score-only needs {CKPT.relative_to(ROOT)}")
+        ck = torch.load(CKPT, map_location="cpu")
+        if ck["classes"] != classes:
+            sys.exit(f"checkpoint has {len(ck['classes'])} classes, this data makes {len(classes)}")
+        net = Net("efficientnet_v2_s", len(classes), "finetune", pretrained=False)
+        net.load_state_dict(ck["state"])
+        net.to(device)
+        f1, hist = ck["best_f1"], ck["history"]
+        print(f"scoring the checkpoint of epoch {ck['epoch']} without training it further "
+              f"(validation macro-F1 {f1:.4f})")
+    else:
+        print("fine-tune — EfficientNetV2-S, ICAR + extra sources, background randomisation"
+              f"{', warm start' if init else ''}:")
+        net, f1, hist = finetune("efficientnet_v2_s", train, val, class_idx, device, args.quick, args.epochs,
+                                 backgrounds=bgs["train"], val_backgrounds=bgs["val"], epoch_size=epoch_size or None,
+                                 init=init, icar_share=icar_share, freeze_all=args.freeze_backbone,
+                                 lr_override=(args.lr_feat, args.lr_head) if args.lr_feat else None)
 
     dl_va = loader(val, class_idx, test_transform(IMG), shuffle=False, backgrounds=bgs["val"], deterministic=True)
     lv, yv = logits_of(net, dl_va, device)
@@ -894,7 +938,8 @@ def main_extra(args):
                f"{'+paddy' if getattr(args, 'with_paddy', False) else ''}"
                f"{'+asdid' if getattr(args, 'with_asdid', False) else ''}"
                f"{'+local' if getattr(args, 'with_local', False) else ''}"
-               f"{'+cotton' if getattr(args, 'with_cotton', False) else ''}-"
+               f"{'+cotton' if getattr(args, 'with_cotton', False) else ''}"
+               f"{'+thin' if getattr(args, 'with_dhan', False) else ''}-"
                f"efficientnet_v2_s-{'warmstart' if init else 'finetune'}-"
                f"{datetime.now(UTC):%Y%m%d}")
     meta = {

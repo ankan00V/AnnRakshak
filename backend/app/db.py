@@ -60,9 +60,12 @@ ADDED_COLUMNS = {
              "agro_polygon_id": "VARCHAR(40)", "user_id": "INTEGER REFERENCES app_user(id)",
              "irrigation": "VARCHAR(20)", "location_source": "VARCHAR(10)", "state": "VARCHAR(60)", "taluka": "VARCHAR(80)",
              "date_basis": "VARCHAR(12) DEFAULT 'sown'"},
-    "alert": {"notified_at": "DATETIME", "emailed_at": "DATETIME"},
-    "case": {"assigned_to": "INTEGER REFERENCES app_user(id)", "assigned_at": "DATETIME"},
+    "alert": {"notified_at": "DATETIME", "emailed_at": "DATETIME",
+              "advisory_id": "INTEGER REFERENCES officer_advisory(id)"},
+    "case": {"assigned_to": "INTEGER REFERENCES app_user(id)", "assigned_at": "DATETIME",
+             "snoozed_until": "DATETIME"},
     "farmer_profile": {"state": "VARCHAR(60)"},
+    "expert_profile": {"supervisor": "BOOLEAN DEFAULT FALSE"},
     "sensor_reading": {"soil_ph": "FLOAT", "soil_moisture_pct": "FLOAT"},
 }
 

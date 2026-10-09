@@ -19,7 +19,16 @@ const Alerts = lazy(() => import('./farmer/screens/Alerts'))
 const History = lazy(() => import('./farmer/screens/History'))
 const ProblemDetail = lazy(() => import('./farmer/screens/History').then((m) => ({ default: m.ProblemDetail })))
 const ExpertConsole = lazy(() => import('./expert/ExpertConsole'))
-const OfficerDashboard = lazy(() => import('./officer/OfficerDashboard'))
+const OfficerShell = lazy(() => import('./officer/OfficerShell'))
+const OfficerToday = lazy(() => import('./officer/pages/Today'))
+const OfficerQueue = lazy(() => import('./officer/pages/Queue'))
+const OfficerFarm = lazy(() => import('./officer/pages/FarmPage'))
+const OfficerMap = lazy(() => import('./officer/pages/MapPage'))
+const OfficerAdvisories = lazy(() => import('./officer/pages/Advisories'))
+const OfficerInputs = lazy(() => import('./officer/pages/Inputs'))
+const OfficerModel = lazy(() => import('./officer/pages/ModelGaps'))
+const OfficerOfficers = lazy(() => import('./officer/pages/Officers'))
+const OfficerReference = lazy(() => import('./officer/pages/Reference'))
 const AuthLayout = lazy(() => import('./auth/AuthLayout'))
 const Login = lazy(() => import('./auth/Login'))
 const SignupChoose = lazy(() => import('./auth/SignupChoose'))
@@ -51,7 +60,17 @@ export default function App() {
               <Route path="history/:id" element={<ProblemDetail />} />
             </Route>
             <Route path="/expert" element={<RequireRole role="expert"><ExpertConsole /></RequireRole>} />
-            <Route path="/officer" element={<RequireRole role="expert"><OfficerDashboard /></RequireRole>} />
+            <Route path="/officer" element={<RequireRole role="expert"><OfficerShell /></RequireRole>}>
+              <Route index element={<OfficerToday />} />
+              <Route path="queue" element={<OfficerQueue />} />
+              <Route path="farm/:id" element={<OfficerFarm />} />
+              <Route path="map" element={<OfficerMap />} />
+              <Route path="advisories" element={<OfficerAdvisories />} />
+              <Route path="inputs" element={<OfficerInputs />} />
+              <Route path="model" element={<OfficerModel />} />
+              <Route path="officers" element={<OfficerOfficers />} />
+              <Route path="reference" element={<OfficerReference />} />
+            </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>

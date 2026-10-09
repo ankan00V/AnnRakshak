@@ -78,7 +78,11 @@ class ExpertProfile(Base):
     specialities: Mapped[list] = mapped_column(JSON)
     languages: Mapped[list] = mapped_column(JSON)
     verified: Mapped[bool] = mapped_column(default=False)
-    """Checked by the district office before verdicts count (auto in demo builds)."""
+    """Checked by the district office before this officer reviews anything.
+    Unverified is not 'limited access': it is no access to a farmer's case."""
+    supervisor: Mapped[bool] = mapped_column(default=False)
+    """May verify officers, route a backlog and move other people's cases.
+    A reviewer verifying themselves is how a queue becomes nobody's."""
 
 
 class OtpChallenge(Base):
@@ -166,7 +170,7 @@ class Problem(Base):
     __tablename__ = "problem"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    farm_id: Mapped[int] = mapped_column(ForeignKey("farm.id"))
+    farm_id: Mapped[int] = mapped_column(ForeignKey("farm.id"), index=True)
     target: Mapped[str | None] = mapped_column(String(60))
     """Current best label. Null while nobody — model or human — has settled it."""
     status: Mapped[str] = mapped_column(String(20), default="open")
@@ -238,16 +242,61 @@ class Case(Base):
     __tablename__ = "case"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    problem_id: Mapped[int] = mapped_column(ForeignKey("problem.id"))
-    status: Mapped[str] = mapped_column(String(20), default="open")
+    problem_id: Mapped[int] = mapped_column(ForeignKey("problem.id"), index=True)
+    status: Mapped[str] = mapped_column(String(20), default="open", index=True)
     reason: Mapped[str] = mapped_column(String(40))
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime)
-    assigned_to: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    assigned_to: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"), index=True)
     """The officer this case was routed to (app.engine.assign). None when the
     district has no verified officer yet: the case stays in everyone's queue
     rather than waiting for a name."""
     assigned_at: Mapped[datetime | None] = mapped_column(DateTime)
+    snoozed_until: Mapped[datetime | None] = mapped_column(DateTime)
+    """Set aside until a time — waiting on a lab, or on the farmer sending a
+    better photo. Out of the queue, never out of the record: it comes back."""
+
+
+class OfficerAction(Base):
+    """Who did what, in an office where the doing reaches farmers.
+
+    Verifying a colleague, moving somebody else's cases and sending an advisory
+    are all decisions a district has to be able to answer for afterwards."""
+
+    __tablename__ = "officer_action"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    actor_id: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    actor_name: Mapped[str] = mapped_column(String(80))
+    """Frozen: the record must still read correctly if the account is renamed."""
+    action: Mapped[str] = mapped_column(String(40), index=True)
+    subject: Mapped[str | None] = mapped_column(String(40))
+    subject_id: Mapped[int | None] = mapped_column(Integer)
+    detail: Mapped[dict | None] = mapped_column(JSON)
+    at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
+    is_demo: Mapped[bool] = mapped_column(default=False)
+
+
+class OfficerAdvisory(Base):
+    """One thing the district office sent out, and who sent it.
+
+    An advisory reaches farmers' phones, so it is not enough that the alerts
+    exist: the office needs a record of what was issued, to whom and by whom."""
+
+    __tablename__ = "officer_advisory"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    issued_by: Mapped[int] = mapped_column(ForeignKey("app_user.id"))
+    issued_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    target: Mapped[str] = mapped_column(String(60))
+    crop: Mapped[str] = mapped_column(String(30))
+    districts: Mapped[list] = mapped_column(JSON)
+    kind: Mapped[str] = mapped_column(String(20))
+    """'advisory' — this is building, check your field; 'inspection' — go and look."""
+    level: Mapped[str] = mapped_column(String(10))
+    note: Mapped[str | None] = mapped_column(Text)
+    farms: Mapped[int] = mapped_column(Integer, default=0)
+    is_demo: Mapped[bool] = mapped_column(default=False)
 
 
 class Confirmation(Base):
@@ -278,18 +327,23 @@ class Alert(Base):
     __tablename__ = "alert"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    farm_id: Mapped[int] = mapped_column(ForeignKey("farm.id"))
-    target: Mapped[str] = mapped_column(String(60))
+    farm_id: Mapped[int] = mapped_column(ForeignKey("farm.id"), index=True)
+    target: Mapped[str] = mapped_column(String(60), index=True)
     trigger: Mapped[str] = mapped_column(String(20))
     level: Mapped[str] = mapped_column(String(10))
     reason: Mapped[dict] = mapped_column(JSON)
     """Per-language sentence saying WHY, frozen at issue time."""
     tasks: Mapped[dict] = mapped_column(JSON)
     """Per-language list of 'go look here' tasks."""
-    issued_on: Mapped[date] = mapped_column(Date)
+    issued_on: Mapped[date] = mapped_column(Date, index=True)
     outcome: Mapped[str | None] = mapped_column(String(20))
     outcome_at: Mapped[datetime | None] = mapped_column(DateTime)
     source_case_id: Mapped[int | None] = mapped_column(ForeignKey("case.id"))
+    advisory_id: Mapped[int | None] = mapped_column(ForeignKey("officer_advisory.id"), index=True)
+    """The officer advisory that raised this alert, when one did. Outcomes are
+    read back through this: matching on (target, trigger, day) looked right and
+    broke silently once the issuing timestamp and the issue date fell on
+    different sides of midnight UTC."""
     notified_at: Mapped[datetime | None] = mapped_column(DateTime)
     """When the phone / in-app notification for this alert went out."""
     emailed_at: Mapped[datetime | None] = mapped_column(DateTime)

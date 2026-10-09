@@ -80,7 +80,10 @@ def seed_officers(db, districts: list[str]) -> int:
                 qualification="phd" if i == 0 else "msc_agri", experience_years=14 - 2 * i,
                 districts=[district], crops=["rice", "maize", "cotton", "soybean"],
                 specialities=["plant_pathology", "entomology"], languages=["mr", "hi", "en"],
-                verified=True))
+                verified=True,
+                # One supervisor per district: the desk that verifies the others
+                # and rebalances the queue.
+                supervisor=(i == 0)))
             made += 1
     return made
 

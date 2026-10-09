@@ -1,39 +1,56 @@
 import type {
+  AdvisoryDraft,
+  AdvisoryIssued,
+  AdvisoryPreview,
+  AdvisoryRow,
   AlertView,
+  AuthOptions,
+  CaseBrief,
   CaseBundle,
   CaseListItem,
+  CaseQuery,
   ClarifyResult,
   Contact,
-  EmailPref,
   CropInfo,
+  DarpanAnswer,
   DiagnoseResult,
+  EmailPref,
   Farm,
+  FarmDossier,
+  GapRow,
   Home,
   Hotspots,
+  IndentRow,
   KccPanel,
-  LabelVerdict,
-  LiveSummary,
   KrishiAnswer,
   KrishiChip,
+  LabelVerdict,
   Lang,
+  LiveSummary,
+  Me,
   ModelCard,
   NoticeItem,
+  OfficeAction,
+  OfficerLoad,
+  OfficerPerformance,
+  OtpSent,
   OutlookRow,
+  PendingOfficer,
   PesticideBaseline,
+  PlaceHit,
   ProblemView,
   RainfallPanel,
+  Role,
+  SatelliteView,
+  SprayHour,
+  StatePlaces,
   Summary,
   TargetView,
   TrapReading,
-  SatelliteView,
-  SprayHour,
+  Trends,
   WeatherView,
-  Me,
-  OtpSent,
-  AuthOptions,
-  Role,
-  StatePlaces,
-  PlaceHit,
+  Worklist,
+  Workload,
 } from './types'
 
 /** Fired when a signed-in call comes back 401 (session expired or revoked). */
@@ -155,9 +172,42 @@ export const api = {
   labelNote: (farmId: number, product: string, lang: Lang, problemId?: number) =>
     req<{ suggestion: string | null }>('/api/labelcheck/note', json({ farm_id: farmId, product, lang, problem_id: problemId })),
 
-  cases: (status: 'open' | 'resolved' | 'all' = 'open', scope: 'mine' | 'all' = 'all') =>
-    req<CaseListItem[]>(`/api/cases?status=${status}&scope=${scope}`),
+  cases: (query: CaseQuery = {}) => {
+    const p = new URLSearchParams()
+    for (const [k, v] of Object.entries(query)) {
+      if (v !== undefined && v !== null && v !== '' && v !== false) p.set(k, String(v))
+    }
+    return req<CaseListItem[]>(`/api/cases?${p.toString()}`)
+  },
+  bulkAssign: (caseIds: number[], toUserId: number | null) =>
+    req<{ moved: number; skipped: number }>('/api/cases/bulk/assign', json({ case_ids: caseIds, to_user_id: toUserId })),
+  farmDossier: (id: number) => req<FarmDossier>(`/api/officials/farms/${id}`),
   caseBundle: (id: number) => req<CaseBundle>(`/api/cases/${id}`),
+  officers: (district?: string) =>
+    req<OfficerLoad[]>(`/api/cases/officers/list${district ? `?district=${encodeURIComponent(district)}` : ''}`),
+  reassignCase: (id: number, toUserId: number | null) =>
+    req<CaseBrief>(`/api/cases/${id}/reassign`, json({ to_user_id: toUserId })),
+  workload: () => req<Workload>('/api/officials/workload'),
+  worklist: () => req<Worklist>('/api/officials/worklist'),
+  darpanHello: () => req<{ greeting: string; suggestions: { label: string; text: string }[] }>('/api/darpan/hello'),
+  darpanAsk: (text: string) => req<DarpanAnswer>('/api/darpan/ask', json({ text })),
+  officeActions: () => req<OfficeAction[]>('/api/officials/actions'),
+  trends: () => req<Trends>('/api/officials/trends'),
+  performance: () => req<OfficerPerformance[]>('/api/officials/performance'),
+  newCasesSince: (caseId: number) => req<{ new_cases: number }>(`/api/cases/since/${caseId}`),
+  snoozeCase: (id: number, hours = 24) => req<CaseBrief>(`/api/cases/${id}/snooze`, json({ hours })),
+  wakeCase: (id: number) => req<CaseBrief>(`/api/cases/${id}/wake`, { method: 'POST' }),
+  recordInspection: (alertId: number, outcome: 'found' | 'nothing_found') =>
+    req<{ id: number; outcome: string }>(`/api/officials/alerts/${alertId}/outcome`, json({ outcome })),
+  advisoryPreview: (d: AdvisoryDraft) => req<AdvisoryPreview>('/api/officials/advisories/preview', json(d)),
+  issueAdvisory: (d: AdvisoryDraft) => req<AdvisoryIssued>('/api/officials/advisories', json(d)),
+  advisoryHistory: () => req<AdvisoryRow[]>('/api/officials/advisories'),
+  pendingOfficers: () => req<PendingOfficer[]>('/api/officials/officers/pending'),
+  verifyOfficer: (userId: number, verified: boolean) =>
+    req<{ user_id: number; verified: boolean }>(`/api/officials/officers/${userId}/verify`, json({ verified })),
+  gaps: () => req<GapRow[]>('/api/officials/gaps'),
+  indent: () => req<IndentRow[]>('/api/officials/indent'),
+  routeCases: () => req<{ considered: number; assigned: number }>('/api/officials/cases/route', { method: 'POST' }),
   resolveCase: (id: number, body: Record<string, unknown>) =>
     req<{ verdict: string; final_label: string; model_label: string | null; spread_alerts: number }>(
       `/api/cases/${id}/resolve`,

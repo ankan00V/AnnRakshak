@@ -243,6 +243,29 @@ def _queue_position(db: Session, case: Case) -> int:
     return (ahead or 0) + 1
 
 
+def case_briefs(db: Session, cases: list[Case]) -> dict[int, dict]:
+    """Briefs for a whole queue in three queries instead of three per case.
+
+    The production database is remote, so an N+1 here is not a few microseconds
+    — it is a round trip each, and the queue took seconds to open."""
+    if not cases:
+        return {}
+    open_ids = [i for (i,) in db.execute(
+        select(Case.id).where(Case.status == "open").order_by(Case.id)).all()]
+    position = {cid: n + 1 for n, cid in enumerate(open_ids)}
+    officer_ids = {c.assigned_to for c in cases if c.assigned_to}
+    names = dict(db.execute(select(User.id, User.name).where(User.id.in_(officer_ids))).all()) if officer_ids else {}
+    out = {}
+    for c in cases:
+        pos = position.get(c.id, 0) if c.status == "open" else 0
+        out[c.id] = {
+            "id": c.id, "status": c.status, "reason": c.reason,
+            "queue_position": pos, "eta_minutes": pos * CASE_ETA_MINUTES_PER_POSITION,
+            "assigned_to": c.assigned_to, "assigned_name": names.get(c.assigned_to),
+        }
+    return out
+
+
 def case_brief(db: Session, case: Case) -> dict:
     pos = _queue_position(db, case) if case.status == "open" else 0
     officer = db.get(User, case.assigned_to) if case.assigned_to else None
@@ -257,15 +280,18 @@ def case_brief(db: Session, case: Case) -> dict:
     }
 
 
-def officers_for(db: Session, district: str | None) -> list[assign.Candidate]:
+def officers_for(db: Session, district: str | None, demo: bool = False) -> list[assign.Candidate]:
     """Verified officers who cover this district, with the load each is carrying.
 
-    Nobody covering the district? Fall back to every verified officer, so a case
-    is never stranded because a district has no name against it yet."""
+    Demo and real never mix: a showcase farm's case goes to a demo officer, and
+    a farmer who signed up for their own field is never reviewed by whoever
+    tapped "try the demo". Nobody covering the district? Fall back to every
+    officer on the same side of that line, so a case is never stranded."""
     rows = db.execute(
         select(User.id, ExpertProfile.districts)
         .join(ExpertProfile, ExpertProfile.user_id == User.id)
-        .where(User.role == "expert", ExpertProfile.verified.is_(True))
+        .where(User.role == "expert", ExpertProfile.verified.is_(True),
+               User.is_demo.is_(demo))
     ).all()
     covering = [uid for uid, districts in rows if district and district in (districts or [])]
     user_ids = covering or [uid for uid, _ in rows]
@@ -286,9 +312,108 @@ def officers_for(db: Session, district: str | None) -> list[assign.Candidate]:
     return [assign.Candidate(uid, open_counts.get(uid, 0), last_active.get(uid)) for uid in user_ids]
 
 
-def assign_case(db: Session, case: Case, farm: Farm) -> int | None:
+def case_is_visible_to(db: Session, case: Case, user: User | None) -> bool:
+    """A demo account sees demo farms; a real account sees real ones. Checked on
+    every case route, not only in the list, so an id cannot be guessed across."""
+    if user is None:
+        return True  # sign-in is off (older flow tests); the routers guard that
+    problem = db.get(Problem, case.problem_id)
+    return bool(problem and problem.farm.is_demo == user.is_demo)
+
+
+def workload(db: Session, district: str | None = None, demo: bool = False) -> list[dict]:
+    """Every verified officer, what they are holding, and how long the oldest
+    case has waited. The district office reads this before it rebalances;
+    `district` narrows it to the officers who actually cover one."""
+    rows = db.execute(
+        select(User.id, User.name, ExpertProfile.districts, ExpertProfile.designation)
+        .join(ExpertProfile, ExpertProfile.user_id == User.id)
+        .where(User.role == "expert", ExpertProfile.verified.is_(True), User.is_demo.is_(demo))
+        .order_by(User.name)
+    ).all()
+    if district:
+        covering = [r for r in rows if district in (r[2] or [])]
+        rows = covering or rows  # nobody covers it: show everyone rather than nobody
+    if not rows:
+        return []
+    # Three queries for the whole board, not two per officer: a district can have
+    # eighty desks and the database is a network hop away.
+    ids = [r[0] for r in rows]
+    # Only cases from this side of the demo line count towards a desk's load.
+    on_side = (select(Case.assigned_to, Case.status, Case.created_at, Case.id)
+               .join(Problem, Problem.id == Case.problem_id)
+               .join(Farm, Farm.id == Problem.farm_id)
+               .where(Case.assigned_to.in_(ids), Farm.is_demo.is_(demo))).subquery()
+    counts = {
+        (uid, status): n
+        for uid, status, n in db.execute(
+            select(on_side.c.assigned_to, on_side.c.status, func.count(on_side.c.id))
+            .group_by(on_side.c.assigned_to, on_side.c.status)
+        ).all()
+    }
+    oldest = dict(db.execute(
+        select(on_side.c.assigned_to, func.min(on_side.c.created_at))
+        .where(on_side.c.status == "open")
+        .group_by(on_side.c.assigned_to)
+    ).all())
+    now = datetime.now()
+    out = []
+    for uid, name, districts, designation in rows:
+        first = oldest.get(uid)
+        out.append({
+            "user_id": uid, "name": name, "designation": designation,
+            "districts": districts or [],
+            "open_cases": counts.get((uid, "open"), 0),
+            "resolved_cases": counts.get((uid, "resolved"), 0),
+            "oldest_wait_hours": round((now - first).total_seconds() / 3600, 1) if first else None,
+        })
+    return out
+
+
+def route_unassigned(db: Session, demo: bool = False) -> dict:
+    """Hand every unplaced open case to an officer. What the district office
+    presses after verifying new officers, or when a backlog built up while
+    nobody covered a district."""
+    cases = db.scalars(
+        select(Case).join(Problem, Problem.id == Case.problem_id)
+        .join(Farm, Farm.id == Problem.farm_id)
+        .where(Case.status == "open", Case.assigned_to.is_(None), Farm.is_demo.is_(demo))
+        .order_by(Case.id)
+    ).all()
+    placed = 0
+    for case in cases:
+        problem = db.get(Problem, case.problem_id)
+        if problem and assign_case(db, case, problem.farm) is not None:
+            placed += 1
+    db.commit()
+    return {"considered": len(cases), "assigned": placed}
+
+
+def reassign_case(db: Session, case: Case, to_user_id: int | None) -> int | None:
+    """Hand a case to a named officer, or let the router pick the freest one."""
+    if to_user_id is not None:
+        officer = db.get(User, to_user_id)
+        if officer is None or officer.role != "expert":
+            raise ValueError("not an officer")
+        case.assigned_to = to_user_id
+        case.assigned_at = datetime.now()
+        db.flush()
+        return to_user_id
+    problem = db.get(Problem, case.problem_id)
+    holder = case.assigned_to
+    case.assigned_to = None  # so the router does not count this case against its current holder
+    db.flush()
+    # Handing a case on means handing it to somebody else; the holder is only
+    # eligible again when they are the district's one officer.
+    picked = assign_case(db, case, problem.farm, exclude={holder} if holder else set())
+    return picked if picked is not None else assign_case(db, case, problem.farm)
+
+
+def assign_case(db: Session, case: Case, farm: Farm, exclude: set[int] | None = None) -> int | None:
     """Route a case to the officer who can reach it soonest (app.engine.assign)."""
-    picked = assign.pick(officers_for(db, farm.district))
+    candidates = [c for c in officers_for(db, farm.district, demo=farm.is_demo)
+                  if c.user_id not in (exclude or set())]
+    picked = assign.pick(candidates)
     if picked is not None:
         case.assigned_to = picked
         case.assigned_at = datetime.now()
@@ -664,6 +789,19 @@ def icar_referral(kb: KB, targets: list[str], crop: str, lang: str) -> list[dict
     return out
 
 
+HEALTHY_VERDICT = "healthy"
+"""The expert looked and found nothing wrong. Not a disease, so it carries no
+advisory, warns no neighbour and teaches the label prior nothing."""
+
+OTHER_VERDICT = "other"
+"""Something real that this app cannot name — a disease outside the knowledge
+base, a nutrient or water problem, damage. The officer must say what it is in
+their notes; the farmer is told a person looked and what they wrote. Nothing is
+invented: with no authored advisory for it, the app offers none."""
+
+SPECIAL_VERDICTS = (HEALTHY_VERDICT, OTHER_VERDICT)
+
+
 def resolve_case(
     db: Session, kb: KB, case: Case, *, verdict: str, final_label: str, expert_name: str,
     notes: str | None, referred_to_lab: bool, today: date | None = None,
@@ -672,8 +810,11 @@ def resolve_case(
         raise ValueError("case already resolved")
     problem = db.get(Problem, case.problem_id)
     farm = problem.farm
-    if final_label not in kb.targets or kb.targets[final_label]["crop"] != farm.crop:
+    special = final_label in SPECIAL_VERDICTS
+    if not special and (final_label not in kb.targets or kb.targets[final_label]["crop"] != farm.crop):
         raise ValueError(f"{final_label} is not a {farm.crop} target")
+    if final_label == OTHER_VERDICT and not (notes or "").strip():
+        raise ValueError("say what it is: a note naming the problem is required")
     last = problem.diagnoses[-1] if problem.diagnoses else None
     model_label = last.topk[0]["target"] if last and last.topk else None
     if verdict == "confirmed" and model_label and model_label != final_label:
@@ -694,12 +835,22 @@ def resolve_case(
             db.add(row)
         setattr(row, field, getattr(row, field) + 1)
 
-    bump(final_label, "confirmed")
+    # A sentinel is not one of the model's labels, so it teaches the prior
+    # nothing about what to predict — but being wrong still counts against the
+    # label the model did put forward.
+    if not special:
+        bump(final_label, "confirmed")
     if model_label and model_label != final_label and model_label in kb.targets:
         bump(model_label, "corrected")
 
-    advice = _advise(db, kb, problem, final_label, "expert", farm.lang, farm)
-    spread = propagate(db, kb, farm, final_label, case.id, today)
+    if special:
+        problem.target = None  # neither sentinel is a label the rest of the app can act on
+        problem.status = "resolved"
+        problem.resolved_at = datetime.now(UTC)
+        advice, spread = {"followup": None}, 0
+    else:
+        advice = _advise(db, kb, problem, final_label, "expert", farm.lang, farm)
+        spread = propagate(db, kb, farm, final_label, case.id, today)
     db.commit()
     return {
         "confirmation_id": conf.id, "verdict": verdict, "final_label": final_label,

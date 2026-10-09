@@ -1,5 +1,6 @@
-"""Read-only surveillance for agriculture officials: where problems are, how
-the system is performing in the field, and what the weather is doing to risk.
+"""Surveillance for agriculture officials: where problems are, how the system is
+performing in the field, what the weather is doing to risk — and the two levers
+the office actually pulls: sweep the risk rules, and route the case backlog.
 """
 
 from __future__ import annotations
@@ -8,17 +9,22 @@ import json
 from collections import Counter, defaultdict
 from datetime import UTC, date, datetime, timedelta
 
-from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from pydantic import BaseModel, Field
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
-from app import auth, services
+from app import auth, config, office, services
+from app.limits import limit
 from app.db import get_db
 from app.engine import vision
 from app.kb import KB, get_kb, tr
-from app.models import Advisory, Alert, Case, Confirmation, Diagnosis, Farm, Problem
+from app.models import Advisory, Alert, Case, Confirmation, Diagnosis, Farm, Problem, User
 
-router = APIRouter(prefix="/api/officials", tags=["officials"], dependencies=[Depends(auth.require("expert"))])
+router = APIRouter(prefix="/api/officials", tags=["officials"],
+                   dependencies=[Depends(auth.require("expert")), Depends(auth.require_verified)])
 
 # One representative point per Maharashtra IMD subdivision for the rainfall panel.
 SUBDIVISION_POINTS = {
@@ -137,6 +143,8 @@ def hotspots(days: int = 45, lang: str = "en", db: Session = Depends(get_db), kb
             "problem_id": p.id, "lat": f.lat, "lon": f.lon, "district": f.district, "crop": f.crop,
             "target": target, "name": tr(kb.targets[target]["names"], lang) if target in kb.targets else None,
             "status": status, "on": p.opened_at.date().isoformat() if p.opened_at else None,
+            # A pin nobody can open is a picture: carry the field it stands for.
+            "farm_id": f.id, "farmer_name": f.farmer_name,
         })
     farms = {f.id: f for f in db.scalars(select(Farm)).all()}
     alerts = [
@@ -262,8 +270,195 @@ def model_card():
     return {"is_stub": False, **{k: meta.get(k) for k in keep}}
 
 
+@router.get("/workload")
+def officer_workload(request: Request, db: Session = Depends(get_db)):
+    """Who is carrying what, so a supervisor can see a queue building up."""
+    demo = bool((me := auth.current_user(request, db)) and me.is_demo)
+    rows = services.workload(db, demo=demo)
+    unplaced = db.scalar(
+        select(func.count(Case.id)).join(Problem, Problem.id == Case.problem_id)
+        .join(Farm, Farm.id == Problem.farm_id)
+        .where(Case.status == "open", Case.assigned_to.is_(None), Farm.is_demo.is_(demo))) or 0
+    return {"officers": rows, "unassigned": unplaced,
+            "open_total": sum(r["open_cases"] for r in rows) + unplaced}
+
+
+@router.post("/cases/route", dependencies=[Depends(auth.require_supervisor)])
+def route_cases(request: Request, db: Session = Depends(get_db)):
+    """Give every unplaced open case to whichever officer is freest."""
+    me = auth.current_user(request, db)
+    out = services.route_unassigned(db, demo=bool(me and me.is_demo))
+    if out["assigned"]:
+        office.record(db, actor=me, action="route_backlog", subject="cases",
+                      detail={"assigned": out["assigned"]})
+        db.commit()
+    return out
+
+
 @router.post("/risk/run-all")
 def run_all(db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
     results = [services.run_risk(db, kb, f) for f in db.scalars(select(Farm)).all()]
     return {"farms": len(results), "alerts_issued": sum(len(r["issued"]) for r in results),
             "weather_sources": dict(Counter(r["weather_source"] for r in results))}
+
+
+# --------------------------------------------------------------------------
+# What the office does, not just what it sees (app/office.py)
+# --------------------------------------------------------------------------
+
+def _me(request: Request, db: Session) -> User | None:
+    return auth.current_user(request, db)
+
+
+def _demo(request: Request, db: Session) -> bool:
+    me = _me(request, db)
+    return bool(me and me.is_demo)
+
+
+@router.get("/worklist")
+def worklist(request: Request, lang: str = "en", db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    """Today, as a list of things to do rather than numbers to admire."""
+    return office.worklist(db, kb, demo=_demo(request, db), lang=lang)
+
+
+class AdvisoryIn(BaseModel):
+    target: str
+    crop: str
+    districts: list[str] = Field(default_factory=list)
+    kind: Literal["advisory", "inspection"] = "advisory"
+    level: Literal["low", "medium", "high"] = "high"
+    note: str | None = Field(default=None, max_length=400)
+    audience: Literal["all", "alerted", "nearby", "stage"] = "all"
+    """Who it reaches: everyone of this crop, only farms already alerted for the
+    problem, only farms near a confirmed case, or only farms at a susceptible stage."""
+
+
+@router.post("/advisories/preview")
+def advisory_preview(body: AdvisoryIn, request: Request,
+                     db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    """Exactly what would be sent, to how many farms, in every language."""
+    me = _me(request, db)
+    if body.target not in kb.targets:
+        raise HTTPException(422, "unknown target")
+    return office.preview(db, kb, target=body.target, crop=body.crop, districts=body.districts,
+                          kind=body.kind, note=body.note,
+                          officer=me.name if me else "The district office",
+                          demo=bool(me and me.is_demo), audience=body.audience)
+
+
+@router.post("/advisories")
+def issue_advisory(body: AdvisoryIn, request: Request,
+                   db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    """Send it. Every farm of that crop in those districts gets the alert."""
+    me = _me(request, db)
+    if me is None:
+        raise HTTPException(401, "sign in")
+    # An advisory is a message to thousands of people; a slip of the hand, or a
+    # script, should not be able to send twenty of them in a minute.
+    limit(f"advisory:{me.id}", config.MAX_ADVISORIES_PER_OFFICER_PER_HOUR, 3600)
+    try:
+        return office.issue(db, kb, target=body.target, crop=body.crop, districts=body.districts,
+                            kind=body.kind, level=body.level, note=body.note, officer=me,
+                            demo=me.is_demo, audience=body.audience)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@router.get("/advisories")
+def advisory_history(request: Request, db: Session = Depends(get_db)):
+    return office.history(db, demo=_demo(request, db))
+
+
+@router.get("/officers/pending")
+def pending_officers(request: Request, db: Session = Depends(get_db)):
+    """Sign-ups waiting for the district office to let them in."""
+    return office.pending_officers(db, demo=_demo(request, db))
+
+
+class VerifyIn(BaseModel):
+    verified: bool = True
+
+
+@router.post("/officers/{user_id}/verify", dependencies=[Depends(auth.require_supervisor)])
+def verify_officer(user_id: int, body: VerifyIn, request: Request, db: Session = Depends(get_db)):
+    """A supervisor lets an officer in — never themselves, and never across the
+    line between showcase data and real farmers."""
+    try:
+        return office.set_verified(db, user_id, body.verified, by=_me(request, db))
+    except ValueError as exc:
+        raise HTTPException(409 if "own" in str(exc) else 404, str(exc)) from exc
+
+
+@router.get("/farms/{farm_id}")
+def farm_dossier(farm_id: int, request: Request, lang: str = "en",
+                 db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    """One farm, everything the office knows about it."""
+    farm = db.get(Farm, farm_id)
+    me = _me(request, db)
+    if farm is None or (me is not None and farm.is_demo != me.is_demo):
+        raise HTTPException(404, "farm not found")
+    return office.farm_dossier(db, kb, farm, lang)
+
+
+class OutcomeIn(BaseModel):
+    outcome: Literal["found", "nothing_found"]
+    note: str | None = Field(default=None, max_length=200)
+
+
+@router.post("/alerts/{alert_id}/outcome")
+def record_inspection(alert_id: int, body: OutcomeIn, request: Request, db: Session = Depends(get_db)):
+    """A farmer rings the office, or a scout walks the block: the answer belongs
+    on the alert whether or not the farmer opened the app."""
+    alert = db.get(Alert, alert_id)
+    me = _me(request, db)
+    farm = db.get(Farm, alert.farm_id) if alert else None
+    if alert is None or farm is None or (me is not None and farm.is_demo != me.is_demo):
+        raise HTTPException(404, "alert not found")
+    alert.outcome, alert.outcome_at = body.outcome, datetime.now()
+    office.record(db, actor=me, action="record_inspection", subject="alert", subject_id=alert.id,
+                  detail={"outcome": body.outcome, "note": body.note, "farm_id": farm.id})
+    db.commit()
+    return {"id": alert.id, "outcome": alert.outcome}
+
+
+@router.get("/trends")
+def trends(request: Request, db: Session = Depends(get_db)):
+    """A fortnight of daily counts, and this week against the last."""
+    return office.trends(db, demo=_demo(request, db))
+
+
+@router.get("/performance")
+def performance(request: Request, db: Session = Depends(get_db)):
+    """What each officer cleared, how long it waited, how often they agreed."""
+    return office.performance(db, demo=_demo(request, db))
+
+
+@router.get("/report")
+def weekly_report(request: Request, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    """The week as a file, for what the office files upward."""
+    csv_text = office.weekly_report(db, kb, demo=_demo(request, db))
+    return Response(csv_text, media_type="text/csv", headers={
+        "Content-Disposition": f'attachment; filename="annrakshak-week-{date.today().isoformat()}.csv"'})
+
+
+@router.get("/actions")
+def office_actions(request: Request, db: Session = Depends(get_db)):
+    """Who did what: verifications, routings and advisories, newest first."""
+    return office.actions(db, demo=_demo(request, db))
+
+
+@router.get("/gaps")
+def gaps(request: Request, db: Session = Depends(get_db)):
+    """Problems officers named that the model cannot: the training backlog."""
+    return office.gaps(db, demo=_demo(request, db))
+
+
+@router.get("/indent")
+def indent(request: Request, lang: str = "en", fmt: Literal["json", "csv"] = "json",
+           db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    """What to stock for what is building, with the 45-day Tricho-card lead."""
+    rows = office.indent(db, kb, demo=_demo(request, db), lang=lang)
+    if fmt == "csv":
+        return Response(office.indent_csv(rows), media_type="text/csv",
+                        headers={"Content-Disposition": 'attachment; filename="indent.csv"'})
+    return rows

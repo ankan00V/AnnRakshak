@@ -1,126 +1,110 @@
 import { useState } from 'react'
 import {
-  Activity, BrainCircuit, CalendarRange, CloudRain, FlaskConical, Gauge, Layers, Loader2, Map as MapIcon, RefreshCw, ShieldCheck, Stethoscope, Target, TriangleAlert, Users,
+  Activity, BrainCircuit, CalendarRange, CloudRain, FlaskConical, Gauge, Loader2, RefreshCw, ShieldCheck, Stethoscope, Target, TriangleAlert, Users,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import type { ModelCard, OutlookRow, PesticideBaseline, RainfallPanel, Summary } from '../api/types'
 import { useAsync } from '../lib/hooks'
+import { Link } from 'react-router-dom'
 import { Bone, BoneLines, Card, ErrorBox, Loading, Pill } from '../ui/kit'
-import HotspotMap from './HotspotMap'
-import AccountMenu from '../auth/AccountMenu'
-import BrandMark from '../ui/BrandMark'
 
-const pct = (n: number | null | undefined, d = 0) => (n == null ? '—' : `${(n * 100).toFixed(d)}%`)
+export const pct = (n: number | null | undefined, d = 0) => (n == null ? '—' : `${(n * 100).toFixed(d)}%`)
 
-export default function OfficerDashboard() {
-  const summary = useAsync(() => api.summary(), [])
-  const hotspots = useAsync(() => api.hotspots(), [])
-  const rainfall = useAsync(() => api.rainfall(), [])
-  const model = useAsync(() => api.modelCard(), [])
-  const outlook = useAsync(() => api.outlook(), [])
-  const pesticides = useAsync(() => api.pesticideBaseline(), [])
-  const [layers, setLayers] = useState({ cases: true, alerts: true, radius: true })
-  const [sweep, setSweep] = useState<string | null>(null)
-  const [sweeping, setSweeping] = useState(false)
+export function OfficerLoadPanel() {
+  const w = useAsync(() => api.workload(), [])
+  const [busy, setBusy] = useState(false)
+  const [said, setSaid] = useState<string | null>(null)
 
-  const refresh = () => {
-    summary.reload()
-    hotspots.reload()
-    outlook.reload()
-  }
-  const runSweep = async () => {
-    setSweeping(true)
+  const route = async () => {
+    setBusy(true)
     try {
-      const r = await api.runAll()
-      const src = Object.entries(r.weather_sources).map(([k, v]) => `${v} ${k}`).join(', ')
-      setSweep(`${r.alerts_issued} new alerts across ${r.farms} farms · weather: ${src}`)
-      refresh()
+      const r = await api.routeCases()
+      setSaid(r.assigned === 0
+        ? 'Nothing waiting to be routed.'
+        : `${r.assigned} case${r.assigned === 1 ? '' : 's'} routed to the freest officers.`)
+      w.reload()
     } finally {
-      setSweeping(false)
+      setBusy(false)
     }
   }
 
+  if (w.error) return <Card className="p-4"><ErrorBox error={w.error} onRetry={w.reload} /></Card>
+  if (!w.data) return <PanelBone rows={5} />
+  // A district office cares about the desks carrying work, longest wait first.
+  // Eighty idle names below them is not information.
+  const officers = w.data.officers
+  const carrying = officers
+    .filter((o) => o.open_cases > 0)
+    .sort((a, b) => b.open_cases - a.open_cases || (b.oldest_wait_hours ?? 0) - (a.oldest_wait_hours ?? 0))
+    .slice(0, 8)
+  const idle = officers.length - officers.filter((o) => o.open_cases > 0).length
+  const busiest = Math.max(1, ...carrying.map((o) => o.open_cases))
+  const districts = new Set(officers.flatMap((o) => o.districts)).size
+
   return (
-    <div className="min-h-screen bg-[#f3efe6] text-soil-dark">
-      <header className="bg-leaf-deep text-cream">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex flex-wrap gap-3 items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight"><BrandMark size={30} />AnnRakshak</Link>
-            <span className="text-cream/40">/</span>
-            <span className="text-sm">Crop-health surveillance · Maharashtra</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link to="/expert" className="text-sm text-cream/70 hover:text-cream px-2">Expert queue</Link>
-            <button onClick={runSweep} disabled={sweeping}
-              className="flex items-center gap-2 rounded-full bg-ochre text-cream text-sm font-medium px-4 py-2 disabled:opacity-60">
-              {sweeping ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              Run risk sweep
-            </button>
-            <AccountMenu />
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-5 space-y-5">
-        {sweep && <div className="rounded-xl bg-leaf/10 text-leaf-deep text-sm px-4 py-2">{sweep}</div>}
-        {summary.error && <ErrorBox error={summary.error} onRetry={refresh} />}
-        {summary.data ? <Kpis s={summary.data} /> : !summary.error && <KpisSkeleton />}
-
-        <div className="grid lg:grid-cols-[1.6fr_1fr] gap-5">
-          <Card className="p-3 flex flex-col">
-            <div className="flex flex-wrap items-center justify-between gap-2 px-1 pb-2">
-              <h2 className="font-semibold flex items-center gap-2"><MapIcon className="w-4 h-4 text-leaf" /> Hotspot map</h2>
-              <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                <Layers className="w-3.5 h-3.5 text-soil-dark/50" />
-                {([['cases', 'Cases'], ['alerts', 'Risk alerts'], ['radius', '5 km spread radius']] as const).map(([k, l]) => (
-                  <button key={k} onClick={() => setLayers((s) => ({ ...s, [k]: !s[k] }))}
-                    className={`px-2.5 py-1 rounded-full border ${layers[k] ? 'bg-leaf-deep text-cream border-leaf-deep' : 'border-soil-dark/20 text-soil-dark/60'}`}>
-                    {l}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="h-[460px]">
-              {hotspots.data ? <HotspotMap data={hotspots.data} layers={layers} /> : <MapSkeleton />}
-            </div>
-            <div className="flex flex-wrap gap-3 px-1 pt-2 text-[11px] text-soil-dark/70">
-              <Legend color="#b0472a" label="Expert-confirmed" />
-              <Legend color="#2f6fa8" label="Awaiting expert" />
-              <Legend color="#c8862d" label="AI-advised (unconfirmed)" />
-              <Legend color="#c8862d" label="Risk alert (dashed)" hollow />
-            </div>
-          </Card>
-
-          <div className="space-y-5">
-            {summary.data ? <GatePanel s={summary.data} /> : !summary.error && <PanelBone rows={3} />}
-            {model.data ? <ModelPanel m={model.data} /> : <PanelBone rows={5} />}
-          </div>
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-5">
-          {summary.data ? <DistrictTable s={summary.data} /> : !summary.error && <PanelBone rows={6} />}
-          {summary.data ? <AccuracyPanel s={summary.data} /> : !summary.error && <PanelBone rows={4} />}
-        </div>
-
-        <div className="grid lg:grid-cols-[1.4fr_1fr] gap-5">
-          {outlook.data ? <OutlookPanel rows={outlook.data} /> : <PanelBone rows={5} />}
-          {pesticides.data?.available && <PesticidePanel p={pesticides.data} />}
-        </div>
-
-        {rainfall.data && <RainfallSection r={rainfall.data} />}
-
-        {summary.data?.includes_demo_data && (
-          <p className="text-xs text-soil-dark/50">Includes demo farms seeded for the showcase. Every case, confirmation and alert shown was produced by running the real flows.</p>
-        )}
+    <Card className="p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-semibold flex items-center gap-2"><Users className="w-4 h-4 text-leaf" /> District officers</h2>
+        <span className="text-xs text-soil-dark/60">
+          {officers.length} officers · {districts} districts · {w.data.open_total} open
+        </span>
       </div>
-    </div>
+
+      {officers.length === 0 ? (
+        <p className="mt-3 text-sm text-soil-dark/70">
+          No verified officer yet. Cases stay in everyone's queue until the district office verifies one.
+        </p>
+      ) : carrying.length === 0 ? (
+        <p className="mt-3 text-sm text-soil-dark/70">Every desk is clear — no case is waiting on a person.</p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {carrying.map((o) => (
+            <li key={o.user_id} className="flex items-center gap-3">
+              <span className="w-40 shrink-0 truncate text-sm">
+                {o.name}
+                <span className="block text-[11px] text-soil-dark/60 truncate">
+                  {o.districts.length > 2 ? `${o.districts.slice(0, 2).join(', ')} +${o.districts.length - 2}` : (o.districts.join(', ') || 'no district')}
+                </span>
+              </span>
+              <span className="flex-1 h-2.5 rounded-full bg-soil-dark/10 overflow-hidden" role="img"
+                aria-label={`${o.open_cases} open cases`}>
+                <span className={`block h-full rounded-full ${o.open_cases >= busiest && busiest > 1 ? 'bg-ember' : 'bg-leaf'}`}
+                  style={{ width: `${(o.open_cases / busiest) * 100}%` }} />
+              </span>
+              <span className="w-24 shrink-0 text-right text-xs tabular-nums text-soil-dark/70">
+                {o.open_cases} open
+                {o.oldest_wait_hours != null && (
+                  <span className={`block ${o.oldest_wait_hours > 24 ? 'text-ember' : 'text-soil-dark/50'}`}>
+                    {o.oldest_wait_hours < 1 ? 'under an hour' : `${Math.round(o.oldest_wait_hours)} h waiting`}
+                  </span>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {idle > 0 && carrying.length > 0 && (
+        <p className="mt-3 text-xs text-soil-dark/60">
+          {idle} other officer{idle === 1 ? '' : 's'} holding nothing.
+        </p>
+      )}
+
+      {w.data.unassigned > 0 && (
+        <button onClick={route} disabled={busy}
+          className="mt-4 w-full min-h-[44px] rounded-full bg-leaf-deep text-cream text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-60">
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+          Route {w.data.unassigned} waiting case{w.data.unassigned === 1 ? '' : 's'}
+        </button>
+      )}
+      {said && <p className="mt-2 text-xs text-leaf-deep">{said}</p>}
+    </Card>
   )
 }
 
-
-/** KPIs, map and side panels, while the six dashboard calls come back. */
-function PanelBone({ rows = 4 }: { rows?: number }) {
+/** The panels the officer pages are built from. Each one fetches what it
+ *  needs, so a page is a choice of panels rather than one giant loader. */
+export function PanelBone({ rows = 4 }: { rows?: number }) {
   return (
     <Card className="p-4 space-y-3">
       <Bone className="h-4 w-40" />
@@ -129,7 +113,7 @@ function PanelBone({ rows = 4 }: { rows?: number }) {
   )
 }
 
-function KpisSkeleton() {
+export function KpisSkeleton() {
   return (
     <Loading label="Loading the district summary">
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -146,7 +130,7 @@ function KpisSkeleton() {
   )
 }
 
-function MapSkeleton() {
+export function MapSkeleton() {
   return (
     <Loading label="Loading the hotspot map" className="h-full">
       <div className="relative h-full w-full overflow-hidden rounded-xl bg-soil-dark/[0.06] motion-safe:animate-pulse">
@@ -159,7 +143,7 @@ function MapSkeleton() {
   )
 }
 
-function Legend({ color, label, hollow }: { color: string; label: string; hollow?: boolean }) {
+export function Legend({ color, label, hollow }: { color: string; label: string; hollow?: boolean }) {
   return (
     <span className="flex items-center gap-1.5">
       <span className="w-3 h-3 rounded-full" style={hollow ? { border: `1.5px dashed ${color}` } : { background: color }} />
@@ -168,33 +152,37 @@ function Legend({ color, label, hollow }: { color: string; label: string; hollow
   )
 }
 
-function Kpis({ s }: { s: Summary }) {
+/** A number that is only a number is a poster. Each tile is the way into the
+ *  queue it counts. */
+export function Kpis({ s }: { s: Summary }) {
   const t = s.totals
   const foundRate = t.alerts_answered ? t.alerts_found / t.alerts_answered : null
   const items = [
-    { icon: Users, label: 'Farms monitored', value: t.farms, sub: `${s.by_district.length} districts` },
-    { icon: Stethoscope, label: 'Photo diagnoses', value: t.diagnoses, sub: `${s.gate_outcomes.advise ?? 0} advised directly` },
+    { icon: Users, label: 'Farms monitored', value: t.farms, sub: `${s.by_district.length} districts`, to: '/officer/map' },
+    { icon: Stethoscope, label: 'Photo diagnoses', value: t.diagnoses, sub: `${s.gate_outcomes.advise ?? 0} advised directly`, to: '/officer/model' },
     // Experts only see what the gate sent them — the hard cases — so this is
     // agreement on escalations, not overall accuracy. Low here = gate did its job.
-    { icon: ShieldCheck, label: 'Expert agreed with AI', value: pct(t.field_accuracy), sub: `${t.confirmed} confirmed · ${t.corrected} corrected, on cases AI flagged unsure` },
-    { icon: Activity, label: 'Expert queue', value: t.open_cases, sub: `${t.resolved_cases} resolved · ${t.referred_to_lab} to lab` },
-    { icon: TriangleAlert, label: 'Risk alerts issued', value: t.alerts_issued, sub: `${t.alerts_answered} inspected · ${pct(foundRate)} found something` },
+    { icon: ShieldCheck, label: 'Expert agreed with AI', value: pct(t.field_accuracy), sub: `${t.confirmed} confirmed · ${t.corrected} corrected, on cases AI flagged unsure`, to: '/officer/model' },
+    { icon: Activity, label: 'Expert queue', value: t.open_cases, sub: `${t.resolved_cases} resolved · ${t.referred_to_lab} to lab`, to: '/officer/queue' },
+    { icon: TriangleAlert, label: 'Risk alerts issued', value: t.alerts_issued, sub: `${t.alerts_answered} inspected · ${pct(foundRate)} found something`, to: '/officer/advisories' },
   ]
   return (
     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-      {items.map(({ icon: Icon, label, value, sub }) => (
-        <Card key={label} className="p-4">
-          <Icon className="w-4 h-4 text-leaf" />
-          <p className="mt-2 text-3xl font-semibold leading-none">{value}</p>
-          <p className="mt-1 text-xs font-medium">{label}</p>
-          <p className="text-[11px] text-soil-dark/50 mt-0.5">{sub}</p>
-        </Card>
+      {items.map(({ icon: Icon, label, value, sub, to }) => (
+        <Link key={label} to={to} className="group">
+          <Card className="p-4 h-full transition-colors group-hover:border-leaf/40 group-hover:bg-leaf/[0.03]">
+            <Icon className="w-4 h-4 text-leaf" />
+            <p className="mt-2 text-3xl font-semibold leading-none">{value}</p>
+            <p className="mt-1 text-xs font-medium">{label}</p>
+            <p className="text-[11px] text-soil-dark/60 mt-0.5">{sub}</p>
+          </Card>
+        </Link>
       ))}
     </div>
   )
 }
 
-function GatePanel({ s }: { s: Summary }) {
+export function GatePanel({ s }: { s: Summary }) {
   const g = s.gate_outcomes
   const total = (g.advise ?? 0) + (g.clarify ?? 0) + (g.escalate ?? 0) + (g.retake ?? 0)
   const seg = [
@@ -227,7 +215,7 @@ function GatePanel({ s }: { s: Summary }) {
   )
 }
 
-function ModelPanel({ m }: { m: ModelCard }) {
+export function ModelPanel({ m }: { m: ModelCard }) {
   if (m.is_stub) {
     return (
       <Card className="p-4 border-ochre/40">
@@ -268,7 +256,7 @@ function ModelPanel({ m }: { m: ModelCard }) {
   )
 }
 
-function Stat({ v, l, strong }: { v: string; l: string; strong?: boolean }) {
+export function Stat({ v, l, strong }: { v: string; l: string; strong?: boolean }) {
   return (
     <div className={`rounded-xl p-2 ${strong ? 'bg-leaf/10' : 'bg-cream'}`}>
       <p className={`text-xl font-semibold ${strong ? 'text-leaf-deep' : ''}`}>{v}</p>
@@ -277,7 +265,7 @@ function Stat({ v, l, strong }: { v: string; l: string; strong?: boolean }) {
   )
 }
 
-function DistrictTable({ s }: { s: Summary }) {
+export function DistrictTable({ s }: { s: Summary }) {
   return (
     <Card className="p-4">
       <h2 className="font-semibold flex items-center gap-2"><Target className="w-4 h-4 text-leaf" /> Districts</h2>
@@ -289,7 +277,10 @@ function DistrictTable({ s }: { s: Summary }) {
           <tbody>
             {s.by_district.map((d) => (
               <tr key={d.district} className="border-t border-soil-dark/5">
-                <td className="py-1.5">{d.district}</td>
+                <td className="py-1.5">
+                  <Link to={`/officer/queue?district=${encodeURIComponent(d.district)}`}
+                    className="hover:text-leaf-deep hover:underline underline-offset-2">{d.district}</Link>
+                </td>
                 <td className="text-right">{d.farms}</td>
                 <td className={`text-right ${d.confirmed ? 'text-ember font-semibold' : ''}`}>{d.confirmed}</td>
                 <td className="text-right">{d.suspected}</td>
@@ -304,7 +295,7 @@ function DistrictTable({ s }: { s: Summary }) {
   )
 }
 
-function AccuracyPanel({ s }: { s: Summary }) {
+export function AccuracyPanel({ s }: { s: Summary }) {
   return (
     <Card className="p-4">
       <h2 className="font-semibold flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-leaf" /> Learning from field confirmations</h2>
@@ -339,7 +330,7 @@ function AccuracyPanel({ s }: { s: Summary }) {
   )
 }
 
-function Sparkline({ series }: { series: [number, number | null, number | null][] }) {
+export function Sparkline({ series }: { series: [number, number | null, number | null][] }) {
   const pts = series.filter((s) => s[2] != null).slice(-60)
   if (pts.length < 2) return null
   const w = 260, h = 56
@@ -359,7 +350,7 @@ function Sparkline({ series }: { series: [number, number | null, number | null][
   )
 }
 
-function RainfallSection({ r }: { r: RainfallPanel }) {
+export function RainfallSection({ r }: { r: RainfallPanel }) {
   return (
     <Card className="p-4">
       <h2 className="font-semibold flex items-center gap-2"><CloudRain className="w-4 h-4 text-leaf" /> Rainfall against the IMD normal</h2>
@@ -392,7 +383,7 @@ const TRIGGER_LABEL: Record<string, string> = {
   weather: 'weather', 'weather+phenology': 'weather + stage', phenology: 'crop stage', trap: 'trap count', spread: 'confirmed nearby',
 }
 
-function OutlookPanel({ rows }: { rows: OutlookRow[] }) {
+export function OutlookPanel({ rows }: { rows: OutlookRow[] }) {
   return (
     <Card className="p-4">
       <h2 className="font-semibold flex items-center gap-2"><CalendarRange className="w-4 h-4 text-leaf" /> Risk outlook — plan preventive action</h2>
@@ -432,7 +423,7 @@ function OutlookPanel({ rows }: { rows: OutlookRow[] }) {
   )
 }
 
-function PesticidePanel({ p }: { p: PesticideBaseline }) {
+export function PesticidePanel({ p }: { p: PesticideBaseline }) {
   const max = Math.max(...p.chemical.map((c) => c[1]), 1)
   const latest = p.chemical[p.chemical.length - 1]
   return (

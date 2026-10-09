@@ -1,5 +1,6 @@
 import 'leaflet/dist/leaflet.css'
 import { Circle, CircleMarker, MapContainer, TileLayer, Tooltip } from 'react-leaflet'
+import { useNavigate } from 'react-router-dom'
 import type { Hotspots } from '../api/types'
 
 const STATUS_COLOR = {
@@ -17,6 +18,7 @@ export default function HotspotMap({ data, layers }: {
   data: Hotspots
   layers: { cases: boolean; alerts: boolean; radius: boolean }
 }) {
+  const navigate = useNavigate()
   return (
     <MapContainer center={[19.4, 76.6]} zoom={6.4} zoomSnap={0.2} scrollWheelZoom={false}
       className="w-full h-full rounded-2xl z-0" attributionControl>
@@ -37,10 +39,13 @@ export default function HotspotMap({ data, layers }: {
       ))}
       {layers.cases && data.points.map((p) => (
         <CircleMarker key={p.problem_id} center={[p.lat, p.lon]} radius={p.status === 'confirmed' ? 9 : 7}
-          pathOptions={{ color: '#fff', weight: 2, fillColor: STATUS_COLOR[p.status], fillOpacity: 0.95 }}>
+          pathOptions={{ color: '#fff', weight: 2, fillColor: STATUS_COLOR[p.status], fillOpacity: 0.95 }}
+          // A pin is a field somebody farms: clicking it opens that field.
+          eventHandlers={{ click: () => navigate(`/officer/farm/${p.farm_id}`) }}>
           <Tooltip>
             <strong>{p.name ?? 'Unknown'}</strong><br />
-            {p.status.replace('_', ' ')} · {p.crop} · {p.district}{p.on ? ` · ${p.on}` : ''}
+            {p.farmer_name} · {p.crop} · {p.district}{p.on ? ` · ${p.on}` : ''}<br />
+            <span style={{ opacity: 0.7 }}>{p.status.replace('_', ' ')} — click to open the field</span>
           </Tooltip>
         </CircleMarker>
       ))}
