@@ -70,6 +70,34 @@ ADDED_COLUMNS = {
 }
 
 
+# Columns that outgrew their original width. create_all() never alters an
+# existing column, and SQLite does not enforce a VARCHAR length at all, so a
+# column too narrow for real data fails only against Postgres, in production.
+WIDENED_COLUMNS = {
+    "diagnosis": {"model_version": 255},
+    "live_scan": {"model_version": 255},
+}
+
+
+def _widen_columns(eng, insp) -> None:
+    """Grow any column that is narrower than the model now asks for.
+
+    Postgres only: SQLite stores a string whatever the declared length says,
+    and cannot ALTER a column type in place. Widening never loses data, and
+    the check makes it a no-op once applied."""
+    from sqlalchemy import text  # noqa: PLC0415
+
+    if eng.dialect.name != "postgresql":
+        return
+    with eng.begin() as conn:
+        for table, cols in WIDENED_COLUMNS.items():
+            have = {c["name"]: c for c in insp.get_columns(table)}
+            for col, want in cols.items():
+                now = getattr(have.get(col, {}).get("type"), "length", None)
+                if now is not None and now < want:
+                    conn.execute(text(f'ALTER TABLE "{table}" ALTER COLUMN {col} TYPE VARCHAR({want})'))
+
+
 def init_db(bind=None) -> None:
     from sqlalchemy import inspect, text  # noqa: PLC0415
 
@@ -87,6 +115,7 @@ def init_db(bind=None) -> None:
                 if col not in have:
                     # `case` is a reserved SQL keyword; quote the table name.
                     conn.execute(text(f"ALTER TABLE \"{table}\" ADD COLUMN {col} {typ}"))
+    _widen_columns(eng, insp)
     _backfill_expert_ranks(eng)
 
 

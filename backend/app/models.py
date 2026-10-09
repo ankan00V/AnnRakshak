@@ -29,6 +29,16 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
 
+MODEL_VERSION_LEN = 255
+"""How much room a model's name gets.
+
+It was 80, and a name grows with every dataset folded in: v9 is
+"icar+extra+more+paddy+asdid+local+cotton+thin-efficientnet_v2_s-warmstart-20261008",
+82 characters. SQLite ignores a VARCHAR length and Postgres enforces it, so
+the test suite passed while every photo upload against the real database
+raised StringDataRightTruncation from the moment v9 deployed. Nothing was
+written: no diagnosis carried the live model until this was widened."""
+
 
 class User(Base):
     """A person who signs in: a farmer or an expert (KVK scientist, agriculture
@@ -193,7 +203,7 @@ class Diagnosis(Base):
     gate_outcome: Mapped[str] = mapped_column(String(10))
     gate_reason: Mapped[str] = mapped_column(String(30))
     confidence: Mapped[float] = mapped_column(Float)
-    model_version: Mapped[str] = mapped_column(String(80))
+    model_version: Mapped[str] = mapped_column(String(MODEL_VERSION_LEN))
     is_stub: Mapped[bool] = mapped_column(default=True)
     heatmap: Mapped[dict | None] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
@@ -433,7 +443,7 @@ class LiveScan(Base):
     findings: Mapped[dict] = mapped_column(JSON)
     context: Mapped[dict] = mapped_column(JSON)
     problem_ids: Mapped[list] = mapped_column(JSON, default=list)
-    model_version: Mapped[str] = mapped_column(String(80))
+    model_version: Mapped[str] = mapped_column(String(MODEL_VERSION_LEN))
 
 
 class Notice(Base):
