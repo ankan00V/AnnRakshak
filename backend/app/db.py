@@ -87,3 +87,42 @@ def init_db(bind=None) -> None:
                 if col not in have:
                     # `case` is a reserved SQL keyword; quote the table name.
                     conn.execute(text(f"ALTER TABLE \"{table}\" ADD COLUMN {col} {typ}"))
+    _backfill_expert_ranks(eng)
+
+
+# Designation ids that were in use before the sign-up form fixed the vocabulary.
+RENAMED_DESIGNATIONS = {"agriculture_officer": "agri_officer", "agronomist": "private_agronomist"}
+SUPERVISOR_DESIGNATIONS = ("agri_officer", "kvk_scientist")
+"""The posts that carry a supervisor's authority: the Agriculture Officer of a
+taluka or district, and the KVK scientist who heads the subject-matter team.
+Verifying a colleague, routing a backlog and moving another officer's cases are
+theirs. Everyone else advises."""
+
+
+def _backfill_expert_ranks(bind) -> None:
+    """Give older databases the designation ids and the supervisor rank.
+
+    Both columns arrived after the demo districts were seeded, so in a database
+    made before them every profile kept `supervisor`'s `DEFAULT FALSE` and a
+    designation id the sign-up vocabulary no longer lists. The effect was not
+    cosmetic: with no supervisor anywhere, nobody could route a backlog, verify
+    a colleague or move another desk's cases, and a designation outside the
+    vocabulary rendered as a blank label.
+
+    Renaming is safe to repeat. Granting the rank is not, because a district
+    office may since have demoted somebody on purpose, so it runs only while
+    the database holds no supervisor at all -- precisely the broken state.
+    """
+    from sqlalchemy import text  # noqa: PLC0415
+
+    with bind.begin() as conn:
+        for old, new in RENAMED_DESIGNATIONS.items():
+            conn.execute(text("UPDATE expert_profile SET designation = :new WHERE designation = :old"),
+                         {"new": new, "old": old})
+        if conn.scalar(text("SELECT 1 FROM expert_profile WHERE supervisor LIMIT 1")):
+            return
+        posts = ", ".join(f":d{i}" for i in range(len(SUPERVISOR_DESIGNATIONS)))
+        conn.execute(
+            text(f"UPDATE expert_profile SET supervisor = TRUE WHERE designation IN ({posts})"),
+            {f"d{i}": d for i, d in enumerate(SUPERVISOR_DESIGNATIONS)},
+        )

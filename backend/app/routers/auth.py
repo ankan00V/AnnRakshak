@@ -33,7 +33,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import auth, config, geo, mailer, services
-from app.db import get_db
+from app.db import SUPERVISOR_DESIGNATIONS, get_db
 from app.i18n import LANGS
 from app.kb import KB, get_kb, tr
 from app.limits import client_ip, limit
@@ -149,11 +149,27 @@ def _lookup(db: Session, identifier: str, lang: str) -> User | None:
     return _by(db, User.phone, _phone(identifier, lang))
 
 
-def _unused(db: Session, email: str, phone: str, lang: str) -> None:
+def _taken(db: Session, email: str, phone: str) -> str | None:
+    """Which identifier is already on an account, if either is."""
     if _by(db, User.email, email):
-        raise HTTPException(409, _say("email_taken", lang))
+        return "email"
     if _by(db, User.phone, phone):
-        raise HTTPException(409, _say("phone_taken", lang))
+        return "phone"
+    return None
+
+
+def _unused(db: Session, email: str, phone: str, lang: str) -> None:
+    """The last word on a duplicate, held at the moment the account is made.
+
+    The sign-up form asks /check first so it can object on the step that owns
+    the field, but two sign-ups can still race between that answer and this
+    one, so the guard stays here as well. The detail names the field, because
+    an identifier typed on the first step is otherwise reported four steps
+    later with nothing to point at.
+    """
+    field = _taken(db, email, phone)
+    if field:
+        raise HTTPException(409, {"message": _say(f"{field}_taken", lang), "field": field})
 
 
 # --------------------------------------------------------------------------
@@ -170,6 +186,29 @@ class OtpIn(BaseModel):
     identifier: str | None = Field(default=None, max_length=200)
     """Login: the mobile number or email on the account."""
     lang: str = "en"
+
+
+class CheckIn(BaseModel):
+    email: str | None = Field(default=None, max_length=200)
+    phone: str | None = Field(default=None, max_length=20)
+    lang: str = "en"
+
+
+@router.post("/check")
+def check_identifiers(body: CheckIn, request: Request, db: Session = Depends(get_db)):
+    """Is this email or mobile number free? Asked as a sign-up leaves the step
+    that collects them.
+
+    Before this, the only check ran inside /otp, on the last step: a number
+    typed on step one came back rejected on step four, naming a field that was
+    no longer on screen. It tells no one anything that asking for a code does
+    not already tell them.
+    """
+    limit(f"check:ip:{client_ip(request)}", 40, 900)
+    lang = body.lang if body.lang in LANGS else "en"
+    field = _taken(db, _email(body.email, lang), _phone(body.phone, lang))
+    return {"free": field is None, "field": field,
+            "message": _say(f"{field}_taken", lang) if field else None}
 
 
 @router.post("/otp")
@@ -272,6 +311,15 @@ class ExpertSignup(BaseModel):
     lang: str = "en"
 
 
+def _designation_name(designation: str | None) -> str | None:
+    """The post as a person reads it. A designation saved before the list was
+    settled is titled rather than left blank, so an older profile still names
+    its holder's post instead of showing a gap."""
+    if not designation:
+        return None
+    return DESIGNATIONS.get(designation) or designation.replace("_", " ").capitalize()
+
+
 def _me(db: Session, user: User) -> dict:
     out = {"id": user.id, "role": user.role, "name": user.name, "phone": user.phone, "email": user.email,
            "lang": user.lang, "is_demo": user.is_demo,
@@ -283,10 +331,13 @@ def _me(db: Session, user: User) -> dict:
         out["farm_ids"] = sorted(auth.farm_ids_for(db, user) or [])
     else:
         p = db.get(ExpertProfile, user.id)
-        out["profile"] = {"designation": p.designation, "designation_name": DESIGNATIONS.get(p.designation),
+        # `supervisor` travels with the profile so a screen can show the actions
+        # this desk may actually take. Without it the console offered every
+        # officer the supervisor-only buttons and let the server refuse them.
+        out["profile"] = {"designation": p.designation, "designation_name": _designation_name(p.designation),
                           "organisation": p.organisation, "districts": p.districts, "crops": p.crops,
                           "specialities": p.specialities, "languages": p.languages, "verified": p.verified,
-                          "experience_years": p.experience_years} if p else None
+                          "supervisor": p.supervisor, "experience_years": p.experience_years} if p else None
     return out
 
 
@@ -350,7 +401,12 @@ def signup_expert(body: ExpertSignup, request: Request, response: Response, db: 
                          employee_id=body.employee_id.strip(), qualification=body.qualification,
                          experience_years=body.experience_years, districts=sorted(set(body.districts)),
                          crops=sorted(set(body.crops)), specialities=sorted(set(body.specialities)),
-                         languages=sorted(set(body.languages)), verified=config.EXPERT_AUTO_VERIFY))
+                         languages=sorted(set(body.languages)), verified=config.EXPERT_AUTO_VERIFY,
+                         # The rank follows the post. Without this every sign-up
+                         # was an ordinary desk, so a district whose officers had
+                         # all signed up had nobody who could route its backlog
+                         # or verify the next arrival.
+                         supervisor=body.designation in SUPERVISOR_DESIGNATIONS))
     auth.start_session(db, user, response, request.headers.get("user-agent"))
     db.commit()
     return _me(db, user)

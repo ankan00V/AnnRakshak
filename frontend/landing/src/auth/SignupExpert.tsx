@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ShieldCheck } from 'lucide-react'
-import { api } from '../api/client'
+import { ApiError, api } from '../api/client'
 import type { Lang } from '../api/types'
 import { useFarmer } from '../farmer/FarmerContext'
 import { LANGS } from '../lib/i18n'
@@ -29,7 +29,16 @@ export default function SignupExpert() {
   })
   const [query, setQuery] = useState('')
   const [touched, setTouched] = useState(false)
-  const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }))
+  const [checking, setChecking] = useState(false)
+  /** An identifier the server says is already on an account. Held per field so
+   *  the complaint can sit under the box it belongs to. */
+  const [taken, setTaken] = useState<{ field: string; message: string } | null>(null)
+  const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => {
+    // Editing the field that was rejected clears the rejection; leaving it
+    // there under a number the person has just corrected reads as a dead form.
+    if (taken?.field === k) setTaken(null)
+    setF((x) => ({ ...x, [k]: v }))
+  }
 
   const bad = {
     name: f.name.trim().length < 2,
@@ -50,12 +59,50 @@ export default function SignupExpert() {
     true,
   ]
   const show = (k: keyof typeof bad) => touched && bad[k]
-  const next = () => {
+
+  /** Leaving a step. The first one also asks the server whether the email and
+   *  the mobile number are free, because the only check used to live inside the
+   *  request for a code: an address typed here came back rejected on the last
+   *  step, naming a field three steps behind. A failed check does not block the
+   *  form -- the sign-up itself is still the authority on a duplicate. */
+  const next = async () => {
     setTouched(true)
-    if (stepOk[step]) {
-      setTouched(false)
-      setStep((s) => s + 1)
-      window.scrollTo(0, 0)
+    if (!stepOk[step]) return
+    if (step === 0) {
+      setChecking(true)
+      try {
+        const r = await api.checkIdentifiers({ email: f.email.trim(), phone: f.phone, lang })
+        if (!r.free && r.field && r.message) {
+          setTaken({ field: r.field, message: r.message })
+          return
+        }
+        setTaken(null)
+      } catch {
+        /* offline or rate-limited: carry on and let the sign-up decide */
+      } finally {
+        setChecking(false)
+      }
+    }
+    setTouched(false)
+    setStep((s) => s + 1)
+    window.scrollTo(0, 0)
+  }
+
+  /** Ask for the code. Two sign-ups can still take the same number between the
+   *  check above and this call, so if the server names a field, reopen the step
+   *  that holds it with the complaint against the box, rather than reporting a
+   *  mobile number on the screen that confirms an email address. */
+  const sendCode = async () => {
+    try {
+      return await api.requestOtp({ role: 'expert', purpose: 'signup', email: f.email.trim(), phone: f.phone, lang })
+    } catch (e) {
+      const err = e as ApiError
+      if (err.status === 409 && (err.field === 'email' || err.field === 'phone')) {
+        setTaken({ field: err.field, message: err.message })
+        setStep(0)
+        window.scrollTo(0, 0)
+      }
+      throw e
     }
   }
 
@@ -98,15 +145,17 @@ export default function SignupExpert() {
             <Input value={f.name} onChange={(e) => set('name', e.target.value)} autoComplete="name"
               placeholder="Dr. S. Kale" invalid={show('name')} />
           </Field>
-          <Field label={t('authWorkEmail')} hint={t('authWorkEmailHint')} error={show('email') && t('authBadEmail')}>
+          <Field label={t('authWorkEmail')} hint={t('authWorkEmailHint')}
+            error={(show('email') && t('authBadEmail')) || (taken?.field === 'email' ? taken.message : false)}>
             <Input value={f.email} onChange={(e) => set('email', e.target.value)} type="email" autoComplete="email"
-              placeholder="name@kvk.org.in" invalid={show('email')} />
+              placeholder="name@kvk.org.in" invalid={show('email') || taken?.field === 'email'} />
           </Field>
-          <Field label={t('authMobile')} hint={t('authExpertMobileHint')} error={show('phone') && t('authBadPhone')}>
+          <Field label={t('authMobile')} hint={t('authExpertMobileHint')}
+            error={(show('phone') && t('authBadPhone')) || (taken?.field === 'phone' ? taken.message : false)}>
             <div className="flex gap-2">
               <span className="min-h-[48px] px-3 rounded-xl border border-soil-dark/20 bg-cream flex items-center text-[15px] text-soil-dark/60">+91</span>
               <Input value={f.phone} onChange={(e) => set('phone', e.target.value)} type="tel" inputMode="numeric"
-                autoComplete="tel-national" maxLength={14} placeholder="98XXXXXXXX" invalid={show('phone')} />
+                autoComplete="tel-national" maxLength={14} placeholder="98XXXXXXXX" invalid={show('phone') || taken?.field === 'phone'} />
             </div>
           </Field>
         </div>
@@ -149,17 +198,31 @@ export default function SignupExpert() {
           </Field>
           <Field group label={`${t('authDistricts')} · ${f.districts.length}`} hint={t('authDistrictsHint')}
             error={show('districts') && t('authPickOne')}>
-            <div className="flex gap-2 mb-2">
-              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('authSearch')} />
-              <button type="button" onClick={() => set('districts', inState.map((d) => d.name))}
-                className="px-3 rounded-xl border border-soil-dark/15 text-[13px] font-medium bg-white">{t('authSelectAll')}</button>
-              <button type="button" onClick={() => set('districts', [])}
-                className="px-3 rounded-xl border border-soil-dark/15 text-[13px] font-medium bg-white">{t('authClear')}</button>
-            </div>
-            <div className="max-h-56 overflow-y-auto rounded-xl">
-              <Chips multi value={f.districts} onChange={(v) => set('districts', v)}
-                options={districts.map((d) => ({ id: d, label: d }))} />
-            </div>
+            {/* No state, no districts to show. Rendering the search box and an
+                empty list made this step look broken: a page of place names
+                with nothing to press and no reason given. */}
+            {!f.state ? (
+              <p className="rounded-xl border border-dashed border-soil-dark/20 bg-white/60 px-3 py-4 text-[13px] text-soil-dark/65">
+                {t('authPickStateFirst')}
+              </p>
+            ) : (
+              <>
+                <div className="flex gap-2 mb-2">
+                  <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('authSearch')} />
+                  <button type="button" onClick={() => set('districts', inState.map((d) => d.name))}
+                    className="px-3 rounded-xl border border-soil-dark/15 text-[13px] font-medium bg-white">{t('authSelectAll')}</button>
+                  <button type="button" onClick={() => set('districts', [])}
+                    className="px-3 rounded-xl border border-soil-dark/15 text-[13px] font-medium bg-white">{t('authClear')}</button>
+                </div>
+                <div className="max-h-56 overflow-y-auto rounded-xl">
+                  <Chips multi value={f.districts} onChange={(v) => set('districts', v)}
+                    options={districts.map((d) => ({ id: d, label: d }))} />
+                </div>
+                {districts.length === 0 && (
+                  <p className="px-1 py-2 text-[13px] text-soil-dark/60">{t('authNoDistrictMatch')}</p>
+                )}
+              </>
+            )}
           </Field>
           <Field group label={t('authCrops')} error={show('crops') && t('authPickOne')}>
             <Chips multi columns={2} value={f.crops} onChange={(v) => set('crops', v)}
@@ -204,7 +267,7 @@ export default function SignupExpert() {
           </div>
           <CodePanel
             sendLabel={t('authSendCodeTo').replace('{to}', f.email.trim())}
-            request={() => api.requestOtp({ role: 'expert', purpose: 'signup', email: f.email.trim(), phone: f.phone, lang })}
+            request={() => sendCode()}
             verify={async (challenge_id, code) => signIn(await api.signupExpert({
               challenge_id, code, name: f.name.trim(), phone: f.phone, lang,
               designation: f.designation, organisation: f.organisation.trim(), employee_id: f.employeeId.trim(),
@@ -218,7 +281,7 @@ export default function SignupExpert() {
 
       <div className="mt-6 flex gap-3">
         {step > 0 && <Secondary onClick={() => setStep((s) => s - 1)}>{t('back')}</Secondary>}
-        {step < 3 && <Primary onClick={next}>{t('authNext')}</Primary>}
+        {step < 3 && <Primary onClick={next} busy={checking}>{t('authNext')}</Primary>}
       </div>
 
       <p className="mt-8 text-center text-sm text-soil-dark/70">

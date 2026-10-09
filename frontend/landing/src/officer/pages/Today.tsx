@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import { api } from '../../api/client'
 import { useAsync } from '../../lib/hooks'
+import { useAuth } from '../../auth/AuthContext'
 import { Card, ErrorBox } from '../../ui/kit'
 import { Kpis, KpisSkeleton, PanelBone } from '../panels'
 import { Download } from 'lucide-react'
@@ -12,16 +13,26 @@ import { Download } from 'lucide-react'
 export default function Today() {
   const work = useAsync(() => api.worklist(), [])
   const summary = useAsync(() => api.summary(), [])
+  const { me } = useAuth()
   const [routing, setRouting] = useState(false)
   const [routed, setRouted] = useState<string | null>(null)
+  const [routeFailed, setRouteFailed] = useState<string | null>(null)
+  // Routing a backlog and verifying a colleague are supervisor decisions, so an
+  // ordinary desk is told who does them rather than handed a button the server
+  // will refuse.
+  const supervisor = me?.profile?.supervisor === true
 
   const route = async () => {
     setRouting(true)
+    setRouteFailed(null)
+    setRouted(null)
     try {
       const r = await api.routeCases()
       setRouted(r.assigned === 0 ? 'Nothing waiting to be routed.'
         : `${r.assigned} case${r.assigned === 1 ? '' : 's'} routed to the freest officers.`)
       work.reload()
+    } catch (e) {
+      setRouteFailed(e instanceof Error ? e.message : 'Could not route the cases just now.')
     } finally {
       setRouting(false)
     }
@@ -70,10 +81,12 @@ export default function Today() {
                 icon={Inbox}
                 tone={work.data.unrouted.length > 0 ? 'ochre' : 'leaf'}
                 title={`${work.data.unrouted.length} case${work.data.unrouted.length === 1 ? '' : 's'} on nobody's desk`}
-                sub={work.data.unrouted.length > 0
-                  ? 'No officer has been given these yet.'
-                  : 'Every case has a name against it.'}
-                action={work.data.unrouted.length > 0 ? (
+                sub={work.data.unrouted.length === 0
+                  ? 'Every case has a name against it.'
+                  : supervisor
+                    ? 'No officer has been given these yet.'
+                    : 'Waiting on your supervisor to place them.'}
+                action={work.data.unrouted.length > 0 && supervisor ? (
                   <button onClick={route} disabled={routing}
                     className="flex items-center gap-1.5 rounded-full bg-leaf-deep text-cream text-xs font-medium px-3 py-1.5 disabled:opacity-60">
                     {routing && <Loader2 className="w-3.5 h-3.5 animate-spin" />} Route them
@@ -86,7 +99,7 @@ export default function Today() {
                 tone={work.data.pending_officers > 0 ? 'ochre' : 'leaf'}
                 title={`${work.data.pending_officers} officer${work.data.pending_officers === 1 ? '' : 's'} waiting to be verified`}
                 sub="Until the office verifies them they review nothing and are handed no cases."
-                action={work.data.pending_officers > 0
+                action={work.data.pending_officers > 0 && supervisor
                   ? <Link to="/officer/officers" className="text-sm font-medium text-leaf-deep flex items-center gap-1">Review <ArrowRight className="w-3.5 h-3.5" /></Link>
                   : null}
               />
@@ -102,6 +115,7 @@ export default function Today() {
               />
             </ul>
             {routed && <p className="mt-3 text-xs text-leaf-deep">{routed}</p>}
+            {routeFailed && <p className="mt-3 text-xs text-ember">{routeFailed}</p>}
           </Card>
 
           <Card className="p-4 md:p-5">
