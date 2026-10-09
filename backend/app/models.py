@@ -39,6 +39,15 @@ the test suite passed while every photo upload against the real database
 raised StringDataRightTruncation from the moment v9 deployed. Nothing was
 written: no diagnosis carried the live model until this was widened."""
 
+REASON_LEN = 80
+"""How much room a gate or case reason gets.
+
+The same vocabulary reaches both `diagnosis.gate_reason` and `case.reason`, so
+they are sized together. It is a list that grows as the pipeline learns new
+ways to decline: the longest is already ANSWER_DID_NOT_DISCRIMINATE at 27, and
+gate_reason used to be 30. Two characters of headroom on a growing vocabulary
+is the same bet that MODEL_VERSION_LEN lost."""
+
 
 class User(Base):
     """A person who signs in: a farmer or an expert (KVK scientist, agriculture
@@ -138,7 +147,7 @@ class Farm(Base):
     crop: Mapped[str] = mapped_column(String(20))
     variety: Mapped[str | None] = mapped_column(String(80))
     sowing_date: Mapped[date] = mapped_column(Date)
-    date_basis: Mapped[str] = mapped_column(String(12), default="sown")
+    date_basis: Mapped[str] = mapped_column(String(20), default="sown")
     """What sowing_date is: 'sown' (seed in the ground, or in the nursery bed) or
     'transplanted'. Only rice can be either, and the two are three weeks apart —
     a whole growth stage — so the farmer is asked which one it is."""
@@ -201,7 +210,7 @@ class Diagnosis(Base):
     image_path: Mapped[str | None] = mapped_column(String(255))
     topk: Mapped[list] = mapped_column(JSON)
     gate_outcome: Mapped[str] = mapped_column(String(10))
-    gate_reason: Mapped[str] = mapped_column(String(30))
+    gate_reason: Mapped[str] = mapped_column(String(REASON_LEN))
     confidence: Mapped[float] = mapped_column(Float)
     model_version: Mapped[str] = mapped_column(String(MODEL_VERSION_LEN))
     is_stub: Mapped[bool] = mapped_column(default=True)
@@ -254,7 +263,7 @@ class Case(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     problem_id: Mapped[int] = mapped_column(ForeignKey("problem.id"), index=True)
     status: Mapped[str] = mapped_column(String(20), default="open", index=True)
-    reason: Mapped[str] = mapped_column(String(40))
+    reason: Mapped[str] = mapped_column(String(REASON_LEN))
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime)
     assigned_to: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"), index=True)
@@ -339,7 +348,7 @@ class Alert(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     farm_id: Mapped[int] = mapped_column(ForeignKey("farm.id"), index=True)
     target: Mapped[str] = mapped_column(String(60), index=True)
-    trigger: Mapped[str] = mapped_column(String(20))
+    trigger: Mapped[str] = mapped_column(String(40))
     level: Mapped[str] = mapped_column(String(10))
     reason: Mapped[dict] = mapped_column(JSON)
     """Per-language sentence saying WHY, frozen at issue time."""

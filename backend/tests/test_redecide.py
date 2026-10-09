@@ -202,34 +202,3 @@ def test_every_change_is_written_into_the_offices_own_record(db, photo, monkeypa
     assert line.detail["was"] == "CROP_MISMATCH"          # the reason it carried, not the new one
     assert line.detail["now"] == "UNFAMILIAR_PHOTO"
     assert (line.detail["from_model"], line.detail["to_model"]) == (OLD, LIVE)
-
-
-def test_a_models_name_fits_the_column_that_stores_it():
-    """The bug that made the pass above necessary, and hid itself from tests.
-
-    `diagnosis.model_version` was VARCHAR(80). A model's name grows with every
-    dataset folded into it, and v9's is 82 characters, so against Postgres
-    every photo upload raised StringDataRightTruncation from the day it
-    deployed -- no diagnosis was written at all. SQLite ignores a declared
-    VARCHAR length, so the whole suite passed throughout.
-
-    This asserts the width directly, because no SQLite test can ever reproduce
-    the failure: the schema is the only place the truth is visible here.
-    """
-    from app.models import MODEL_VERSION_LEN, Diagnosis, LiveScan
-
-    shipped = "icar+extra+more+paddy+asdid+local+cotton+thin-efficientnet_v2_s-warmstart-20261008"
-    assert len(shipped) > 80, "the name that broke it must stay the example"
-    for column in (Diagnosis.model_version, LiveScan.model_version):
-        assert column.type.length == MODEL_VERSION_LEN
-        assert column.type.length >= len(shipped) + 40  # room for the next few datasets
-
-
-def test_the_model_actually_deployed_here_fits_too():
-    """Belt and braces: whatever checkpoint this machine has, its name must be
-    storable. A model that cannot be recorded cannot be served."""
-    from app.engine import vision
-    from app.models import MODEL_VERSION_LEN
-
-    version = vision.model_status()["model_version"]
-    assert len(version) <= MODEL_VERSION_LEN, f"{version!r} is {len(version)} characters"

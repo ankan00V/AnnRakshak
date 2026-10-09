@@ -74,8 +74,11 @@ ADDED_COLUMNS = {
 # existing column, and SQLite does not enforce a VARCHAR length at all, so a
 # column too narrow for real data fails only against Postgres, in production.
 WIDENED_COLUMNS = {
-    "diagnosis": {"model_version": 255},
+    "diagnosis": {"model_version": 255, "gate_reason": 80},
     "live_scan": {"model_version": 255},
+    "case": {"reason": 80},
+    "farm": {"date_basis": 20},
+    "alert": {"trigger": 40},
 }
 
 
