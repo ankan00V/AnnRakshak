@@ -5,6 +5,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Magnaporthe oryzae (fungus)",
+  "eppo": {
+   "code": "PYRIOR",
+   "name": "Pyricularia oryzae"
+  },
   "names": {
    "en": "Rice blast",
    "hi": "झोंका (ब्लास्ट) रोग",
@@ -23,6 +27,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Bipolaris oryzae (fungus)",
+  "eppo": {
+   "code": "COCHMI",
+   "name": "Bipolaris oryzae"
+  },
   "names": {
    "en": "Brown spot",
    "hi": "भूरा धब्बा रोग",
@@ -40,6 +48,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Xanthomonas oryzae pv. oryzae (bacterium)",
+  "eppo": {
+   "code": "XANTOR",
+   "name": "Xanthomonas oryzae pv. oryzae"
+  },
   "names": {
    "en": "Bacterial leaf blight",
    "hi": "जीवाणु पत्ती झुलसा",
@@ -57,6 +69,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Rhizoctonia solani (fungus)",
+  "eppo": {
+   "code": "RHIZSO",
+   "name": "Rhizoctonia solani"
+  },
   "names": {
    "en": "Sheath blight",
    "hi": "शीथ ब्लाइट (पर्णच्छद झुलसा)",
@@ -74,6 +90,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Ustilaginoidea virens (fungus)",
+  "eppo": {
+   "code": "USTNVI",
+   "name": "Ustilaginoidea virens"
+  },
   "names": {
    "en": "False smut",
    "hi": "आभासी कंड (हल्दी रोग)",
@@ -91,6 +111,10 @@
   "kind": "virus",
   "tier": "diagnosable",
   "agent": "Rice tungro viruses, spread by green leafhopper",
+  "eppo": {
+   "code": "RTBV00",
+   "name": "Rice tungro bacilliform virus"
+  },
   "names": {
    "en": "Rice tungro",
    "hi": "टुंग्रो वायरस",
@@ -109,6 +133,10 @@
   "kind": "pest",
   "tier": "diagnosable",
   "agent": "Cnaphalocrocis medinalis (moth larva)",
+  "eppo": {
+   "code": "CNAPME",
+   "name": "Cnaphalocrocis medinalis"
+  },
   "names": {
    "en": "Rice leaf folder",
    "hi": "पत्ती लपेटक",
@@ -126,6 +154,10 @@
   "kind": "pest",
   "tier": "diagnosable",
   "agent": "Scirpophaga incertulas (moth larva)",
+  "eppo": {
+   "code": "SCHOBI",
+   "name": "Scirpophaga incertulas"
+  },
   "names": {
    "en": "Yellow stem borer",
    "hi": "पीला तना छेदक",
@@ -143,6 +175,10 @@
   "kind": "pest",
   "tier": "inspection",
   "agent": "Nilaparvata lugens (hopper)",
+  "eppo": {
+   "code": "NILALU",
+   "name": "Nilaparvata lugens"
+  },
   "names": {
    "en": "Brown planthopper",
    "hi": "भूरा फुदका",
@@ -160,6 +196,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Exserohilum turcicum (fungus)",
+  "eppo": {
+   "code": "SETOTU",
+   "name": "Exserohilum turcicum"
+  },
   "names": {
    "en": "Turcicum leaf blight",
    "hi": "टर्सिकम पत्ती झुलसा",
@@ -177,6 +217,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Bipolaris maydis (fungus)",
+  "eppo": {
+   "code": "COCHHE",
+   "name": "Bipolaris maydis"
+  },
   "names": {
    "en": "Maydis leaf blight",
    "hi": "मेडिस पत्ती झुलसा",
@@ -194,6 +238,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Puccinia sorghi (fungus)",
+  "eppo": {
+   "code": "PUCCSO",
+   "name": "Puccinia sorghi"
+  },
   "names": {
    "en": "Common rust",
    "hi": "रतुआ (गेरुई)",
@@ -212,6 +260,10 @@
   "kind": "disease",
   "tier": "inspection",
   "agent": "Rhizoctonia solani f. sp. sasakii (fungus)",
+  "eppo": {
+   "code": "RHIZSO",
+   "name": "Rhizoctonia solani"
+  },
   "names": {
    "en": "Banded leaf and sheath blight",
    "hi": "पट्टीदार पत्ती एवं आवरण झुलसा",
@@ -230,6 +282,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Peronosclerospora spp. (oomycete)",
+  "eppo": {
+   "code": "1PRSCG",
+   "name": "Peronosclerospora"
+  },
   "names": {
    "en": "Downy mildew",
    "hi": "मृदुरोमिल आसिता",
@@ -247,6 +303,10 @@
   "kind": "pest",
   "tier": "diagnosable",
   "agent": "Spodoptera frugiperda (moth larva)",
+  "eppo": {
+   "code": "LAPHFR",
+   "name": "Spodoptera frugiperda"
+  },
   "names": {
    "en": "Fall armyworm",
    "hi": "फॉल आर्मीवर्म",
@@ -264,6 +324,10 @@
   "kind": "pest",
   "tier": "inspection",
   "agent": "Chilo partellus (moth larva)",
+  "eppo": {
+   "code": "CHILZO",
+   "name": "Chilo partellus"
+  },
   "names": {
    "en": "Maize stem borer",
    "hi": "तना छेदक",
@@ -282,6 +346,10 @@
   "kind": "pest",
   "tier": "inspection",
   "agent": "Pectinophora gossypiella (moth larva)",
+  "eppo": {
+   "code": "PECTGO",
+   "name": "Pectinophora gossypiella"
+  },
   "names": {
    "en": "Pink bollworm",
    "hi": "गुलाबी सुंडी",
@@ -299,6 +367,10 @@
   "kind": "pest",
   "tier": "inspection",
   "agent": "Helicoverpa armigera (moth larva)",
+  "eppo": {
+   "code": "HELIAR",
+   "name": "Helicoverpa armigera"
+  },
   "names": {
    "en": "American bollworm",
    "hi": "अमेरिकन सुंडी",
@@ -316,6 +388,10 @@
   "kind": "pest",
   "tier": "inspection",
   "agent": "Bemisia tabaci (sap-sucking insect)",
+  "eppo": {
+   "code": "BEMITA",
+   "name": "Bemisia tabaci"
+  },
   "names": {
    "en": "Whitefly",
    "hi": "सफेद मक्खी",
@@ -333,6 +409,10 @@
   "kind": "pest",
   "tier": "inspection",
   "agent": "Amrasca biguttula (leafhopper)",
+  "eppo": {
+   "code": "EMPOBI",
+   "name": "Amrasca biguttula"
+  },
   "names": {
    "en": "Jassid (leafhopper)",
    "hi": "हरा तेला (जैसिड)",
@@ -350,6 +430,10 @@
   "kind": "virus",
   "tier": "diagnosable",
   "agent": "Mungbean yellow mosaic India virus, spread by whitefly",
+  "eppo": {
+   "code": "MYMIV0",
+   "name": "Mungbean yellow mosaic India virus"
+  },
   "names": {
    "en": "Yellow mosaic virus",
    "hi": "पीला मोज़ेक",
@@ -367,6 +451,10 @@
   "kind": "pest",
   "tier": "inspection",
   "agent": "Obereopsis brevis (beetle)",
+  "eppo": {
+   "code": "OBERBR",
+   "name": "Obereopsis brevis"
+  },
   "names": {
    "en": "Girdle beetle",
    "hi": "गर्डल बीटल (चक्र भृंग)",
@@ -384,6 +472,10 @@
   "kind": "pest",
   "tier": "diagnosable",
   "agent": "Spodoptera litura (moth larva)",
+  "eppo": {
+   "code": "PRODLI",
+   "name": "Spodoptera litura"
+  },
   "names": {
    "en": "Leaf-eating caterpillars (tobacco caterpillar, semilooper)",
    "hi": "पत्ती खाने वाली इल्लियाँ (तंबाकू इल्ली, सेमीलूपर)",
@@ -401,6 +493,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Phakopsora pachyrhizi (fungus)",
+  "eppo": {
+   "code": "PHAKPA",
+   "name": "Phakopsora pachyrhizi"
+  },
   "names": {
    "en": "Soybean rust",
    "hi": "गेरुआ (रस्ट)",
@@ -418,6 +514,10 @@
   "kind": "pest",
   "tier": "diagnosable",
   "agent": "Pelopidas mathias (butterfly larva)",
+  "eppo": {
+   "code": "PELOMA",
+   "name": "Pelopidas mathias"
+  },
   "names": {
    "en": "Rice skipper",
    "hi": "धान का स्किपर",
@@ -435,6 +535,10 @@
   "kind": "pest",
   "tier": "diagnosable",
   "agent": "Scirpophaga innotata (moth larva)",
+  "eppo": {
+   "code": "SCIPIN",
+   "name": "Scirpophaga innotata"
+  },
   "names": {
    "en": "White stem borer",
    "hi": "सफेद तना छेदक",
@@ -452,6 +556,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Curvularia lunata (fungus)",
+  "eppo": {
+   "code": "COCHLU",
+   "name": "Curvularia lunata"
+  },
   "names": {
    "en": "Curvularia leaf spot",
    "hi": "कर्वुलेरिया पत्ती धब्बा",
@@ -469,6 +577,10 @@
   "kind": "pest",
   "tier": "diagnosable",
   "agent": "Rhopalosiphum maidis (corn leaf aphid)",
+  "eppo": {
+   "code": "RHOPMA",
+   "name": "Rhopalosiphum maidis"
+  },
   "names": {
    "en": "Corn leaf aphid",
    "hi": "मक्का माहू (एफिड)",
@@ -486,6 +598,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Xanthomonas citri pv. malvacearum (bacterium)",
+  "eppo": {
+   "code": "XANTMA",
+   "name": "Xanthomonas citri pv. malvacearum"
+  },
   "names": {
    "en": "Bacterial blight (black arm)",
    "hi": "कपास का जीवाणु झुलसा (ब्लैक आर्म)",
@@ -503,6 +619,10 @@
   "kind": "virus",
   "tier": "diagnosable",
   "agent": "Cotton leaf curl virus (begomovirus, spread by whitefly)",
+  "eppo": {
+   "code": "CLCUMV",
+   "name": "Cotton leaf curl Multan virus"
+  },
   "names": {
    "en": "Leaf curl virus",
    "hi": "कपास पत्ती मरोड़ विषाणु",
@@ -539,6 +659,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Alternaria macrospora (fungus)",
+  "eppo": {
+   "code": "ALTEMC",
+   "name": "Alternaria macrospora"
+  },
   "names": {
    "en": "Alternaria leaf spot",
    "hi": "अल्टरनेरिया पत्ती धब्बा",
@@ -556,6 +680,10 @@
   "kind": "pest",
   "tier": "diagnosable",
   "agent": "Aphis gossypii (sucking insect)",
+  "eppo": {
+   "code": "APHIGO",
+   "name": "Aphis gossypii"
+  },
   "names": {
    "en": "Aphids",
    "hi": "कपास का माहू (एफिड)",
@@ -573,6 +701,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Cercospora sojina (fungus)",
+  "eppo": {
+   "code": "CERCSO",
+   "name": "Cercospora sojina"
+  },
   "names": {
    "en": "Frogeye leaf spot",
    "hi": "फ्रॉगआई पत्ती धब्बा",
@@ -590,6 +722,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Septoria glycines (fungus)",
+  "eppo": {
+   "code": "SEPTGL",
+   "name": "Septoria glycines"
+  },
   "names": {
    "en": "Brown spot (Septoria)",
    "hi": "सेप्टोरिया भूरा धब्बा",
@@ -607,6 +743,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Cercospora zeae-maydis (fungus)",
+  "eppo": {
+   "code": "CERCZM",
+   "name": "Cercospora zeae-maydis"
+  },
   "names": {
    "en": "Gray leaf spot",
    "hi": "धूसर पत्ती धब्बा (ग्रे लीफ स्पॉट)",
@@ -641,6 +781,10 @@
   "kind": "pest",
   "tier": "diagnosable",
   "agent": "Dicladispa armigera (beetle)",
+  "eppo": {
+   "code": "HISPAR",
+   "name": "Dicladispa armigera"
+  },
   "names": {
    "en": "Rice hispa",
    "hi": "हिस्पा भृंग",
@@ -658,6 +802,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Xanthomonas oryzae pv. oryzicola (bacterium)",
+  "eppo": {
+   "code": "XANTTO",
+   "name": "Xanthomonas oryzae pv. oryzicola"
+  },
   "names": {
    "en": "Bacterial leaf streak",
    "hi": "जीवाणु पत्ती धारी",
@@ -675,6 +823,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Burkholderia glumae (bacterium)",
+  "eppo": {
+   "code": "PSDMGM",
+   "name": "Burkholderia glumae"
+  },
   "names": {
    "en": "Bacterial panicle blight",
    "hi": "जीवाणु बाली झुलसा",
@@ -692,6 +844,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Sclerophthora macrospora (oomycete)",
+  "eppo": {
+   "code": "SCPHMA",
+   "name": "Sclerophthora macrospora"
+  },
   "names": {
    "en": "Downy mildew (crazy top)",
    "hi": "मृदुरोमिल आसिता (क्रेज़ी टॉप)",
@@ -709,6 +865,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Corynespora cassiicola (fungus)",
+  "eppo": {
+   "code": "CORYCA",
+   "name": "Corynespora cassiicola"
+  },
   "names": {
    "en": "Target spot",
    "hi": "टारगेट स्पॉट (छल्लेदार धब्बा)",
@@ -727,6 +887,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Cercospora kikuchii (fungus)",
+  "eppo": {
+   "code": "CERCKI",
+   "name": "Cercospora kikuchii"
+  },
   "names": {
    "en": "Cercospora leaf blight",
    "hi": "सर्कोस्पोरा पत्ती झुलसा",
@@ -745,6 +909,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Peronospora manshurica (oomycete)",
+  "eppo": {
+   "code": "PEROMA",
+   "name": "Peronospora manshurica"
+  },
   "names": {
    "en": "Downy mildew",
    "hi": "मृदुरोमिल आसिता (डाउनी मिल्ड्यू)",
@@ -763,6 +931,10 @@
   "kind": "disease",
   "tier": "diagnosable",
   "agent": "Pseudomonas savastanoi pv. glycinea (bacterium)",
+  "eppo": {
+   "code": "PSDMGL",
+   "name": "Pseudomonas savastanoi pv. glycinea"
+  },
   "names": {
    "en": "Bacterial blight",
    "hi": "जीवाणु झुलसा",
