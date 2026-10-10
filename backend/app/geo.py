@@ -33,6 +33,23 @@ REVERSE_URL = "https://api.bigdatacloud.net/data/reverse-geocode-client"
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/reverse"
 SEARCH_URL = "https://geocoding-api.open-meteo.com/v1/search"
 
+PLACE_LIMITS = {"state": 60, "district": 60, "taluka": 80, "village": 80}
+"""How long a place name may be before this app cannot keep it.
+
+These mirror the Farm columns, and test_column_widths pins them together so
+the two cannot drift. Nothing bounds what a geocoder returns, and a farmer who
+confirms their field's position has `reverse()`'s answer written straight into
+those columns, so one long name was a failed write on the farmer's own screen.
+A name that does not fit is dropped rather than cut: half a village's name is
+a different village, and the field it would fill already holds either the
+farmer's own answer or nothing.
+"""
+
+
+def _fits(kind: str, name: str | None) -> str | None:
+    name = (name or "").strip()
+    return name if name and len(name) <= PLACE_LIMITS[kind] else None
+
 
 @lru_cache(maxsize=1)
 def places() -> dict:
@@ -80,7 +97,8 @@ def reverse(lat: float, lon: float) -> dict | None:
         if not out:
             return None
         state, district = match_district(out.get("state"), out.get("district"))
-        return {"state": state, "district": district, "village": out.get("village")}
+        return {"state": _fits("state", state), "district": _fits("district", district),
+                "village": _fits("village", out.get("village"))}
 
     return _cached(key, fetch)  # type: ignore[return-value]
 
@@ -130,8 +148,12 @@ def search(q: str, limit: int = 8) -> list[dict]:
             if x.get("country_code") != "IN":
                 continue
             state, district = match_district(x.get("admin1"), x.get("admin2"))
-            out.append({"name": x.get("name"), "taluka": x.get("admin3"), "district": district,
-                        "state": state, "lat": x.get("latitude"), "lon": x.get("longitude")})
+            name = _fits("village", x.get("name"))
+            if name is None:
+                continue  # a place the farmer could pick but the form could not accept
+            out.append({"name": name, "taluka": _fits("taluka", x.get("admin3")),
+                        "district": _fits("district", district), "state": _fits("state", state),
+                        "lat": x.get("latitude"), "lon": x.get("longitude")})
         return out[:limit]
 
     return _cached(f"geo:q:{q.lower()}", fetch) or []  # type: ignore[return-value]

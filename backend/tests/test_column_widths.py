@@ -105,6 +105,31 @@ def test_the_model_actually_deployed_here_fits_too():
     assert len(version) <= MODEL_VERSION_LEN, f"{version!r} is {len(version)} characters"
 
 
+def test_a_geocoded_place_name_is_bounded_by_the_farm_it_is_written_into():
+    """The one source that no vocabulary in this file covers.
+
+    A geocoder's answer is arbitrary text from someone else's database, and
+    confirming a field's position writes it straight into these columns. The
+    bound lives in app.geo because that is the boundary; this keeps the two
+    numbers equal, so widening a column without widening the check (or the
+    reverse) fails here rather than in front of a farmer.
+    """
+    from app.geo import PLACE_LIMITS
+
+    assert PLACE_LIMITS["state"] == width("farm", "state")
+    assert PLACE_LIMITS["district"] == width("farm", "district")
+    assert PLACE_LIMITS["village"] == width("farm", "village")
+    assert PLACE_LIMITS["taluka"] == width("farm", "taluka")
+
+
+def test_a_satellite_providers_polygon_id_is_bounded_by_its_column():
+    """The other id this app stores on someone else's say-so. Theirs are
+    24-character ObjectIds, but the response is not a contract."""
+    from app.watch import POLYGON_ID_MAX
+
+    assert POLYGON_ID_MAX == width("farm", "agro_polygon_id")
+
+
 def test_columns_sized_exactly_to_their_contents_are_ones_that_cannot_grow():
     """A column with zero headroom is only safe when its content has a fixed
     length. These are the ones that legitimately do; anything else arriving at

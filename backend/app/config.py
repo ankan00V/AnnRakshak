@@ -55,6 +55,8 @@ MOSDAC_PASSWORD = os.environ.get("MOSDAC_PASSWORD")
 """ISRO MOSDAC account (https://mosdac.gov.in/signup/) for INSAT-3DS satellite
 rainfall. Optional: without it past rain stays the weather model's estimate."""
 MOSDAC_DATASET = os.environ.get("MOSDAC_DATASET", "3SIMG_L2B_HEM")
+if len(MOSDAC_DATASET) > 40:  # the width of sat_rain.dataset; a longer id would fail every ingest
+    raise SystemExit(f"MOSDAC_DATASET is {len(MOSDAC_DATASET)} characters; the longest this app stores is 40")
 """INSAT-3DS Hydro-Estimator rain rate; 3RIMG_L2B_HEM is INSAT-3DR's."""
 SARVAM_TTS_MODEL = "bulbul:v3"
 SARVAM_STT_MODEL = "saaras:v3"

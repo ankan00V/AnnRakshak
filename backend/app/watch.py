@@ -32,6 +32,9 @@ from app.models import Alert, Farm, Notice
 
 log = logging.getLogger("annrakshak.watch")
 
+POLYGON_ID_MAX = 40
+"""The width of farm.agro_polygon_id, pinned by test_column_widths."""
+
 
 def issue_notices(db: Session, kb: KB, farm: Farm, bundle: dict | None, now: datetime,
                   extra: list[dict] | None = None) -> list[Notice]:
@@ -63,7 +66,15 @@ def ensure_polygon(db: Session, farm: Farm) -> str | None:
         return farm.agro_polygon_id
     ha = farm.area_acres * 0.4047
     p = satellite.create_polygon(f"annrakshak-farm-{farm.id}", farm.lat, farm.lon, ha)
-    farm.agro_polygon_id = p["id"]
+    polygon_id = str(p.get("id") or "")
+    # The provider's id, straight from their response, into a 40-wide column.
+    # Theirs are 24-character ObjectIds today, but nothing here guarantees
+    # that, and a longer one would fail the write for every farm at once. An
+    # id we cannot store is the same as no polygon: the satellite panel says
+    # it is unavailable and the rest of the watcher carries on.
+    if not polygon_id or len(polygon_id) > POLYGON_ID_MAX:
+        return None
+    farm.agro_polygon_id = polygon_id
     db.flush()
     return farm.agro_polygon_id
 
