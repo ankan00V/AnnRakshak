@@ -105,6 +105,60 @@ def test_the_model_actually_deployed_here_fits_too():
     assert len(version) <= MODEL_VERSION_LEN, f"{version!r} is {len(version)} characters"
 
 
+def test_a_geocoded_place_name_is_bounded_by_the_farm_it_is_written_into():
+    """The one source that no vocabulary in this file covers.
+
+    A geocoder's answer is arbitrary text from someone else's database, and
+    confirming a field's position writes it straight into these columns. The
+    bound lives in app.geo because that is the boundary; this keeps the two
+    numbers equal, so widening a column without widening the check (or the
+    reverse) fails here rather than in front of a farmer.
+    """
+    from app.geo import PLACE_LIMITS
+
+    assert PLACE_LIMITS["state"] == width("farm", "state")
+    assert PLACE_LIMITS["district"] == width("farm", "district")
+    assert PLACE_LIMITS["village"] == width("farm", "village")
+    assert PLACE_LIMITS["taluka"] == width("farm", "taluka")
+
+
+def test_a_checkpoints_name_and_labels_are_bounded_by_their_columns():
+    """A checkpoint is built outside this app: its name is assembled from the
+    datasets folded in and its labels from the folders they unpack into, so
+    both grow whenever data/ingest_*.py brings in more. Neither is written by
+    hand, so neither is covered by any vocabulary above."""
+    from app.engine.model import MODEL_VERSION_MAX, TARGET_MAX
+
+    assert MODEL_VERSION_MAX == width("diagnosis", "model_version")
+    for table, column in (("problem", "target"), ("advisory", "target"), ("alert", "target"),
+                          ("label_prior", "target"), ("confirmation", "final_label")):
+        assert TARGET_MAX <= width(table, column), f"{table}.{column} is narrower than a label may be"
+
+
+def test_a_checkpoint_the_database_could_not_record_is_refused_at_load():
+    """Loudly, and at load. The alternative is what model_version actually did:
+    one failed write per farmer, for a day, with nothing left behind."""
+    from app.engine.model import TARGET_MAX, _check_storable
+
+    _check_storable("fine-model-1", {"a": "rice_blast"})  # the ordinary case passes
+
+    with pytest.raises(ValueError, match="model_version"):
+        _check_storable("x" * 300, {"a": "rice_blast"})
+
+    long_label = "rice_" + "very_long_" * 8
+    assert len(long_label) > TARGET_MAX
+    with pytest.raises(ValueError, match="fail to save"):
+        _check_storable("fine-model-1", {"a": long_label})
+
+
+def test_a_satellite_providers_polygon_id_is_bounded_by_its_column():
+    """The other id this app stores on someone else's say-so. Theirs are
+    24-character ObjectIds, but the response is not a contract."""
+    from app.watch import POLYGON_ID_MAX
+
+    assert POLYGON_ID_MAX == width("farm", "agro_polygon_id")
+
+
 def test_columns_sized_exactly_to_their_contents_are_ones_that_cannot_grow():
     """A column with zero headroom is only safe when its content has a fixed
     length. These are the ones that legitimately do; anything else arriving at

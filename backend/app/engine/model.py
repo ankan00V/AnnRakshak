@@ -141,6 +141,32 @@ def gradcam(model: Net, x: torch.Tensor, class_idx: int) -> np.ndarray:
     return _normalise(F.relu((weights * fmap).sum(dim=1))[0])
 
 
+MODEL_VERSION_MAX = 255
+TARGET_MAX = 60
+"""What a checkpoint may call itself and its labels, from the columns that
+have to hold them (diagnosis.model_version, problem.target and the other
+target columns; test_column_widths pins these numbers to the schema).
+
+A checkpoint is built outside this app. Its name is assembled from the
+datasets folded in, and its labels from the folders those datasets unpack
+into, so both grow as data/ingest_*.py bring in more -- neither is written by
+hand and neither is bounded by anything. A name two characters too long once
+cost a day of photo diagnoses, failing one write at a time with nothing left
+behind to notice it by. Checked here, where the artifact enters the app, so a
+checkpoint the database cannot record is a loud failure at load rather than a
+quiet one per farmer."""
+
+
+def _check_storable(version: str, class_to_target: dict[str, str]) -> None:
+    too_long = sorted({t for t in class_to_target.values() if len(t) > TARGET_MAX})
+    if len(version) > MODEL_VERSION_MAX:
+        raise ValueError(f"model_version is {len(version)} characters, more than the {MODEL_VERSION_MAX} "
+                         f"a diagnosis can record: {version!r}")
+    if too_long:
+        raise ValueError(f"these labels are longer than the {TARGET_MAX} characters a diagnosis can "
+                         f"record, so any photo they name would fail to save: {too_long}")
+
+
 class Classifier:
     """Loads ml/artifacts/{model.pt,meta.json}. predict() returns top-3 KB
     targets with calibrated confidences plus a Grad-CAM grid."""
@@ -151,6 +177,7 @@ class Classifier:
         self.version = meta["model_version"]
         self.classes: list[str] = meta["classes"]
         self.class_to_target: dict[str, str] = meta["class_to_target"]
+        _check_storable(self.version, self.class_to_target)
         self.temperature: float = meta.get("temperature", 1.0)
         self.size: int = meta["img_size"]
         self.model = Net(meta["backbone"], len(self.classes), meta["head"], pretrained=False)
