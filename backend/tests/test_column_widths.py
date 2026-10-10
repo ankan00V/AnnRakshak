@@ -122,6 +122,35 @@ def test_a_geocoded_place_name_is_bounded_by_the_farm_it_is_written_into():
     assert PLACE_LIMITS["taluka"] == width("farm", "taluka")
 
 
+def test_a_checkpoints_name_and_labels_are_bounded_by_their_columns():
+    """A checkpoint is built outside this app: its name is assembled from the
+    datasets folded in and its labels from the folders they unpack into, so
+    both grow whenever data/ingest_*.py brings in more. Neither is written by
+    hand, so neither is covered by any vocabulary above."""
+    from app.engine.model import MODEL_VERSION_MAX, TARGET_MAX
+
+    assert MODEL_VERSION_MAX == width("diagnosis", "model_version")
+    for table, column in (("problem", "target"), ("advisory", "target"), ("alert", "target"),
+                          ("label_prior", "target"), ("confirmation", "final_label")):
+        assert TARGET_MAX <= width(table, column), f"{table}.{column} is narrower than a label may be"
+
+
+def test_a_checkpoint_the_database_could_not_record_is_refused_at_load():
+    """Loudly, and at load. The alternative is what model_version actually did:
+    one failed write per farmer, for a day, with nothing left behind."""
+    from app.engine.model import TARGET_MAX, _check_storable
+
+    _check_storable("fine-model-1", {"a": "rice_blast"})  # the ordinary case passes
+
+    with pytest.raises(ValueError, match="model_version"):
+        _check_storable("x" * 300, {"a": "rice_blast"})
+
+    long_label = "rice_" + "very_long_" * 8
+    assert len(long_label) > TARGET_MAX
+    with pytest.raises(ValueError, match="fail to save"):
+        _check_storable("fine-model-1", {"a": long_label})
+
+
 def test_a_satellite_providers_polygon_id_is_bounded_by_its_column():
     """The other id this app stores on someone else's say-so. Theirs are
     24-character ObjectIds, but the response is not a contract."""
