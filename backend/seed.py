@@ -23,7 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from sqlalchemy import func, select  # noqa: E402
 
 from app.config import DB_URL  # noqa: E402
-from app.db import Base, SessionLocal, engine, init_db  # noqa: E402
+from app.db import SUPERVISOR_DESIGNATIONS, Base, SessionLocal, engine, init_db  # noqa: E402
 from app.models import ExpertProfile, Farm, User  # noqa: E402
 
 # (name, lang, crop, variety, sowing, district, lat, lon, acres, soil)
@@ -60,7 +60,12 @@ OFFICERS_PER_DISTRICT = 5
 
 # Surnames common in Vidarbha and Marathwada, so the queue reads like a real office.
 OFFICER_NAMES = ["Deshmukh", "Wankhede", "Ingle", "Patil", "Gaikwad", "Rathod", "Shelke", "Bhoyar"]
-DESIGNATIONS = ["kvk_scientist", "agriculture_officer", "agriculture_officer", "agronomist", "kvk_scientist"]
+# A district office as it actually staffs up: the KVK scientist who heads the
+# subject-matter team and the taluka Agriculture Officer carry a supervisor's
+# authority (app.db.SUPERVISOR_DESIGNATIONS); the assistants and the FPO
+# agronomist advise. Keep the two supervisor-grade posts first -- seed_officers
+# reads seniority off the index.
+DESIGNATIONS = ["kvk_scientist", "agri_officer", "agri_assistant", "private_agronomist", "agri_assistant"]
 
 
 def seed_officers(db, districts: list[str]) -> int:
@@ -81,9 +86,9 @@ def seed_officers(db, districts: list[str]) -> int:
                 districts=[district], crops=["rice", "maize", "cotton", "soybean"],
                 specialities=["plant_pathology", "entomology"], languages=["mr", "hi", "en"],
                 verified=True,
-                # One supervisor per district: the desk that verifies the others
-                # and rebalances the queue.
-                supervisor=(i == 0)))
+                # The rank follows the post, exactly as it does for a real
+                # sign-up, so the demo districts cannot drift from the rule.
+                supervisor=DESIGNATIONS[i % len(DESIGNATIONS)] in SUPERVISOR_DESIGNATIONS))
             made += 1
     return made
 

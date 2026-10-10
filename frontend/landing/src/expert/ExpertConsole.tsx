@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Bug, CheckCircle2, ClipboardList, FlaskRound, HelpCircle, Inbox, Loader2, MapPin, Send, Timer, UserCheck, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { PortalSwitch } from '../officer/PortalSwitch'
 import { api } from '../api/client'
 import type { CaseBundle, CaseListItem, CaseSatellite } from '../api/types'
 import { useAsync } from '../lib/hooks'
@@ -39,8 +40,8 @@ export default function ExpertConsole() {
             <span className="text-cream/40">/</span>
             <span className="flex items-center gap-1.5 text-sm"><UserCheck className="w-4 h-4 text-ochre" /> Expert validation</span>
           </div>
-          <nav className="flex items-center gap-4 text-sm text-cream/70">
-            <Link to="/officer" className="hover:text-cream">Officials' dashboard</Link>
+          <nav className="flex items-center gap-3 text-sm text-cream/70">
+            <PortalSwitch here="review" />
             <AccountMenu />
           </nav>
         </div>

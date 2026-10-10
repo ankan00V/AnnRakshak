@@ -58,9 +58,14 @@ export const UNAUTHORIZED = 'ar:unauthorized'
 
 export class ApiError extends Error {
   status: number
-  constructor(status: number, message: string) {
+  /** The field the server blamed, when it named one (`email`, `phone`). Lets a
+   *  multi-step form reopen the step that owns it instead of showing the
+   *  complaint beside a field that is no longer on screen. */
+  field?: string
+  constructor(status: number, message: string, field?: string) {
     super(message)
     this.status = status
+    this.field = field
   }
 }
 
@@ -73,14 +78,23 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (!res.ok) {
     let detail = res.statusText
+    let field: string | undefined
     try {
       const body = await res.json()
-      detail = typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail)
+      const d = body.detail
+      // A detail is usually the sentence to show. Some are an object carrying
+      // that sentence plus the field at fault; read the sentence out of it
+      // rather than printing the JSON at the person.
+      if (typeof d === 'string') detail = d
+      else if (d && typeof d === 'object' && typeof d.message === 'string') {
+        detail = d.message
+        if (typeof d.field === 'string') field = d.field
+      } else if (d !== undefined) detail = JSON.stringify(d)
     } catch {
       /* non-JSON error body */
     }
     if (res.status === 401 && !path.startsWith('/api/auth/')) window.dispatchEvent(new Event(UNAUTHORIZED))
-    throw new ApiError(res.status, detail)
+    throw new ApiError(res.status, detail, field)
   }
   return res.json() as Promise<T>
 }
@@ -100,6 +114,8 @@ export const api = {
   findPlace: (q: string) => req<{ results: PlaceHit[] }>(`/api/geo/search?q=${encodeURIComponent(q)}`),
 
   authOptions: (lang: Lang) => req<AuthOptions>(`/api/auth/options?lang=${lang}`),
+  checkIdentifiers: (body: { email?: string; phone?: string; lang: Lang }) =>
+    req<{ free: boolean; field: string | null; message: string | null }>('/api/auth/check', json(body)),
   requestOtp: (body: { role: Role; purpose: 'signup' | 'login'; email?: string; phone?: string; identifier?: string; lang: Lang }) =>
     req<OtpSent>('/api/auth/otp', json(body)),
   login: (challengeId: string, code: string, role: Role, lang: Lang) =>

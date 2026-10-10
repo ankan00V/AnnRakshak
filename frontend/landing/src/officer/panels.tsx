@@ -5,6 +5,7 @@ import {
 import { api } from '../api/client'
 import type { ModelCard, OutlookRow, PesticideBaseline, RainfallPanel, Summary } from '../api/types'
 import { useAsync } from '../lib/hooks'
+import { useAuth } from '../auth/AuthContext'
 import { Link } from 'react-router-dom'
 import { Bone, BoneLines, Card, ErrorBox, Loading, Pill } from '../ui/kit'
 
@@ -12,17 +13,27 @@ export const pct = (n: number | null | undefined, d = 0) => (n == null ? '—' :
 
 export function OfficerLoadPanel() {
   const w = useAsync(() => api.workload(), [])
+  const { me } = useAuth()
   const [busy, setBusy] = useState(false)
   const [said, setSaid] = useState<string | null>(null)
+  const [failed, setFailed] = useState<string | null>(null)
+  // Routing a district's backlog is a supervisor's call. The button used to be
+  // offered to every officer and refused by the server on press, with nothing
+  // caught and nothing shown, so it read as a dead control.
+  const mayRoute = me?.profile?.supervisor === true
 
   const route = async () => {
     setBusy(true)
+    setFailed(null)
+    setSaid(null)
     try {
       const r = await api.routeCases()
       setSaid(r.assigned === 0
         ? 'Nothing waiting to be routed.'
         : `${r.assigned} case${r.assigned === 1 ? '' : 's'} routed to the freest officers.`)
       w.reload()
+    } catch (e) {
+      setFailed(e instanceof Error ? e.message : 'Could not route the cases just now.')
     } finally {
       setBusy(false)
     }
@@ -90,14 +101,20 @@ export function OfficerLoadPanel() {
         </p>
       )}
 
-      {w.data.unassigned > 0 && (
+      {w.data.unassigned > 0 && (mayRoute ? (
         <button onClick={route} disabled={busy}
           className="mt-4 w-full min-h-[44px] rounded-full bg-leaf-deep text-cream text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-60">
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           Route {w.data.unassigned} waiting case{w.data.unassigned === 1 ? '' : 's'}
         </button>
-      )}
+      ) : (
+        <p className="mt-4 text-xs text-soil-dark/60">
+          {w.data.unassigned} case{w.data.unassigned === 1 ? '' : 's'} waiting to be routed. Your supervisor
+          — the Agriculture Officer or the KVK scientist — places these.
+        </p>
+      ))}
       {said && <p className="mt-2 text-xs text-leaf-deep">{said}</p>}
+      {failed && <p className="mt-2 text-xs text-ember">{failed}</p>}
     </Card>
   )
 }

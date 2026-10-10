@@ -898,6 +898,10 @@ export interface Me {
     specialities?: string[]
     languages?: Lang[]
     verified?: boolean
+    /** Set by the post this officer holds. A supervisor may verify a colleague,
+     *  route a district's backlog and move another desk's cases; an ordinary
+     *  officer may not, so those controls are not offered to one. */
+    supervisor?: boolean
     experience_years?: number
   } | null
 }

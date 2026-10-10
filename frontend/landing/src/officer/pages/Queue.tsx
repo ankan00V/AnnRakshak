@@ -8,6 +8,7 @@ import type { CaseQuery } from '../../api/types'
 import { useAsync } from '../../lib/hooks'
 import { Card, ErrorBox } from '../../ui/kit'
 import { useToast } from '../../ui/Toast'
+import { useAuth } from '../../auth/AuthContext'
 import { CaseRow, CaseView, QueueSkeleton } from '../../expert/ExpertConsole'
 
 const VIEWS_KEY = 'ar.officer.views'
@@ -42,6 +43,11 @@ export default function Queue() {
   const [fresh, setFresh] = useState(0)
   const [showKeys, setShowKeys] = useState(false)
   const { say, complain } = useToast()
+  const { me } = useAuth()
+  // Moving somebody else's cases is a supervisor's call, so an ordinary desk
+  // gets "take it" rather than a bulk control the server declines. Taking a
+  // case onto your own desk is everybody's.
+  const mayMoveOthers = me?.profile?.supervisor === true
   const cursor = useRef(0)
 
   const query: CaseQuery = useMemo(() => ({
@@ -260,18 +266,26 @@ export default function Queue() {
             <p className="text-xs font-medium flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5" /> {picked.size} selected
             </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <button onClick={() => move(null)} disabled={busy}
-                className="rounded-full bg-leaf-deep text-cream text-xs font-medium px-3 py-1.5 disabled:opacity-60 flex items-center gap-1.5">
-                {busy && <Loader2 className="w-3 h-3 animate-spin" />} Route to whoever is freest
-              </button>
-              {(officers.data ?? []).slice(0, 3).map((o) => (
-                <button key={o.user_id} onClick={() => move(o.user_id)} disabled={busy}
-                  className="rounded-full border border-soil-dark/20 text-xs px-3 py-1.5 disabled:opacity-60">
-                  → {o.name} <span className="text-soil-dark/50">({o.open_cases})</span>
+            {mayMoveOthers ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button onClick={() => move(null)} disabled={busy}
+                  className="rounded-full bg-leaf-deep text-cream text-xs font-medium px-3 py-1.5 disabled:opacity-60 flex items-center gap-1.5">
+                  {busy && <Loader2 className="w-3 h-3 animate-spin" />} Route to whoever is freest
                 </button>
-              ))}
-            </div>
+                {(officers.data ?? []).slice(0, 3).map((o) => (
+                  <button key={o.user_id} onClick={() => move(o.user_id)} disabled={busy}
+                    className="rounded-full border border-soil-dark/20 text-xs px-3 py-1.5 disabled:opacity-60">
+                    → {o.name} <span className="text-soil-dark/50">({o.open_cases})</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-2 text-xs text-soil-dark/65">
+                Only a supervisor — the Agriculture Officer or the KVK scientist — can hand these to
+                another desk. Open a case and press <span className="font-medium">Take it</span> to
+                put it on yours.
+              </p>
+            )}
           </Card>
         )}
 

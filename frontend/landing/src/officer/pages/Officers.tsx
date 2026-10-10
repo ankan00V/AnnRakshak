@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { BadgeCheck, Loader2, UserPlus } from 'lucide-react'
 import { api } from '../../api/client'
 import { useAsync } from '../../lib/hooks'
+import { useAuth } from '../../auth/AuthContext'
 import { Card, ErrorBox, Pill } from '../../ui/kit'
 import { OfficerLoadPanel, PanelBone, pct } from '../panels'
 
@@ -9,13 +10,22 @@ import { OfficerLoadPanel, PanelBone, pct } from '../panels'
  *  verification is a real decision the district office makes by hand. */
 export default function Officers() {
   const pending = useAsync(() => api.pendingOfficers(), [])
+  const { me } = useAuth()
   const [busy, setBusy] = useState<number | null>(null)
+  const [failed, setFailed] = useState<string | null>(null)
+  // Letting a colleague in is a supervisor's decision; an officer who could
+  // verify arrivals could verify themselves, which is the same as not checking
+  // anyone. So the list is visible to the district and the button is not.
+  const mayVerify = me?.profile?.supervisor === true
 
   const verify = async (id: number) => {
     setBusy(id)
+    setFailed(null)
     try {
       await api.verifyOfficer(id, true)
       pending.reload()
+    } catch (e) {
+      setFailed(e instanceof Error ? e.message : 'Could not verify that officer just now.')
     } finally {
       setBusy(null)
     }
@@ -48,15 +58,20 @@ export default function Officers() {
                       {o.districts.length > 3 && <Pill tone="leaf">+{o.districts.length - 3}</Pill>}
                     </span>
                   </span>
-                  <button onClick={() => verify(o.user_id)} disabled={busy === o.user_id}
-                    className="flex items-center gap-1.5 rounded-full bg-leaf-deep text-cream text-xs font-medium px-3.5 py-2 disabled:opacity-60">
-                    {busy === o.user_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <BadgeCheck className="w-3.5 h-3.5" />}
-                    Verify
-                  </button>
+                  {mayVerify ? (
+                    <button onClick={() => verify(o.user_id)} disabled={busy === o.user_id}
+                      className="flex items-center gap-1.5 rounded-full bg-leaf-deep text-cream text-xs font-medium px-3.5 py-2 disabled:opacity-60">
+                      {busy === o.user_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <BadgeCheck className="w-3.5 h-3.5" />}
+                      Verify
+                    </button>
+                  ) : (
+                    <span className="text-xs text-soil-dark/55">Awaiting the supervisor</span>
+                  )}
                 </li>
               ))}
             </ul>
           )}
+        {failed && <p className="mt-3 text-xs text-ember">{failed}</p>}
       </Card>
 
       <OfficerLoadPanel />

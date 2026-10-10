@@ -137,6 +137,13 @@ class KB:
             "name": tr(t["names"], lang),
             "signature": tr(t["signature"], lang),
             "agent": t.get("agent"),
+            # The EPPO code is the identifier that does not move. A scientific
+            # name does: this knowledge base says Magnaporthe oryzae and EPPO
+            # now says Pyricularia oryzae, and the code PYRIOR means the same
+            # organism under either. It is what links a diagnosis to pesticide
+            # registrations and to any other service that speaks EPPO. Absent
+            # for the few targets whose cause is a complex or not an organism.
+            "eppo": t.get("eppo"),
             "trap_etl": (self.rules.get(target_id, {}).get("trap") or {}).get("etl_per_trap_night"),
         }
 

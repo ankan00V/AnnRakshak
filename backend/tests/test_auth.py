@@ -172,13 +172,37 @@ def test_login_errors_are_clear(client, mail):
 
 
 def test_duplicate_signups_are_refused(client, mail):
+    """And say which field is at fault.
+
+    A sign-up collects the email and the mobile number on its first step, so a
+    refusal that only carries prose arrives several steps later with nothing to
+    point at. The field travels with the message so the form can reopen the step
+    that owns it.
+    """
     assert farmer_signup(client, mail).status_code == 201
     r = client.post("/api/auth/otp", json={"role": "expert", "purpose": "signup", "email": "new@example.com",
                                            "phone": "9876543210"})
-    assert r.status_code == 409 and "mobile" in r.json()["detail"]
+    assert r.status_code == 409
+    assert r.json()["detail"]["field"] == "phone"
+    assert "mobile" in r.json()["detail"]["message"]
     r = client.post("/api/auth/otp", json={"role": "farmer", "purpose": "signup", "email": "ramesh@example.com",
                                            "phone": "9000000009"})
-    assert r.status_code == 409 and "email" in r.json()["detail"]
+    assert r.status_code == 409
+    assert r.json()["detail"]["field"] == "email"
+    assert "email" in r.json()["detail"]["message"]
+
+
+def test_the_form_can_ask_whether_an_identifier_is_free(client, mail):
+    """What /check is for: the same answer, on the step that collects them."""
+    assert farmer_signup(client, mail).status_code == 201
+    free = client.post("/api/auth/check", json={"email": "new@example.com", "phone": "9000000009"})
+    assert free.status_code == 200 and free.json()["free"] is True and free.json()["field"] is None
+    taken = client.post("/api/auth/check", json={"email": "new@example.com", "phone": "9876543210"})
+    assert taken.status_code == 200
+    assert taken.json()["free"] is False and taken.json()["field"] == "phone"
+    assert "mobile" in taken.json()["message"]
+    # A malformed identifier is still a malformed identifier.
+    assert client.post("/api/auth/check", json={"email": "nope", "phone": "9000000009"}).status_code == 422
 
 
 def test_signup_validates_the_answers(client, mail):
@@ -522,3 +546,57 @@ def test_sample_photos_are_for_demo_accounts_only(client, mail):
     assert client.get("/api/samples").json() == []  # signed out too
     client.post("/api/auth/demo", json={"role": "farmer"})
     assert client.get("/api/samples").status_code == 200  # the demo account may have them
+
+
+def test_the_post_decides_the_supervisor_rank(client, mail):
+    """The bug this guards: every sign-up was an ordinary desk.
+
+    `supervisor` was never set on sign-up, so a district whose officers had all
+    signed up had nobody who could route its backlog, verify the next arrival
+    or move another desk's cases -- the server refused all three for everyone.
+    The rank follows the post, and travels in /me so a screen can offer only
+    what this desk may actually do.
+    """
+    r = expert_signup(client, mail)
+    assert r.status_code == 201, r.text
+    assert r.json()["profile"]["supervisor"] is True          # a KVK scientist
+    assert r.json()["profile"]["designation_name"] == "KVK scientist / Subject Matter Specialist"
+
+    r = client.post("/api/auth/otp", json={"role": "expert", "purpose": "signup",
+                                           "email": "sahayak@kvk.org.in", "phone": "9123456781"})
+    assert r.status_code == 200, r.text
+    r = client.post("/api/auth/signup/expert", json={
+        "challenge_id": r.json()["challenge_id"], "code": code_of(mail), "name": "R. Ingle",
+        "phone": "9123456781", "designation": "agri_assistant", "organisation": "Taluka Agri Office",
+        "employee_id": "MH-AA-77", "qualification": "bsc_agri", "experience_years": 4,
+        "districts": ["Bhandara"], "crops": ["rice"], "specialities": ["agronomy"], "languages": ["mr"]})
+    assert r.status_code == 201, r.text
+    assert r.json()["profile"]["supervisor"] is False         # an assistant advises
+
+
+def test_an_older_profile_is_given_its_rank_and_a_readable_post(client):
+    """The backfill. `supervisor` and the designation list both arrived after the
+    demo districts were seeded, so in a database made before them no account was
+    a supervisor and the designation rendered blank."""
+    from sqlalchemy import select
+
+    from app.db import SessionLocal, _backfill_expert_ranks, engine
+    from app.models import ExpertProfile, User
+
+    with SessionLocal() as db:
+        u = User(role="expert", name="Old Row", email="old@kvk.test", is_demo=True)
+        db.add(u)
+        db.flush()
+        db.add(ExpertProfile(user_id=u.id, designation="agriculture_officer", organisation="DAO",
+                             employee_id="E9", qualification="msc_agri", experience_years=11,
+                             districts=["Bhandara"], crops=["rice"], specialities=[], languages=["mr"],
+                             verified=True, supervisor=False))
+        db.commit()
+        uid = u.id
+
+    _backfill_expert_ranks(engine)
+
+    with SessionLocal() as db:
+        p = db.scalar(select(ExpertProfile).where(ExpertProfile.user_id == uid))
+        assert p.designation == "agri_officer"   # renamed into the vocabulary
+        assert p.supervisor is True              # and given the rank its post carries
