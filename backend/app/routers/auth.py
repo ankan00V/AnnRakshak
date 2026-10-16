@@ -349,7 +349,11 @@ def _me(db: Session, user: User) -> dict:
         # this desk may actually take. Without it the console offered every
         # officer the supervisor-only buttons and let the server refuse them.
         out["profile"] = {"designation": p.designation, "designation_name": _designation_name(p.designation),
-                          "organisation": p.organisation, "districts": p.districts, "crops": p.crops,
+                          "organisation": p.organisation, "districts": p.districts,
+                          # The states those districts sit in. The console says
+                          # where it is watching, and it used to say Maharashtra
+                          # to an officer in Punjab.
+                          "states": geo.states_of(p.districts), "crops": p.crops,
                           "specialities": p.specialities, "languages": p.languages, "verified": p.verified,
                           "supervisor": p.supervisor, "experience_years": p.experience_years} if p else None
     return out

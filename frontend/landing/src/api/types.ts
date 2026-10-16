@@ -561,6 +561,8 @@ export interface RainfallPanel {
     current_month: RainContext | null
     jjas_series: [number, number | null, number | null][]
   }[]
+  /** Districts of this officer's that no IMD subdivision normal covers yet. */
+  unmapped_districts?: string[]
 }
 
 export interface ModelCard {
@@ -904,6 +906,9 @@ export interface Me {
     designation_name?: string
     organisation?: string
     districts?: string[]
+    /** The states those districts sit in, so a screen can say where this
+     *  officer is watching without assuming one. */
+    states?: string[]
     crops?: string[]
     specialities?: string[]
     languages?: Lang[]

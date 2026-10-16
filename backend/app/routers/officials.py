@@ -16,12 +16,12 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
-from app import auth, config, office, services
+from app import auth, config, geo, office, services
 from app.limits import limit
 from app.db import get_db
 from app.engine import vision
 from app.kb import KB, get_kb, tr
-from app.models import Advisory, Alert, Case, Confirmation, Diagnosis, Farm, Problem, User
+from app.models import Advisory, Alert, Case, Confirmation, Diagnosis, ExpertProfile, Farm, Problem, User
 
 router = APIRouter(prefix="/api/officials", tags=["officials"],
                    dependencies=[Depends(auth.require("expert")), Depends(auth.require_verified)])
@@ -158,10 +158,25 @@ def hotspots(days: int = 45, lang: str = "en", db: Session = Depends(get_db), kb
 
 
 @router.get("/rainfall")
-def rainfall():
+def rainfall(request: Request, db: Session = Depends(get_db)):
+    """Rainfall against the IMD normal, for the subdivisions this officer's own
+    districts fall in.
+
+    It used to serve the same four Maharashtra subdivisions to everybody, so an
+    officer in Punjab opened Reference and was shown Konkan, Pune, Marathwada
+    and Nagpur. The shipped normals only map Maharashtra's districts, so for an
+    officer anywhere else the honest answer is an empty list and the districts
+    we could not place — not another state's rain.
+    """
     normals = services.rainfall_normals()
+    mine = _mine(request, db)
+    to_sub = normals["district_to_subdivision"]
+    wanted = {to_sub[d] for d in mine if d in to_sub} if mine else set(SUBDIVISION_POINTS)
+    unmapped = sorted(d for d in mine if d not in to_sub)
     out = []
     for sub, (place, lat, lon) in SUBDIVISION_POINTS.items():
+        if sub not in wanted:
+            continue
         rc = services.rain_vs_normal(place, lat, lon)
         out.append({
             "subdivision": sub, "reference_place": place,
@@ -169,13 +184,19 @@ def rainfall():
             "current_month": rc,
             "jjas_series": normals["jjas_series"].get(sub, []),
         })
-    return {"source": normals["_source"], "subdivisions": out}
+    return {"source": normals["_source"], "subdivisions": out, "unmapped_districts": unmapped}
 
 
 @router.get("/pesticides")
-def pesticide_baseline(state: str = "Maharashtra"):
+def pesticide_baseline(request: Request, db: Session = Depends(get_db), state: str | None = None):
     """State pesticide consumption (MoSPI ENVSTATS / DPPQS), the baseline that
-    'more targeted pesticide use' is measured against."""
+    'more targeted pesticide use' is measured against.
+
+    Whose baseline: the state this officer works in, read off the districts
+    they cover. It was pinned to Maharashtra, so every officer in the country
+    was shown Maharashtra's tonnage as the number their work has to move.
+    """
+    state = state or next(iter(geo.states_of(_mine(request, db))), "Maharashtra")
     path = services.KB_DIR / "mospi_pesticides.json"
     if not path.exists():
         return {"available": False}
@@ -308,6 +329,13 @@ def run_all(db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
 
 def _me(request: Request, db: Session) -> User | None:
     return auth.current_user(request, db)
+
+
+def _mine(request: Request, db: Session) -> list[str]:
+    """The districts the signed-in officer covers, empty when we have none."""
+    me = _me(request, db)
+    prof = db.get(ExpertProfile, me.id) if me else None
+    return list(prof.districts or []) if prof else []
 
 
 def _demo(request: Request, db: Session) -> bool:

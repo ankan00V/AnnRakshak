@@ -372,6 +372,16 @@ export function RainfallSection({ r }: { r: RainfallPanel }) {
     <Card className="p-4">
       <h2 className="font-semibold flex items-center gap-2"><CloudRain className="w-4 h-4 text-leaf" /> Rainfall against the IMD normal</h2>
       <p className="text-xs text-soil-dark/60 mt-0.5">This month so far (observed) against each subdivision's 1901–2015 IMD normal, and the last 60 monsoons' departure from normal. Abnormal rain shifts disease and pest risk — the risk engine reads the same numbers.</p>
+      {/* The committed normals map Maharashtra's districts and no others yet.
+          Saying so beats showing an officer in Punjab the rain over Nagpur. */}
+      {r.subdivisions.length === 0 && (
+        <p className="mt-4 rounded-xl border border-dashed border-soil-dark/20 bg-cream p-3 text-sm text-soil-dark/70">
+          No IMD subdivision normal is mapped yet for{' '}
+          <span className="font-medium">{(r.unmapped_districts ?? []).join(', ') || 'your districts'}</span>.
+          The risk engine still reads live weather at each field; it is this 1901–2015 reference that
+          currently covers Maharashtra's four subdivisions only.
+        </p>
+      )}
       <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {r.subdivisions.map((s) => {
           const c = s.current_month

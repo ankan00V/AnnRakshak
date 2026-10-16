@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { BookOpen, BrainCircuit, ClipboardCheck, ClipboardList, Loader2, Map as MapIcon, Megaphone, Package, RefreshCw, Users } from 'lucide-react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { api } from '../api/client'
+import { useAuth } from '../auth/AuthContext'
 import AccountMenu from '../auth/AccountMenu'
 import Darpan from './Darpan'
 import { PortalSwitch } from './PortalSwitch'
@@ -22,9 +23,12 @@ const TABS = [
 ]
 
 export default function OfficerShell() {
+  const { me } = useAuth()
   const [sweep, setSweep] = useState<string | null>(null)
   const [sweeping, setSweeping] = useState(false)
   const { key } = useLocation()
+  const states = me?.profile?.states ?? []
+  const patch = states.length ? states.join(' · ') : ''
 
   const runSweep = async () => {
     setSweeping(true)
@@ -47,7 +51,10 @@ export default function OfficerShell() {
               <BrandMark size={30} />AnnRakshak
             </Link>
             <span className="text-cream/40">/</span>
-            <span className="text-sm">Crop-health surveillance · Maharashtra</span>
+            {/* Where this officer is actually watching. It read "Maharashtra"
+                for everyone, including the officers in Punjab who had just
+                told us the districts they cover. */}
+            <span className="text-sm">Crop-health surveillance{patch ? ` · ${patch}` : ''}</span>
           </div>
           <div className="flex items-center gap-2">
             <PortalSwitch here="office" />

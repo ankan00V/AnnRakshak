@@ -1,7 +1,9 @@
 import Reveal from '../ui/Reveal'
 
 /** Three rows, not three cards: each one pairs what it costs with why.
- *  The pesticide figure is the state's own (MoSPI/DPPQS via eSankhyiki). */
+ *  The pesticide figure is the sum of every state MoSPI publishes for 2023-24
+ *  (DPPQS via eSankhyiki) — the app is for the country, so the number is the
+ *  country's, not the one state the problem statement came from. */
 const ROWS = [
   {
     figure: '3–7 days',
@@ -14,9 +16,9 @@ const ROWS = [
     line: 'Extension staff cover more land than anyone can walk. Most crops get expert eyes only after the damage is already visible from the road.',
   },
   {
-    figure: '8,719 t',
-    unit: 'of chemical pesticide · Maharashtra, 2023-24',
-    line: 'Third-highest in India. A wrong guess at the spray shop is paid for twice — once at the counter, again in the yield it never saved.',
+    figure: '79,423 t',
+    unit: 'of chemical pesticide · 32 states, 2023-24',
+    line: 'A year of spraying across the country. A wrong guess at the spray shop is paid for twice — once at the counter, again in the yield it never saved.',
     source: 'MoSPI eSankhyiki (DPPQS)',
   },
 ]
