@@ -9,7 +9,7 @@ import { useAsync } from '../lib/hooks'
 import { Bone, Card, ErrorBox, Loading } from '../ui/kit'
 import { useAuth } from './AuthContext'
 import { emailOk, phoneOk } from './helpers'
-import { Chips, CodePanel, Field, Input, Primary, Secondary, Select, Steps } from './parts'
+import { Actions, Chips, CodePanel, Field, FormCard, Input, Primary, Secondary, Select, Steps } from './parts'
 
 /** What an expert is asked, and why: it decides which cases reach them and
  *  whether their verdicts can be trusted. Their post and credentials (the
@@ -120,6 +120,7 @@ export default function SignupExpert() {
   if (options.error) return <ErrorBox error={options.error} onRetry={options.reload} retryLabel={t('retry')} />
   if (!o) {
     return (
+      <FormCard>
       <Loading label={t('loading')}>
         <Bone className="h-2 w-full rounded-full" />
         <div className="mt-5 space-y-4">
@@ -132,11 +133,13 @@ export default function SignupExpert() {
           <Bone className="h-12 w-full rounded-full" />
         </div>
       </Loading>
+      </FormCard>
     )
   }
 
   return (
     <div>
+      <FormCard>
       <Steps step={step} titles={titles} />
 
       {step === 0 && (
@@ -281,12 +284,13 @@ export default function SignupExpert() {
         </div>
       )}
 
-      <div className="mt-6 flex gap-3">
+      <Actions>
         {step > 0 && <Secondary onClick={() => setStep((s) => s - 1)}>{t('back')}</Secondary>}
         {step < 3 && <Primary onClick={next} busy={checking}>{t('authNext')}</Primary>}
-      </div>
+      </Actions>
+      </FormCard>
 
-      <p className="mt-8 text-center text-sm text-soil-dark/70">
+      <p className="mt-6 lg:mt-7 text-center text-sm text-soil-dark/70">
         {t('authHaveAccount')}{' '}
         <Link to="/login?role=expert" className="text-leaf-deep font-semibold underline underline-offset-2">{t('authLogin')}</Link>
       </p>

@@ -52,7 +52,7 @@ function Frame() {
         {/* A short step (the login box, the fork) would otherwise sit against
             the top of a laptop screen with half a window of cream under it. */}
         <div className="lg:min-h-[calc(100vh-58px)] lg:flex lg:flex-col lg:justify-center">
-          <main className="w-full max-w-lg lg:max-w-2xl mx-auto px-4 lg:px-10 pt-6 pb-16 lg:py-12 animate-fadein">
+          <main className="w-full max-w-lg lg:max-w-[44rem] mx-auto px-4 lg:px-10 pt-6 pb-16 lg:py-12 animate-fadein">
             <Outlet />
           </main>
         </div>
@@ -78,8 +78,12 @@ function Aside() {
         : { title: t('authLoginTitle'), sub: t('authLoginSub') }
 
   return (
-    <aside className="hidden lg:flex flex-col gap-10 bg-leaf-deep text-cream px-10 py-12 sticky top-0 self-start h-[calc(100vh-58px)] overflow-y-auto">
-      <div>
+    <aside className="relative hidden lg:flex flex-col gap-10 bg-leaf-deep text-cream px-10 py-12 sticky top-0 self-start h-[calc(100vh-58px)] overflow-hidden">
+      {/* The emblem, barely there: the panel is tall and mostly empty below
+          the walk, and an edge of the mark is better than a slab of green. */}
+      <img src="/brand/emblem-192.png" alt="" aria-hidden
+        className="pointer-events-none select-none absolute -bottom-24 -right-24 w-64 opacity-[0.045]" />
+      <div className="relative">
         <h2 className="font-instrument-serif text-[34px] leading-tight">{copy.title}</h2>
         <p className="mt-2.5 text-[14px] leading-relaxed text-cream/70">{copy.sub}</p>
       </div>
@@ -88,7 +92,7 @@ function Aside() {
           one screen is noise. */}
       {progress ? <Walk {...progress} /> : pathname.startsWith('/login') ? <Audiences /> : null}
 
-      <p className="mt-auto text-[12px] leading-relaxed text-cream/45">{t('authEmailNote')}</p>
+      <p className="relative mt-auto text-[12px] leading-relaxed text-cream/45">{t('authEmailNote')}</p>
     </aside>
   )
 }
@@ -97,7 +101,7 @@ function Aside() {
 function Walk({ step, titles }: { step: number; titles: string[] }) {
   const { t } = useFarmer()
   return (
-    <ol className="space-y-0">
+    <ol className="relative space-y-0">
       {titles.map((title, i) => {
         const done = i < step
         const here = i === step
@@ -138,7 +142,7 @@ function Audiences() {
     { icon: UserCheck, title: t('authExpertCard'), sub: t('authExpertCardSub') },
   ]
   return (
-    <ul className="space-y-5">
+    <ul className="relative space-y-5">
       {rows.map(({ icon: Icon, title, sub }) => (
         <li key={title} className="flex gap-3.5">
           <span className="w-9 h-9 shrink-0 rounded-xl bg-cream/10 flex items-center justify-center">

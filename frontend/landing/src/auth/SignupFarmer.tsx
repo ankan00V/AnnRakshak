@@ -9,7 +9,7 @@ import { useAsync } from '../lib/hooks'
 import { Bone, Card, Loading } from '../ui/kit'
 import { useAuth } from './AuthContext'
 import { emailOk, phoneOk } from './helpers'
-import { Chips, CodePanel, Field, Input, Primary, Secondary, Steps } from './parts'
+import { Actions, Chips, CodePanel, Field, FormCard, Input, Primary, Secondary, Steps } from './parts'
 import WherePicker, { type Where } from './WherePicker'
 
 const IRRIGATION: Irrigation[] = ['rainfed', 'canal', 'borewell', 'open_well', 'farm_pond', 'drip', 'sprinkler']
@@ -54,7 +54,7 @@ function FieldList({ fields, crops, onRemove }: {
 function MoreDetails({ open, onToggle, children }: { open: boolean; onToggle: () => void; children: ReactNode }) {
   const { t } = useFarmer()
   return (
-    <div className="rounded-2xl border border-soil-dark/10 bg-white/60">
+    <div className="rounded-2xl border border-soil-dark/10 bg-white/60 lg:bg-cream/40">
       <button type="button" onClick={onToggle}
         className="w-full flex items-center justify-between px-3 min-h-[48px] text-[13px] font-medium text-soil-dark/70">
         {open ? t('authMoreHide') : t('authMore')}
@@ -150,6 +150,7 @@ export default function SignupFarmer() {
 
   return (
     <div>
+      <FormCard>
       <Steps step={step} titles={titles} />
 
       {step === 0 && (
@@ -295,18 +296,19 @@ export default function SignupFarmer() {
       )}
 
       {step < 3 && (
-        <div className="mt-6 flex gap-3">
+        <Actions>
           {step > 0 && <Secondary onClick={() => setStep((s) => s - 1)}>{t('back')}</Secondary>}
           <Primary onClick={next}>{t('authNext')}</Primary>
-        </div>
+        </Actions>
       )}
       {step === 3 && (
-        <div className="mt-4">
+        <Actions>
           <Secondary onClick={() => setStep(2)}>{t('back')}</Secondary>
-        </div>
+        </Actions>
       )}
+      </FormCard>
 
-      <p className="mt-8 text-center text-sm text-soil-dark/70">
+      <p className="mt-6 lg:mt-7 text-center text-sm text-soil-dark/70">
         {t('authHaveAccount')}{' '}
         <Link to="/login?role=farmer" className="text-leaf-deep font-semibold underline underline-offset-2">{t('authLogin')}</Link>
       </p>

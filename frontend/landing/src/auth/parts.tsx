@@ -6,8 +6,28 @@ import { useFarmer } from '../farmer/FarmerContext'
 import type { TKey } from '../lib/i18n'
 import { usePublishProgress } from './progress'
 
+/** On a phone the page is cream and a white box is the thing you type in. On a
+ *  laptop the form sits on a white sheet, so the same white box would vanish
+ *  into it — there the boxes take the page's own cream, which is how every
+ *  other card in the app holds a field. */
 const input =
-  'w-full min-h-[48px] rounded-xl border px-3 bg-white text-[15px] focus:outline-none focus:ring-2 focus:ring-leaf/30'
+  'w-full min-h-[48px] rounded-xl border px-3 bg-white lg:bg-cream/50 text-[15px] ' +
+  'focus:outline-none focus:ring-2 focus:ring-leaf/30 lg:focus:bg-white'
+
+/** The sheet the form is written on, from `lg` up. */
+export function FormCard({ children }: { children: ReactNode }) {
+  return (
+    <section className="lg:rounded-3xl lg:bg-white lg:border lg:border-soil-dark/10 lg:px-9 lg:py-8
+                        lg:shadow-[0_20px_46px_-30px_rgba(43,29,18,0.45)]">
+      {children}
+    </section>
+  )
+}
+
+/** The row the form ends on: a rule, then where you can go from here. */
+export function Actions({ children }: { children: ReactNode }) {
+  return <div className="mt-6 lg:mt-8 lg:pt-6 lg:border-t lg:border-soil-dark/10 flex gap-3">{children}</div>
+}
 
 /** A labelled input. `group` for a set of chips: a <label> would pass a tap
  *  on its title to the first chip inside it. */
@@ -88,8 +108,9 @@ export function Chips<T extends string>({ options, value, onChange, multi = fals
         const on = value.includes(o.id)
         return (
           <button type="button" key={o.id} onClick={() => toggle(o.id)} aria-pressed={on}
-            className={`min-h-[42px] rounded-xl border px-3 py-2 text-left text-[13px] font-medium flex items-center gap-2 transition-colors ${
-              on ? 'border-leaf-deep bg-leaf/10 text-leaf-deep' : 'border-soil-dark/15 bg-white hover:border-leaf/40'}`}>
+            className={`min-h-[42px] lg:min-h-[46px] rounded-xl border px-3 py-2 text-left text-[13px] font-medium flex items-center gap-2 transition-colors ${
+              on ? 'border-leaf-deep bg-leaf/10 text-leaf-deep'
+                : 'border-soil-dark/15 bg-white lg:bg-cream/50 hover:border-leaf/40 lg:hover:bg-cream'}`}>
             <span className="flex-1 min-w-0">{o.label}</span>
             {on && <Check className="w-4 h-4 shrink-0" />}
           </button>
@@ -105,11 +126,11 @@ export function Steps({ step, titles }: { step: number; titles: string[] }) {
   const { t } = useFarmer()
   usePublishProgress(step, titles)
   return (
-    <div className="mb-5 lg:mb-7">
+    <div className="mb-5 lg:mb-7 lg:pb-5 lg:border-b lg:border-soil-dark/10">
       <p className="text-[11px] uppercase tracking-wider text-soil-dark/50 font-semibold lg:hidden">
         {t('authStep').replace('{n}', String(step + 1)).replace('{total}', String(titles.length))}
       </p>
-      <h2 className="mt-1 lg:mt-0 font-instrument-serif text-[28px] lg:text-[32px] leading-tight">{titles[step]}</h2>
+      <h2 className="mt-1 lg:mt-0 font-instrument-serif text-[28px] lg:text-[30px] leading-tight">{titles[step]}</h2>
       <div className="mt-3 grid gap-1.5 lg:hidden" style={{ gridTemplateColumns: `repeat(${titles.length}, 1fr)` }}>
         {titles.map((x, i) => (
           <span key={x + i} className={`h-1.5 rounded-full ${i <= step ? 'bg-leaf-deep' : 'bg-soil-dark/10'}`} />
