@@ -21,6 +21,16 @@ export interface Farm {
   das: number
   lang: Lang
   is_demo: boolean
+  /** The worst alert standing against this field in the last week, if any.
+   *  Sent with the list so the picker can say which field needs a person. */
+  alert?: FarmAlert | null
+}
+
+export interface FarmAlert {
+  level: 'high' | 'medium' | 'low'
+  name: string
+  issued_on: string
+  answered: boolean
 }
 
 export interface TargetView {

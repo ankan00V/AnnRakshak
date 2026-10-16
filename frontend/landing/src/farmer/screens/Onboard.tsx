@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronRight, LocateFixed, Plus, Sprout } from 'lucide-react'
+import { AlertTriangle, ChevronRight, LocateFixed, Plus, Sprout } from 'lucide-react'
 import { api } from '../../api/client'
 import type { CropInfo, Farm } from '../../api/types'
 import WherePicker, { type Where } from '../../auth/WherePicker'
@@ -39,13 +39,42 @@ function Ask({ label, say }: { label: string; say: TKey }) {
   )
 }
 
+const RANK: Record<string, number> = { high: 3, medium: 2, low: 1 }
+
+/** What is standing against this field this week. Nothing is drawn when
+ *  nothing is building: a row of "all clear" badges teaches the eye to skip
+ *  the one place a warning would appear. */
+function Standing({ alert }: { alert: Farm['alert'] }) {
+  const { t } = useFarmer()
+  if (!alert) return null
+  const tone = alert.answered ? 'bg-soil-dark/5 text-soil-dark/55'
+    : alert.level === 'high' ? 'bg-ember/10 text-ember'
+      : alert.level === 'medium' ? 'bg-ochre/15 text-[#8a5a17]' : 'bg-leaf/10 text-leaf-deep'
+  return (
+    <span className={`mt-1.5 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ${tone}`}>
+      {!alert.answered && alert.level === 'high' && <AlertTriangle className="w-3 h-3 shrink-0" />}
+      {t(`level_${alert.level}` as TKey)} · {alert.name}
+    </span>
+  )
+}
+
 export default function Onboard() {
   const { lang, t, setFarmId, setLang } = useFarmer()
+  const { me } = useAuth()
   const farms = useAsync(() => api.farms(lang), [lang], ['farms', lang].join(':'))
   const crops = useAsync(() => api.crops(lang), [lang], ['crops', lang].join(':'))
   const [adding, setAdding] = useState(false)
   const [cropFilter, setCropFilter] = useState<string | null>(null)
-  const shown = (farms.data ?? []).filter((f) => !cropFilter || f.crop === cropFilter)
+  // The question this screen asks is which field we are protecting today, so
+  // the field with the worst week answers it first.
+  const shown = (farms.data ?? [])
+    .filter((f) => !cropFilter || f.crop === cropFilter)
+    .slice()
+    .sort((a, b) => (RANK[b.alert?.level ?? ''] ?? 0) - (RANK[a.alert?.level ?? ''] ?? 0) || a.id - b.id)
+  // A crop nobody here grows is a filter that can only empty the list, and
+  // four buttons over three fields is furniture.
+  const grown = (crops.data ?? []).filter((c) => (farms.data ?? []).some((f) => f.crop === c.id))
+  const filterable = (farms.data?.length ?? 0) > 6 && grown.length > 1
 
   return (
     /* Explicit cells rather than two stacked columns: on a phone the order on
@@ -75,9 +104,9 @@ export default function Onboard() {
         {farms.loading && !farms.data && <FarmPickerSkeleton />}
         {farms.error && <ErrorBox error={farms.error} onRetry={farms.reload} retryLabel={t('retry')} />}
 
-        {crops.data && farms.data && (
+        {filterable && (
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0 lg:flex-wrap">
-            {[{ id: null as string | null, name: 'All' }, ...crops.data.map((c) => ({ id: c.id as string | null, name: c.name }))].map((c) => (
+            {[{ id: null as string | null, name: 'All' }, ...grown.map((c) => ({ id: c.id as string | null, name: c.name }))].map((c) => (
               <button key={c.id ?? 'all'} onClick={() => setCropFilter(c.id)}
                 className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border ${cropFilter === c.id ? 'bg-leaf-deep text-cream border-leaf-deep' : 'bg-white border-soil-dark/15'}`}>
                 {c.name}{c.id ? ` · ${farms.data!.filter((f) => f.crop === c.id).length}` : ''}
@@ -97,23 +126,34 @@ export default function Onboard() {
               <li key={f.id} className="lg:h-full">
                 <button
                   onClick={() => setFarmId(f.id)}
-                  className="w-full h-full text-left flex items-center gap-3 rounded-2xl bg-white border border-soil-dark/10 p-3 lg:p-4 hover:border-leaf/50 hover:shadow-[0_10px_24px_-18px_rgba(43,29,18,0.5)] transition-all"
+                  className={`w-full h-full text-left flex items-start gap-3 rounded-2xl bg-white border p-3 lg:p-4 transition-all hover:shadow-[0_10px_24px_-18px_rgba(43,29,18,0.5)] ${
+                    f.alert && !f.alert.answered && f.alert.level === 'high'
+                      ? 'border-ember/40 hover:border-ember/70' : 'border-soil-dark/10 hover:border-leaf/50'}`}
                 >
                   <span className={`shrink-0 w-11 h-11 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center text-xs font-semibold ${CROP_TINT[f.crop] ?? ''}`}>
                     {f.crop_name.slice(0, 2)}
                   </span>
                   <span className="flex-1 min-w-0">
-                    <span className="block text-sm lg:text-[15px] font-medium truncate">{f.farmer_name}</span>
-                    {/* Half the width of the old full-page row, so the line
-                        wraps here instead of ending in an ellipsis that hides
-                        the stage — which is the part that says what the field
-                        needs watching for. */}
-                    <span className="block text-xs text-soil-dark/60 truncate lg:whitespace-normal lg:leading-snug">
-                      {f.crop_name} · {f.district} · {f.stage_name} ({f.das} {t('daysOld')})
+                    {/* What tells this field apart from the one beside it: the
+                        crop and the place. The farmer's own name was the
+                        headline on every card, which on your own three fields
+                        is the same word three times. It earns the line only
+                        when the list holds more than one person's fields. */}
+                    <span className="block text-sm lg:text-[15px] font-medium truncate lg:whitespace-normal lg:leading-snug">
+                      {f.crop_name} · {f.village || f.district}
                     </span>
+                    <span className="block text-xs text-soil-dark/60 truncate lg:whitespace-normal lg:leading-snug">
+                      {f.stage_name} · {f.das} {t('daysOld')} · {f.area_acres} {t('acres')}
+                    </span>
+                    {f.farmer_name !== me?.name && (
+                      <span className="block text-[11px] text-soil-dark/45 truncate">{f.farmer_name}</span>
+                    )}
+                    <Standing alert={f.alert} />
                   </span>
-                  {f.is_demo && <Pill>{t('demoFarm')}</Pill>}
-                  <ChevronRight className="w-4 h-4 text-soil-dark/40" />
+                  <span className="flex items-center gap-1.5 shrink-0">
+                    {f.is_demo && <Pill>{t('demoFarm')}</Pill>}
+                    <ChevronRight className="w-4 h-4 text-soil-dark/40" />
+                  </span>
                 </button>
               </li>
             ))}

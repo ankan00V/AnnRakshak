@@ -601,3 +601,54 @@ def test_the_ai_note_is_written_in_english_then_translated(client, monkeypatch):
     monkeypatch.setattr(voice, "translate", down)
     ta = client.post("/api/labelcheck/note", json={"farm_id": 1, "product": "salt", "lang": "ta"}).json()
     assert ta["suggestion"] == "Salt is not a pesticide."
+
+
+def _alert(farm_id, target, level, days_ago, trigger="weather"):
+    """An alert the database will accept: it insists every alert carries at
+    least one English task, and that one farm sees one target per trigger
+    per day."""
+    return Alert(farm_id=farm_id, target=target, trigger=trigger, level=level,
+                 reason={"en": "humid week"}, tasks={"en": ["Walk the field"]},
+                 issued_on=date.today() - timedelta(days=days_ago))
+
+
+def test_the_picker_says_which_field_is_in_trouble(client):
+    """A farmer with several fields should not have to open each one to find
+    the one the app is worried about."""
+    with SessionLocal() as db:
+        db.add_all([
+            _alert(1, "rice_blast", "medium", 2),
+            _alert(1, "rice_bacterial_leaf_blight", "high", 4),
+            _alert(2, "rice_blast", "high", 40),   # real once, not "right now"
+        ])
+        db.commit()
+
+    farms = {f["id"]: f for f in client.get("/api/farms").json()}
+    assert farms[1]["alert"]["level"] == "high", "the worst of the week wins, not the most recent"
+    assert farms[1]["alert"]["name"], "named in the farmer's language, not as a target id"
+    assert farms[2]["alert"] is None, "six weeks old is not what stands against it today"
+    assert farms[3]["alert"] is None
+
+
+def test_the_picker_reads_the_alerts_once_however_many_fields(client):
+    """This runs on every landing; it must not walk the farms one at a time."""
+    from sqlalchemy import event
+
+    from app.db import engine as eng
+
+    with SessionLocal() as db:
+        db.add_all([_alert(i, "rice_blast", "low", 1) for i in (1, 2, 3)])
+        db.commit()
+
+    reads = []
+
+    def count(conn, cursor, statement, *a):
+        if "FROM alert" in statement:
+            reads.append(statement)
+
+    event.listen(eng, "before_cursor_execute", count)
+    try:
+        client.get("/api/farms")
+    finally:
+        event.remove(eng, "before_cursor_execute", count)
+    assert len(reads) == 1, f"one read for the whole list, got {len(reads)}"

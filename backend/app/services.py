@@ -209,6 +209,45 @@ def alert_view(kb: KB, a: Alert, lang: str) -> dict:
     }
 
 
+# How far back the field picker looks, and which of two alerts outranks the
+# other. A week is the window a farmer would call "right now" in the field.
+PICKER_DAYS = 7
+_LEVEL_RANK = {"high": 3, "medium": 2, "low": 1}
+
+
+def farm_flags(db: Session, kb: KB, farm_ids: list[int], lang: str,
+               today: date | None = None) -> dict[int, dict]:
+    """The worst thing standing against each field this week, in one query.
+
+    The picker is the screen that asks which field we are protecting today. It
+    could only list names, so a farmer with three fields had to open all three
+    to find out which one the app was worried about -- and the answer was
+    already on the server. One batched read, because this runs on every
+    landing.
+    """
+    if not farm_ids:
+        return {}
+    since = (today or date.today()) - timedelta(days=PICKER_DAYS)
+    rows = db.scalars(
+        select(Alert).where(Alert.farm_id.in_(farm_ids), Alert.issued_on >= since)
+    ).all()
+    worst: dict[int, Alert] = {}
+    for a in rows:
+        held = worst.get(a.farm_id)
+        rank = (_LEVEL_RANK.get(a.level, 0), a.issued_on, a.id)
+        if held is None or rank > (_LEVEL_RANK.get(held.level, 0), held.issued_on, held.id):
+            worst[a.farm_id] = a
+    return {
+        fid: {
+            "level": a.level,
+            "name": tr(kb.targets[a.target]["names"], lang) if a.target in kb.targets else a.target,
+            "issued_on": a.issued_on.isoformat(),
+            "answered": a.outcome is not None,
+        }
+        for fid, a in worst.items()
+    }
+
+
 def _image_url(path: str | None) -> str | None:
     return f"/media/{path}" if path else None
 

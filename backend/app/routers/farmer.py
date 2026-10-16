@@ -146,7 +146,11 @@ def list_farms(request: Request, lang: Lang = "en", db: Session = Depends(get_db
     q = select(Farm).order_by(Farm.id)
     if ids is not None:
         q = q.where(Farm.id.in_(ids))
-    return [services.farm_view(kb, f, lang) for f in db.scalars(q).all()]
+    farms = db.scalars(q).all()
+    # What is standing against each field, so the picker can answer its own
+    # question rather than listing names. One query for the whole list.
+    flags = services.farm_flags(db, kb, [f.id for f in farms], lang)
+    return [services.farm_view(kb, f, lang) | {"alert": flags.get(f.id)} for f in farms]
 
 
 @router.post("/farms", status_code=201)
