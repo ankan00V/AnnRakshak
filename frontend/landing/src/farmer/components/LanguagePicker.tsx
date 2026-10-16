@@ -6,10 +6,14 @@ import { AUTHORED, LANGS } from '../../lib/i18n'
 import { useFarmer } from '../FarmerContext'
 
 /** All eleven languages in their own script. `grid` for onboarding, the
- *  default is the header button that opens a sheet. */
-export default function LanguagePicker({ onPick, variant = 'button' }: {
+ *  default is the header button that opens a sheet.
+ *
+ *  `wide` is whether the grid has a page to spread across: five abreast under
+ *  a sign-up form, two in a side column that is a third of one. */
+export default function LanguagePicker({ onPick, variant = 'button', wide = true }: {
   onPick: (lang: Lang) => void
   variant?: 'button' | 'grid'
+  wide?: boolean
 }) {
   const { lang, t } = useFarmer()
   const [open, setOpen] = useState(false)
@@ -17,7 +21,7 @@ export default function LanguagePicker({ onPick, variant = 'button' }: {
 
   const soon = LANGS.filter((l) => !l.ready)
   const grid = (
-    <div className={`grid grid-cols-2 gap-2 ${variant === 'grid' ? 'lg:grid-cols-5' : ''}`}>
+    <div className={`grid grid-cols-2 gap-2 ${variant === 'grid' && wide ? 'lg:grid-cols-5' : ''}`}>
       {LANGS.filter((l) => l.ready).map((l) => (
         <button key={l.code} onClick={() => { onPick(l.code); setOpen(false) }} lang={l.code}
           className={`min-h-[56px] rounded-2xl border px-3 py-2 text-left flex items-center gap-2 transition-colors ${
