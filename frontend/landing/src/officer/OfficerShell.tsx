@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BookOpen, BrainCircuit, ClipboardCheck, ClipboardList, Loader2, Map as MapIcon, Megaphone, Package, RefreshCw, Users } from 'lucide-react'
+import { BrainCircuit, ClipboardCheck, ClipboardList, Loader2, Map as MapIcon, Megaphone, Package, RefreshCw, Users } from 'lucide-react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
@@ -19,7 +19,6 @@ const TABS = [
   { to: '/officer/inputs', icon: Package, label: 'Inputs' },
   { to: '/officer/model', icon: BrainCircuit, label: 'Model & gaps' },
   { to: '/officer/officers', icon: Users, label: 'Officers' },
-  { to: '/officer/reference', icon: BookOpen, label: 'Reference' },
 ]
 
 export default function OfficerShell() {

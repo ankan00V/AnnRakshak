@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import {
-  Activity, BrainCircuit, CalendarRange, CloudRain, FlaskConical, Gauge, Loader2, RefreshCw, ShieldCheck, Stethoscope, Target, TriangleAlert, Users,
+  Activity, BrainCircuit, CalendarRange, Gauge, Loader2, RefreshCw, ShieldCheck, Stethoscope, Target, TriangleAlert, Users,
 } from 'lucide-react'
 import { api } from '../api/client'
-import type { ModelCard, OutlookRow, PesticideBaseline, RainfallPanel, Summary } from '../api/types'
+import type { ModelCard, OutlookRow, Summary } from '../api/types'
 import { useAsync } from '../lib/hooks'
 import { useAuth } from '../auth/AuthContext'
 import { Link } from 'react-router-dom'
@@ -347,65 +347,6 @@ export function AccuracyPanel({ s }: { s: Summary }) {
   )
 }
 
-export function Sparkline({ series }: { series: [number, number | null, number | null][] }) {
-  const pts = series.filter((s) => s[2] != null).slice(-60)
-  if (pts.length < 2) return null
-  const w = 260, h = 56
-  const max = Math.max(...pts.map((p) => Math.abs(p[2]!)), 1)
-  const x = (i: number) => (i / (pts.length - 1)) * w
-  const y = (v: number) => h / 2 - (v / max) * (h / 2 - 2)
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-14" role="img" aria-label="Monsoon rainfall departure by year">
-      <line x1="0" x2={w} y1={h / 2} y2={h / 2} stroke="currentColor" strokeOpacity="0.15" />
-      {pts.map((p, i) => (
-        <rect key={p[0]} x={x(i) - 1.5} width="3" y={Math.min(y(p[2]!), h / 2)} height={Math.abs(y(p[2]!) - h / 2)}
-          fill={p[2]! >= 0 ? '#2f6fa8' : '#c8862d'} opacity="0.8">
-          <title>{p[0]}: {p[2]! > 0 ? '+' : ''}{p[2]}%</title>
-        </rect>
-      ))}
-    </svg>
-  )
-}
-
-export function RainfallSection({ r }: { r: RainfallPanel }) {
-  return (
-    <Card className="p-4">
-      <h2 className="font-semibold flex items-center gap-2"><CloudRain className="w-4 h-4 text-leaf" /> Rainfall against the IMD normal</h2>
-      <p className="text-xs text-soil-dark/60 mt-0.5">This month so far (observed) against each subdivision's 1901–2015 IMD normal, and the last 60 monsoons' departure from normal. Abnormal rain shifts disease and pest risk — the risk engine reads the same numbers.</p>
-      {/* The committed normals map Maharashtra's districts and no others yet.
-          Saying so beats showing an officer in Punjab the rain over Nagpur. */}
-      {r.subdivisions.length === 0 && (
-        <p className="mt-4 rounded-xl border border-dashed border-soil-dark/20 bg-cream p-3 text-sm text-soil-dark/70">
-          No IMD subdivision normal is mapped yet for{' '}
-          <span className="font-medium">{(r.unmapped_districts ?? []).join(', ') || 'your districts'}</span>.
-          The risk engine still reads live weather at each field; it is this 1901–2015 reference that
-          currently covers Maharashtra's four subdivisions only.
-        </p>
-      )}
-      <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {r.subdivisions.map((s) => {
-          const c = s.current_month
-          const dep = c?.departure_pct
-          return (
-            <div key={s.subdivision} className="rounded-xl bg-cream p-3">
-              <p className="text-sm font-semibold">{s.subdivision.replace('&', 'and')}</p>
-              <p className="text-[11px] text-soil-dark/50">ref: {s.reference_place} · JJAS normal {Math.round(s.jjas_normal_mm)} mm</p>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className={`text-2xl font-semibold ${dep == null ? '' : dep > 25 ? 'text-sky-700' : dep < -25 ? 'text-[#8a5a17]' : 'text-leaf-deep'}`}>
-                  {dep == null ? '—' : `${dep > 0 ? '+' : ''}${dep}%`}
-                </span>
-                <span className="text-[11px] text-soil-dark/60">{c?.observed_mm != null ? `${c.observed_mm} mm vs ${c.expected_to_date_mm} mm normal to date` : 'no observation'}</span>
-              </div>
-              <div className="text-soil-dark"><Sparkline series={s.jjas_series} /></div>
-            </div>
-          )
-        })}
-      </div>
-      <p className="mt-2 text-[10px] text-soil-dark/40">{r.source}</p>
-    </Card>
-  )
-}
-
 const TRIGGER_LABEL: Record<string, string> = {
   weather: 'weather', 'weather+phenology': 'weather + stage', phenology: 'crop stage', trap: 'trap count', spread: 'confirmed nearby',
 }
@@ -446,32 +387,6 @@ export function OutlookPanel({ rows }: { rows: OutlookRow[] }) {
           </table>
         </div>
       )}
-    </Card>
-  )
-}
-
-export function PesticidePanel({ p }: { p: PesticideBaseline }) {
-  const max = Math.max(...p.chemical.map((c) => c[1]), 1)
-  const latest = p.chemical[p.chemical.length - 1]
-  return (
-    <Card className="p-4">
-      <h2 className="font-semibold flex items-center gap-2"><FlaskConical className="w-4 h-4 text-ember" /> Pesticide use baseline — {p.state}</h2>
-      <p className="text-xs text-soil-dark/60 mt-0.5">
-        The number "more targeted pesticide use" has to move. {p.state} used <b>{latest ? Math.round(latest[1]).toLocaleString('en-IN') : '—'} t</b> of chemical pesticides (technical grade) in {latest?.[0]} — <b>{p.latest_share_pct}%</b> of India, <b>#{p.rank}</b> of {p.states_ranked} states.
-      </p>
-      <div className="mt-4 flex items-end gap-1.5 h-32">
-        {p.chemical.map(([year, v]) => (
-          <div key={year} className="flex-1 flex flex-col items-center gap-1" title={`${year}: ${Math.round(v).toLocaleString('en-IN')} t`}>
-            <span className="text-[9px] text-soil-dark/60">{(v / 1000).toFixed(1)}k</span>
-            <span className="w-full rounded-t bg-ember/70" style={{ height: `${(v / max) * 96}px` }} />
-            <span className="text-[9px] text-soil-dark/50">{year.slice(2)}</span>
-          </div>
-        ))}
-      </div>
-      <p className="mt-3 text-[11px] text-soil-dark/60">
-        AnnRakshak's lever: chemical rungs come last and collapsed, advice only above the confidence gate, and the spray check vetoes wrong-class, wrong-crop and herbicide sprays before they happen.
-      </p>
-      <p className="mt-2 text-[10px] text-soil-dark/40">{p.source}. {p.unit_note}</p>
     </Card>
   )
 }
