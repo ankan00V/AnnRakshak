@@ -600,3 +600,35 @@ def test_an_older_profile_is_given_its_rank_and_a_readable_post(client):
         p = db.scalar(select(ExpertProfile).where(ExpertProfile.user_id == uid))
         assert p.designation == "agri_officer"   # renamed into the vocabulary
         assert p.supervisor is True              # and given the rank its post carries
+
+
+def test_an_officer_outside_maharashtra_can_sign_up(client, mail):
+    """The form offers every district the Government publishes. The check used
+    to run against the IMD rainfall map — 36 Maharashtra districts — so an
+    officer in Punjab picked two districts out of the form's own list and was
+    told to choose from the list."""
+    r = client.post("/api/auth/otp", json={"role": "expert", "purpose": "signup",
+                                           "email": "dr.bob@kvk.org.in", "phone": "9123456788"})
+    r = client.post("/api/auth/signup/expert", json={
+        "challenge_id": r.json()["challenge_id"], "code": code_of(mail), "name": "Dr. Bob",
+        "phone": "9123456788", "designation": "kvk_scientist", "organisation": "KVK Kapurthala, Punjab",
+        "employee_id": "KVKPT001", "qualification": "bsc_agri", "experience_years": 13,
+        "districts": ["Hoshiarpur", "Kapurthala"], "crops": ["rice"],
+        "specialities": ["plant_pathology"], "languages": ["en", "hi"]})
+    assert r.status_code == 201, r.text
+    assert r.json()["profile"]["districts"] == ["Hoshiarpur", "Kapurthala"]
+
+
+def test_a_district_nobody_publishes_is_still_refused(client, mail):
+    """The list is still a list: the check moved to the right one, it did not
+    stop checking."""
+    r = client.post("/api/auth/otp", json={"role": "expert", "purpose": "signup",
+                                           "email": "dr.nowhere@kvk.org.in", "phone": "9123456787"})
+    r = client.post("/api/auth/signup/expert", json={
+        "challenge_id": r.json()["challenge_id"], "code": code_of(mail), "name": "Dr. Nowhere",
+        "phone": "9123456787", "designation": "kvk_scientist", "organisation": "KVK",
+        "employee_id": "X-1", "qualification": "bsc_agri", "experience_years": 1,
+        "districts": ["Atlantis"], "crops": ["rice"],
+        "specialities": ["plant_pathology"], "languages": ["en"]})
+    assert r.status_code == 422
+    assert "Atlantis" in r.json()["detail"]

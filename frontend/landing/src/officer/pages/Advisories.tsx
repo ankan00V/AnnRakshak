@@ -3,6 +3,7 @@ import { CheckCircle2, Loader2, Megaphone, Search, Send } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../../api/client'
 import type { AdvisoryDraft, AdvisoryPreview, OutlookRow } from '../../api/types'
+import { useAuth } from '../../auth/AuthContext'
 import { useAsync } from '../../lib/hooks'
 import { Card, ErrorBox, Pill } from '../../ui/kit'
 import { OutlookPanel, PanelBone } from '../panels'
@@ -17,6 +18,7 @@ const LANGS: [string, string][] = [['mr', 'मराठी'], ['hi', 'हिन�
  *  the exact words in every language. */
 export default function Advisories() {
   const [params] = useSearchParams()
+  const { me } = useAuth()
   const outlook = useAsync(() => api.outlook(), [])
   const history = useAsync(() => api.advisoryHistory(), [])
   const options = useAsync(() => api.authOptions('en'), [])
@@ -78,7 +80,14 @@ export default function Advisories() {
     }
   }
 
-  const allDistricts: string[] = options.data?.districts ?? []
+  /* The districts this officer actually covers. It used to be the list from
+     /auth/options, which is the IMD rainfall map — 36 Maharashtra districts —
+     so an officer at KVK Kapurthala could not pick Kapurthala to advise into.
+     Their own coverage is both the right list and a shorter one; the rainfall
+     map stays behind it for an account with no districts recorded. */
+  const allDistricts: string[] = me?.profile?.districts?.length
+    ? me.profile.districts
+    : options.data?.districts ?? []
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_1fr]">
