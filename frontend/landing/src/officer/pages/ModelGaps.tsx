@@ -2,17 +2,19 @@ import { FlaskConical } from 'lucide-react'
 import { api } from '../../api/client'
 import { useAsync } from '../../lib/hooks'
 import { Card, Pill } from '../../ui/kit'
-import { AccuracyPanel, GatePanel, ModelPanel, PanelBone } from '../panels'
+import { AccuracyPanel, GatePanel, ModelPanel, PageHead, PanelBone } from '../panels'
 
 /** How the system is doing, and — the part that decides what gets built next —
  *  what officers keep seeing that the model has no name for. */
 export default function ModelGaps() {
-  const summary = useAsync(() => api.summary(), [])
+  const summary = useAsync(() => api.summary(), [], 'summary')
   const model = useAsync(() => api.modelCard(), [])
   const gaps = useAsync(() => api.gaps(), [])
 
   return (
     <>
+      <PageHead title="Model & gaps"
+        purpose="What the model gets right, what it could not name, and where it still needs photographs." />
       <div className="grid gap-5 lg:grid-cols-2">
         {summary.data ? <GatePanel s={summary.data} /> : !summary.error && <PanelBone rows={4} />}
         {model.data ? <ModelPanel m={model.data} /> : <PanelBone rows={6} />}

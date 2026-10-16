@@ -3,16 +3,17 @@ import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import { api } from '../../api/client'
 import { useAsync } from '../../lib/hooks'
+import { MAIN, SIDE, SPLIT } from '../../ui/layout'
 import { useAuth } from '../../auth/AuthContext'
 import { Card, ErrorBox } from '../../ui/kit'
-import { Kpis, KpisSkeleton, PanelBone } from '../panels'
+import { Kpis, KpisSkeleton, PageHead, PanelBone } from '../panels'
 import { Download } from 'lucide-react'
 
 /** What needs a person today, in the order it should be dealt with. The numbers
  *  come after: a supervisor opens this to find work, not to admire a total. */
 export default function Today() {
   const work = useAsync(() => api.worklist(), [])
-  const summary = useAsync(() => api.summary(), [])
+  const summary = useAsync(() => api.summary(), [], 'summary')
   const { me } = useAuth()
   const [routing, setRouting] = useState(false)
   const [routed, setRouted] = useState<string | null>(null)
@@ -48,11 +49,13 @@ export default function Today() {
 
   return (
     <>
+      <PageHead title="Today"
+        purpose="What needs a person in this district, in the order it should be dealt with." />
       {work.error && <Card className="p-4"><ErrorBox error={work.error} onRetry={work.reload} /></Card>}
 
       {!work.data ? <PanelBone rows={6} /> : (
-        <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr]">
-          <Card className="p-4 md:p-5">
+        <div className={`gap-5 ${SPLIT}`}>
+          <Card className={`p-4 md:p-5 ${MAIN}`}>
             <h2 className="font-semibold">Needs a person</h2>
             <p className="text-xs text-soil-dark/60 mt-0.5">
               A farmer who has waited more than {work.data.sla_hours} hours for a human has waited too long.
@@ -118,7 +121,7 @@ export default function Today() {
             {routeFailed && <p className="mt-3 text-xs text-ember">{routeFailed}</p>}
           </Card>
 
-          <Card className="p-4 md:p-5">
+          <Card className={`p-4 md:p-5 ${SIDE}`}>
             <h2 className="font-semibold">Building this week</h2>
             <p className="text-xs text-soil-dark/60 mt-0.5">
               High-risk alerts by problem, across the district's farms.

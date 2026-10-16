@@ -2,7 +2,7 @@ import { Download, Package } from 'lucide-react'
 import { api } from '../../api/client'
 import { useAsync } from '../../lib/hooks'
 import { Card, ErrorBox, Pill } from '../../ui/kit'
-import { PanelBone } from '../panels'
+import { PageHead, PanelBone } from '../panels'
 
 /** Procurement. Tricho-cards are reared to order on a 45-day lead, so the week
  *  a pest starts building is the week to indent — not the week damage shows. */
@@ -10,7 +10,10 @@ export default function Inputs() {
   const indent = useAsync(() => api.indent(), [])
 
   return (
-    <Card className="p-4 md:p-5">
+    <>
+      <PageHead title="Inputs"
+        purpose="What to stock, from what is building, with the lead time an ICAR bio-input actually needs." />
+      <Card className="p-4 md:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="font-semibold flex items-center gap-2"><Package className="w-4 h-4 text-leaf" /> Inputs to stock</h2>
@@ -70,6 +73,7 @@ export default function Inputs() {
             </table>
           </div>
         )}
-    </Card>
+      </Card>
+    </>
   )
 }

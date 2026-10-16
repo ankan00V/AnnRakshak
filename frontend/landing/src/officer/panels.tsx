@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
   Activity, BrainCircuit, CalendarRange, Gauge, Loader2, RefreshCw, ShieldCheck, Stethoscope, Target, TriangleAlert, Users,
 } from 'lucide-react'
@@ -133,8 +133,8 @@ export function PanelBone({ rows = 4 }: { rows?: number }) {
 export function KpisSkeleton() {
   return (
     <Loading label="Loading the district summary">
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {Array.from({ length: 5 }, (_, i) => (
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {Array.from({ length: 4 }, (_, i) => (
           <Card key={i} className="p-4">
             <Bone className="w-4 h-4 rounded-md" />
             <Bone className="h-8 w-16 mt-2" />
@@ -171,20 +171,36 @@ export function Legend({ color, label, hollow }: { color: string; label: string;
 
 /** A number that is only a number is a poster. Each tile is the way into the
  *  queue it counts. */
+/** The one line that says which screen this is and what it is for. The console
+ *  used to open cold on a card with a small bold heading, so every page looked
+ *  like the middle of something. */
+export function PageHead({ title, purpose, children }: {
+  title: string; purpose: string; children?: ReactNode
+}) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+      <div className="min-w-0">
+        <h1 className="font-instrument-serif text-[27px] lg:text-[32px] leading-tight">{title}</h1>
+        <p className="mt-0.5 text-sm text-soil-dark/60 text-pretty">{purpose}</p>
+      </div>
+      {children}
+    </div>
+  )
+}
+
 export function Kpis({ s }: { s: Summary }) {
   const t = s.totals
   const foundRate = t.alerts_answered ? t.alerts_found / t.alerts_answered : null
   const items = [
-    { icon: Users, label: 'Farms monitored', value: t.farms, sub: `${s.by_district.length} districts`, to: '/officer/map' },
     { icon: Stethoscope, label: 'Photo diagnoses', value: t.diagnoses, sub: `${s.gate_outcomes.advise ?? 0} advised directly`, to: '/officer/model' },
     // Experts only see what the gate sent them — the hard cases — so this is
     // agreement on escalations, not overall accuracy. Low here = gate did its job.
     { icon: ShieldCheck, label: 'Expert agreed with AI', value: pct(t.field_accuracy), sub: `${t.confirmed} confirmed · ${t.corrected} corrected, on cases AI flagged unsure`, to: '/officer/model' },
-    { icon: Activity, label: 'Expert queue', value: t.open_cases, sub: `${t.resolved_cases} resolved · ${t.referred_to_lab} to lab`, to: '/officer/queue' },
+    { icon: Activity, label: 'Cases closed', value: t.resolved_cases, sub: `${t.referred_to_lab} referred to a lab`, to: '/officer/queue' },
     { icon: TriangleAlert, label: 'Risk alerts issued', value: t.alerts_issued, sub: `${t.alerts_answered} inspected · ${pct(foundRate)} found something`, to: '/officer/advisories' },
   ]
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {items.map(({ icon: Icon, label, value, sub, to }) => (
         <Link key={label} to={to} className="group">
           <Card className="p-4 h-full transition-colors group-hover:border-leaf/40 group-hover:bg-leaf/[0.03]">

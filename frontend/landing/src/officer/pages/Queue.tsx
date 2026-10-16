@@ -8,6 +8,7 @@ import type { CaseQuery } from '../../api/types'
 import { useAsync } from '../../lib/hooks'
 import { Card, ErrorBox } from '../../ui/kit'
 import { useToast } from '../../ui/Toast'
+import { PageHead } from '../panels'
 import { useAuth } from '../../auth/AuthContext'
 import { CaseRow, CaseView, QueueSkeleton } from '../../expert/ExpertConsole'
 
@@ -73,7 +74,8 @@ export default function Queue() {
     setPicked(new Set())
   }
 
-  const rows = list.data ?? []
+  // A new [] every render restarts the poll timer and re-binds the keys below.
+  const rows = useMemo(() => list.data ?? [], [list.data])
   const districts = useMemo(
     () => [...new Set(rows.map((c) => c.district))].sort(), [rows])
 
@@ -132,8 +134,8 @@ export default function Queue() {
 
   // A queue that never changes while you watch it looks broken. Ask quietly,
   // only while the tab is in front of somebody.
+  const newest = rows[rows.length - 1]?.id ?? 0
   useEffect(() => {
-    const newest = rows[rows.length - 1]?.id ?? 0
     if (!newest) return
     const tick = async () => {
       if (document.hidden) return
@@ -144,7 +146,7 @@ export default function Queue() {
     }
     const id = setInterval(tick, POLL_MS)
     return () => clearInterval(id)
-  }, [rows])
+  }, [newest])
 
   // Triage is a keyboard job: j and k walk the list, a takes the case, s sets
   // it aside, x picks it for a bulk move, and ? says so.
@@ -184,8 +186,19 @@ export default function Queue() {
     say(`Saved “${name}”.`)
   }
 
+  const split = selected !== null
+
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(320px,400px)_1fr] items-start">
+    <>
+      <PageHead title="Queue"
+        purpose="Every case a farmer escalated. Each arrives pre-packed: the photographs, the model's ranked guesses, the farmer's own answers, trap counts, the field's greenness and the alerts it has already had.">
+        <p className="text-[11px] text-soil-dark/50">
+          <kbd className="font-semibold">j</kbd>/<kbd className="font-semibold">k</kbd> walk ·
+          <kbd className="font-semibold"> a</kbd> take · <kbd className="font-semibold">s</kbd> set aside ·
+          <kbd className="font-semibold"> ?</kbd> keys
+        </p>
+      </PageHead>
+    <div className={`grid gap-4 items-start ${split ? 'lg:grid-cols-[minmax(320px,400px)_1fr]' : ''}`}>
       <div className="space-y-3">
         <Card className="p-3 space-y-3">
           <div className="flex rounded-full bg-cream/60 p-0.5 text-xs">
@@ -329,7 +342,7 @@ export default function Queue() {
           </Card>
         )}
 
-        <ul className="space-y-2">
+        <ul className={split ? 'space-y-2' : 'space-y-2 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0'}>
           {rows.map((c) => (
             <li key={c.id} className="flex items-start gap-2">
               <button onClick={() => toggle(c.id)} aria-label={`Select case ${c.id}`}
@@ -344,20 +357,13 @@ export default function Queue() {
         </ul>
       </div>
 
-      <div className="lg:sticky lg:top-4">
-        {selected === null ? (
-          <Card className="p-10 text-center">
-            <p className="font-instrument-serif text-2xl">Pick a case</p>
-            <p className="mt-1 text-sm text-soil-dark/60 max-w-md mx-auto">
-              It arrives pre-packed: photos, the model's ranked guesses, the farmer's field answers,
-              trap counts, the field's greenness and the alerts it has already had.
-            </p>
-          </Card>
-        ) : (
-          <CaseView id={selected} onBack={() => setSelected(null)} onResolved={() => { list.reload() }} />
-        )}
-      </div>
+      {split && (
+        <div className="lg:sticky lg:top-20">
+          <CaseView id={selected!} onBack={() => setSelected(null)} onResolved={() => { list.reload() }} />
+        </div>
+      )}
     </div>
+    </>
   )
 }
 
