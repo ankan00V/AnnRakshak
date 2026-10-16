@@ -59,8 +59,9 @@ export default function Login() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div className="space-y-6 lg:max-w-md lg:mx-auto">
+      {/* The side panel carries the welcome on a laptop. */}
+      <div className="lg:hidden">
         <h1 className="font-instrument-serif text-[34px] leading-tight">{t('authLoginTitle')}</h1>
         <p className="mt-1 text-sm text-soil-dark/60">{t('authLoginSub')}</p>
       </div>

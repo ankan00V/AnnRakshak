@@ -154,16 +154,19 @@ export default function SignupFarmer() {
 
       {step === 0 && (
         <div className="space-y-4">
-          <Field label={t('authName')} error={show('name') && t('authFixField')}>
-            <Input value={f.name} onChange={(e) => set('name', e.target.value)} autoComplete="name" invalid={show('name')} />
-          </Field>
-          <Field label={t('authMobile')} hint={t('authMobileHint')} error={show('phone') && t('authBadPhone')}>
-            <div className="flex gap-2">
-              <span className="min-h-[48px] px-3 rounded-xl border border-soil-dark/20 bg-cream flex items-center text-[15px] text-soil-dark/60">+91</span>
-              <Input value={f.phone} onChange={(e) => set('phone', e.target.value)} type="tel" inputMode="numeric"
-                autoComplete="tel-national" maxLength={14} placeholder="98XXXXXXXX" invalid={show('phone')} />
-            </div>
-          </Field>
+          {/* Two short boxes sit side by side once there is room for them. */}
+          <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4 lg:items-start">
+            <Field label={t('authName')} error={show('name') && t('authFixField')}>
+              <Input value={f.name} onChange={(e) => set('name', e.target.value)} autoComplete="name" invalid={show('name')} />
+            </Field>
+            <Field label={t('authMobile')} hint={t('authMobileHint')} error={show('phone') && t('authBadPhone')}>
+              <div className="flex gap-2">
+                <span className="min-h-[48px] px-3 rounded-xl border border-soil-dark/20 bg-cream flex items-center text-[15px] text-soil-dark/60">+91</span>
+                <Input value={f.phone} onChange={(e) => set('phone', e.target.value)} type="tel" inputMode="numeric"
+                  autoComplete="tel-national" maxLength={14} placeholder="98XXXXXXXX" invalid={show('phone')} />
+              </div>
+            </Field>
+          </div>
           <Field label={t('authEmail')} hint={t('authEmailHint')} error={show('email') && t('authBadEmail')}>
             <Input value={f.email} onChange={(e) => set('email', e.target.value)} type="email" autoComplete="email"
               inputMode="email" placeholder="name@gmail.com" invalid={show('email')} />
@@ -201,17 +204,13 @@ export default function SignupFarmer() {
             </Loading>
           ) : (
             <Field group label={t('crop')} say="helpCrop">
-              <Chips columns={2} value={[f.crop]} onChange={([c]) => set('crop', c)}
+              <Chips columns={2} wide={4} value={[f.crop]} onChange={([c]) => set('crop', c)}
                 options={crops.data.map((c) => ({ id: c.id, label: c.name }))} />
             </Field>
           )}
           {selectedCrop && !selectedCrop.photo_diagnosis && (
             <p className="text-xs rounded-xl bg-sky-50 text-sky-800 p-2.5">{t('photoLater')}</p>
           )}
-          <Field label={t('area')} say="helpArea" error={show('area') && t('authFixField')}>
-            <Input value={f.area} onChange={(e) => set('area', e.target.value)} type="number" inputMode="decimal"
-              min="0.1" step="0.1" invalid={show('area')} />
-          </Field>
           {!!selectedCrop?.nursery_days && (
             <Field group label={t('dateBasisAsk')} say="dateBasisWhy" error={show('basis') && t('dateBasisWhy')}>
               <Chips columns={2} value={f.basis ? [f.basis] : []} onChange={([v]) => set('basis', v)}
@@ -219,14 +218,20 @@ export default function SignupFarmer() {
               <p className="mt-1 text-[11px] text-soil-dark/45">{t('dateBasisWhy')}</p>
             </Field>
           )}
-          <Field label={f.basis === 'transplanted' ? t('transplantDate') : t('sowingDateOnly')}
-            say={selectedCrop?.nursery_days ? undefined : 'helpSowing'}
-            error={show('sowing') && t('authFixField')}>
-            <Input value={f.sowing} onChange={(e) => set('sowing', e.target.value)} type="date" max={today()}
-              invalid={show('sowing')} />
-          </Field>
+          <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
+            <Field label={t('area')} say="helpArea" error={show('area') && t('authFixField')}>
+              <Input value={f.area} onChange={(e) => set('area', e.target.value)} type="number" inputMode="decimal"
+                min="0.1" step="0.1" invalid={show('area')} />
+            </Field>
+            <Field label={f.basis === 'transplanted' ? t('transplantDate') : t('sowingDateOnly')}
+              say={selectedCrop?.nursery_days ? undefined : 'helpSowing'}
+              error={show('sowing') && t('authFixField')}>
+              <Input value={f.sowing} onChange={(e) => set('sowing', e.target.value)} type="date" max={today()}
+                invalid={show('sowing')} />
+            </Field>
+          </div>
           <Field group label={t('authIrrigation')} say="helpIrrigation">
-            <Chips columns={2} value={[f.irrigation]} onChange={([v]) => set('irrigation', v)}
+            <Chips columns={2} wide={4} value={[f.irrigation]} onChange={([v]) => set('irrigation', v)}
               options={IRRIGATION.map((id) => ({ id, label: t(`irr_${id}`) }))} />
           </Field>
           <MoreDetails open={more} onToggle={() => setMore((m) => !m)}>

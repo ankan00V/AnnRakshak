@@ -4,6 +4,7 @@ import type { OtpSent } from '../api/types'
 import { ErrorBox, ListenButton } from '../ui/kit'
 import { useFarmer } from '../farmer/FarmerContext'
 import type { TKey } from '../lib/i18n'
+import { usePublishProgress } from './progress'
 
 const input =
   'w-full min-h-[48px] rounded-xl border px-3 bg-white text-[15px] focus:outline-none focus:ring-2 focus:ring-leaf/30'
@@ -21,7 +22,11 @@ export function Field({ label, hint, error, optional, group = false, say, childr
   const Tag = group ? 'div' : 'label'
   return (
     <Tag className="block" {...(group ? { role: 'group', 'aria-label': label } : {})}>
-      <span className="flex items-center gap-2 text-[13px] font-medium text-soil-dark/80 mb-1">
+      {/* The speaker button is 36 px tall and a bare label is half that. On a
+          phone each field stands alone and it does not matter; in a two-column
+          row on a laptop it would leave the boxes beside each other out of
+          line, so from `lg` up every label row is the taller of the two. */}
+      <span className="flex items-center gap-2 text-[13px] font-medium text-soil-dark/80 mb-1 lg:min-h-[36px]">
         <span className="flex-1">
           {label}
           {optional && <span className="font-normal text-soil-dark/45"> · {t('authOptional')}</span>}
@@ -59,20 +64,26 @@ export function Select({ value, onChange, children }: { value: string; onChange:
   )
 }
 
-/** Tap-to-choose options: one (`multi` off) or several. */
-export function Chips<T extends string>({ options, value, onChange, multi = false, columns }: {
+/** Tap-to-choose options: one (`multi` off) or several. `wide` is how many fit
+ *  across once there is a laptop's room — seven irrigation sources stacked two
+ *  at a time is a column of chips nobody needs to scroll past. */
+export function Chips<T extends string>({ options, value, onChange, multi = false, columns, wide }: {
   options: { id: T; label: ReactNode }[]
   value: T[]
   onChange: (v: T[]) => void
   multi?: boolean
   columns?: 2 | 3
+  wide?: 2 | 3 | 4
 }) {
+  const atLg = wide === 4 ? 'lg:grid-cols-4' : wide === 3 ? 'lg:grid-cols-3' : wide === 2 ? 'lg:grid-cols-2' : ''
   const toggle = (id: T) => {
     if (!multi) return onChange([id])
     onChange(value.includes(id) ? value.filter((x) => x !== id) : [...value, id])
   }
   return (
-    <div className={columns ? `grid gap-2 ${columns === 2 ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3'}` : 'flex flex-wrap gap-2'}>
+    <div className={columns
+      ? `grid gap-2 ${columns === 2 ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3'} ${atLg}`
+      : 'flex flex-wrap gap-2'}>
       {options.map((o) => {
         const on = value.includes(o.id)
         return (
@@ -88,15 +99,18 @@ export function Chips<T extends string>({ options, value, onChange, multi = fals
   )
 }
 
+/** The step counter on a phone. On a laptop the side panel draws the walk in
+ *  full, so only the heading stays here and the bar would say it twice. */
 export function Steps({ step, titles }: { step: number; titles: string[] }) {
   const { t } = useFarmer()
+  usePublishProgress(step, titles)
   return (
-    <div className="mb-5">
-      <p className="text-[11px] uppercase tracking-wider text-soil-dark/50 font-semibold">
+    <div className="mb-5 lg:mb-7">
+      <p className="text-[11px] uppercase tracking-wider text-soil-dark/50 font-semibold lg:hidden">
         {t('authStep').replace('{n}', String(step + 1)).replace('{total}', String(titles.length))}
       </p>
-      <h2 className="mt-1 font-instrument-serif text-[28px] leading-tight">{titles[step]}</h2>
-      <div className="mt-3 grid gap-1.5" style={{ gridTemplateColumns: `repeat(${titles.length}, 1fr)` }}>
+      <h2 className="mt-1 lg:mt-0 font-instrument-serif text-[28px] lg:text-[32px] leading-tight">{titles[step]}</h2>
+      <div className="mt-3 grid gap-1.5 lg:hidden" style={{ gridTemplateColumns: `repeat(${titles.length}, 1fr)` }}>
         {titles.map((x, i) => (
           <span key={x + i} className={`h-1.5 rounded-full ${i <= step ? 'bg-leaf-deep' : 'bg-soil-dark/10'}`} />
         ))}
@@ -133,8 +147,10 @@ export function CodeBoxes({ value, onChange, digits = 6, onComplete }: {
 }) {
   const ref = useRef<HTMLInputElement>(null)
   useEffect(() => ref.current?.focus(), [])
+  // Capped on a laptop: six boxes stretched across the full column read as six
+  // letterboxes rather than six digits.
   return (
-    <div className="relative" onClick={() => ref.current?.focus()}>
+    <div className="relative lg:max-w-md" onClick={() => ref.current?.focus()}>
       <input ref={ref} value={value} inputMode="numeric" autoComplete="one-time-code" maxLength={digits}
         aria-label="One-time code"
         onChange={(e) => {
