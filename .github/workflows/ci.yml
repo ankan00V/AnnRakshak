@@ -33,6 +33,23 @@ jobs:
     name: backend tests
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    services:
+      # The suite runs twice: once on SQLite, once here. SQLite ignores a
+      # declared VARCHAR length and cannot ALTER a column type, so the
+      # migrations in app/db.py never execute under it and a column too narrow
+      # for real data cannot fail. Both have already cost a production bug.
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: annrakshak_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -51,10 +68,17 @@ jobs:
       - name: Byte-compile the app
         run: python -m compileall -q backend/app
 
-      - name: Tests
+      - name: Tests (SQLite)
         working-directory: backend
         env:
           ANNRAKSHAK_AUTH: "off"
+        run: python -m pytest -q
+
+      - name: Tests (Postgres — the engine production actually runs on)
+        working-directory: backend
+        env:
+          ANNRAKSHAK_AUTH: "off"
+          ANNRAKSHAK_TEST_DB_URL: postgresql://postgres:postgres@localhost:5432/annrakshak_test
         run: python -m pytest -q
 
   frontend:
