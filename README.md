@@ -52,16 +52,20 @@ Held-out ICAR test set (126 photos never seen in training, duplicates removed be
 | MobileNetV3 + ANN head, frozen | 79.4% | 0.791 |
 | **EfficientNetV2-S fine-tuned (paper 1's approach) — deployed** | **89.7%** | **0.896** |
 
-Deployed now: **v3** (`icar+extra-efficientnet_v2_s-warmstart`) — continual learning from the model above adds rice blast (leaf and neck) and maize common rust; ICAR test 88.9%, and lab-trained classes must clear their own higher gate (0.90).
+Deployed now (8 Oct 2026): `icar+extra+more+paddy+asdid+local+cotton+thin-efficientnet_v2_s-warmstart` — continual learning from the model above, now **46 classes over 45 advisory targets** across all four crops. On the same 126 held-out ICAR photos: **88.9%** top-1, macro-F1 0.64 (many of the newer classes have only a handful of test photos each, which is what pulls the macro average down). Calibration error **0.102 → 0.056**. The gate advises on **87.3%** and is **right 97.3%** of those times; 12.7% come to an expert. All **14 deploy checks** passed, including the background-swap recall bar each lab-trained class must clear.
 
-**End to end, as a farmer uses it** (`ml/live_eval.py` → `ml/reports/LIVE_EVAL.md`; real API, real gate, held-out images only):
+**End to end, as a farmer uses it** (`ml/live_eval.py` → `ml/reports/LIVE_EVAL.md`; real API, real gate, held-out images only; last run 16 Oct 2026 against the deployed model):
 
 | | Result |
 |---|---|
-| Photo diagnosis, 469 held-out photos | advised 84%, **right on 97.5%** of those; the rest get one field question or go to an expert |
-| Live video call, one full walk per class (20 classes) | **20/20 right, 0 wrong**; look-alikes and minority readings go to the expert as "possible" |
+| Photo diagnosis, 2,329 held-out photos | advised 74%, **right on 89.4%** of those; the rest get one field question, a retake, or an expert |
+| — ICAR field photos alone (126) | advised 84%, **right on 95.3%** |
+| — the newer lab-sourced classes (2,203) | advised 73%, right on 89.0% |
+| Live video call, one full walk per class (47 classes) | **45 right, 1 cautious, 1 wrong**; look-alikes and minority readings go to the expert as "possible" |
 
-Calibration error 0.134 → 0.055 after temperature scaling. ~50 photos per class — treat per-class numbers as indicative; field accuracy is tracked separately from expert verdicts.
+The newer classes are the weak half, and the gate is advising on them too readily: `maize_turcicum_leaf_blight` → `maize_gray_leaf_spot` and `rice_bacterial_leaf_blight` → `rice_tungro` are the two confusions worth fixing first, by crop-specific gate thresholds and more field photos for those classes, not by relaxing the bar.
+
+~50 photos per class for the ICAR set, fewer for some newer classes — treat per-class numbers as indicative; field accuracy is tracked separately, from expert verdicts.
 
 ## Layout
 

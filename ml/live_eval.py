@@ -92,6 +92,24 @@ def main() -> None:
     farmer_router.limit = lambda *a, **k: None  # the eval uploads hundreds a minute; a farmer never does
     meta = json.loads((ART / "meta.json").read_text())
     c2t = meta["class_to_target"]
+    targets = set(c2t.values())
+
+    def truth_of(cls: str) -> str | None:
+        """The advisory target a held-out folder stands for.
+
+        A folder is named for the class it was collected as, and a later model
+        may have merged that class away: the fall-armyworm damage photos are
+        now trained and served as fall armyworm itself. Resolve the folder to a
+        target it still has, and say so when it has none, rather than dying on
+        a KeyError halfway through an evaluation."""
+        if cls in c2t:
+            return c2t[cls]
+        if cls in targets:
+            return cls
+        merged = cls.rsplit("_", 1)[0]
+        if merged in c2t:
+            return c2t[merged]
+        return merged if merged in targets else None
     split = json.loads((ART / "split.json").read_text())
     icar = [ROOT / p for p in split["test"]]
     extra = [ROOT / p for p in split.get("extra_test", [])]
@@ -99,15 +117,26 @@ def main() -> None:
     for p in icar + extra:
         by_class[p.parent.name].append(p)
 
+    skipped = {cls: len(ps) for cls, ps in by_class.items() if truth_of(cls) is None}
+    for cls, n in skipped.items():
+        print(f"skipping {cls}: {n} held-out images, no target in this model")
+    by_class = {cls: ps for cls, ps in by_class.items() if truth_of(cls) is not None}
     crops = sorted({cls.split("_")[0] for cls in by_class})  # every crop the model knows
     with TestClient(app) as c, SessionLocal() as db:
         farms = {}
         for crop in crops:
             f = Farm(farmer_name=f"eval-{crop}", crop=crop, sowing_date=date.today() - timedelta(days=60),
-                     district="Pune", lat=18.52, lon=73.85, area_acres=2, lang="en")
+                     district="Pune", lat=18.52, lon=73.85, area_acres=2, lang="en", is_demo=True)
             db.add(f)
             db.commit()
             farms[crop] = f.id
+        # Sign in the way a farmer does. The live walk's socket refuses an
+        # anonymous viewer — correctly — and a measurement that turns that off is
+        # not measuring what a farmer uses.
+        signed_in = c.post("/api/auth/demo", json={"role": "farmer"})
+        if signed_in.status_code != 200:
+            sys.exit(f"could not sign in for the evaluation: {signed_in.status_code} {signed_in.text[:120]}")
+
         status = vision.model_status()
         print("model:", status["model_version"], "stub" if status["is_stub"] else "real")
         if status["is_stub"]:
@@ -123,7 +152,7 @@ def main() -> None:
                            data={"lang": "en"}).json()
                 gate = r.get("gate") or {}
                 alts = gate.get("alternatives") or [{}]
-                photo.append({"cls": cls, "truth": c2t[cls], "outcome": gate.get("outcome"),
+                photo.append({"cls": cls, "truth": truth_of(cls), "outcome": gate.get("outcome"),
                               "top": alts[0].get("id"), "src": "icar" if p in icar else "extra"})
         # ---------------- 2. live ---------------------------------------------------
         live = []
@@ -180,7 +209,7 @@ def main() -> None:
                 while m["type"] != "summary":
                     m = ws.receive_json()
                 s = m["summary"]
-            live.append({"cls": cls, "truth": c2t[cls], "frames": sent, "completed": done,
+            live.append({"cls": cls, "truth": truth_of(cls), "frames": sent, "completed": done,
                          "verdict": s["verdict"], "seen": [x["target"] for x in s["seen"]],
                          "possible": [x["target"] for x in s["possible"]], "src": "icar" if paths[0] in icar else "extra"})
             print(f"  live {cls:32s} frames {sent:2d} verdict {s['verdict']:8s} seen {live[-1]['seen']} possible {live[-1]['possible']}")
