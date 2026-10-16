@@ -24,7 +24,8 @@ router = APIRouter(prefix="/api/darpan", tags=["darpan"],
 
 @router.get("/hello")
 def hello(request: Request, db: Session = Depends(get_db)):
-    return darpan.hello(auth.current_user(request, db))
+    me = auth.current_user(request, db)
+    return darpan.hello(db, me, demo=bool(me and me.is_demo))
 
 
 class AskIn(BaseModel):

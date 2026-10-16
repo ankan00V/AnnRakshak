@@ -173,8 +173,12 @@ def test_demo_and_real_districts_are_answered_separately(client):
         db.flush()
         db.add(Case(problem_id=p.id, status="open", reason="BELOW_FLOOR", created_at=datetime.now()))
         db.commit()
+    # The officer covers Bhandara, so the demo case is in their own first line and
+    # the real one — in Latur, which they do not cover — is counted as elsewhere.
     assert "1 open case" in ask("how is the queue", demo=True)["lines"][0]
-    assert "1 open case" in ask("how is the queue", demo=False)["lines"][0]
+    real = ask("how is the queue", demo=False)
+    assert "In Bhandara: 0 open cases" in real["lines"][0]
+    assert "1 more open case outside your districts" in " ".join(real["lines"])
 
 
 def test_a_question_that_is_only_filler_still_routes(client):
@@ -198,3 +202,62 @@ def test_a_question_that_is_only_filler_still_routes(client):
     finally:
         llm.enabled = real
     assert not seen, "routed through the model for a phrase it already knows"
+
+
+def test_the_queue_is_scoped_to_the_officers_own_districts(client):
+    """An officer covering Bhandara should not have to read Gondia's backlog to
+    find their own — but nothing may disappear either."""
+    _case("Bhandara")
+    _case("Gondia")
+    out = ask("how is the queue")
+    assert out["lines"][0].startswith("In Bhandara: 1 open case")
+    assert "1 more open case outside your districts" in " ".join(out["lines"])
+
+
+def test_an_officer_can_ask_what_is_on_their_own_desk(client):
+    _case("Bhandara", hours_old=40)
+    me = _officer()
+    with SessionLocal() as db:
+        case = db.scalar(select(Case))
+        case.assigned_to = me.id
+        db.commit()
+    out = ask("what is on my desk")
+    assert out["intent"] == "mine"
+    said = " ".join(out["lines"])
+    assert "1 case on your desk" in said
+    assert "past the 24-hour mark" in said
+    assert any(g["to"] == "/officer/queue?scope=mine" for g in out["go"])
+
+
+def test_the_briefing_covers_the_queue_what_is_building_and_advisories(client):
+    _case("Bhandara")
+    out = ask("brief me")
+    assert out["intent"] == "brief"
+    said = " ".join(out["lines"])
+    assert "In Bhandara" in said and "1 case open" in said
+    assert "Building:" in said or "Nothing is building" in said
+
+
+def test_the_greeting_knows_the_officer_and_the_standing_numbers(client):
+    _case("Bhandara")
+    with SessionLocal() as db:
+        out = darpan.hello(db, _officer(), demo=True)
+    assert "Kale" in out["greeting"] and "Bhandara" in out["greeting"]
+    assert "1 case open" in out["greeting"]
+    assert any(s["text"] == "brief me" for s in out["suggestions"])
+    # a supervisor is offered the one question only they can act on
+    assert any("verif" in s["text"] for s in out["suggestions"])
+
+
+def test_it_says_which_way_the_numbers_are_going(client):
+    _case("Bhandara")
+    out = ask("is it getting worse than last week")
+    assert out["intent"] == "trend"
+    said = " ".join(out["lines"])
+    assert "Cases:" in said and "this week" in said
+
+
+def test_officer_performance_needs_a_resolved_case_before_it_claims_anything(client):
+    out = ask("how are my officers doing")
+    assert out["intent"] == "performance"
+    assert "nothing to measure" in " ".join(out["lines"])

@@ -90,6 +90,16 @@ INTENTS: dict[str, dict] = {
         "says": ["brief me", "morning briefing", "where do we stand", "summary", "catch me up",
                  "what do i need to know", "status", "aaj ka haal"],
     },
+    "trend": {
+        "label": "whether things are getting better or worse",
+        "says": ["is it getting worse", "trend", "compared to last week", "are cases going up",
+                 "better or worse", "this week vs last week", "pichle hafte se"],
+    },
+    "performance": {
+        "label": "how each officer is actually doing",
+        "says": ["how are my officers doing", "who is slow", "response time", "how fast are cases closed",
+                 "officer performance", "turnaround"],
+    },
     "help": {
         "label": "what Darpan can answer",
         "says": ["help", "what can you do", "who are you", "darpan"],
@@ -271,7 +281,8 @@ def answer(db: Session, kb: KB, *, text: str, demo: bool, officer: User | None) 
     fn = {
         "queue": _queue, "district": _district, "building": _building, "advisories": _advisories,
         "officers": _officers, "model": _model, "gaps": _gaps, "inputs": _inputs,
-        "rainfall": _rainfall, "farm": _farm, "mine": _mine, "brief": _brief, "help": _help,
+        "rainfall": _rainfall, "farm": _farm, "mine": _mine, "brief": _brief,
+        "trend": _trend, "performance": _performance, "help": _help,
     }.get(intent)
     if fn is None:
         return {"intent": "unknown", "lines": [CANNOT],
@@ -595,6 +606,45 @@ def _brief(db, kb, *, demo, args, officer, text):
         b = building[0]
         go.append(_link(f"Advise on {b['name']}", f"/officer/advisories?target={b['target']}&crop={b['crop']}"))
     return {"lines": lines, "go": go}
+
+
+def _trend(db, kb, *, demo, args, officer, text):
+    """A number without a direction is a poster — this week against the last."""
+    t = office.trends(db, demo=demo)
+
+    def say(what: str, part: dict) -> str:
+        change = part.get("change_pct")
+        if change is None:
+            return f"{what}: {part['this_week']} this week, none the week before."
+        way = "up" if change > 0 else "down" if change < 0 else "level"
+        return (f"{what}: {part['this_week']} this week against {part['last_week']} "
+                f"— {way}{f' {abs(change)}%' if change else ''}.")
+
+    lines = [say("Cases", t["cases"]), say("Alerts issued", t["alerts"]), say("Expert verdicts", t["verdicts"])]
+    rising = t["cases"].get("change_pct")
+    if rising and rising > 25:
+        lines.append("Cases are climbing faster than last week — worth a look at what is building.")
+    return {"lines": lines, "go": [_link("Today", "/officer"), _link("What is building", "/officer/advisories")]}
+
+
+def _performance(db, kb, *, demo, args, officer, text):
+    """How desks are doing: what they cleared and how long it took."""
+    rows = office.performance(db, demo=demo)
+    done = [r for r in rows if r.get("resolved")]
+    if not done:
+        return {"lines": ["No case has been resolved yet, so there is nothing to measure."],
+                "go": [_link("Officers", "/officer/officers")]}
+    lines = []
+    for r in sorted(done, key=lambda r: -(r.get("resolved") or 0))[:4]:
+        median = r.get("median_hours")
+        pace = f", median {round(median)} h on the desk" if median else ""
+        lines.append(f"· {r['name']}: {r['resolved']} resolved{pace}.")
+    slowest = max(done, key=lambda r: r.get("median_hours") or 0)
+    if (slowest.get("median_hours") or 0) > SLA_HOURS:
+        lines.append(f"{slowest['name']}'s cases sit longest — median "
+                     f"{round(slowest['median_hours'])} hours, past the {SLA_HOURS}-hour mark.")
+    return {"lines": ["What desks have cleared:"] + lines,
+            "go": [_link("Officers", "/officer/officers")]}
 
 
 def _help(db, kb, *, demo, args, officer, text):
