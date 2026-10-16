@@ -79,10 +79,7 @@ function Aside() {
 
   return (
     <aside className="relative hidden lg:flex flex-col gap-10 bg-leaf-deep text-cream px-10 py-12 sticky top-0 self-start h-[calc(100vh-58px)] overflow-hidden">
-      {/* The emblem, barely there: the panel is tall and mostly empty below
-          the walk, and an edge of the mark is better than a slab of green. */}
-      <img src="/brand/emblem-192.png" alt="" aria-hidden
-        className="pointer-events-none select-none absolute -bottom-24 -right-24 w-64 opacity-[0.045]" />
+      <Watermark />
       <div className="relative">
         <h2 className="font-instrument-serif text-[34px] leading-tight">{copy.title}</h2>
         <p className="mt-2.5 text-[14px] leading-relaxed text-cream/70">{copy.sub}</p>
@@ -94,6 +91,26 @@ function Aside() {
 
       <p className="relative mt-auto text-[12px] leading-relaxed text-cream/45">{t('authEmailNote')}</p>
     </aside>
+  )
+}
+
+/** The emblem in the green, under the panel's empty half.
+ *
+ *  Pinned to a corner it was a badge with two straight edges cut off it, which
+ *  reads as a mistake rather than a flourish. Here it is centred, large, and
+ *  dissolved on every side by a radial mask, with a low warm glow under it: no
+ *  edge of the artwork ever meets an edge of the panel, so what is left is a
+ *  watermark in the surface rather than a cropped picture of one. */
+function Watermark() {
+  return (
+    <span aria-hidden className="pointer-events-none select-none absolute inset-0 overflow-hidden">
+      <span className="absolute left-1/2 -translate-x-1/2 bottom-[-14%] w-[150%] aspect-square rounded-full
+                       bg-[radial-gradient(circle_at_center,rgba(247,243,236,0.10),transparent_62%)]" />
+      <img src="/brand/emblem-512.png" alt=""
+        className="absolute left-1/2 -translate-x-1/2 bottom-[-22%] w-[128%] max-w-none opacity-[0.13] saturate-[0.3]
+                   [mask-image:radial-gradient(closest-side,#000_28%,transparent_76%)]
+                   [-webkit-mask-image:radial-gradient(closest-side,#000_28%,transparent_76%)]" />
+    </span>
   )
 }
 
