@@ -14,7 +14,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, load_only
 
 from app import auth, config, geo, office, services
 from app.limits import limit
@@ -36,14 +36,37 @@ SUBDIVISION_POINTS = {
 
 
 @router.get("/summary")
-def summary(lang: str = "en", db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
-    farms = db.scalars(select(Farm)).all()
-    diags = db.scalars(select(Diagnosis)).all()
-    cases = db.scalars(select(Case)).all()
-    confs = db.scalars(select(Confirmation)).all()
-    alerts = db.scalars(select(Alert)).all()
-    problems = db.scalars(select(Problem)).all()
-    advised = {a.problem_id for a in db.scalars(select(Advisory)).all()}
+def summary(request: Request, lang: str = "en", db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    # Every other endpoint here splits the demo farms from the real ones; this
+    # one read both and summed them, so the dashboard's headline counted demo
+    # cases a district does not have while the queue beside it, correctly
+    # filtered, showed fewer. One side of the line at a time.
+    demo = _demo(request, db)
+    farms = db.scalars(select(Farm).where(Farm.is_demo.is_(demo))).all()
+    farm_ids = {f.id for f in farms}
+    problems = db.scalars(select(Problem).join(Farm, Farm.id == Problem.farm_id)
+                          .where(Farm.is_demo.is_(demo))).all()
+    problem_ids = {p.id for p in problems}
+
+    def on_this_side(model, *options):
+        """Rows belonging to the farms this dashboard is about, filtered by the
+        database rather than by reading every row of the table into Python."""
+        q = (select(model).join(Problem, Problem.id == model.problem_id)
+             .join(Farm, Farm.id == Problem.farm_id).where(Farm.is_demo.is_(demo)))
+        return db.scalars(q.options(*options) if options else q).all()
+
+    # Only the columns this summary counts. Diagnosis.topk and Alert.reason /
+    # tasks are JSON blobs, and parsing seven hundred of them to count their
+    # outcomes was most of the two seconds this endpoint used to take.
+    diags = on_this_side(Diagnosis, load_only(Diagnosis.problem_id, Diagnosis.gate_outcome,
+                                              Diagnosis.gate_reason))
+    cases = on_this_side(Case)
+    confs = on_this_side(Confirmation)
+    alerts = db.scalars(select(Alert).join(Farm, Farm.id == Alert.farm_id)
+                        .where(Farm.is_demo.is_(demo))
+                        .options(load_only(Alert.farm_id, Alert.level, Alert.outcome,
+                                           Alert.trigger, Alert.issued_on, Alert.target))).all()
+    advised = {a.problem_id for a in on_this_side(Advisory)}
     confirmed_problems = {c.problem_id for c in confs}
 
     gate_outcomes = Counter(d.gate_outcome for d in diags)
@@ -82,7 +105,7 @@ def summary(lang: str = "en", db: Session = Depends(get_db), kb: KB = Depends(ge
     answered = [a for a in alerts if a.outcome in ("nothing_found", "found")]
     return {
         "generated_at": datetime.now(UTC).isoformat(),
-        "includes_demo_data": any(f.is_demo for f in farms),
+        "includes_demo_data": demo,
         "model": vision.model_status(),
         "totals": {
             "farms": len(farms),

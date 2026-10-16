@@ -322,6 +322,23 @@ def test_correction_feeds_prior_and_accuracy(client):
     assert s["accuracy_by_label"][0]["model_label"] == "rice_sheath_blight"
 
 
+def test_the_summary_counts_one_side_of_the_demo_line(client):
+    """The dashboard's headline and the queue below it must agree. The summary
+    used to read every farm, so a demo case was counted for a real district."""
+    diagnose(client, 1, "unsure")                       # a real farm's case
+    with SessionLocal() as db:
+        demo = Farm(farmer_name="demo", crop="rice", sowing_date=date.today() - timedelta(days=60),
+                    district="Bhandara", lat=21.17, lon=79.65, area_acres=2, is_demo=True)
+        db.add(demo)
+        db.commit()
+        demo_id = demo.id
+    diagnose(client, demo_id, "unsure")                 # and a demo farm's case
+
+    s = client.get("/api/officials/summary").json()     # signed out: the real side
+    assert s["includes_demo_data"] is False
+    assert s["totals"]["farms"] == 4 and s["totals"]["open_cases"] == 1
+
+
 def test_non_crop_photo_asks_retake_without_case(client):
     r = diagnose(client, 1, "clear", img=_grey_jpeg())
     assert r["gate"]["outcome"] == "retake" and "case" not in r
