@@ -26,14 +26,6 @@ from app.models import Advisory, Alert, Case, Confirmation, Diagnosis, ExpertPro
 router = APIRouter(prefix="/api/officials", tags=["officials"],
                    dependencies=[Depends(auth.require("expert")), Depends(auth.require_verified)])
 
-# One representative point per Maharashtra IMD subdivision for the rainfall panel.
-SUBDIVISION_POINTS = {
-    "KONKAN & GOA": ("Ratnagiri", 16.99, 73.31),
-    "MADHYA MAHARASHTRA": ("Pune", 18.52, 73.86),
-    "MARATHWADA": ("Chhatrapati Sambhajinagar", 19.88, 75.34),
-    "VIDARBHA": ("Nagpur", 21.15, 79.09),
-}
-
 
 @router.get("/summary")
 def summary(request: Request, lang: str = "en", db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
@@ -179,77 +171,6 @@ def hotspots(days: int = 45, lang: str = "en", db: Session = Depends(get_db), kb
     ]
     return {"points": points, "active_alerts": alerts, "radius_km": services.SPREAD_RADIUS_KM}
 
-
-@router.get("/rainfall")
-def rainfall(request: Request, db: Session = Depends(get_db)):
-    """Rainfall against the IMD normal, for the subdivisions this officer's own
-    districts fall in.
-
-    It used to serve the same four Maharashtra subdivisions to everybody, so an
-    officer in Punjab opened Reference and was shown Konkan, Pune, Marathwada
-    and Nagpur. The shipped normals only map Maharashtra's districts, so for an
-    officer anywhere else the honest answer is an empty list and the districts
-    we could not place — not another state's rain.
-    """
-    normals = services.rainfall_normals()
-    mine = _mine(request, db)
-    to_sub = normals["district_to_subdivision"]
-    wanted = {to_sub[d] for d in mine if d in to_sub} if mine else set(SUBDIVISION_POINTS)
-    unmapped = sorted(d for d in mine if d not in to_sub)
-    out = []
-    for sub, (place, lat, lon) in SUBDIVISION_POINTS.items():
-        if sub not in wanted:
-            continue
-        rc = services.rain_vs_normal(place, lat, lon)
-        out.append({
-            "subdivision": sub, "reference_place": place,
-            "jjas_normal_mm": normals["subdivisions"][sub]["mean"]["jjas"],
-            "current_month": rc,
-            "jjas_series": normals["jjas_series"].get(sub, []),
-        })
-    return {"source": normals["_source"], "subdivisions": out, "unmapped_districts": unmapped}
-
-
-@router.get("/pesticides")
-def pesticide_baseline(request: Request, db: Session = Depends(get_db), state: str | None = None):
-    """State pesticide consumption (MoSPI ENVSTATS / DPPQS), the baseline that
-    'more targeted pesticide use' is measured against.
-
-    Whose baseline: the state this officer works in, read off the districts
-    they cover. It was pinned to Maharashtra, so every officer in the country
-    was shown Maharashtra's tonnage as the number their work has to move.
-    """
-    state = state or next(iter(geo.states_of(_mine(request, db))), "Maharashtra")
-    path = services.KB_DIR / "mospi_pesticides.json"
-    if not path.exists():
-        return {"available": False}
-    data = json.loads(path.read_text())
-    states = data["states"]
-    india: dict[str, float] = defaultdict(float)
-    for s in states.values():
-        for year, v in s.get("chemical", []):
-            india[year] += v
-    mine = states.get(state, {})
-    chem = mine.get("chemical", [])
-    latest = chem[-1] if chem else None
-    ranking = sorted(
-        ((name, s["chemical"][-1][1]) for name, s in states.items() if s.get("chemical")),
-        key=lambda kv: -kv[1],
-    )
-    return {
-        "available": True,
-        "state": state,
-        "source": data["_source"],
-        "unit_note": data["_unit_note"],
-        "chemical": chem,
-        "bio": mine.get("bio", []),
-        "india_chemical": sorted(india.items()),
-        "latest_share_pct": round(100 * latest[1] / india[latest[0]], 1) if latest and india[latest[0]] else None,
-        "rank": next((i + 1 for i, (n, _) in enumerate(ranking) if n == state), None),
-        "states_ranked": len(ranking),
-    }
-
-
 @router.get("/outlook")
 def risk_outlook(lang: str = "en", db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
     """Where each pest/disease is building, for planning preventive action:
@@ -352,14 +273,6 @@ def run_all(db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
 
 def _me(request: Request, db: Session) -> User | None:
     return auth.current_user(request, db)
-
-
-def _mine(request: Request, db: Session) -> list[str]:
-    """The districts the signed-in officer covers, empty when we have none."""
-    me = _me(request, db)
-    prof = db.get(ExpertProfile, me.id) if me else None
-    return list(prof.districts or []) if prof else []
-
 
 def _demo(request: Request, db: Session) -> bool:
     me = _me(request, db)

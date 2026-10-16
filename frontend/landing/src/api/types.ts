@@ -552,19 +552,6 @@ export interface Hotspots {
   radius_km: number
 }
 
-export interface RainfallPanel {
-  source: string
-  subdivisions: {
-    subdivision: string
-    reference_place: string
-    jjas_normal_mm: number
-    current_month: RainContext | null
-    jjas_series: [number, number | null, number | null][]
-  }[]
-  /** Districts of this officer's that no IMD subdivision normal covers yet. */
-  unmapped_districts?: string[]
-}
-
 export interface ModelCard {
   is_stub: boolean
   model_version: string
@@ -595,19 +582,6 @@ export interface CropInfo {
    *  reason the form has to ask whether a date is the sowing or the planting out. */
   nursery_days: number
   stages: { key: string; name: string; das: [number, number] }[]
-}
-
-export interface PesticideBaseline {
-  available: boolean
-  state: string
-  source: string
-  unit_note: string
-  chemical: [string, number][]
-  bio: [string, number][]
-  india_chemical: [string, number][]
-  latest_share_pct: number | null
-  rank: number | null
-  states_ranked: number
 }
 
 export interface OutlookRow {

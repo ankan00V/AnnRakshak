@@ -36,10 +36,8 @@ import type {
   OtpSent,
   OutlookRow,
   PendingOfficer,
-  PesticideBaseline,
   PlaceHit,
   ProblemView,
-  RainfallPanel,
   Role,
   SatelliteView,
   SprayHour,
@@ -136,7 +134,6 @@ export const api = {
   crops: (lang: Lang) => req<CropInfo[]>(`/api/kb/crops?lang=${lang}`),
   targets: (lang: Lang, crop?: string) =>
     req<TargetView[]>(`/api/kb/targets?lang=${lang}${crop ? `&crop=${crop}` : ''}`),
-  pesticides: () => req<{ id: string; name: string; class: string }[]>('/api/kb/pesticides'),
 
   samples: (crop: string) => req<{ url: string; true_class: string; expected: 'advise' | 'clarify' | 'escalate' | 'retake' | null }[]>(`/api/samples?crop=${crop}`),
   farms: (lang: Lang) => req<Farm[]>(`/api/farms?lang=${lang}`),
@@ -232,9 +229,7 @@ export const api = {
 
   summary: () => req<Summary>('/api/officials/summary'),
   hotspots: () => req<Hotspots>('/api/officials/hotspots'),
-  rainfall: () => req<RainfallPanel>('/api/officials/rainfall'),
   modelCard: () => req<ModelCard>('/api/officials/model'),
-  pesticideBaseline: () => req<PesticideBaseline>('/api/officials/pesticides'),
   outlook: () => req<OutlookRow[]>('/api/officials/outlook'),
   kcc: () => req<KccPanel>('/api/officials/kcc'),
   addSensor: (farmId: number, readings: Record<string, unknown>[]) =>
@@ -267,7 +262,6 @@ export const api = {
     req<Contact>(`/api/farms/${farmId}/contact`, { ...json({ email, email_pref }), method: 'PUT' }),
   emailTest: (farmId: number) => req<{ status: string }>(`/api/farms/${farmId}/email/test`, { method: 'POST' }),
   emailSummary: (farmId: number) => req<{ status: string }>(`/api/farms/${farmId}/email/summary`, { method: 'POST' }),
-  watchRun: () => req<Record<string, number | string>>('/api/officials/watch/run', { method: 'POST' }),
 
   tts: async (text: string, lang: Lang): Promise<Blob> => {
     const res = await fetch('/api/voice/tts', json({ text, lang }))

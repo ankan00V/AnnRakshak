@@ -52,7 +52,7 @@ function Shell() {
     return () => {
       on = false
     }
-  }, [farmId, lang, setFarmId])
+  }, [farmId, lang, setFarmId, setLang])
 
   useEffect(() => {
     window.scrollTo(0, 0)

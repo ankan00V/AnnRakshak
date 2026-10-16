@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Bug, CheckCircle2, ClipboardList, FlaskRound, HelpCircle, Inbox, Loader2, MapPin, Send, Timer, UserCheck, Users } from 'lucide-react'
+import { ArrowLeft, Bug, CheckCircle2, FlaskRound, HelpCircle, Inbox, Loader2, MapPin, Send, Timer, UserCheck, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { PortalSwitch } from '../officer/PortalSwitch'
 import { api } from '../api/client'
@@ -47,7 +47,7 @@ export default function ExpertConsole() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-5 grid md:grid-cols-[340px_1fr] gap-5">
+      <div className={`max-w-7xl mx-auto px-4 md:px-6 py-5 grid gap-5 ${selected ? 'md:grid-cols-[340px_1fr]' : ''}`}>
         <aside className={`${selected ? 'hidden md:block' : ''}`}>
           <div className="flex rounded-full bg-white border border-soil-dark/10 p-1 mb-3">
             {(['open', 'resolved'] as const).map((s) => (
@@ -76,7 +76,7 @@ export default function ExpertConsole() {
               Queue is clear.
             </Card>
           )}
-          <ul className="space-y-2">
+          <ul className={selected ? 'space-y-2' : 'space-y-2 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-2 md:space-y-0'}>
             {list.data?.map((c) => (
               <li key={c.id}>
                 <CaseRow c={c} active={selected === c.id} onClick={() => setSelected(c.id)} />
@@ -85,19 +85,11 @@ export default function ExpertConsole() {
           </ul>
         </aside>
 
-        <main>
-          {selected ? (
+        {selected && (
+          <main>
             <CaseView id={selected} onBack={() => setSelected(null)} onResolved={() => { list.reload(); }} />
-          ) : (
-            <Card className="hidden md:flex p-10 flex-col items-center justify-center text-center text-soil-dark/60 min-h-[420px]">
-              <ClipboardList className="w-8 h-8 text-leaf" />
-              <p className="mt-3 font-instrument-serif text-2xl text-soil-dark">Pick a case</p>
-              <p className="mt-1 text-sm max-w-sm">
-                Each case arrives pre-packed: photos, the model's ranked guesses, the farmer's field answers, trap counts and alerts — so a review takes under three minutes.
-              </p>
-            </Card>
-          )}
-        </main>
+          </main>
+        )}
       </div>
     </div>
   )

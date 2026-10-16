@@ -86,17 +86,6 @@ def satellite_summary(db: Session, kb: KB, farm: Farm, now: datetime) -> dict:
         return {"available": False, "reason": "not configured"}
     return satellite.summarize(satellite.ndvi_series(polyid, now.date()), farm.crop, stage, now.date())
 
-
-def satellite_advisory(db: Session, kb: KB, farm: Farm, now: datetime) -> dict | None:
-    if not satellite.configured():
-        return None
-    try:
-        return satellite.evaluate(satellite_summary(db, kb, farm, now), now)
-    except satellite.SatelliteUnavailable as e:
-        log.info("watch: satellite for farm %s: %s", farm.id, e)
-        return None
-
-
 def farm_cycle(db: Session, kb: KB, farm: Farm, now: datetime, fetch=agroweather.bundle) -> dict:
     out = Counter()
     try:

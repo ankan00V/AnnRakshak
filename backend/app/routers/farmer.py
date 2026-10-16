@@ -104,19 +104,6 @@ def samples(request: Request, crop: str | None = None, per_class: int = 1,
     featured.sort(key=lambda s: s["expected"] != "clarify")
     return featured + out
 
-
-@router.get("/kb/technologies")
-def technologies(lang: Lang = "en", crop: str | None = None, target: str | None = None,
-                 audience: Literal["farmer", "official"] | None = None, kb: KB = Depends(get_kb)):
-    """ICAR technology repository entries linked to our crops and targets."""
-    return [kb.tech_view(t, lang) for t in kb.technologies_for(target=target, crop=crop, audience=audience)]
-
-
-@router.get("/kb/pesticides")
-def pesticides(kb: KB = Depends(get_kb)):
-    return [{"id": pid, "name": p["name"], "class": p["class"]} for pid, p in kb.pesticides.items()]
-
-
 class FarmIn(BaseModel):
     farmer_name: str = Field(min_length=1, max_length=120)
     phone: str | None = None

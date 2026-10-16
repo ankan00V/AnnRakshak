@@ -634,11 +634,9 @@ def test_a_district_nobody_publishes_is_still_refused(client, mail):
     assert "Atlantis" in r.json()["detail"]
 
 
-def test_the_reference_rain_follows_the_officer_not_maharashtra(client, mail, monkeypatch):
-    """The shipped IMD normals map Maharashtra's districts and no others. An
-    officer in Punjab used to open Reference and be shown Konkan, Pune,
-    Marathwada and Nagpur — another state's rain, presented as theirs. Better
-    to show none and name the districts we cannot place."""
+def test_an_officers_own_states_travel_with_their_profile(client, mail):
+    """The console says where this officer is watching, and it used to say
+    Maharashtra to everyone. The states are read off the districts they cover."""
     r = client.post("/api/auth/otp", json={"role": "expert", "purpose": "signup",
                                            "email": "dr.rain@kvk.org.in", "phone": "9123456786"})
     r = client.post("/api/auth/signup/expert", json={
@@ -648,14 +646,4 @@ def test_the_reference_rain_follows_the_officer_not_maharashtra(client, mail, mo
         "districts": ["Hoshiarpur", "Kapurthala"], "crops": ["rice"],
         "specialities": ["plant_pathology"], "languages": ["en"]})
     assert r.status_code == 201, r.text
-    assert r.json()["profile"]["states"] == ["Punjab"], "the console says where this officer watches"
-
-    rain = client.get("/api/officials/rainfall")
-    assert rain.status_code == 200, rain.text
-    assert rain.json()["subdivisions"] == [], "no Maharashtra rain for a Punjab desk"
-    assert rain.json()["unmapped_districts"] == ["Hoshiarpur", "Kapurthala"]
-
-    # And the tonnage this officer's work has to move is their own state's.
-    pest = client.get("/api/officials/pesticides")
-    assert pest.status_code == 200, pest.text
-    assert pest.json()["state"] == "Punjab", "not Maharashtra's baseline for a Punjab desk"
+    assert r.json()["profile"]["states"] == ["Punjab"]
