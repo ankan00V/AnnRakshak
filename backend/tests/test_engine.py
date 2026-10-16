@@ -618,3 +618,22 @@ def test_a_farm_with_no_state_still_reads():
     class NoState:  # noqa: D106
         crop, sowing_date, date_basis = "rice", date(2026, 6, 11), "transplanted"
     assert kb.stage_of(NoState(), date(2026, 9, 23))[1] == 125
+
+
+def test_a_rule_window_with_no_temperature_band_does_not_take_down_the_sweep():
+    """`rice_downy_mildew` has carried a weather window with no temperature
+    band since September. Scoring it raised KeyError inside the run-length
+    walk, which killed the worker mid-sweep — every request after that hung.
+
+    It must not fire either: the sentence a farmer reads names both ends of the
+    band, and alerting on the half of a rule that happens to be filled in puts
+    a warning on a phone with no source behind it."""
+    humid = Window([Day(date.today() - timedelta(6 - i), 92, 23, 30, 60.0) for i in range(7)], "test", None)
+    rule = {"stages": ["nursery"], "weather": {"rh_min": 85, "days": 3, "rain_mm": 40}}
+
+    s = risk.score_rule("rice_downy_mildew", rule, target_name={"en": "Downy mildew"}, stage="nursery",
+                        stage_name={"en": "Nursery"}, das=12, window=humid, has_history=False)
+
+    assert s.fired is False
+    assert "t_min" in s.detail["why"] and "t_max" in s.detail["why"], s.detail
+    assert risk.missing_weather_keys({"rh_min": 85, "t_min": 20, "t_max": 30, "days": 3}) == []
