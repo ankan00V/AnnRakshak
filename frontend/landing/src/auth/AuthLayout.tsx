@@ -34,8 +34,14 @@ function Frame() {
   if (loading) return <PageSkeleton />
   if (me) return <Navigate to={safeNext(params.get('next')) ?? homeOf(me.role)} replace />
   return (
-    <div className="min-h-screen bg-cream text-soil-dark">
-      <header className="bg-leaf-deep text-cream">
+    /* On a laptop the window is the frame: header, panel and form are laid
+       out inside one screen and the form is the only thing that scrolls. The
+       panel used to be `100vh` minus a hard-coded header height, which is a
+       guess that is wrong the moment the header leaves the screen — it left a
+       band of cream under the green. Nothing below `lg` is framed: a phone
+       scrolls the page, as it should. */
+    <div className="min-h-screen bg-cream text-soil-dark lg:h-screen lg:min-h-0 lg:overflow-hidden lg:flex lg:flex-col">
+      <header className="bg-leaf-deep text-cream lg:shrink-0">
         <div className="max-w-lg lg:max-w-none lg:w-full mx-auto flex items-center justify-between gap-3 px-4 lg:px-8 py-3">
           <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
             <BrandMark size={34} />
@@ -47,14 +53,17 @@ function Frame() {
           </div>
         </div>
       </header>
-      <div className="lg:grid lg:grid-cols-[minmax(20rem,30%)_1fr] lg:items-stretch">
+      <div className="lg:flex-1 lg:min-h-0 lg:grid lg:grid-cols-[minmax(20rem,30%)_1fr] lg:items-stretch">
         <Aside />
-        {/* A short step (the login box, the fork) would otherwise sit against
-            the top of a laptop screen with half a window of cream under it. */}
-        <div className="lg:min-h-[calc(100vh-58px)] lg:flex lg:flex-col lg:justify-center">
-          <main className="w-full max-w-lg lg:max-w-[44rem] mx-auto px-4 lg:px-10 pt-6 pb-16 lg:py-12 animate-fadein">
-            <Outlet />
-          </main>
+        <div className="lg:h-full lg:overflow-y-auto">
+          {/* min-height, not height: a short step (the login box, the fork)
+              centres in the window, and a long one grows past it and scrolls
+              from its own top rather than having the top cut off. */}
+          <div className="lg:min-h-full lg:flex lg:flex-col lg:justify-center">
+            <main className="w-full max-w-lg lg:max-w-[44rem] mx-auto px-4 lg:px-10 pt-6 pb-16 lg:py-12 animate-fadein">
+              <Outlet />
+            </main>
+          </div>
         </div>
       </div>
     </div>
@@ -78,7 +87,7 @@ function Aside() {
         : { title: t('authLoginTitle'), sub: t('authLoginSub') }
 
   return (
-    <aside className="relative hidden lg:flex flex-col gap-10 bg-leaf-deep text-cream px-10 py-12 sticky top-0 self-start h-[calc(100vh-58px)] overflow-hidden">
+    <aside className="relative hidden lg:flex flex-col gap-10 bg-leaf-deep text-cream px-10 py-12 h-full overflow-hidden">
       <Watermark />
       <div className="relative">
         <h2 className="font-instrument-serif text-[34px] leading-tight">{copy.title}</h2>
