@@ -19,8 +19,6 @@ FROM node:22-alpine AS web
 WORKDIR /build
 COPY package.json package-lock.json ./
 COPY frontend/landing/package.json frontend/landing/
-COPY frontend/farmer-app/package.json frontend/farmer-app/
-COPY frontend/officer-dashboard/package.json frontend/officer-dashboard/
 RUN npm ci --workspaces --include-workspace-root
 COPY frontend/ frontend/
 RUN npm run build -w frontend/landing
