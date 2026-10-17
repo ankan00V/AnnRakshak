@@ -108,7 +108,7 @@ def media(name: str, request: Request, db: Session = Depends(get_db)):
         .where(Diagnosis.image_path == name).limit(1)
     ).first()
     path = UPLOAD_DIR / name
-    if farm is None or not path.exists() or not can_open_farm(current_user(request, db), farm):
+    if farm is None or not path.exists() or not can_open_farm(current_user(request, db), farm, db):
         raise HTTPException(404, "not found")
     # Private: a shared cache must not hand this to the next person through it.
     return FileResponse(path, media_type="image/jpeg",

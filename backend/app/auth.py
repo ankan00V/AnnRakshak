@@ -224,13 +224,24 @@ def ws_user(ws: WebSocket, db: Session) -> User | None:
 # Who may see what
 # --------------------------------------------------------------------------
 
-def can_open_farm(user: User | None, farm: Farm) -> bool:
+def can_open_farm(user: User | None, farm: Farm, db: Session | None = None) -> bool:
+    """Who may see this farm: the farmer whose it is, or a verified officer.
+
+    `db` is what makes the officer half true. Without it an expert is taken at
+    their word — which is how an account that signed up as an officer two
+    minutes ago, and that no district office has verified, could open any
+    farmer's live walk or fetch the photograph of any farmer's field. The
+    routers already refused them a case through require_verified; the farm
+    itself did not. Pass the session wherever one is at hand."""
     if not config.AUTH_ENFORCE:
         return True
     if user is None:
         return False
     if user.role == "expert":
-        return True  # experts open the farm a case comes from
+        if db is None:
+            return True            # no session here: the router's own gate stands
+        profile = expert_profile(db, user)
+        return profile is not None and profile.verified
     return farm.user_id == user.id or (user.is_demo and farm.is_demo)
 
 
@@ -282,7 +293,7 @@ def guard(request: HTTPConnection, db: Session, role: str | None = None) -> User
             if user is None:
                 raise AuthError(401, say("sign_in"))
             farm = _farm_of(db, name, request.path_params[name])
-            if farm is not None and not can_open_farm(user, farm):
+            if farm is not None and not can_open_farm(user, farm, db):
                 raise AuthError(403, say("not_your_farm"))
     return user
 

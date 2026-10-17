@@ -17,9 +17,12 @@ services:
       ANNRAKSHAK_ENV: production
       ANNRAKSHAK_DB_URL: postgresql+psycopg://annrakshak:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/annrakshak
       REDIS_URL: redis://cache:6379/0
-      # Behind the proxy that terminates TLS: it sets X-Forwarded-For, so the
-      # per-IP limits count the caller rather than the proxy.
-      ANNRAKSHAK_TRUST_PROXY: "on"
+      # ANNRAKSHAK_TRUST_PROXY stays off here. This file publishes the API
+      # straight onto the host, so X-Forwarded-For is whatever the caller
+      # typed, and believing it would hand anyone a fresh identity for every
+      # per-IP limit — including the one on sign-in codes. Turn it on only
+      # once something in front really does set it, and stop publishing 8010
+      # when you do.
     volumes:
       # The trained model, read-only: weights change on their own schedule and
       # do not belong in the image.
@@ -27,7 +30,10 @@ services:
       # Photographs farmers took, the outbox and the VAPID key. Losing this
       # volume loses the evidence behind every case.
       - annrakshak-data:/data
-    ports: ["8010:8010"]
+    # Bound to the loopback: put a TLS-terminating proxy in front and point it
+    # here. The browser needs HTTPS to open a camera at all, so the live field
+    # walk does not work over plain http:// to anything but localhost.
+    ports: ["127.0.0.1:8010:8010"]
     depends_on:
       db: {condition: service_healthy}
       cache: {condition: service_started}

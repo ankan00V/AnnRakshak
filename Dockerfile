@@ -59,5 +59,8 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
 # One worker by design: the background watcher must run in exactly one process
 # or every farmer gets each alert twice. Scale by running more containers with
 # ANNRAKSHAK_WATCH=off on all but one.
-CMD ["uvicorn", "app.main:app", "--app-dir", "backend", "--host", "0.0.0.0", "--port", "8010", \
-     "--proxy-headers", "--forwarded-allow-ips", "*"]
+# No --proxy-headers: uvicorn would rewrite the client address from a header
+# the caller can write, which is the per-IP limit gone. Whether to believe
+# X-Forwarded-For is one decision and it is ANNRAKSHAK_TRUST_PROXY's, made by
+# whoever actually put a proxy in front.
+CMD ["uvicorn", "app.main:app", "--app-dir", "backend", "--host", "0.0.0.0", "--port", "8010"]

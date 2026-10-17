@@ -517,8 +517,20 @@ def test_a_farmers_photo_is_not_served_to_a_stranger(client, mail):
         # a second farmer, signed in, still may not have it
         farmer_signup(stranger, mail, phone="9876500001", email="other@example.com")
         assert stranger.get(url).status_code == 404
-        # an officer may: a case arrives on their desk with the photo in it
+        # an officer may — but only one the district office has verified. An
+        # account that signed up as an expert two minutes ago is not that.
         expert_signup(stranger, mail)
+        with SessionLocal() as db:
+            prof = db.scalar(select(ExpertProfile).join(User, User.id == ExpertProfile.user_id)
+                             .where(User.email == "dr.kale@kvk.org.in"))
+            prof.verified = False
+            db.commit()
+        assert stranger.get(url).status_code == 404
+        with SessionLocal() as db:
+            prof = db.scalar(select(ExpertProfile).join(User, User.id == ExpertProfile.user_id)
+                             .where(User.email == "dr.kale@kvk.org.in"))
+            prof.verified = True
+            db.commit()
         assert stranger.get(url).status_code == 200
     assert client.get("/media/../../etc/passwd").status_code in (404, 400)
 

@@ -69,7 +69,7 @@ async def live_ws(ws: WebSocket, farm_id: int):
             await ws.send_json({"type": "error", "code": "FARM_NOT_FOUND"})
             await ws.close()
             return
-        if not auth.can_open_farm(auth.ws_user(ws, db), farm):
+        if not auth.can_open_farm(auth.ws_user(ws, db), farm, db):
             await ws.send_json({"type": "error", "code": "NOT_ALLOWED"})
             await ws.close(code=1008)
             return
