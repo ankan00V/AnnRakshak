@@ -15,6 +15,44 @@ from dotenv import load_dotenv
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 load_dotenv(BACKEND_DIR.parent / ".env")  # secrets only (API keys); never thresholds
 
+
+def _flag(name: str, default: bool) -> bool:
+    """An on/off setting, with a default that may differ in production."""
+    raw = os.environ.get(name)
+    return default if raw is None else raw.strip().lower() in ("on", "1", "true", "yes")
+
+
+ENV = os.environ.get("ANNRAKSHAK_ENV", "dev").strip().lower()
+PROD = ENV in ("prod", "production")
+"""What this process is: a laptop, or a server with farmers' data on it.
+
+Several settings are convenient on a laptop and wrong in front of real users —
+a one-tap demo sign-in, experts who verify themselves, a cookie that will
+travel over plain HTTP. Each of those now defaults the safe way when
+ANNRAKSHAK_ENV=production, and start_checks() below refuses to start if one of
+them has been turned back on by hand without the operator saying so."""
+
+WEB_DIR = Path(os.environ["ANNRAKSHAK_WEB_DIR"]) if os.environ.get("ANNRAKSHAK_WEB_DIR") else None
+"""The built browser app, served by this process when set (the Dockerfile sets
+it). One origin for the app and the API: a first-party session cookie, no CORS,
+and a farmer's photographs fetched with the viewer's own session."""
+
+ALLOWED_ORIGINS = [o.strip().rstrip("/") for o in
+                   (os.environ.get("ANNRAKSHAK_ORIGINS") or "").split(",") if o.strip()]
+"""Where the browser app is served from, when that is not the same origin as
+this API. Empty is the normal case: one host serves both (see the Dockerfile),
+and then no cross-origin request happens at all."""
+
+TRUST_PROXY = _flag("ANNRAKSHAK_TRUST_PROXY", False)
+"""Whether X-Forwarded-For may be believed. On behind a load balancer or
+reverse proxy that sets it; off otherwise, because a client can send that
+header itself and a per-IP limit that believes it is no limit at all."""
+
+PUBLIC_DOCS = _flag("ANNRAKSHAK_PUBLIC_DOCS", not PROD)
+"""/docs and /openapi.json. On for a laptop and for a judge reading the API;
+off in production, where the schema of an authenticated API is not public
+business."""
+
 SARVAM_API_KEY = os.environ.get("SARVAM_API_KEY")
 SARVAM_API_KEYS = list(dict.fromkeys(
     k.strip() for k in [*(os.environ.get("SARVAM_API_KEYS") or "").split(","), SARVAM_API_KEY or ""] if k.strip()))
@@ -100,14 +138,43 @@ photo goes to an expert instead of back to the farmer. Measured on the 44
 out-of-scope photos in the familiarity check: 32 of them fall below it."""
 
 TARGET_GATE = {
-    "rice_blast": 0.90,
-    "maize_common_rust": 0.90,
+    "maize_ear_rot": 0.80,
+    "maize_gray_leaf_spot": 0.95,
+    "maize_turcicum_leaf_blight": 0.90,
+    "rice_bacterial_leaf_streak": 0.95,
+    "rice_bacterial_panicle_blight": 0.95,
+    "rice_blast": 0.95,
+    "rice_brown_spot": 0.85,
+    "rice_downy_mildew": 0.95,
+    "rice_hispa": 0.95,
+    "rice_leaf_folder": 0.95,
+    "rice_sheath_blight": 0.95,
+    "rice_tungro": 0.95,
+    "soybean_frogeye_leaf_spot": 0.75,
+    "soybean_septoria_brown_spot": 0.95,
+    "soybean_yellow_mosaic": 0.95,
 }
-"""Classes learnt only from lab photos (single leaves on plain backdrops) must
-clear a higher bar before the app advises them — in the photo gate and for a
-'strong' view in the live walk. Measured on held-out images (2026-09-15):
-rice blast precision 0.868 at the global 0.70 -> 0.957 at 0.90 (recall 0.844);
-maize rust 0.963 -> 1.000 (recall 1.000); every other class 0.972 at 0.70.
+"""Classes the model names less reliably than the rest must clear a higher
+bar before the app advises them — in the photo gate and for a 'strong' view
+in the live walk. Measured by ml/tune_gate.py on held-out images (2026-10-17),
+choosing the lowest bar reaching 0.95 precision, or, where no bar
+reaches it, the bar that does best — those are marked (best) and want more
+field photographs rather than more arithmetic:
+maize ear rot 0.943 -> 0.971 at 0.80 (recall 1.000);
+maize gray leaf spot 0.918 -> 0.949 at 0.95 (recall 0.860) (best);
+maize turcicum leaf blight 0.947 -> 0.980 at 0.90 (recall 0.706);
+rice bacterial leaf streak 0.913 -> 0.976 at 0.95 (recall 0.953);
+rice bacterial panicle blight 0.758 -> 0.852 at 0.95 (recall 0.979) (best);
+rice blast 0.807 -> 0.975 at 0.95 (recall 0.561);
+rice brown spot 0.931 -> 0.960 at 0.85 (recall 0.535);
+rice downy mildew 0.692 -> 0.863 at 0.95 (recall 0.818) (best);
+rice hispa 0.844 -> 0.981 at 0.95 (recall 0.681);
+rice leaf folder 0.897 -> 0.960 at 0.95 (recall 0.828);
+rice sheath blight 0.817 -> 0.913 at 0.95 (recall 0.560) (best);
+rice tungro 0.872 -> 0.958 at 0.95 (recall 0.700);
+soybean frogeye leaf spot 0.940 -> 0.952 at 0.75 (recall 0.881);
+soybean septoria brown spot 0.604 -> 0.875 at 0.95 (recall 0.457) (best);
+soybean yellow mosaic 0.861 -> 0.923 at 0.95 (recall 0.585) (best).
 Between GATE and this bar the gate asks the look-alike question or sends the
 photo to an expert. Drop an entry once expert confirmations show the class
 holds up on farmers' field photos."""
@@ -168,12 +235,12 @@ AGRO_CACHE_MINUTES = 30
 AUTH_ENFORCE = os.environ.get("ANNRAKSHAK_AUTH", "on") != "off"
 """Every farm, problem, alert and expert endpoint checks who is asking. Tests
 of the older flows turn it off; the auth tests turn it on."""
-DEMO_LOGIN = os.environ.get("ANNRAKSHAK_DEMO_LOGIN", "on") != "off"
+DEMO_LOGIN = _flag("ANNRAKSHAK_DEMO_LOGIN", not PROD)
 """'Try the demo' sign-in to the seeded demo farms / a demo expert. Off in production."""
 OTP_CHANNEL = "email"
 """Where one-time codes go. Both roles give a mobile number at sign-up, but
 there is no free SMS gateway yet, so every code is emailed (SMTP above)."""
-EXPERT_AUTO_VERIFY = os.environ.get("ANNRAKSHAK_EXPERT_AUTO_VERIFY", "on") != "off"
+EXPERT_AUTO_VERIFY = _flag("ANNRAKSHAK_EXPERT_AUTO_VERIFY", not PROD)
 """Hackathon builds verify experts at sign-up; production sets this off and the district office verifies."""
 OTP_DIGITS = 6
 OTP_TTL_MINUTES = 5
@@ -184,7 +251,7 @@ SESSION_HOURS = 24
 SINGLE_SESSION = True
 """Signing in ends the account's other sessions, so one account is open in one
 browser at a time. Demo accounts are exempt: judges share them."""
-COOKIE_SECURE = os.environ.get("ANNRAKSHAK_COOKIE_SECURE", "off") == "on"  # on behind HTTPS
+COOKIE_SECURE = _flag("ANNRAKSHAK_COOKIE_SECURE", PROD)  # on behind HTTPS
 
 # --- Notifications: in-app (SSE), phone (Web Push) and email ---------------
 
@@ -214,3 +281,34 @@ EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND") or ("smtp" if SMTP_HOST else "ou
 
 FOLLOWUP_DUE_DAYS = 4
 CASE_ETA_MINUTES_PER_POSITION = 20
+
+
+# --------------------------------------------------------------------------
+# What production must not start without
+# --------------------------------------------------------------------------
+
+def start_checks() -> list[str]:
+    """Everything that is fine on a laptop and wrong in front of farmers.
+
+    Called from the app's lifespan. A laptop gets warnings it can ignore; a
+    process that says it is production refuses to start, because every item
+    here is something a farmer or an officer would pay for: a stranger signing
+    in as a demo officer and reading real cases, a session cookie travelling
+    over plain HTTP, a database that disappears with the container.
+    """
+    problems = []
+    if DEMO_LOGIN:
+        problems.append("ANNRAKSHAK_DEMO_LOGIN is on: anyone can sign in as a demo farmer or officer")
+    if EXPERT_AUTO_VERIFY:
+        problems.append("ANNRAKSHAK_EXPERT_AUTO_VERIFY is on: an officer verifies themselves and may "
+                        "read any farmer's case")
+    if not COOKIE_SECURE:
+        problems.append("ANNRAKSHAK_COOKIE_SECURE is off: the session cookie will travel over plain HTTP")
+    if DB_URL.startswith("sqlite"):
+        problems.append("the database is SQLite: set ANNRAKSHAK_DB_URL to Postgres for more than one worker")
+    if PUBLIC_APP_URL.startswith("http://localhost"):
+        problems.append("ANNRAKSHAK_PUBLIC_URL is still localhost: links in emails and notifications "
+                        "will not reach anyone")
+    if EMAIL_BACKEND == "outbox":
+        problems.append("EMAIL_BACKEND is 'outbox': sign-in codes are written to a file, not sent")
+    return problems

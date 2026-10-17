@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronRight, LocateFixed, Plus, Sprout } from 'lucide-react'
+import { AlertTriangle, ChevronRight, LocateFixed, Plus, Sprout } from 'lucide-react'
 import { api } from '../../api/client'
 import type { CropInfo, Farm } from '../../api/types'
 import WherePicker, { type Where } from '../../auth/WherePicker'
@@ -12,6 +12,7 @@ import { useAuth } from '../../auth/AuthContext'
 import { Chips } from '../../auth/parts'
 import type { Irrigation } from '../../api/types'
 import type { TKey } from '../../lib/i18n'
+import { SPLIT } from '../layout'
 
 const CROP_TINT: Record<string, string> = {
   rice: 'bg-leaf/15 text-leaf-deep',
@@ -38,77 +39,140 @@ function Ask({ label, say }: { label: string; say: TKey }) {
   )
 }
 
+const RANK: Record<string, number> = { high: 3, medium: 2, low: 1 }
+
+/** What is standing against this field this week. Nothing is drawn when
+ *  nothing is building: a row of "all clear" badges teaches the eye to skip
+ *  the one place a warning would appear. */
+function Standing({ alert }: { alert: Farm['alert'] }) {
+  const { t } = useFarmer()
+  if (!alert) return null
+  const tone = alert.answered ? 'bg-soil-dark/5 text-soil-dark/55'
+    : alert.level === 'high' ? 'bg-ember/10 text-ember'
+      : alert.level === 'medium' ? 'bg-ochre/15 text-[#8a5a17]' : 'bg-leaf/10 text-leaf-deep'
+  return (
+    <span className={`mt-1.5 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ${tone}`}>
+      {!alert.answered && alert.level === 'high' && <AlertTriangle className="w-3 h-3 shrink-0" />}
+      {t(`level_${alert.level}` as TKey)} · {alert.name}
+    </span>
+  )
+}
+
 export default function Onboard() {
   const { lang, t, setFarmId, setLang } = useFarmer()
+  const { me } = useAuth()
   const farms = useAsync(() => api.farms(lang), [lang], ['farms', lang].join(':'))
   const crops = useAsync(() => api.crops(lang), [lang], ['crops', lang].join(':'))
   const [adding, setAdding] = useState(false)
   const [cropFilter, setCropFilter] = useState<string | null>(null)
-  const shown = (farms.data ?? []).filter((f) => !cropFilter || f.crop === cropFilter)
+  // The question this screen asks is which field we are protecting today, so
+  // the field with the worst week answers it first.
+  const shown = (farms.data ?? [])
+    .filter((f) => !cropFilter || f.crop === cropFilter)
+    .slice()
+    .sort((a, b) => (RANK[b.alert?.level ?? ''] ?? 0) - (RANK[a.alert?.level ?? ''] ?? 0) || a.id - b.id)
+  // A crop nobody here grows is a filter that can only empty the list, and
+  // four buttons over three fields is furniture.
+  const grown = (crops.data ?? []).filter((c) => (farms.data ?? []).some((f) => f.crop === c.id))
+  const filterable = (farms.data?.length ?? 0) > 6 && grown.length > 1
 
   return (
-    <div className="space-y-5">
-      <div className="pt-2">
+    /* Explicit cells rather than two stacked columns: on a phone the order on
+       screen is the order below — greeting, language, then the fields, exactly
+       as it was — while a laptop puts the language in the side rail beside the
+       greeting without moving a line of it. */
+    <div className={`space-y-5 ${SPLIT}`}>
+      <div className="pt-2 lg:col-span-8 lg:col-start-1 lg:row-start-1">
         <Sprout className="w-8 h-8 text-leaf" />
-        <h1 className="mt-2 font-instrument-serif text-3xl leading-tight">{t('welcome')}</h1>
-        <p className="mt-1 text-sm text-soil-dark/60">{t('welcomeSub')}</p>
+        <h1 className="mt-2 font-instrument-serif text-3xl lg:text-[40px] leading-tight">{t('welcome')}</h1>
+        <p className="mt-1 text-sm text-soil-dark/60 lg:text-[15px]">{t('welcomeSub')}</p>
       </div>
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-semibold">{t('chooseLanguage')}</h2>
-        <LanguagePicker variant="grid" onPick={setLang} />
+      {/* The language belongs on this screen — it is the first thing a farmer
+          may need to change — but not as ten tiles across a laptop, louder
+          than the fields they came here to open. */}
+      <section className="space-y-2.5 lg:col-span-4 lg:col-start-9 lg:row-start-1 lg:row-span-2">
+        <h2 className="text-sm font-semibold lg:text-[11px] lg:uppercase lg:tracking-[0.12em] lg:text-soil-dark/45">
+          {t('chooseLanguage')}
+        </h2>
+        <div className="lg:rounded-2xl lg:bg-white lg:border lg:border-soil-dark/10 lg:p-3">
+          <LanguagePicker variant="grid" wide={false} onPick={setLang} />
+        </div>
       </section>
 
-      {farms.loading && !farms.data && <FarmPickerSkeleton />}
-      {farms.error && <ErrorBox error={farms.error} onRetry={farms.reload} retryLabel={t('retry')} />}
+      <div className="space-y-5 lg:col-span-8 lg:col-start-1 lg:row-start-2">
+        {farms.loading && !farms.data && <FarmPickerSkeleton />}
+        {farms.error && <ErrorBox error={farms.error} onRetry={farms.reload} retryLabel={t('retry')} />}
 
-      {crops.data && farms.data && (
-        <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-4 px-4">
-          {[{ id: null as string | null, name: 'All' }, ...crops.data.map((c) => ({ id: c.id as string | null, name: c.name }))].map((c) => (
-            <button key={c.id ?? 'all'} onClick={() => setCropFilter(c.id)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border ${cropFilter === c.id ? 'bg-leaf-deep text-cream border-leaf-deep' : 'bg-white border-soil-dark/15'}`}>
-              {c.name}{c.id ? ` · ${farms.data!.filter((f) => f.crop === c.id).length}` : ''}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {farms.data && (
-        <ul className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3">
-          {shown.map((f: Farm) => (
-            <li key={f.id}>
-              <button
-                onClick={() => setFarmId(f.id)}
-                className="w-full text-left flex items-center gap-3 rounded-2xl bg-white border border-soil-dark/10 p-3 hover:border-leaf/50 transition-colors"
-              >
-                <span className={`shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-xs font-semibold ${CROP_TINT[f.crop] ?? ''}`}>
-                  {f.crop_name.slice(0, 2)}
-                </span>
-                <span className="flex-1 min-w-0">
-                  <span className="block text-sm font-medium truncate">{f.farmer_name}</span>
-                  <span className="block text-xs text-soil-dark/60 truncate">
-                    {f.crop_name} · {f.district} · {f.stage_name} ({f.das} {t('daysOld')})
-                  </span>
-                </span>
-                {f.is_demo && <Pill>{t('demoFarm')}</Pill>}
-                <ChevronRight className="w-4 h-4 text-soil-dark/40" />
+        {filterable && (
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0 lg:flex-wrap">
+            {[{ id: null as string | null, name: 'All' }, ...grown.map((c) => ({ id: c.id as string | null, name: c.name }))].map((c) => (
+              <button key={c.id ?? 'all'} onClick={() => setCropFilter(c.id)}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border ${cropFilter === c.id ? 'bg-leaf-deep text-cream border-leaf-deep' : 'bg-white border-soil-dark/15'}`}>
+                {c.name}{c.id ? ` · ${farms.data!.filter((f) => f.crop === c.id).length}` : ''}
               </button>
-            </li>
-          ))}
-        </ul>
-      )}
+            ))}
+          </div>
+        )}
 
-      {!adding ? (
-        <button
-          onClick={() => setAdding(true)}
-          className="w-full min-h-[52px] rounded-2xl border-2 border-dashed border-leaf/40 text-leaf-deep text-sm font-medium flex items-center justify-center gap-2 hover:bg-leaf/5"
-        >
-          <Plus className="w-4 h-4" />
-          {(farms.data?.length ?? 0) > 0 ? t('authAddField') : t('registerFarm')}
-        </button>
-      ) : (
-        crops.data && <RegisterForm crops={crops.data} onDone={(id) => setFarmId(id)} />
-      )}
+        {farms.data && (
+          /* The fields and the way to add one are the same kind of thing — a
+             tile you press to get to a field — so on a laptop they belong in
+             the same grid. A dashed bar ruled across the whole page under them
+             was the widest, loudest thing on a screen whose job is to let you
+             pick one of three farms. */
+          <ul className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3 lg:items-stretch">
+            {shown.map((f: Farm) => (
+              <li key={f.id} className="lg:h-full">
+                <button
+                  onClick={() => setFarmId(f.id)}
+                  className={`w-full h-full text-left flex items-start gap-3 rounded-2xl bg-white border p-3 lg:p-4 transition-all hover:shadow-[0_10px_24px_-18px_rgba(43,29,18,0.5)] ${
+                    f.alert && !f.alert.answered && f.alert.level === 'high'
+                      ? 'border-ember/40 hover:border-ember/70' : 'border-soil-dark/10 hover:border-leaf/50'}`}
+                >
+                  <span className={`shrink-0 w-11 h-11 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center text-xs font-semibold ${CROP_TINT[f.crop] ?? ''}`}>
+                    {f.crop_name.slice(0, 2)}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    {/* What tells this field apart from the one beside it: the
+                        crop and the place. The farmer's own name was the
+                        headline on every card, which on your own three fields
+                        is the same word three times. It earns the line only
+                        when the list holds more than one person's fields. */}
+                    <span className="block text-sm lg:text-[15px] font-medium truncate lg:whitespace-normal lg:leading-snug">
+                      {f.crop_name} · {f.village || f.district}
+                    </span>
+                    <span className="block text-xs text-soil-dark/60 truncate lg:whitespace-normal lg:leading-snug">
+                      {f.stage_name} · {f.das} {t('daysOld')} · {f.area_acres} {t('acres')}
+                    </span>
+                    {f.farmer_name !== me?.name && (
+                      <span className="block text-[11px] text-soil-dark/45 truncate">{f.farmer_name}</span>
+                    )}
+                    <Standing alert={f.alert} />
+                  </span>
+                  <span className="flex items-center gap-1.5 shrink-0">
+                    {f.is_demo && <Pill>{t('demoFarm')}</Pill>}
+                    <ChevronRight className="w-4 h-4 text-soil-dark/40" />
+                  </span>
+                </button>
+              </li>
+            ))}
+            {!adding && (
+              <li className="lg:h-full">
+                <button
+                  onClick={() => setAdding(true)}
+                  className="w-full h-full min-h-[52px] lg:min-h-[84px] rounded-2xl border-2 border-dashed border-leaf/40 text-leaf-deep text-sm font-medium flex items-center justify-center gap-2 hover:bg-leaf/5"
+                >
+                  <Plus className="w-4 h-4" />
+                  {(farms.data?.length ?? 0) > 0 ? t('authAddField') : t('registerFarm')}
+                </button>
+              </li>
+            )}
+          </ul>
+        )}
+
+        {adding && crops.data && <RegisterForm crops={crops.data} onDone={(id) => setFarmId(id)} />}
+      </div>
     </div>
   )
 }

@@ -66,12 +66,6 @@ LANGS = ("en", "hi", "mr")
 MAX_FARMS_PER_ISSUE = 5000
 """A single advisory cannot quietly become a state-wide broadcast."""
 
-
-def targets_for(kb: KB, crop: str) -> list[dict]:
-    """What an officer may issue an advisory about: this crop's own problems."""
-    return [kb.target_view(t, "en") for t, v in kb.targets.items() if v["crop"] == crop]
-
-
 AUDIENCES = ("all", "alerted", "nearby", "stage")
 """Who an advisory goes to:
 

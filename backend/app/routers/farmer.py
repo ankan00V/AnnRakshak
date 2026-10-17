@@ -104,19 +104,6 @@ def samples(request: Request, crop: str | None = None, per_class: int = 1,
     featured.sort(key=lambda s: s["expected"] != "clarify")
     return featured + out
 
-
-@router.get("/kb/technologies")
-def technologies(lang: Lang = "en", crop: str | None = None, target: str | None = None,
-                 audience: Literal["farmer", "official"] | None = None, kb: KB = Depends(get_kb)):
-    """ICAR technology repository entries linked to our crops and targets."""
-    return [kb.tech_view(t, lang) for t in kb.technologies_for(target=target, crop=crop, audience=audience)]
-
-
-@router.get("/kb/pesticides")
-def pesticides(kb: KB = Depends(get_kb)):
-    return [{"id": pid, "name": p["name"], "class": p["class"]} for pid, p in kb.pesticides.items()]
-
-
 class FarmIn(BaseModel):
     farmer_name: str = Field(min_length=1, max_length=120)
     phone: str | None = None
@@ -146,7 +133,11 @@ def list_farms(request: Request, lang: Lang = "en", db: Session = Depends(get_db
     q = select(Farm).order_by(Farm.id)
     if ids is not None:
         q = q.where(Farm.id.in_(ids))
-    return [services.farm_view(kb, f, lang) for f in db.scalars(q).all()]
+    farms = db.scalars(q).all()
+    # What is standing against each field, so the picker can answer its own
+    # question rather than listing names. One query for the whole list.
+    flags = services.farm_flags(db, kb, [f.id for f in farms], lang)
+    return [services.farm_view(kb, f, lang) | {"alert": flags.get(f.id)} for f in farms]
 
 
 @router.post("/farms", status_code=201)

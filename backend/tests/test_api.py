@@ -322,6 +322,57 @@ def test_correction_feeds_prior_and_accuracy(client):
     assert s["accuracy_by_label"][0]["model_label"] == "rice_sheath_blight"
 
 
+def test_the_summary_counts_one_side_of_the_demo_line(client):
+    """The dashboard's headline and the queue below it must agree. The summary
+    used to read every farm, so a demo case was counted for a real district."""
+    diagnose(client, 1, "unsure")                       # a real farm's case
+    with SessionLocal() as db:
+        demo = Farm(farmer_name="demo", crop="rice", sowing_date=date.today() - timedelta(days=60),
+                    district="Bhandara", lat=21.17, lon=79.65, area_acres=2, is_demo=True)
+        db.add(demo)
+        db.commit()
+        demo_id = demo.id
+    diagnose(client, demo_id, "unsure")                 # and a demo farm's case
+
+    s = client.get("/api/officials/summary").json()     # signed out: the real side
+    assert s["includes_demo_data"] is False
+    assert s["totals"]["farms"] == 4 and s["totals"]["open_cases"] == 1
+
+
+def test_the_map_and_the_sweep_stay_on_one_side_of_the_demo_line(client):
+    """A pin carries a farmer's name and their field's coordinates, and the
+    sweep writes alerts. Neither may cross between demo and real."""
+    diagnose(client, 1, "unsure")                       # a real farm's problem
+    with SessionLocal() as db:
+        demo = Farm(farmer_name="Demo Sunita", crop="rice", sowing_date=date.today() - timedelta(days=60),
+                    district="Bhandara", lat=21.17, lon=79.65, area_acres=2, is_demo=True)
+        db.add(demo)
+        db.commit()
+        demo_id = demo.id
+    diagnose(client, demo_id, "unsure")
+
+    # Signed out is the real side: the demo farmer must not appear on the map,
+    # in its pins or in the alert layer that carries the same coordinates.
+    spots = client.get("/api/officials/hotspots").json()
+    names = [p["farmer_name"] for p in spots["points"]]
+    assert names and "Demo Sunita" not in names
+    with SessionLocal() as db:
+        demo_farm = db.get(Farm, demo_id)
+        assert all(a["lat"] != demo_farm.lat or a["lon"] != demo_farm.lon
+                   for a in spots["active_alerts"])
+
+    before = _alert_count()
+    client.post("/api/officials/risk/run-all")
+    assert _alert_count() >= before                     # it may issue for real farms
+    with SessionLocal() as db:                          # but never for the demo one
+        assert not db.scalars(select(Alert).where(Alert.farm_id == demo_id)).all()
+
+
+def _alert_count() -> int:
+    with SessionLocal() as db:
+        return len(db.scalars(select(Alert)).all())
+
+
 def test_non_crop_photo_asks_retake_without_case(client):
     r = diagnose(client, 1, "clear", img=_grey_jpeg())
     assert r["gate"]["outcome"] == "retake" and "case" not in r
@@ -601,3 +652,54 @@ def test_the_ai_note_is_written_in_english_then_translated(client, monkeypatch):
     monkeypatch.setattr(voice, "translate", down)
     ta = client.post("/api/labelcheck/note", json={"farm_id": 1, "product": "salt", "lang": "ta"}).json()
     assert ta["suggestion"] == "Salt is not a pesticide."
+
+
+def _alert(farm_id, target, level, days_ago, trigger="weather"):
+    """An alert the database will accept: it insists every alert carries at
+    least one English task, and that one farm sees one target per trigger
+    per day."""
+    return Alert(farm_id=farm_id, target=target, trigger=trigger, level=level,
+                 reason={"en": "humid week"}, tasks={"en": ["Walk the field"]},
+                 issued_on=date.today() - timedelta(days=days_ago))
+
+
+def test_the_picker_says_which_field_is_in_trouble(client):
+    """A farmer with several fields should not have to open each one to find
+    the one the app is worried about."""
+    with SessionLocal() as db:
+        db.add_all([
+            _alert(1, "rice_blast", "medium", 2),
+            _alert(1, "rice_bacterial_leaf_blight", "high", 4),
+            _alert(2, "rice_blast", "high", 40),   # real once, not "right now"
+        ])
+        db.commit()
+
+    farms = {f["id"]: f for f in client.get("/api/farms").json()}
+    assert farms[1]["alert"]["level"] == "high", "the worst of the week wins, not the most recent"
+    assert farms[1]["alert"]["name"], "named in the farmer's language, not as a target id"
+    assert farms[2]["alert"] is None, "six weeks old is not what stands against it today"
+    assert farms[3]["alert"] is None
+
+
+def test_the_picker_reads_the_alerts_once_however_many_fields(client):
+    """This runs on every landing; it must not walk the farms one at a time."""
+    from sqlalchemy import event
+
+    from app.db import engine as eng
+
+    with SessionLocal() as db:
+        db.add_all([_alert(i, "rice_blast", "low", 1) for i in (1, 2, 3)])
+        db.commit()
+
+    reads = []
+
+    def count(conn, cursor, statement, *a):
+        if "FROM alert" in statement:
+            reads.append(statement)
+
+    event.listen(eng, "before_cursor_execute", count)
+    try:
+        client.get("/api/farms")
+    finally:
+        event.remove(eng, "before_cursor_execute", count)
+    assert len(reads) == 1, f"one read for the whole list, got {len(reads)}"

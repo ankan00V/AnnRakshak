@@ -75,6 +75,16 @@ def _bump(level: str) -> str:
     return LEVELS[min(LEVELS.index(level) + 1, len(LEVELS) - 1)]
 
 
+# What a weather window must carry to be scored at all. The sentence a farmer
+# reads names the humidity, both ends of the temperature band and the run, so a
+# window without them cannot be turned into an honest alert.
+WEATHER_KEYS = ("rh_min", "t_min", "t_max", "days")
+
+
+def missing_weather_keys(w: dict) -> list[str]:
+    return [k for k in WEATHER_KEYS if k not in w]
+
+
 def favourable(day: Day, w: dict) -> bool:
     """A day with a missing reading is NOT favourable — a data gap must not
     manufacture a consecutive-day run."""
@@ -82,7 +92,7 @@ def favourable(day: Day, w: dict) -> bool:
         return False
     if day.rh_max < w["rh_min"]:
         return False
-    if not (w["t_min"] <= day.t_mean <= w["t_max"]):
+    if not (w.get("t_min", -273) <= day.t_mean <= w.get("t_max", 100)):
         return False
     if "rain_min" in w and (day.rain_mm is None or day.rain_mm < w["rain_min"]):
         return False
@@ -175,6 +185,16 @@ def score_rule(
 
     detail: dict = {"stage": stage, "das": das}
     if w:
+        # An incomplete window is a hole in the knowledge base, not a reason to
+        # take down the sweep: scoring one used to raise KeyError halfway
+        # through a run and kill the worker. It does not fire — alerting on the
+        # half of a rule that happens to be filled in would put a warning on a
+        # farmer's phone that no source stands behind — and it says so here, so
+        # the gap is visible rather than silent.
+        gaps = missing_weather_keys(w)
+        if gaps:
+            return Score(target, False, "low", "none",
+                         detail={"why": f"rule window is missing {', '.join(gaps)}"})
         if window is None:
             return Score(target, False, "low", "none", detail={"why": "no weather window"})
         run, first, last = longest_run(window.days, w)

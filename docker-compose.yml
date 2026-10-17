@@ -1,0 +1,59 @@
+# The whole thing on one machine: the app and API, Postgres, and Redis.
+#
+#   cp .env.example .env     # fill in SMTP, GROQ_API_KEY, ANNRAKSHAK_PUBLIC_URL
+#   docker compose up --build
+#
+# Postgres because the migrations in app/db.py cannot run on SQLite and because
+# one container is not the end of this. Redis because the alert a farmer sees
+# in an open tab travels through it, so two API containers can serve the same
+# farmer. Neither is optional in production; both are a line of config away
+# from a managed service.
+
+services:
+  api:
+    build: .
+    env_file: [.env]
+    environment:
+      ANNRAKSHAK_ENV: production
+      ANNRAKSHAK_DB_URL: postgresql+psycopg://annrakshak:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/annrakshak
+      REDIS_URL: redis://cache:6379/0
+      # Behind the proxy that terminates TLS: it sets X-Forwarded-For, so the
+      # per-IP limits count the caller rather than the proxy.
+      ANNRAKSHAK_TRUST_PROXY: "on"
+    volumes:
+      # The trained model, read-only: weights change on their own schedule and
+      # do not belong in the image.
+      - ./ml/artifacts:/app/ml/artifacts:ro
+      # Photographs farmers took, the outbox and the VAPID key. Losing this
+      # volume loses the evidence behind every case.
+      - annrakshak-data:/data
+    ports: ["8010:8010"]
+    depends_on:
+      db: {condition: service_healthy}
+      cache: {condition: service_started}
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: annrakshak
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: annrakshak
+    volumes: [annrakshak-db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U annrakshak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  cache:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "60", "1", "--appendonly", "no"]
+    volumes: [annrakshak-cache:/data]
+    restart: unless-stopped
+
+volumes:
+  annrakshak-data:
+  annrakshak-db:
+  annrakshak-cache:

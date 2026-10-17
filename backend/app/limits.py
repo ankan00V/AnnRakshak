@@ -7,6 +7,7 @@ from __future__ import annotations
 from fastapi import HTTPException, Request
 
 from app import cache
+from app.config import TRUST_PROXY
 
 
 def limit(key: str, max_hits: int, window_s: int) -> None:
@@ -16,5 +17,15 @@ def limit(key: str, max_hits: int, window_s: int) -> None:
 
 
 def client_ip(request: Request) -> str:
-    fwd = request.headers.get("x-forwarded-for")
-    return (fwd.split(",")[0].strip() if fwd else None) or (request.client.host if request.client else "unknown")
+    """Who to count a request against.
+
+    X-Forwarded-For is a header the client can send. Believing it when nothing
+    is in front of this server means a per-IP limit counts whatever the caller
+    writes there — so the limit on sign-in codes, which exists to stop someone
+    working through a phone book, stops nobody. It is read only when the
+    operator says a proxy sets it (ANNRAKSHAK_TRUST_PROXY)."""
+    if TRUST_PROXY:
+        fwd = request.headers.get("x-forwarded-for")
+        if fwd:
+            return fwd.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"

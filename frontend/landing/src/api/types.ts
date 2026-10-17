@@ -21,6 +21,16 @@ export interface Farm {
   das: number
   lang: Lang
   is_demo: boolean
+  /** The worst alert standing against this field in the last week, if any.
+   *  Sent with the list so the picker can say which field needs a person. */
+  alert?: FarmAlert | null
+}
+
+export interface FarmAlert {
+  level: 'high' | 'medium' | 'low'
+  name: string
+  issued_on: string
+  answered: boolean
 }
 
 export interface TargetView {
@@ -542,17 +552,6 @@ export interface Hotspots {
   radius_km: number
 }
 
-export interface RainfallPanel {
-  source: string
-  subdivisions: {
-    subdivision: string
-    reference_place: string
-    jjas_normal_mm: number
-    current_month: RainContext | null
-    jjas_series: [number, number | null, number | null][]
-  }[]
-}
-
 export interface ModelCard {
   is_stub: boolean
   model_version: string
@@ -583,19 +582,6 @@ export interface CropInfo {
    *  reason the form has to ask whether a date is the sowing or the planting out. */
   nursery_days: number
   stages: { key: string; name: string; das: [number, number] }[]
-}
-
-export interface PesticideBaseline {
-  available: boolean
-  state: string
-  source: string
-  unit_note: string
-  chemical: [string, number][]
-  bio: [string, number][]
-  india_chemical: [string, number][]
-  latest_share_pct: number | null
-  rank: number | null
-  states_ranked: number
 }
 
 export interface OutlookRow {
@@ -894,6 +880,9 @@ export interface Me {
     designation_name?: string
     organisation?: string
     districts?: string[]
+    /** The states those districts sit in, so a screen can say where this
+     *  officer is watching without assuming one. */
+    states?: string[]
     crops?: string[]
     specialities?: string[]
     languages?: Lang[]

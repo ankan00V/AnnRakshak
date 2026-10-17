@@ -22,6 +22,9 @@ sys.path.insert(0, str(ROOT / "backend"))
 from app.engine import gate, vision  # noqa: E402
 from app.kb import get_kb  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from holdout import target_of  # noqa: E402
+
 
 def main() -> None:
     if vision.model_status()["is_stub"]:
@@ -34,8 +37,13 @@ def main() -> None:
 
     out: dict[str, dict] = {}
     tally = Counter()
+    skipped = Counter()
     for path in test:
         cls = path.split("/")[-2]
+        truth = target_of(cls, c2t)
+        if truth is None:          # a folder this model has no target for
+            skipped[cls] += 1
+            continue
         crop = cls.split("_")[0]
         topk = vision.classify((ROOT / path).read_bytes(), crop)
         d = gate.decide(
@@ -46,7 +54,7 @@ def main() -> None:
             cue_for=kb.cue_for,
         )
         top = topk.predictions[0].target if topk.predictions else None
-        correct = top == c2t[cls]
+        correct = top == truth
         key = "/".join(path.split("/")[-2:])
         out[key] = {"outcome": d.outcome, "reason": d.reason, "top": top,
                     "confidence": round(d.confidence, 3), "top_correct": correct}
@@ -56,6 +64,8 @@ def main() -> None:
 
     dest = vision.ARTIFACTS / "sample_outcomes.json"
     dest.write_text(json.dumps({"model_version": meta["model_version"], "samples": out}, indent=1))
+    for cls, n in skipped.items():
+        print(f"skipped {cls}: {n} photos, no target in this model")
     print(f"{len(out)} test photos → {dict(tally)}\nwrote {dest}")
     for k, v in out.items():
         if v["outcome"] == "clarify":

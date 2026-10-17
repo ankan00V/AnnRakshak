@@ -11,6 +11,7 @@ from sqlalchemy import select
 from app import config, services
 from app.db import Base, SessionLocal, engine
 from app.main import app
+from tests.test_api import _leaf_jpeg  # the same 1x1 leaf
 from app.models import ExpertProfile, Farm, FarmerProfile, OtpChallenge, Problem, User, UserSession
 from app.routers import auth as auth_router
 
@@ -498,6 +499,30 @@ def test_a_real_farmers_case_is_never_routed_to_a_demo_officer(client, mail):
     assert picked is None  # no real officer yet, and the demo one is not eligible
 
 
+def test_a_farmers_photo_is_not_served_to_a_stranger(client, mail):
+    """The photo is of someone's field. A URL that leaks — a screenshot, a log,
+    a shared link — must not be the photograph itself."""
+    farmer_signup(client, mail)
+    me = client.get("/api/auth/me").json()
+    farm_id = me["farm_ids"][0]
+    r = client.post(f"/api/farms/{farm_id}/diagnose",
+                    files={"image": ("x.jpg", _leaf_jpeg(), "image/jpeg")},
+                    data={"lang": "en", "demo_scenario": "clear"}).json()
+    url = r.get("image_url")
+    assert url and url.startswith("/media/")
+    assert client.get(url).status_code == 200          # its own farmer
+
+    with TestClient(app) as stranger:                  # nobody at all
+        assert stranger.get(url).status_code == 404
+        # a second farmer, signed in, still may not have it
+        farmer_signup(stranger, mail, phone="9876500001", email="other@example.com")
+        assert stranger.get(url).status_code == 404
+        # an officer may: a case arrives on their desk with the photo in it
+        expert_signup(stranger, mail)
+        assert stranger.get(url).status_code == 200
+    assert client.get("/media/../../etc/passwd").status_code in (404, 400)
+
+
 def test_voice_needs_a_signed_in_user(client):
     assert client.post("/api/voice/tts", json={"text": "hello", "lang": "en"}).status_code == 401
 
@@ -600,3 +625,50 @@ def test_an_older_profile_is_given_its_rank_and_a_readable_post(client):
         p = db.scalar(select(ExpertProfile).where(ExpertProfile.user_id == uid))
         assert p.designation == "agri_officer"   # renamed into the vocabulary
         assert p.supervisor is True              # and given the rank its post carries
+
+
+def test_an_officer_outside_maharashtra_can_sign_up(client, mail):
+    """The form offers every district the Government publishes. The check used
+    to run against the IMD rainfall map — 36 Maharashtra districts — so an
+    officer in Punjab picked two districts out of the form's own list and was
+    told to choose from the list."""
+    r = client.post("/api/auth/otp", json={"role": "expert", "purpose": "signup",
+                                           "email": "dr.bob@kvk.org.in", "phone": "9123456788"})
+    r = client.post("/api/auth/signup/expert", json={
+        "challenge_id": r.json()["challenge_id"], "code": code_of(mail), "name": "Dr. Bob",
+        "phone": "9123456788", "designation": "kvk_scientist", "organisation": "KVK Kapurthala, Punjab",
+        "employee_id": "KVKPT001", "qualification": "bsc_agri", "experience_years": 13,
+        "districts": ["Hoshiarpur", "Kapurthala"], "crops": ["rice"],
+        "specialities": ["plant_pathology"], "languages": ["en", "hi"]})
+    assert r.status_code == 201, r.text
+    assert r.json()["profile"]["districts"] == ["Hoshiarpur", "Kapurthala"]
+
+
+def test_a_district_nobody_publishes_is_still_refused(client, mail):
+    """The list is still a list: the check moved to the right one, it did not
+    stop checking."""
+    r = client.post("/api/auth/otp", json={"role": "expert", "purpose": "signup",
+                                           "email": "dr.nowhere@kvk.org.in", "phone": "9123456787"})
+    r = client.post("/api/auth/signup/expert", json={
+        "challenge_id": r.json()["challenge_id"], "code": code_of(mail), "name": "Dr. Nowhere",
+        "phone": "9123456787", "designation": "kvk_scientist", "organisation": "KVK",
+        "employee_id": "X-1", "qualification": "bsc_agri", "experience_years": 1,
+        "districts": ["Atlantis"], "crops": ["rice"],
+        "specialities": ["plant_pathology"], "languages": ["en"]})
+    assert r.status_code == 422
+    assert "Atlantis" in r.json()["detail"]
+
+
+def test_an_officers_own_states_travel_with_their_profile(client, mail):
+    """The console says where this officer is watching, and it used to say
+    Maharashtra to everyone. The states are read off the districts they cover."""
+    r = client.post("/api/auth/otp", json={"role": "expert", "purpose": "signup",
+                                           "email": "dr.rain@kvk.org.in", "phone": "9123456786"})
+    r = client.post("/api/auth/signup/expert", json={
+        "challenge_id": r.json()["challenge_id"], "code": code_of(mail), "name": "Dr. Rain",
+        "phone": "9123456786", "designation": "kvk_scientist", "organisation": "KVK Kapurthala",
+        "employee_id": "KVKPT002", "qualification": "bsc_agri", "experience_years": 4,
+        "districts": ["Hoshiarpur", "Kapurthala"], "crops": ["rice"],
+        "specialities": ["plant_pathology"], "languages": ["en"]})
+    assert r.status_code == 201, r.text
+    assert r.json()["profile"]["states"] == ["Punjab"]

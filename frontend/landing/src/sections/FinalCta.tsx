@@ -9,8 +9,8 @@ import { useFarmer } from '../farmer/FarmerContext'
 /** What the advice actually rests on. Government sources, named. */
 const SOURCES = [
   { name: 'ICAR', line: 'Rice and maize disease images; 24 released bio-inputs with the institute to call' },
-  { name: 'IMD', line: 'Subdivision rainfall normals, 1901–2017, for all four Maharashtra subdivisions' },
-  { name: 'MoSPI', line: 'State pesticide consumption — the 8,719 t baseline this has to move' },
+  { name: 'IMD', line: 'Subdivision rainfall normals, 1901–2017 — four subdivisions mapped to districts so far' },
+  { name: 'MoSPI', line: 'Pesticide consumption by state — the 79,423 t a year this has to move' },
   { name: 'Sentinel-2 · Landsat 8', line: 'Per-field NDVI, cloud-filtered, watched for a fall in vigour' },
 ]
 

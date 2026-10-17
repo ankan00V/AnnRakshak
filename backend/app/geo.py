@@ -60,6 +60,20 @@ def places() -> dict:
             for s, v in data["states"].items()}
 
 
+def states_of(districts: list[str] | None) -> list[str]:
+    """The states a set of districts belongs to, in the Government's spelling.
+
+    An officer's patch is recorded as districts, but the sentence a console
+    writes about them is a state: "Crop-health surveillance · Punjab". That
+    line used to read Maharashtra for everyone.
+    """
+    if not districts:
+        return []
+    want = {_norm(d) for d in districts}
+    return sorted({state for state, v in places().items()
+                   if any(_norm(d["name"]) in want for d in v["districts"])})
+
+
 def _norm(s: str | None) -> str:
     s = unicodedata.normalize("NFKD", (s or "").lower())
     return re.sub(r"[^a-z]", "", s.replace("district", ""))

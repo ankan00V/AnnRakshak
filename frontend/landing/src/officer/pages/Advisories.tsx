@@ -3,9 +3,11 @@ import { CheckCircle2, Loader2, Megaphone, Search, Send } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../../api/client'
 import type { AdvisoryDraft, AdvisoryPreview, OutlookRow } from '../../api/types'
+import { useAuth } from '../../auth/AuthContext'
 import { useAsync } from '../../lib/hooks'
+import { MAIN, SIDE, SPLIT } from '../../ui/layout'
 import { Card, ErrorBox, Pill } from '../../ui/kit'
-import { OutlookPanel, PanelBone } from '../panels'
+import { OutlookPanel, PageHead, PanelBone } from '../panels'
 
 const LANGS: [string, string][] = [['mr', 'मराठी'], ['hi', 'हिन्दी'], ['en', 'English']]
 
@@ -17,6 +19,7 @@ const LANGS: [string, string][] = [['mr', 'मराठी'], ['hi', 'हिन�
  *  the exact words in every language. */
 export default function Advisories() {
   const [params] = useSearchParams()
+  const { me } = useAuth()
   const outlook = useAsync(() => api.outlook(), [])
   const history = useAsync(() => api.advisoryHistory(), [])
   const options = useAsync(() => api.authOptions('en'), [])
@@ -78,11 +81,21 @@ export default function Advisories() {
     }
   }
 
-  const allDistricts: string[] = options.data?.districts ?? []
+  /* The districts this officer actually covers. It used to be the list from
+     /auth/options, which is the IMD rainfall map — 36 Maharashtra districts —
+     so an officer at KVK Kapurthala could not pick Kapurthala to advise into.
+     Their own coverage is both the right list and a shorter one; the rainfall
+     map stays behind it for an account with no districts recorded. */
+  const allDistricts: string[] = me?.profile?.districts?.length
+    ? me.profile.districts
+    : options.data?.districts ?? []
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[1fr_1fr]">
-      <Card className="p-4 md:p-5">
+    <>
+      <PageHead title="Advisories"
+        purpose="Tell every farm of one crop what is building — in their own language, with the checks it carries." />
+      <div className={`gap-5 ${SPLIT}`}>
+      <Card className={`p-4 md:p-5 ${MAIN}`}>
         <h2 className="font-semibold flex items-center gap-2"><Megaphone className="w-4 h-4 text-leaf" /> Issue an advisory</h2>
         <p className="text-xs text-soil-dark/60 mt-0.5">
           Every farm of this crop in the districts you pick gets it, in their own language, with the
@@ -230,7 +243,7 @@ export default function Advisories() {
         )}
       </Card>
 
-      <div className="space-y-5">
+      <div className={`space-y-5 ${SIDE}`}>
         <Card className="p-4 md:p-5">
           <h2 className="font-semibold">Issued before</h2>
           {!history.data ? <div className="mt-3"><PanelBone rows={4} /></div>
@@ -273,6 +286,7 @@ export default function Advisories() {
 
         {outlook.data ? <OutlookPanel rows={outlook.data} /> : <PanelBone rows={6} />}
       </div>
-    </div>
+      </div>
+    </>
   )
 }

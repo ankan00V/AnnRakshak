@@ -14,36 +14,51 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, load_only
 
-from app import auth, config, office, services
+from app import auth, config, geo, office, services
 from app.limits import limit
 from app.db import get_db
 from app.engine import vision
 from app.kb import KB, get_kb, tr
-from app.models import Advisory, Alert, Case, Confirmation, Diagnosis, Farm, Problem, User
+from app.models import Advisory, Alert, Case, Confirmation, Diagnosis, ExpertProfile, Farm, Problem, User
 
 router = APIRouter(prefix="/api/officials", tags=["officials"],
                    dependencies=[Depends(auth.require("expert")), Depends(auth.require_verified)])
 
-# One representative point per Maharashtra IMD subdivision for the rainfall panel.
-SUBDIVISION_POINTS = {
-    "KONKAN & GOA": ("Ratnagiri", 16.99, 73.31),
-    "MADHYA MAHARASHTRA": ("Pune", 18.52, 73.86),
-    "MARATHWADA": ("Chhatrapati Sambhajinagar", 19.88, 75.34),
-    "VIDARBHA": ("Nagpur", 21.15, 79.09),
-}
-
 
 @router.get("/summary")
-def summary(lang: str = "en", db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
-    farms = db.scalars(select(Farm)).all()
-    diags = db.scalars(select(Diagnosis)).all()
-    cases = db.scalars(select(Case)).all()
-    confs = db.scalars(select(Confirmation)).all()
-    alerts = db.scalars(select(Alert)).all()
-    problems = db.scalars(select(Problem)).all()
-    advised = {a.problem_id for a in db.scalars(select(Advisory)).all()}
+def summary(request: Request, lang: str = "en", db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    # Every other endpoint here splits the demo farms from the real ones; this
+    # one read both and summed them, so the dashboard's headline counted demo
+    # cases a district does not have while the queue beside it, correctly
+    # filtered, showed fewer. One side of the line at a time.
+    demo = _demo(request, db)
+    farms = db.scalars(select(Farm).where(Farm.is_demo.is_(demo))).all()
+    farm_ids = {f.id for f in farms}
+    problems = db.scalars(select(Problem).join(Farm, Farm.id == Problem.farm_id)
+                          .where(Farm.is_demo.is_(demo))).all()
+    problem_ids = {p.id for p in problems}
+
+    def on_this_side(model, *options):
+        """Rows belonging to the farms this dashboard is about, filtered by the
+        database rather than by reading every row of the table into Python."""
+        q = (select(model).join(Problem, Problem.id == model.problem_id)
+             .join(Farm, Farm.id == Problem.farm_id).where(Farm.is_demo.is_(demo)))
+        return db.scalars(q.options(*options) if options else q).all()
+
+    # Only the columns this summary counts. Diagnosis.topk and Alert.reason /
+    # tasks are JSON blobs, and parsing seven hundred of them to count their
+    # outcomes was most of the two seconds this endpoint used to take.
+    diags = on_this_side(Diagnosis, load_only(Diagnosis.problem_id, Diagnosis.gate_outcome,
+                                              Diagnosis.gate_reason))
+    cases = on_this_side(Case)
+    confs = on_this_side(Confirmation)
+    alerts = db.scalars(select(Alert).join(Farm, Farm.id == Alert.farm_id)
+                        .where(Farm.is_demo.is_(demo))
+                        .options(load_only(Alert.farm_id, Alert.level, Alert.outcome,
+                                           Alert.trigger, Alert.issued_on, Alert.target))).all()
+    advised = {a.problem_id for a in on_this_side(Advisory)}
     confirmed_problems = {c.problem_id for c in confs}
 
     gate_outcomes = Counter(d.gate_outcome for d in diags)
@@ -82,7 +97,7 @@ def summary(lang: str = "en", db: Session = Depends(get_db), kb: KB = Depends(ge
     answered = [a for a in alerts if a.outcome in ("nothing_found", "found")]
     return {
         "generated_at": datetime.now(UTC).isoformat(),
-        "includes_demo_data": any(f.is_demo for f in farms),
+        "includes_demo_data": demo,
         "model": vision.model_status(),
         "totals": {
             "farms": len(farms),
@@ -121,13 +136,20 @@ def summary(lang: str = "en", db: Session = Depends(get_db), kb: KB = Depends(ge
 
 
 @router.get("/hotspots")
-def hotspots(days: int = 45, lang: str = "en", db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+def hotspots(request: Request, days: int = 45, lang: str = "en",
+             db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    # A pin carries a farmer's name and the coordinates of their field. The
+    # demo line decides whose: a demo viewer sees the seeded farms, never a
+    # real farmer, and a district officer is never shown a demo pin as a case.
+    demo = _demo(request, db)
     since = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=days)
     confs = {c.problem_id: c for c in db.scalars(select(Confirmation)).all()}
     advised = {a.problem_id for a in db.scalars(select(Advisory)).all()}
     open_case = {c.problem_id for c in db.scalars(select(Case).where(Case.status == "open")).all()}
     points = []
-    for p in db.scalars(select(Problem).options(joinedload(Problem.farm)).where(Problem.opened_at >= since)).all():
+    for p in db.scalars(select(Problem).options(joinedload(Problem.farm))
+                        .join(Farm, Farm.id == Problem.farm_id)
+                        .where(Problem.opened_at >= since, Farm.is_demo.is_(demo))).all():
         f = p.farm
         if p.id in confs:
             status, target = "confirmed", confs[p.id].final_label
@@ -146,74 +168,31 @@ def hotspots(days: int = 45, lang: str = "en", db: Session = Depends(get_db), kb
             # A pin nobody can open is a picture: carry the field it stands for.
             "farm_id": f.id, "farmer_name": f.farmer_name,
         })
-    farms = {f.id: f for f in db.scalars(select(Farm)).all()}
+    # The alert layer of the same map: these carry a field's coordinates too,
+    # so they follow the same line as the pins above.
+    farms = {f.id: f for f in db.scalars(select(Farm).where(Farm.is_demo.is_(demo))).all()}
     alerts = [
         {"lat": farms[a.farm_id].lat, "lon": farms[a.farm_id].lon, "district": farms[a.farm_id].district,
          "target": a.target, "name": tr(kb.targets[a.target]["names"], lang), "level": a.level,
          "trigger": a.trigger}
-        for a in db.scalars(select(Alert).where(Alert.outcome.is_(None),
-                                                Alert.issued_on >= date.today() - timedelta(days=7))).all()
+        for a in db.scalars(select(Alert).join(Farm, Farm.id == Alert.farm_id)
+                            .where(Alert.outcome.is_(None), Farm.is_demo.is_(demo),
+                                   Alert.issued_on >= date.today() - timedelta(days=7))).all()
     ]
     return {"points": points, "active_alerts": alerts, "radius_km": services.SPREAD_RADIUS_KM}
 
-
-@router.get("/rainfall")
-def rainfall():
-    normals = services.rainfall_normals()
-    out = []
-    for sub, (place, lat, lon) in SUBDIVISION_POINTS.items():
-        rc = services.rain_vs_normal(place, lat, lon)
-        out.append({
-            "subdivision": sub, "reference_place": place,
-            "jjas_normal_mm": normals["subdivisions"][sub]["mean"]["jjas"],
-            "current_month": rc,
-            "jjas_series": normals["jjas_series"].get(sub, []),
-        })
-    return {"source": normals["_source"], "subdivisions": out}
-
-
-@router.get("/pesticides")
-def pesticide_baseline(state: str = "Maharashtra"):
-    """State pesticide consumption (MoSPI ENVSTATS / DPPQS), the baseline that
-    'more targeted pesticide use' is measured against."""
-    path = services.KB_DIR / "mospi_pesticides.json"
-    if not path.exists():
-        return {"available": False}
-    data = json.loads(path.read_text())
-    states = data["states"]
-    india: dict[str, float] = defaultdict(float)
-    for s in states.values():
-        for year, v in s.get("chemical", []):
-            india[year] += v
-    mine = states.get(state, {})
-    chem = mine.get("chemical", [])
-    latest = chem[-1] if chem else None
-    ranking = sorted(
-        ((name, s["chemical"][-1][1]) for name, s in states.items() if s.get("chemical")),
-        key=lambda kv: -kv[1],
-    )
-    return {
-        "available": True,
-        "state": state,
-        "source": data["_source"],
-        "unit_note": data["_unit_note"],
-        "chemical": chem,
-        "bio": mine.get("bio", []),
-        "india_chemical": sorted(india.items()),
-        "latest_share_pct": round(100 * latest[1] / india[latest[0]], 1) if latest and india[latest[0]] else None,
-        "rank": next((i + 1 for i, (n, _) in enumerate(ranking) if n == state), None),
-        "states_ranked": len(ranking),
-    }
-
-
 @router.get("/outlook")
-def risk_outlook(lang: str = "en", db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+def risk_outlook(request: Request, lang: str = "en",
+                 db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
     """Where each pest/disease is building, for planning preventive action:
-    open alerts from the last 7 days grouped by target."""
+    open alerts from the last 7 days grouped by target, on the caller's side of
+    the demo line."""
+    demo = _demo(request, db)
     since = date.today() - timedelta(days=7)
-    farms = {f.id: f for f in db.scalars(select(Farm)).all()}
+    farms = {f.id: f for f in db.scalars(select(Farm).where(Farm.is_demo.is_(demo))).all()}
     groups: dict[str, dict] = {}
-    for a in db.scalars(select(Alert).where(Alert.issued_on >= since)).all():
+    for a in db.scalars(select(Alert).join(Farm, Farm.id == Alert.farm_id)
+                        .where(Alert.issued_on >= since, Farm.is_demo.is_(demo))).all():
         g = groups.setdefault(a.target, {
             "target": a.target, "name": tr(kb.targets[a.target]["names"], lang),
             "crop": kb.targets[a.target]["crop"], "farms": set(), "districts": set(),
@@ -296,8 +275,12 @@ def route_cases(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/risk/run-all")
-def run_all(db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
-    results = [services.run_risk(db, kb, f) for f in db.scalars(select(Farm)).all()]
+def run_all(request: Request, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    # This one writes: a sweep run from a demo session was issuing real alerts
+    # to real farms, which a demo must never do.
+    demo = _demo(request, db)
+    results = [services.run_risk(db, kb, f)
+               for f in db.scalars(select(Farm).where(Farm.is_demo.is_(demo))).all()]
     return {"farms": len(results), "alerts_issued": sum(len(r["issued"]) for r in results),
             "weather_sources": dict(Counter(r["weather_source"] for r in results))}
 
@@ -308,7 +291,6 @@ def run_all(db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
 
 def _me(request: Request, db: Session) -> User | None:
     return auth.current_user(request, db)
-
 
 def _demo(request: Request, db: Session) -> bool:
     me = _me(request, db)

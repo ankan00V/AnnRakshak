@@ -4,17 +4,18 @@ import { api } from '../../api/client'
 import { useAsync } from '../../lib/hooks'
 import { Card, ErrorBox } from '../../ui/kit'
 import HotspotMap from '../HotspotMap'
-import { DistrictTable, Legend, MapSkeleton, PanelBone } from '../panels'
+import { DistrictTable, Legend, MapSkeleton, PageHead, PanelBone } from '../panels'
 
 /** Where the problems are. The map gets a screen of its own because a
  *  surveillance map squeezed beside six panels is a picture, not a tool. */
 export default function MapPage() {
   const hotspots = useAsync(() => api.hotspots(), [])
-  const summary = useAsync(() => api.summary(), [])
+  const summary = useAsync(() => api.summary(), [], 'summary')
   const [layers, setLayers] = useState({ cases: true, alerts: true, radius: true })
 
   return (
     <>
+      <PageHead title="Map" purpose="Where the confirmed cases and this week's alerts are, farm by farm." />
       <Card className="p-3 flex flex-col">
         <div className="flex flex-wrap items-center justify-between gap-2 px-1 pb-2">
           <h2 className="font-semibold flex items-center gap-2"><MapIcon className="w-4 h-4 text-leaf" /> Hotspot map</h2>

@@ -13,6 +13,7 @@ from PIL import Image, ImageFilter
 from app import live, services
 from app.db import Base, SessionLocal, engine
 from app.engine import fieldnow
+from app import config
 from app.engine.livescan import LiveSession, measure
 from app.engine.weather import Day, Window
 from app.kb import get_kb
@@ -287,11 +288,16 @@ def test_sharpness_of_a_sliver_is_zero_not_nan():
 def test_a_minority_reading_goes_to_the_expert_not_to_the_farmer():
     calls = {"n": 0}
 
+    # "Strong" is each class's own bar, so take both from config rather than
+    # from two numbers that were true of an older table.
+    wrong = min(round(config.gate_for("rice_sheath_blight") + 0.02, 2), 0.97)
+    right = min(round(config.gate_for("rice_brown_spot") + 0.02, 2), 0.97)
+
     def classify(img):
         calls["n"] += 1
         if calls["n"] in (4, 9):  # two strong misreads in a walk that shows brown spot throughout
-            return [("rice_sheath_blight", 0.81), ("rice_brown_spot", 0.15), ("rice_healthy", 0.02)]
-        return [("rice_brown_spot", 0.9), ("rice_sheath_blight", 0.06), ("rice_healthy", 0.02)]
+            return [("rice_sheath_blight", wrong), ("rice_brown_spot", 0.02), ("rice_healthy", 0.01)]
+        return [("rice_brown_spot", right), ("rice_sheath_blight", 0.02), ("rice_healthy", 0.01)]
 
     s = LiveSession(crop="rice", lang="en", can_classify=True)
     walk(s, classify)

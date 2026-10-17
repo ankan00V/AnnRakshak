@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta
 
 import pytest
 
+from app import config
 from app.config import FLOOR, GATE, MARGIN, PRIOR_MAX_BIAS
 from app.engine import advisory, assign, doubt, labelcheck, prior, risk, vision
 from app.engine.gate import Prediction, TopK, decide
@@ -392,13 +393,22 @@ def test_leaf_and_straw_colours_pass_the_vegetation_check(rgb):
 
 
 def test_a_lab_trained_class_must_clear_its_own_higher_bar():
-    # rice_blast was learnt from lab photos: 0.85 clears the global gate but not its 0.90
-    d = run_gate(topk(("rice_blast", 0.85), ("rice_brown_spot", 0.05)))
+    # rice_blast is named less reliably than the rest, so ml/tune_gate.py gave it
+    # a bar of its own. Read it rather than restate it: re-measuring the table is
+    # a routine thing and should not need this test edited.
+    bar = config.gate_for("rice_blast")
+    assert bar > config.GATE, "this test needs a class that carries its own bar"
+    under, over = round(bar - 0.05, 2), min(round(bar + 0.02, 2), 0.99)
+
+    d = run_gate(topk(("rice_blast", under), ("rice_brown_spot", 0.05)))
     assert (d.outcome, d.reason) == ("clarify", "LAB_CLASS_CONFIRM") and d.cue_id
-    d = run_gate(topk(("rice_blast", 0.85), ("rice_leaf_folder", 0.05)))
+    d = run_gate(topk(("rice_blast", under), ("rice_leaf_folder", 0.05)))
     assert (d.outcome, d.reason) == ("escalate", "LAB_CLASS_BELOW_GATE")
-    assert run_gate(topk(("rice_blast", 0.93), ("rice_brown_spot", 0.03))).outcome == "advise"
-    assert run_gate(topk(("rice_brown_spot", 0.75), ("rice_blast", 0.05))).outcome == "advise"  # others unchanged
+    assert run_gate(topk(("rice_blast", over), ("rice_brown_spot", 0.01))).outcome == "advise"
+    # a class on the global gate is unaffected by any of it
+    plain = next(t for t in ("rice_false_smut", "rice_skipper", "soybean_healthy")
+                 if config.gate_for(t) == config.GATE)
+    assert run_gate(topk((plain, 0.75), ("rice_blast", 0.05))).outcome == "advise"
 
 
 def test_closed_form_cam_is_the_same_map_as_grad_cam():
@@ -618,3 +628,22 @@ def test_a_farm_with_no_state_still_reads():
     class NoState:  # noqa: D106
         crop, sowing_date, date_basis = "rice", date(2026, 6, 11), "transplanted"
     assert kb.stage_of(NoState(), date(2026, 9, 23))[1] == 125
+
+
+def test_a_rule_window_with_no_temperature_band_does_not_take_down_the_sweep():
+    """`rice_downy_mildew` has carried a weather window with no temperature
+    band since September. Scoring it raised KeyError inside the run-length
+    walk, which killed the worker mid-sweep — every request after that hung.
+
+    It must not fire either: the sentence a farmer reads names both ends of the
+    band, and alerting on the half of a rule that happens to be filled in puts
+    a warning on a phone with no source behind it."""
+    humid = Window([Day(date.today() - timedelta(6 - i), 92, 23, 30, 60.0) for i in range(7)], "test", None)
+    rule = {"stages": ["nursery"], "weather": {"rh_min": 85, "days": 3, "rain_mm": 40}}
+
+    s = risk.score_rule("rice_downy_mildew", rule, target_name={"en": "Downy mildew"}, stage="nursery",
+                        stage_name={"en": "Nursery"}, das=12, window=humid, has_history=False)
+
+    assert s.fired is False
+    assert "t_min" in s.detail["why"] and "t_max" in s.detail["why"], s.detail
+    assert risk.missing_weather_keys({"rh_min": 85, "t_min": 20, "t_max": 30, "days": 3}) == []

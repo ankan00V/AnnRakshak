@@ -80,6 +80,26 @@ INTENTS: dict[str, dict] = {
         "label": "one farmer or village",
         "says": ["find sunita", "which farm", "show me the farmer", "village", "farmer detail"],
     },
+    "mine": {
+        "label": "what is on this officer's own desk",
+        "says": ["what is on my desk", "my cases", "what do i have", "my queue", "what should i do next",
+                 "mera kaam", "my work", "anything assigned to me"],
+    },
+    "brief": {
+        "label": "the whole district in one briefing",
+        "says": ["brief me", "morning briefing", "where do we stand", "summary", "catch me up",
+                 "what do i need to know", "status", "aaj ka haal"],
+    },
+    "trend": {
+        "label": "whether things are getting better or worse",
+        "says": ["is it getting worse", "trend", "compared to last week", "are cases going up",
+                 "better or worse", "this week vs last week", "pichle hafte se"],
+    },
+    "performance": {
+        "label": "how each officer is actually doing",
+        "says": ["how are my officers doing", "who is slow", "response time", "how fast are cases closed",
+                 "officer performance", "turnaround"],
+    },
     "help": {
         "label": "what Darpan can answer",
         "says": ["help", "what can you do", "who are you", "darpan"],
@@ -166,6 +186,91 @@ def route(text: str, db: Session) -> tuple[str, dict]:
     return ("district" if args.get("district") else "unknown"), args
 
 
+def _short_name(name: str | None) -> str | None:
+    """What to call them. 'Dr. S. Kale' is greeted by surname; 'Demo expert'
+    would be greeted as 'expert', which is nobody's name, so a short name is
+    kept whole."""
+    name = (name or "").strip()
+    if not name:
+        return None
+    return name if len(name) <= 20 else name.split()[-1]
+
+
+def _me(db: Session, officer: User | None, demo: bool) -> dict:
+    """Who is asking, and what they are carrying.
+
+    Darpan was given the officer from the first day and did nothing with it, so
+    every answer read the same for a Bhandara reviewer and a state supervisor.
+    An officer's own districts are the default scope of every answer below, and
+    their own desk is a question they can ask outright."""
+    blank = {"name": None, "last": None, "designation": None, "organisation": None,
+             "districts": [], "crops": [], "specialities": [], "supervisor": False,
+             "open": 0, "overdue": 0, "oldest_hours": None}
+    if officer is None:
+        return blank
+    prof = db.get(ExpertProfile, officer.id)
+    mine = db.execute(
+        select(Case).join(Problem, Problem.id == Case.problem_id)
+        .join(Farm, Farm.id == Problem.farm_id)
+        .where(Case.assigned_to == officer.id, Case.status == "open", Farm.is_demo.is_(demo))
+    ).scalars().all()
+    now = datetime.now()
+    waits = [(now - c.created_at).total_seconds() / 3600 for c in mine if c.created_at]
+    return {
+        "name": officer.name,
+        "last": _short_name(officer.name),
+        "designation": prof.designation if prof else None,
+        "organisation": prof.organisation if prof else None,
+        "districts": list(prof.districts or []) if prof else [],
+        "crops": list(prof.crops or []) if prof else [],
+        "specialities": list(prof.specialities or []) if prof else [],
+        "supervisor": bool(prof and prof.supervisor),
+        "open": len(mine),
+        "overdue": sum(1 for h in waits if h > SLA_HOURS),
+        "oldest_hours": max(waits) if waits else None,
+    }
+
+
+def _scope(args: dict, me: dict) -> tuple[list[str], str]:
+    """Which districts an answer covers: the one named in the question, else the
+    officer's own, else everywhere. Returned with how it was chosen, because an
+    answer should say which patch of ground it is talking about."""
+    if args.get("district"):
+        return [args["district"]], "named"
+    if me.get("districts"):
+        return list(me["districts"]), "mine"
+    return [], "all"
+
+
+def _where(districts: list[str], how: str) -> str:
+    """'In Bhandara and Gondia' — the phrase an answer opens with.
+
+    A state-level officer covers all thirty-six, and naming them is a wall of
+    text where a count is the useful thing. Three is where a list stops reading
+    as a place and starts reading as a list."""
+    if not districts:
+        return "Across every district"
+    if len(districts) == 1:
+        return f"In {districts[0]}"
+    if len(districts) <= 3:
+        listed = ", ".join(districts[:-1]) + f" and {districts[-1]}"
+        return f"In {listed}" + (" (your districts)" if how == "mine" else "")
+    return f"Across your {len(districts)} districts" if how == "mine" else f"Across {len(districts)} districts"
+
+
+def _elsewhere(db: Session, demo: bool, districts: list[str], shown: int) -> str | None:
+    """Narrowing an answer to an officer's districts must not make a case
+    disappear. Whatever is open outside them is still counted, and said."""
+    if not districts:
+        return None
+    total = len(_open_cases(db, demo))
+    rest = total - shown
+    if rest <= 0:
+        return None
+    return (f"{rest} more open case{'s' if rest != 1 else ''} outside your districts "
+            "— ask about one by name.")
+
+
 def _link(label: str, to: str) -> dict:
     return {"label": label, "to": to}
 
@@ -176,7 +281,8 @@ def answer(db: Session, kb: KB, *, text: str, demo: bool, officer: User | None) 
     fn = {
         "queue": _queue, "district": _district, "building": _building, "advisories": _advisories,
         "officers": _officers, "model": _model, "gaps": _gaps, "inputs": _inputs,
-        "rainfall": _rainfall, "farm": _farm, "help": _help,
+        "rainfall": _rainfall, "farm": _farm, "mine": _mine, "brief": _brief,
+        "trend": _trend, "performance": _performance, "help": _help,
     }.get(intent)
     if fn is None:
         return {"intent": "unknown", "lines": [CANNOT],
@@ -189,30 +295,37 @@ def answer(db: Session, kb: KB, *, text: str, demo: bool, officer: User | None) 
 # One function per intent. Each reads the same rows the screens read.
 # --------------------------------------------------------------------------
 
-def _farms(db: Session, demo: bool, district: str | None = None) -> list[Farm]:
+def _farms(db: Session, demo: bool, districts: list[str] | str | None = None) -> list[Farm]:
     q = select(Farm).where(Farm.is_demo.is_(demo))
-    if district:
-        q = q.where(Farm.district == district)
+    names = [districts] if isinstance(districts, str) else (districts or [])
+    if names:
+        q = q.where(Farm.district.in_(names))
     return list(db.scalars(q).all())
 
 
-def _open_cases(db: Session, demo: bool, district: str | None = None):
+def _open_cases(db: Session, demo: bool, districts: list[str] | str | None = None):
     q = (select(Case, Farm).join(Problem, Problem.id == Case.problem_id)
          .join(Farm, Farm.id == Problem.farm_id)
          .where(Case.status == "open", Farm.is_demo.is_(demo)))
-    if district:
-        q = q.where(Farm.district == district)
+    names = [districts] if isinstance(districts, str) else (districts or [])
+    if names:
+        q = q.where(Farm.district.in_(names))
     return db.execute(q).all()
 
 
 def _queue(db, kb, *, demo, args, officer, text):
-    rows = _open_cases(db, demo)
+    me = _me(db, officer, demo)
+    districts, how = _scope(args, me)
+    rows = _open_cases(db, demo, districts)
     now = datetime.now()
     overdue = [c for c, _ in rows if c.created_at and (now - c.created_at) > timedelta(hours=SLA_HOURS)]
     unrouted = [c for c, _ in rows if c.assigned_to is None]
     by_district = Counter(f.district for _, f in rows)
-    lines = [f"{len(rows)} open case{'s' if len(rows) != 1 else ''} across {len(by_district)} district"
-             f"{'s' if len(by_district) != 1 else ''}."]
+    lines = [f"{_where(districts, how)}: {len(rows)} open case{'s' if len(rows) != 1 else ''}"
+             + (f", spread over {len(by_district)} districts." if len(by_district) > 1 else ".")]
+    if me["open"]:
+        lines.append(f"{me['open']} of them {'is' if me['open'] == 1 else 'are'} yours"
+                     + (f", {me['overdue']} past {SLA_HOURS} hours." if me["overdue"] else "."))
     if overdue:
         oldest = max(overdue, key=lambda c: now - c.created_at)
         hours = (now - oldest.created_at).total_seconds() / 3600
@@ -223,20 +336,31 @@ def _queue(db, kb, *, demo, args, officer, text):
         lines.append("Nothing is past the 24-hour mark.")
     if unrouted:
         lines.append(f"{len(unrouted)} are on nobody's desk.")
-    if by_district:
+    if by_district and len(by_district) > 1:
         top = ", ".join(f"{d} ({n})" for d, n in by_district.most_common(3))
         lines.append(f"Heaviest: {top}.")
-    go = [_link("Open the queue", "/officer/queue")]
+    elsewhere = _elsewhere(db, demo, districts, len(rows))
+    if elsewhere:
+        lines.append(elsewhere)
+    here = f"?district={districts[0]}" if how == "named" and districts else ""
+    go = [_link("Open the queue", f"/officer/queue{here}")]
+    if me["open"]:
+        go.append(_link(f"Your {me['open']}", "/officer/queue?scope=mine"))
     if overdue:
         go.append(_link(f"The {len(overdue)} overdue", "/officer/queue?overdue=1"))
+    if unrouted:
+        go.append(_link(f"{len(unrouted)} unassigned", "/officer/queue?scope=unassigned"))
     return {"lines": lines, "go": go}
 
 
 def _district(db, kb, *, demo, args, officer, text):
-    name = args.get("district")
+    me = _me(db, officer, demo)
+    name = args.get("district") or (me["districts"][0] if len(me["districts"]) == 1 else None)
     if not name:
-        listed = sorted({f.district for f in _farms(db, demo)})
-        return {"lines": ["Which district? I know: " + ", ".join(listed[:12]) + "."],
+        listed = sorted({f.district for f in _farms(db, demo, me["districts"])})
+        known = me["districts"] or listed[:12]
+        return {"lines": ["Which district? " + ("Yours are: " if me["districts"] else "I know: ")
+                          + ", ".join(known) + "."],
                 "go": [_link("District table", "/officer/map")]}
     farms = _farms(db, demo, name)
     rows = _open_cases(db, demo, name)
@@ -369,14 +493,24 @@ def _inputs(db, kb, *, demo, args, officer, text):
 
 
 def _rainfall(db, kb, *, demo, args, officer, text):
+    """The monsoon normal where this officer works. It used to read out the
+    first four subdivisions in the file, which are Maharashtra's, to an officer
+    anywhere in the country."""
     normals = services.rainfall_normals()
-    lines = []
-    for sub in list(normals.get("subdivisions", {}))[:4]:
-        lines.append(f"· {sub.title()}: {normals['subdivisions'][sub]['mean'].get('jjas', '—')} mm is the "
-                     "1901–2015 monsoon normal.")
-    return {"lines": ["Rain against the IMD normal is on the Reference screen; the risk rules read the "
-                      "same numbers."] + lines,
-            "go": [_link("Reference", "/officer/reference")]}
+    to_sub = normals.get("district_to_subdivision", {})
+    prof = db.get(ExpertProfile, officer.id) if officer else None
+    mine = list(prof.districts or []) if prof else []
+    subs = sorted({to_sub[d] for d in mine if d in to_sub})
+    if mine and not subs:
+        where = ", ".join(sorted(mine)[:4])
+        return {"lines": [f"The IMD subdivision normals do not cover {where} yet — they map "
+                          "Maharashtra's districts so far. The risk rules still read live weather "
+                          "at every field."],
+                "go": []}
+    lines = [f"· {sub.title()}: {normals['subdivisions'][sub]['mean'].get('jjas', '—')} mm is the "
+             "1901–2015 monsoon normal." for sub in (subs or list(normals.get("subdivisions", {}))[:4])]
+    return {"lines": ["Rain against the IMD normal, which is what the risk rules read:"] + lines,
+            "go": []}
 
 
 def _farm(db, kb, *, demo, args, officer, text):
@@ -393,22 +527,173 @@ def _farm(db, kb, *, demo, args, officer, text):
             "go": [_link(f"Open {hits[0].farmer_name}'s field", f"/officer/farm/{hits[0].id}")]}
 
 
+def _mine(db, kb, *, demo, args, officer, text):
+    """This officer's own desk — the question they ask before any other."""
+    me = _me(db, officer, demo)
+    if officer is None:
+        return {"lines": ["I do not know who is asking."], "go": [_link("Queue", "/officer/queue")]}
+    districts, how = _scope(args, me)
+    rows = _open_cases(db, demo, districts)
+    unrouted = [c for c, _ in rows if c.assigned_to is None]
+    lines = []
+    if me["open"]:
+        oldest = round((me["oldest_hours"] or 0) / 24)
+        waited = (f", the oldest waiting {oldest} day{'s' if oldest != 1 else ''}"
+                  if (me["oldest_hours"] or 0) > 48 else "")
+        lines.append(f"{me['open']} case{'s' if me['open'] != 1 else ''} on your desk{waited}.")
+        if me["overdue"]:
+            lines.append(f"{me['overdue']} of them {'is' if me['overdue'] == 1 else 'are'} past the "
+                         f"{SLA_HOURS}-hour mark — those first.")
+        else:
+            lines.append(f"None of them is past {SLA_HOURS} hours yet.")
+    else:
+        lines.append("Nothing is assigned to you.")
+    if unrouted:
+        lines.append(f"{len(unrouted)} case{'s' if len(unrouted) != 1 else ''} in "
+                     f"{_where(districts, how).lower().removeprefix('in ')} "
+                     f"{'is' if len(unrouted) == 1 else 'are'} on nobody's desk.")
+    if me["supervisor"]:
+        pending = office.pending_officers(db, demo=demo)
+        if pending:
+            lines.append(f"{len(pending)} officer{'s' if len(pending) != 1 else ''} waiting for you to verify.")
+    go = [_link("My queue", "/officer/queue?scope=mine")]
+    if me["overdue"]:
+        go.append(_link("My overdue", "/officer/queue?scope=mine&overdue=1"))
+    if unrouted:
+        go.append(_link("Unassigned", "/officer/queue?scope=unassigned"))
+    return {"lines": lines, "go": go}
+
+
+def _brief(db, kb, *, demo, args, officer, text):
+    """Everything an officer would otherwise open five screens to learn."""
+    me = _me(db, officer, demo)
+    districts, how = _scope(args, me)
+    rows = _open_cases(db, demo, districts)
+    now = datetime.now()
+    overdue = [c for c, _ in rows if c.created_at and (now - c.created_at) > timedelta(hours=SLA_HOURS)]
+    opening = f"{_where(districts, how)}, {len(rows)} case{'s' if len(rows) != 1 else ''} open"
+    lines = [opening + (f", {len(overdue)} overdue." if overdue else ", none overdue.")]
+    if me["open"]:
+        lines.append(f"Yours: {me['open']}" + (f", {me['overdue']} overdue." if me["overdue"] else "."))
+    outside = _elsewhere(db, demo, districts, len(rows))
+    if outside:
+        lines.append(outside)
+
+    work = office.worklist(db, kb, demo=demo)
+    building = work.get("building") or []
+    if building:
+        top = building[:2]
+        lines.append("Building: " + "; ".join(
+            f"{b['name']} on {b['farms']} farm{'s' if b['farms'] != 1 else ''}" for b in top) + ".")
+    else:
+        lines.append("Nothing is building: no high alert in the last seven days.")
+
+    sent = office.history(db, demo=demo, limit=10)
+    unchecked = [r for r in sent if not r["inspected"]]
+    if sent:
+        lines.append(f"{len(unchecked)} of the last {len(sent)} advisories "
+                     f"{'has' if len(unchecked) == 1 else 'have'} had no response."
+                     if unchecked else "Every recent advisory has been inspected by someone.")
+    if me["supervisor"]:
+        pending = office.pending_officers(db, demo=demo)
+        if pending:
+            lines.append(f"{len(pending)} officer{'s' if len(pending) != 1 else ''} waiting to be verified.")
+
+    go = [_link("Today", "/officer")]
+    if overdue:
+        go.append(_link(f"{len(overdue)} overdue", "/officer/queue?overdue=1"))
+    if building:
+        b = building[0]
+        go.append(_link(f"Advise on {b['name']}", f"/officer/advisories?target={b['target']}&crop={b['crop']}"))
+    return {"lines": lines, "go": go}
+
+
+def _trend(db, kb, *, demo, args, officer, text):
+    """A number without a direction is a poster — this week against the last."""
+    t = office.trends(db, demo=demo)
+
+    def say(what: str, part: dict) -> str:
+        change = part.get("change_pct")
+        if change is None:
+            return f"{what}: {part['this_week']} this week, none the week before."
+        way = "up" if change > 0 else "down" if change < 0 else "level"
+        return (f"{what}: {part['this_week']} this week against {part['last_week']} "
+                f"— {way}{f' {abs(change)}%' if change else ''}.")
+
+    lines = [say("Cases", t["cases"]), say("Alerts issued", t["alerts"]), say("Expert verdicts", t["verdicts"])]
+    rising = t["cases"].get("change_pct")
+    if rising and rising > 25:
+        lines.append("Cases are climbing faster than last week — worth a look at what is building.")
+    return {"lines": lines, "go": [_link("Today", "/officer"), _link("What is building", "/officer/advisories")]}
+
+
+def _performance(db, kb, *, demo, args, officer, text):
+    """How desks are doing: what they cleared and how long it took."""
+    rows = office.performance(db, demo=demo)
+    done = [r for r in rows if r.get("resolved")]
+    if not done:
+        return {"lines": ["No case has been resolved yet, so there is nothing to measure."],
+                "go": [_link("Officers", "/officer/officers")]}
+    lines = []
+    for r in sorted(done, key=lambda r: -(r.get("resolved") or 0))[:4]:
+        median = r.get("median_hours")
+        pace = f", median {round(median)} h on the desk" if median else ""
+        lines.append(f"· {r['name']}: {r['resolved']} resolved{pace}.")
+    slowest = max(done, key=lambda r: r.get("median_hours") or 0)
+    if (slowest.get("median_hours") or 0) > SLA_HOURS:
+        lines.append(f"{slowest['name']}'s cases sit longest — median "
+                     f"{round(slowest['median_hours'])} hours, past the {SLA_HOURS}-hour mark.")
+    return {"lines": ["What desks have cleared:"] + lines,
+            "go": [_link("Officers", "/officer/officers")]}
+
+
 def _help(db, kb, *, demo, args, officer, text):
-    return {"lines": [GREETING, "Try: “what is building”, “how is Bhandara”, “who is free”, "
-                      "“did anyone check the advisory”, “what should I order”."],
+    me = _me(db, officer, demo)
+    mine = (f" Your districts are {', '.join(me['districts'])}, and that is what I answer about "
+            "unless you name another.") if me["districts"] else ""
+    return {"lines": [GREETING + mine,
+                      "Try: “brief me”, “what is on my desk”, “what is building”, "
+                      "“how is Bhandara”, “who is free”, “what should I order”."],
             "go": [_link("Today", "/officer"), _link("Queue", "/officer/queue")]}
 
 
-def hello(officer: User | None) -> dict:
-    """The greeting and the questions worth starting from."""
-    name = (officer.name.split()[-1] if officer and officer.name else None)
-    return {
-        "greeting": f"Darpan here{', ' + name if name else ''}. Your district, as it stands.",
-        "suggestions": [
-            {"label": "How is the queue?", "text": "how is the queue"},
-            {"label": "What is building?", "text": "what is building this week"},
-            {"label": "Who is free?", "text": "who is free"},
-            {"label": "Did anyone check the advisory?", "text": "did anyone check the advisory"},
-            {"label": "What should I order?", "text": "what should i order"},
-        ],
-    }
+def hello(db: Session, officer: User | None, *, demo: bool = False) -> dict:
+    """The greeting and the questions worth starting from.
+
+    The greeting carries the two numbers an officer opens the panel to find —
+    what is waiting, and how much of it is theirs — so the first useful thing
+    arrives before they have typed anything."""
+    me = _me(db, officer, demo)
+    districts, how = _scope({}, me)
+    rows = _open_cases(db, demo, districts)
+    now = datetime.now()
+    overdue = sum(1 for c, _ in rows if c.created_at and (now - c.created_at) > timedelta(hours=SLA_HOURS))
+
+    who = f", {me['last']}" if me["last"] else ""
+    if not me["districts"]:
+        where = None
+    elif len(me["districts"]) <= 3:
+        where = ", ".join(me["districts"])
+    else:
+        where = f"All {len(me['districts'])} of your districts"
+    opening = f"Darpan here{who}." + (f" {where}, as it stands." if where else " Your district, as it stands.")
+    standing = (f"{len(rows)} case{'s' if len(rows) != 1 else ''} open"
+                + (f", {overdue} past {SLA_HOURS} hours" if overdue else ", none overdue")
+                + (f"; {me['open']} on your desk." if me["open"] else "."))
+
+    suggestions = [
+        {"label": "Brief me", "text": "brief me"},
+        {"label": "What is on my desk?", "text": "what is on my desk"},
+        {"label": "What is building?", "text": "what is building this week"},
+        {"label": "Who is free?", "text": "who is free"},
+        {"label": "Did anyone check the advisory?", "text": "did anyone check the advisory"},
+    ]
+    if me["districts"]:
+        suggestions.insert(2, {"label": f"How is {me['districts'][0]}?",
+                               "text": f"how is {me['districts'][0]} doing"})
+    # Six fit in the panel. A supervisor's own question is one of them, not the
+    # one trimmed off the end.
+    if me["supervisor"]:
+        suggestions = suggestions[:5] + [
+            {"label": "Anyone waiting to be verified?", "text": "anyone waiting for verification"}]
+    return {"greeting": f"{opening} {standing}", "suggestions": suggestions[:6]}

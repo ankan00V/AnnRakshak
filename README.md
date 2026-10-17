@@ -51,16 +51,22 @@ Held-out ICAR test set (126 photos never seen in training, duplicates removed be
 | MobileNetV3 + ANN head, frozen | 79.4% | 0.791 |
 | **EfficientNetV2-S fine-tuned (paper 1's approach) — deployed** | **89.7%** | **0.896** |
 
-Deployed now: **v3** (`icar+extra-efficientnet_v2_s-warmstart`) — continual learning from the model above adds rice blast (leaf and neck) and maize common rust; ICAR test 88.9%, and lab-trained classes must clear their own higher gate (0.90).
+Deployed now (8 Oct 2026): `icar+extra+more+paddy+asdid+local+cotton+thin-efficientnet_v2_s-warmstart` — continual learning from the model above, now **46 classes over 45 advisory targets** across all four crops. On the same 126 held-out ICAR photos: **88.9%** top-1, macro-F1 0.64 (many of the newer classes have only a handful of test photos each, which is what pulls the macro average down). Calibration error **0.102 → 0.056**. The gate advises on **87.3%** and is **right 97.3%** of those times; 12.7% come to an expert. All **14 deploy checks** passed, including the background-swap recall bar each lab-trained class must clear.
 
-**End to end, as a farmer uses it** (`ml/live_eval.py` → `ml/reports/LIVE_EVAL.md`; real API, real gate, held-out images only):
+**End to end, as a farmer uses it** (`ml/live_eval.py` → `ml/reports/LIVE_EVAL.md`; real API, real gate, held-out images only; last run 16 Oct 2026 against the deployed model):
 
 | | Result |
 |---|---|
-| Photo diagnosis, 469 held-out photos | advised 84%, **right on 97.5%** of those; the rest get one field question or go to an expert |
-| Live video call, one full walk per class (20 classes) | **20/20 right, 0 wrong**; look-alikes and minority readings go to the expert as "possible" |
+| Photo diagnosis, 2,329 held-out photos | advised 65%, **right on 96.0%** of those; the rest get one field question, a retake, or an expert |
+| — ICAR field photos alone (126) | advised 80%, **right on 98.0%** |
+| — the newer lab-sourced classes (2,203) | advised 65%, right on 95.9% |
+| Live video call, one full walk per class (47 classes) | **45 right, 2 cautious, 0 wrong**; look-alikes and minority readings go to the expert as "possible" |
 
-Calibration error 0.134 → 0.055 after temperature scaling. ~50 photos per class — treat per-class numbers as indicative; field accuracy is tracked separately from expert verdicts.
+**How that number was earned.** The run before this one advised on 74% and was right on 89.4%: the model had grown from 20 classes to 46 and the per-class bars in `config.TARGET_GATE` had not been measured since. `ml/tune_gate.py` puts all 6,254 held-out images through the deployed model and asks, for each class, the lowest confidence bar that reaches 0.95 precision and what recall that costs. Fifteen classes now carry a bar of their own — rice downy mildew went 0.692 → 0.863, rice blast 0.807 → 0.975 — and the file records the numbers behind every entry.
+
+The app now advises less often and is right far more of the time when it does. Three classes (`cotton_alternaria_leaf_spot`, `maize_maydis_leaf_blight`, `rice_white_stem_borer`) are best at the global gate already, on 7–20 held-out photos each: no threshold helps them, and they are first in line for field photographs.
+
+~50 photos per class for the ICAR set, fewer for some newer classes — treat per-class numbers as indicative; field accuracy is tracked separately, from expert verdicts.
 
 ## Layout
 
@@ -96,6 +102,37 @@ npm install && npm run dev:landing   # http://localhost:5173
 Optional: `.venv/bin/python backend/demo_story.py` to fill the dashboards by running the real flows.
 
 Tests: `cd backend && ../.venv/bin/python -m pytest -q` (always on the deterministic stub, never the paid voice API)
+
+## Deploy it
+
+One image serves the browser app and the API from the same origin — a
+first-party session cookie, no CORS, and every farmer's photograph fetched with
+the viewer's own session.
+
+```bash
+cp .env.example .env     # ANNRAKSHAK_PUBLIC_URL, SMTP, GROQ_API_KEY, POSTGRES_PASSWORD
+docker compose up --build
+```
+
+That is the API, Postgres and Redis. The trained model is mounted from
+`ml/artifacts/` rather than baked in — without it the API still starts and
+serves the labelled stub, and `/health` says so.
+
+**What production refuses to do.** With `ANNRAKSHAK_ENV=production` the app
+will not start while a one-tap demo sign-in is enabled, while an expert can
+verify themselves, while the session cookie may travel over plain HTTP, or
+while sign-in codes are being written to a file instead of sent
+(`config.start_checks`). On a laptop the same list is printed as warnings.
+
+**Scaling past one container.** The background watcher — weather rules, the
+risk sweep, push and email — must run in exactly one process, or every farmer
+gets each alert twice. Run more API containers with `ANNRAKSHAK_WATCH=off` and
+leave it on in one. Redis carries the live updates between them, so an alert
+raised in one container reaches a tab held open by another.
+
+**Behind a proxy.** Set `ANNRAKSHAK_TRUST_PROXY=on` only when something in
+front really does set `X-Forwarded-For`; otherwise that header is whatever the
+caller typed and every per-IP limit counts a fiction.
 
 ## Data
 

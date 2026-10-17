@@ -7,12 +7,12 @@ import { useFarmer } from '../farmer/FarmerContext'
 import { useAsync } from '../lib/hooks'
 import { useAuth } from './AuthContext'
 import { emailOk, phoneOk } from './helpers'
-import { CodePanel, Field, Input, Primary } from './parts'
+import { CodePanel, Field, FormCard, Input, Primary } from './parts'
 
 export function RoleSwitch({ role, onChange }: { role: Role; onChange: (r: Role) => void }) {
   const { t } = useFarmer()
   return (
-    <div role="tablist" className="grid grid-cols-2 rounded-full bg-white border border-soil-dark/10 p-1">
+    <div role="tablist" className="grid grid-cols-2 rounded-full bg-white lg:bg-cream/60 border border-soil-dark/10 p-1">
       {(['farmer', 'expert'] as const).map((r) => {
         const Icon = r === 'farmer' ? Sprout : UserCheck
         return (
@@ -59,44 +59,47 @@ export default function Login() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div className="lg:max-w-md lg:mx-auto space-y-6">
+      {/* The side panel carries the welcome on a laptop. */}
+      <div className="lg:hidden">
         <h1 className="font-instrument-serif text-[34px] leading-tight">{t('authLoginTitle')}</h1>
         <p className="mt-1 text-sm text-soil-dark/60">{t('authLoginSub')}</p>
       </div>
 
-      <RoleSwitch role={role} onChange={setRole} />
+      <FormCard>
+        <RoleSwitch role={role} onChange={setRole} />
 
-      {!ready ? (
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) setReady(true) }}>
-          <Field label={t('authIdentifier')}>
-            <Input value={identifier} onChange={(e) => setIdentifier(e.target.value)} autoComplete="username"
-              inputMode={/^[\d\s+-]*$/.test(identifier) && identifier ? 'tel' : 'email'}
-              placeholder={role === 'expert' ? 'name@kvk.org.in · 98XXXXXXXX' : '98XXXXXXXX'} />
-          </Field>
-          <Primary type="submit" disabled={!valid}>{t('authNext')}</Primary>
-        </form>
-      ) : (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between rounded-xl bg-white border border-soil-dark/10 px-3 py-2.5 text-sm">
-            <span className="truncate">{identifier}</span>
-            <button className="text-leaf-deep font-medium" onClick={() => setReady(false)}>{t('authChange')}</button>
+        {!ready ? (
+          <form className="mt-5 space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) setReady(true) }}>
+            <Field label={t('authIdentifier')}>
+              <Input value={identifier} onChange={(e) => setIdentifier(e.target.value)} autoComplete="username"
+                inputMode={/^[\d\s+-]*$/.test(identifier) && identifier ? 'tel' : 'email'}
+                placeholder={role === 'expert' ? 'name@kvk.org.in · 98XXXXXXXX' : '98XXXXXXXX'} />
+            </Field>
+            <Primary type="submit" disabled={!valid}>{t('authNext')}</Primary>
+          </form>
+        ) : (
+          <div className="mt-5 space-y-3">
+            <div className="flex items-center justify-between rounded-xl bg-white lg:bg-cream/50 border border-soil-dark/10 px-3 py-2.5 text-sm">
+              <span className="truncate">{identifier}</span>
+              <button className="text-leaf-deep font-medium" onClick={() => setReady(false)}>{t('authChange')}</button>
+            </div>
+            <CodePanel
+              sendLabel={t('authSendCode')}
+              request={() => api.requestOtp({ role, purpose: 'login', identifier: identifier.trim(), lang })}
+              verify={async (id, code) => signIn(await api.login(id, code, role, lang))}
+              submitLabel={t('authVerify')}
+            />
           </div>
-          <CodePanel
-            sendLabel={t('authSendCode')}
-            request={() => api.requestOtp({ role, purpose: 'login', identifier: identifier.trim(), lang })}
-            verify={async (id, code) => signIn(await api.login(id, code, role, lang))}
-            submitLabel={t('authVerify')}
-          />
-        </div>
-      )}
+        )}
 
-      <p className="text-center text-sm text-soil-dark/70">
-        {t('authNoAccount')}{' '}
-        <Link to={`/signup/${role}`} className="text-leaf-deep font-semibold underline underline-offset-2">
-          {t('authCreateAccount')}
-        </Link>
-      </p>
+        <p className="mt-6 lg:mt-7 lg:pt-5 lg:border-t lg:border-soil-dark/10 text-center text-sm text-soil-dark/70">
+          {t('authNoAccount')}{' '}
+          <Link to={`/signup/${role}`} className="text-leaf-deep font-semibold underline underline-offset-2">
+            {t('authCreateAccount')}
+          </Link>
+        </p>
+      </FormCard>
 
       {options.data?.demo_login && (
         <div className="rounded-2xl border border-dashed border-ochre/50 bg-ochre/5 p-4 space-y-3">

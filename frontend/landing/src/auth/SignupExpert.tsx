@@ -9,7 +9,7 @@ import { useAsync } from '../lib/hooks'
 import { Bone, Card, ErrorBox, Loading } from '../ui/kit'
 import { useAuth } from './AuthContext'
 import { emailOk, phoneOk } from './helpers'
-import { Chips, CodePanel, Field, Input, Primary, Secondary, Select, Steps } from './parts'
+import { Actions, Chips, CodePanel, Field, FormCard, Input, Primary, Secondary, Select, Steps } from './parts'
 
 /** What an expert is asked, and why: it decides which cases reach them and
  *  whether their verdicts can be trusted. Their post and credentials (the
@@ -120,6 +120,7 @@ export default function SignupExpert() {
   if (options.error) return <ErrorBox error={options.error} onRetry={options.reload} retryLabel={t('retry')} />
   if (!o) {
     return (
+      <FormCard>
       <Loading label={t('loading')}>
         <Bone className="h-2 w-full rounded-full" />
         <div className="mt-5 space-y-4">
@@ -132,31 +133,35 @@ export default function SignupExpert() {
           <Bone className="h-12 w-full rounded-full" />
         </div>
       </Loading>
+      </FormCard>
     )
   }
 
   return (
     <div>
+      <FormCard>
       <Steps step={step} titles={titles} />
 
       {step === 0 && (
         <div className="space-y-4">
-          <Field label={t('authName')} error={show('name') && t('authFixField')}>
-            <Input value={f.name} onChange={(e) => set('name', e.target.value)} autoComplete="name"
-              placeholder="Dr. S. Kale" invalid={show('name')} />
-          </Field>
+          <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4 lg:items-start">
+            <Field label={t('authName')} error={show('name') && t('authFixField')}>
+              <Input value={f.name} onChange={(e) => set('name', e.target.value)} autoComplete="name"
+                placeholder="Dr. S. Kale" invalid={show('name')} />
+            </Field>
+            <Field label={t('authMobile')} hint={t('authExpertMobileHint')}
+              error={(show('phone') && t('authBadPhone')) || (taken?.field === 'phone' ? taken.message : false)}>
+              <div className="flex gap-2">
+                <span className="min-h-[48px] px-3 rounded-xl border border-soil-dark/20 bg-cream flex items-center text-[15px] text-soil-dark/60">+91</span>
+                <Input value={f.phone} onChange={(e) => set('phone', e.target.value)} type="tel" inputMode="numeric"
+                  autoComplete="tel-national" maxLength={14} placeholder="98XXXXXXXX" invalid={show('phone') || taken?.field === 'phone'} />
+              </div>
+            </Field>
+          </div>
           <Field label={t('authWorkEmail')} hint={t('authWorkEmailHint')}
             error={(show('email') && t('authBadEmail')) || (taken?.field === 'email' ? taken.message : false)}>
             <Input value={f.email} onChange={(e) => set('email', e.target.value)} type="email" autoComplete="email"
               placeholder="name@kvk.org.in" invalid={show('email') || taken?.field === 'email'} />
-          </Field>
-          <Field label={t('authMobile')} hint={t('authExpertMobileHint')}
-            error={(show('phone') && t('authBadPhone')) || (taken?.field === 'phone' ? taken.message : false)}>
-            <div className="flex gap-2">
-              <span className="min-h-[48px] px-3 rounded-xl border border-soil-dark/20 bg-cream flex items-center text-[15px] text-soil-dark/60">+91</span>
-              <Input value={f.phone} onChange={(e) => set('phone', e.target.value)} type="tel" inputMode="numeric"
-                autoComplete="tel-national" maxLength={14} placeholder="98XXXXXXXX" invalid={show('phone') || taken?.field === 'phone'} />
-            </div>
           </Field>
         </div>
       )}
@@ -171,7 +176,7 @@ export default function SignupExpert() {
             <Input value={f.organisation} onChange={(e) => set('organisation', e.target.value)} autoComplete="organization"
               invalid={show('organisation')} />
           </Field>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 lg:gap-4">
             <Field label={t('authEmployeeId')} error={show('employeeId') && t('authFixField')}>
               <Input value={f.employeeId} onChange={(e) => set('employeeId', e.target.value)} invalid={show('employeeId')} />
             </Field>
@@ -214,7 +219,7 @@ export default function SignupExpert() {
                   <button type="button" onClick={() => set('districts', [])}
                     className="px-3 rounded-xl border border-soil-dark/15 text-[13px] font-medium bg-white">{t('authClear')}</button>
                 </div>
-                <div className="max-h-56 overflow-y-auto rounded-xl">
+                <div className="max-h-56 lg:max-h-72 overflow-y-auto rounded-xl">
                   <Chips multi value={f.districts} onChange={(v) => set('districts', v)}
                     options={districts.map((d) => ({ id: d, label: d }))} />
                 </div>
@@ -225,11 +230,11 @@ export default function SignupExpert() {
             )}
           </Field>
           <Field group label={t('authCrops')} error={show('crops') && t('authPickOne')}>
-            <Chips multi columns={2} value={f.crops} onChange={(v) => set('crops', v)}
+            <Chips multi columns={2} wide={4} value={f.crops} onChange={(v) => set('crops', v)}
               options={o.crops.map((c) => ({ id: c.id, label: c.name }))} />
           </Field>
           <Field group label={t('authSpecialities')} error={show('specialities') && t('authPickOne')}>
-            <Chips multi columns={2} value={f.specialities} onChange={(v) => set('specialities', v)}
+            <Chips multi columns={2} wide={3} value={f.specialities} onChange={(v) => set('specialities', v)}
               options={o.specialities.map((s) => ({ id: s.id, label: s.name }))} />
           </Field>
           <Field group label={t('authLanguages')} error={show('languages') && t('authPickOne')}>
@@ -279,12 +284,13 @@ export default function SignupExpert() {
         </div>
       )}
 
-      <div className="mt-6 flex gap-3">
+      <Actions>
         {step > 0 && <Secondary onClick={() => setStep((s) => s - 1)}>{t('back')}</Secondary>}
         {step < 3 && <Primary onClick={next} busy={checking}>{t('authNext')}</Primary>}
-      </div>
+      </Actions>
+      </FormCard>
 
-      <p className="mt-8 text-center text-sm text-soil-dark/70">
+      <p className="mt-6 lg:mt-7 text-center text-sm text-soil-dark/70">
         {t('authHaveAccount')}{' '}
         <Link to="/login?role=expert" className="text-leaf-deep font-semibold underline underline-offset-2">{t('authLogin')}</Link>
       </p>

@@ -137,34 +137,36 @@ export default function WherePicker({ value, onChange, showErrors }: {
         )}
       </Field>
 
-      <Field label={t('authState')} error={showErrors && !value.state && t('authPickState')}>
-        <Select value={value.state} onChange={(v) => set({ state: v, district: '' })}>
-          <option value="">{t('authPickState')}</option>
-          {states.map((s) => <option key={s.name}>{s.name}</option>)}
-        </Select>
-      </Field>
-
-      <Field label={t('district')} error={showErrors && !value.district && t('authPickDistrict')}>
-        {freeDistrict || (value.district && !districts.some((d) => d.name === value.district)) ? (
-          <Input value={value.district} onChange={(e) => set({ district: e.target.value })}
-            placeholder={t('authTypeDistrict')} />
-        ) : (
-          <Select value={value.district} onChange={(v) => set({ district: v })}>
-            <option value="">{t('authPickDistrict')}</option>
-            {districts.map((d) => (
-              <option key={d.name} value={d.name}>{d.local ? `${d.name} · ${d.local}` : d.name}</option>
-            ))}
+      <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4 lg:items-start">
+        <Field label={t('authState')} error={showErrors && !value.state && t('authPickState')}>
+          <Select value={value.state} onChange={(v) => set({ state: v, district: '' })}>
+            <option value="">{t('authPickState')}</option>
+            {states.map((s) => <option key={s.name}>{s.name}</option>)}
           </Select>
-        )}
-        {!freeDistrict && (
-          <button type="button" onClick={() => setFreeDistrict(true)}
-            className="mt-1.5 text-[12px] text-leaf-deep underline underline-offset-2">
-            {t('authOtherDistrict')}
-          </button>
-        )}
-      </Field>
+        </Field>
 
-      <div className="grid grid-cols-2 gap-3">
+        <Field label={t('district')} error={showErrors && !value.district && t('authPickDistrict')}>
+          {freeDistrict || (value.district && !districts.some((d) => d.name === value.district)) ? (
+            <Input value={value.district} onChange={(e) => set({ district: e.target.value })}
+              placeholder={t('authTypeDistrict')} />
+          ) : (
+            <Select value={value.district} onChange={(v) => set({ district: v })}>
+              <option value="">{t('authPickDistrict')}</option>
+              {districts.map((d) => (
+                <option key={d.name} value={d.name}>{d.local ? `${d.name} · ${d.local}` : d.name}</option>
+              ))}
+            </Select>
+          )}
+          {!freeDistrict && (
+            <button type="button" onClick={() => setFreeDistrict(true)}
+              className="mt-1.5 text-[12px] text-leaf-deep underline underline-offset-2">
+              {t('authOtherDistrict')}
+            </button>
+          )}
+        </Field>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 lg:gap-4">
         <Field label={t('authTaluka')} optional>
           <Input value={value.taluka} onChange={(e) => set({ taluka: e.target.value })} />
         </Field>

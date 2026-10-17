@@ -3,15 +3,6 @@ import { AlertTriangle, Loader2, Mic, Square, Volume2, WifiOff } from 'lucide-re
 import { api } from '../api/client'
 import type { Heatmap, Lang } from '../api/types'
 
-export function Spinner({ label }: { label?: string }) {
-  return (
-    <div className="flex items-center justify-center gap-2 py-10 text-sm text-soil-dark/60">
-      <Loader2 className="w-4 h-4 animate-spin" />
-      {label}
-    </div>
-  )
-}
-
 /** One grey block where content will land. Screens assemble these into the
  *  shape of the real screen, so nothing jumps when the data arrives. Held still
  *  for anyone who asked their system for less motion. */

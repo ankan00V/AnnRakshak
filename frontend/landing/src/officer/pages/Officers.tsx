@@ -4,7 +4,7 @@ import { api } from '../../api/client'
 import { useAsync } from '../../lib/hooks'
 import { useAuth } from '../../auth/AuthContext'
 import { Card, ErrorBox, Pill } from '../../ui/kit'
-import { OfficerLoadPanel, PanelBone, pct } from '../panels'
+import { OfficerLoadPanel, PageHead, PanelBone, pct } from '../panels'
 
 /** Staff. Who is carrying what, and who is still waiting to be let in —
  *  verification is a real decision the district office makes by hand. */
@@ -33,6 +33,8 @@ export default function Officers() {
 
   return (
     <>
+      <PageHead title="Officers"
+        purpose="Who is on the books, what each desk is carrying, and who is waiting to be let in." />
       <Card className="p-4 md:p-5">
         <h2 className="font-semibold flex items-center gap-2"><UserPlus className="w-4 h-4 text-ochre" /> Waiting to be verified</h2>
         <p className="text-xs text-soil-dark/60 mt-0.5">

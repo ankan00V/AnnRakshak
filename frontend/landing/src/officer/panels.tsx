@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
-  Activity, BrainCircuit, CalendarRange, CloudRain, FlaskConical, Gauge, Loader2, RefreshCw, ShieldCheck, Stethoscope, Target, TriangleAlert, Users,
+  Activity, BrainCircuit, CalendarRange, Gauge, PhoneCall, Loader2, RefreshCw, ShieldCheck, Stethoscope, Target, TriangleAlert, Users,
 } from 'lucide-react'
 import { api } from '../api/client'
-import type { ModelCard, OutlookRow, PesticideBaseline, RainfallPanel, Summary } from '../api/types'
+import type { KccPanel as KccData, ModelCard, OutlookRow, Summary } from '../api/types'
 import { useAsync } from '../lib/hooks'
 import { useAuth } from '../auth/AuthContext'
 import { Link } from 'react-router-dom'
@@ -133,8 +133,8 @@ export function PanelBone({ rows = 4 }: { rows?: number }) {
 export function KpisSkeleton() {
   return (
     <Loading label="Loading the district summary">
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {Array.from({ length: 5 }, (_, i) => (
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {Array.from({ length: 4 }, (_, i) => (
           <Card key={i} className="p-4">
             <Bone className="w-4 h-4 rounded-md" />
             <Bone className="h-8 w-16 mt-2" />
@@ -171,20 +171,89 @@ export function Legend({ color, label, hollow }: { color: string; label: string;
 
 /** A number that is only a number is a poster. Each tile is the way into the
  *  queue it counts. */
+/** The one line that says which screen this is and what it is for. The console
+ *  used to open cold on a card with a small bold heading, so every page looked
+ *  like the middle of something. */
+export function PageHead({ title, purpose, children }: {
+  title: string; purpose: string; children?: ReactNode
+}) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+      <div className="min-w-0">
+        <h1 className="font-instrument-serif text-[27px] lg:text-[32px] leading-tight">{title}</h1>
+        <p className="mt-0.5 text-sm text-soil-dark/60 text-pretty">{purpose}</p>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+const MONTH = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+/** What farmers actually ring the Kisan Call Centre about.
+ *
+ *  Fifteen years of KCC plant-protection calls, grouped by pest. It is the one
+ *  independent check in the app on whether the model is trained on what
+ *  farmers are actually worried about, and it had been built end to end —
+ *  pipeline, knowledge-base file, service, endpoint, typed client — and shown
+ *  on no screen at all.
+ */
+export function KccPanel({ k }: { k: KccData }) {
+  const top = k.groups.slice(0, 6)
+  const most = Math.max(1, ...top.map((g) => g.expected_this_month))
+  return (
+    <Card className="p-4 md:p-5">
+      <h2 className="font-semibold flex items-center gap-2">
+        <PhoneCall className="w-4 h-4 text-leaf" /> What farmers ring about in {MONTH[k.month]}
+      </h2>
+      <p className="text-xs text-soil-dark/60 mt-0.5">
+        Kisan Call Centre plant-protection calls, {k.years[0]}–{k.years[1]}, as a check on the risk
+        calendar: these are the months farmers themselves raised each problem. Calls are demand, not
+        incidence — they also follow phone access and awareness.
+      </p>
+      <ul className="mt-4 space-y-3">
+        {top.map((g) => (
+          <li key={g.id}>
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-sm font-medium">{g.label}</span>
+              <span className="text-xs tabular-nums text-soil-dark/60 shrink-0">
+                ~{g.expected_this_month.toLocaleString('en-IN')} calls
+              </span>
+            </div>
+            <div className="mt-1 h-1.5 rounded-full bg-soil-dark/[0.07] overflow-hidden">
+              <span className="block h-full rounded-full bg-leaf/60"
+                style={{ width: `${Math.max(3, (g.expected_this_month / most) * 100)}%` }} />
+            </div>
+            <p className="mt-1 text-[11px] text-soil-dark/55">
+              {g.crop} · peaks {g.peak_months.map((m) => MONTH[m]).join(', ')}
+              {g.top_districts.length > 0 && ` · most from ${g.top_districts.slice(0, 2).map((d) => d.district).join(', ')}`}
+            </p>
+          </li>
+        ))}
+      </ul>
+      {k.groups.length > top.length && (
+        <p className="mt-3 text-[11px] text-soil-dark/50">
+          {k.groups.length - top.length} more pest groups in the same record.
+        </p>
+      )}
+      <p className="mt-3 text-[10px] text-soil-dark/40">{k.source}</p>
+    </Card>
+  )
+}
+
 export function Kpis({ s }: { s: Summary }) {
   const t = s.totals
   const foundRate = t.alerts_answered ? t.alerts_found / t.alerts_answered : null
   const items = [
-    { icon: Users, label: 'Farms monitored', value: t.farms, sub: `${s.by_district.length} districts`, to: '/officer/map' },
     { icon: Stethoscope, label: 'Photo diagnoses', value: t.diagnoses, sub: `${s.gate_outcomes.advise ?? 0} advised directly`, to: '/officer/model' },
     // Experts only see what the gate sent them — the hard cases — so this is
     // agreement on escalations, not overall accuracy. Low here = gate did its job.
     { icon: ShieldCheck, label: 'Expert agreed with AI', value: pct(t.field_accuracy), sub: `${t.confirmed} confirmed · ${t.corrected} corrected, on cases AI flagged unsure`, to: '/officer/model' },
-    { icon: Activity, label: 'Expert queue', value: t.open_cases, sub: `${t.resolved_cases} resolved · ${t.referred_to_lab} to lab`, to: '/officer/queue' },
+    { icon: Activity, label: 'Cases closed', value: t.resolved_cases, sub: `${t.referred_to_lab} referred to a lab`, to: '/officer/queue' },
     { icon: TriangleAlert, label: 'Risk alerts issued', value: t.alerts_issued, sub: `${t.alerts_answered} inspected · ${pct(foundRate)} found something`, to: '/officer/advisories' },
   ]
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {items.map(({ icon: Icon, label, value, sub, to }) => (
         <Link key={label} to={to} className="group">
           <Card className="p-4 h-full transition-colors group-hover:border-leaf/40 group-hover:bg-leaf/[0.03]">
@@ -347,55 +416,6 @@ export function AccuracyPanel({ s }: { s: Summary }) {
   )
 }
 
-export function Sparkline({ series }: { series: [number, number | null, number | null][] }) {
-  const pts = series.filter((s) => s[2] != null).slice(-60)
-  if (pts.length < 2) return null
-  const w = 260, h = 56
-  const max = Math.max(...pts.map((p) => Math.abs(p[2]!)), 1)
-  const x = (i: number) => (i / (pts.length - 1)) * w
-  const y = (v: number) => h / 2 - (v / max) * (h / 2 - 2)
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-14" role="img" aria-label="Monsoon rainfall departure by year">
-      <line x1="0" x2={w} y1={h / 2} y2={h / 2} stroke="currentColor" strokeOpacity="0.15" />
-      {pts.map((p, i) => (
-        <rect key={p[0]} x={x(i) - 1.5} width="3" y={Math.min(y(p[2]!), h / 2)} height={Math.abs(y(p[2]!) - h / 2)}
-          fill={p[2]! >= 0 ? '#2f6fa8' : '#c8862d'} opacity="0.8">
-          <title>{p[0]}: {p[2]! > 0 ? '+' : ''}{p[2]}%</title>
-        </rect>
-      ))}
-    </svg>
-  )
-}
-
-export function RainfallSection({ r }: { r: RainfallPanel }) {
-  return (
-    <Card className="p-4">
-      <h2 className="font-semibold flex items-center gap-2"><CloudRain className="w-4 h-4 text-leaf" /> Rainfall against the IMD normal</h2>
-      <p className="text-xs text-soil-dark/60 mt-0.5">This month so far (observed) against each subdivision's 1901–2015 IMD normal, and the last 60 monsoons' departure from normal. Abnormal rain shifts disease and pest risk — the risk engine reads the same numbers.</p>
-      <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {r.subdivisions.map((s) => {
-          const c = s.current_month
-          const dep = c?.departure_pct
-          return (
-            <div key={s.subdivision} className="rounded-xl bg-cream p-3">
-              <p className="text-sm font-semibold">{s.subdivision.replace('&', 'and')}</p>
-              <p className="text-[11px] text-soil-dark/50">ref: {s.reference_place} · JJAS normal {Math.round(s.jjas_normal_mm)} mm</p>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className={`text-2xl font-semibold ${dep == null ? '' : dep > 25 ? 'text-sky-700' : dep < -25 ? 'text-[#8a5a17]' : 'text-leaf-deep'}`}>
-                  {dep == null ? '—' : `${dep > 0 ? '+' : ''}${dep}%`}
-                </span>
-                <span className="text-[11px] text-soil-dark/60">{c?.observed_mm != null ? `${c.observed_mm} mm vs ${c.expected_to_date_mm} mm normal to date` : 'no observation'}</span>
-              </div>
-              <div className="text-soil-dark"><Sparkline series={s.jjas_series} /></div>
-            </div>
-          )
-        })}
-      </div>
-      <p className="mt-2 text-[10px] text-soil-dark/40">{r.source}</p>
-    </Card>
-  )
-}
-
 const TRIGGER_LABEL: Record<string, string> = {
   weather: 'weather', 'weather+phenology': 'weather + stage', phenology: 'crop stage', trap: 'trap count', spread: 'confirmed nearby',
 }
@@ -436,32 +456,6 @@ export function OutlookPanel({ rows }: { rows: OutlookRow[] }) {
           </table>
         </div>
       )}
-    </Card>
-  )
-}
-
-export function PesticidePanel({ p }: { p: PesticideBaseline }) {
-  const max = Math.max(...p.chemical.map((c) => c[1]), 1)
-  const latest = p.chemical[p.chemical.length - 1]
-  return (
-    <Card className="p-4">
-      <h2 className="font-semibold flex items-center gap-2"><FlaskConical className="w-4 h-4 text-ember" /> Pesticide use baseline — {p.state}</h2>
-      <p className="text-xs text-soil-dark/60 mt-0.5">
-        The number "more targeted pesticide use" has to move. {p.state} used <b>{latest ? Math.round(latest[1]).toLocaleString('en-IN') : '—'} t</b> of chemical pesticides (technical grade) in {latest?.[0]} — <b>{p.latest_share_pct}%</b> of India, <b>#{p.rank}</b> of {p.states_ranked} states.
-      </p>
-      <div className="mt-4 flex items-end gap-1.5 h-32">
-        {p.chemical.map(([year, v]) => (
-          <div key={year} className="flex-1 flex flex-col items-center gap-1" title={`${year}: ${Math.round(v).toLocaleString('en-IN')} t`}>
-            <span className="text-[9px] text-soil-dark/60">{(v / 1000).toFixed(1)}k</span>
-            <span className="w-full rounded-t bg-ember/70" style={{ height: `${(v / max) * 96}px` }} />
-            <span className="text-[9px] text-soil-dark/50">{year.slice(2)}</span>
-          </div>
-        ))}
-      </div>
-      <p className="mt-3 text-[11px] text-soil-dark/60">
-        AnnRakshak's lever: chemical rungs come last and collapsed, advice only above the confidence gate, and the spray check vetoes wrong-class, wrong-crop and herbicide sprays before they happen.
-      </p>
-      <p className="mt-2 text-[10px] text-soil-dark/40">{p.source}. {p.unit_note}</p>
     </Card>
   )
 }

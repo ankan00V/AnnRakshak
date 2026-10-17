@@ -39,6 +39,7 @@ from PIL import Image  # noqa: E402
 
 sys.path.insert(0, str(ROOT / "ml"))
 from composite import composite, is_plain  # noqa: E402
+from holdout import target_of  # noqa: E402
 from PIL import ImageEnhance  # noqa: E402
 
 from app import services  # noqa: E402
@@ -92,6 +93,7 @@ def main() -> None:
     farmer_router.limit = lambda *a, **k: None  # the eval uploads hundreds a minute; a farmer never does
     meta = json.loads((ART / "meta.json").read_text())
     c2t = meta["class_to_target"]
+
     split = json.loads((ART / "split.json").read_text())
     icar = [ROOT / p for p in split["test"]]
     extra = [ROOT / p for p in split.get("extra_test", [])]
@@ -99,15 +101,26 @@ def main() -> None:
     for p in icar + extra:
         by_class[p.parent.name].append(p)
 
+    skipped = {cls: len(ps) for cls, ps in by_class.items() if target_of(cls, c2t) is None}
+    for cls, n in skipped.items():
+        print(f"skipping {cls}: {n} held-out images, no target in this model")
+    by_class = {cls: ps for cls, ps in by_class.items() if target_of(cls, c2t) is not None}
     crops = sorted({cls.split("_")[0] for cls in by_class})  # every crop the model knows
     with TestClient(app) as c, SessionLocal() as db:
         farms = {}
         for crop in crops:
             f = Farm(farmer_name=f"eval-{crop}", crop=crop, sowing_date=date.today() - timedelta(days=60),
-                     district="Pune", lat=18.52, lon=73.85, area_acres=2, lang="en")
+                     district="Pune", lat=18.52, lon=73.85, area_acres=2, lang="en", is_demo=True)
             db.add(f)
             db.commit()
             farms[crop] = f.id
+        # Sign in the way a farmer does. The live walk's socket refuses an
+        # anonymous viewer — correctly — and a measurement that turns that off is
+        # not measuring what a farmer uses.
+        signed_in = c.post("/api/auth/demo", json={"role": "farmer"})
+        if signed_in.status_code != 200:
+            sys.exit(f"could not sign in for the evaluation: {signed_in.status_code} {signed_in.text[:120]}")
+
         status = vision.model_status()
         print("model:", status["model_version"], "stub" if status["is_stub"] else "real")
         if status["is_stub"]:
@@ -123,7 +136,7 @@ def main() -> None:
                            data={"lang": "en"}).json()
                 gate = r.get("gate") or {}
                 alts = gate.get("alternatives") or [{}]
-                photo.append({"cls": cls, "truth": c2t[cls], "outcome": gate.get("outcome"),
+                photo.append({"cls": cls, "truth": target_of(cls, c2t), "outcome": gate.get("outcome"),
                               "top": alts[0].get("id"), "src": "icar" if p in icar else "extra"})
         # ---------------- 2. live ---------------------------------------------------
         live = []
@@ -180,7 +193,7 @@ def main() -> None:
                 while m["type"] != "summary":
                     m = ws.receive_json()
                 s = m["summary"]
-            live.append({"cls": cls, "truth": c2t[cls], "frames": sent, "completed": done,
+            live.append({"cls": cls, "truth": target_of(cls, c2t), "frames": sent, "completed": done,
                          "verdict": s["verdict"], "seen": [x["target"] for x in s["seen"]],
                          "possible": [x["target"] for x in s["possible"]], "src": "icar" if paths[0] in icar else "extra"})
             print(f"  live {cls:32s} frames {sent:2d} verdict {s['verdict']:8s} seen {live[-1]['seen']} possible {live[-1]['possible']}")

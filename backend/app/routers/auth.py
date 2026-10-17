@@ -105,6 +105,20 @@ def _districts() -> list[str]:
     return sorted(services.rainfall_normals()["district_to_subdivision"])
 
 
+def _official_districts() -> set[str]:
+    """Every district the Government publishes — which is the list the sign-up
+    form itself offers, from the same file.
+
+    An officer's districts used to be checked against `_districts()` above:
+    that is the IMD rainfall map, 36 Maharashtra districts, and it is the right
+    list for reading a monsoon normal and the wrong one for saying where a
+    person works. So an officer at KVK Kapurthala picked Hoshiarpur and
+    Kapurthala out of the form's own list and was told to choose from the list
+    — with no way forward, because the form was already right.
+    """
+    return {d["name"] for v in geo.places().values() for d in v["districts"]}
+
+
 @router.get("/options")
 def options(lang: str = "en", kb: KB = Depends(get_kb)):
     return {
@@ -335,7 +349,11 @@ def _me(db: Session, user: User) -> dict:
         # this desk may actually take. Without it the console offered every
         # officer the supervisor-only buttons and let the server refuse them.
         out["profile"] = {"designation": p.designation, "designation_name": _designation_name(p.designation),
-                          "organisation": p.organisation, "districts": p.districts, "crops": p.crops,
+                          "organisation": p.organisation, "districts": p.districts,
+                          # The states those districts sit in. The console says
+                          # where it is watching, and it used to say Maharashtra
+                          # to an officer in Punjab.
+                          "states": geo.states_of(p.districts), "crops": p.crops,
                           "specialities": p.specialities, "languages": p.languages, "verified": p.verified,
                           "supervisor": p.supervisor, "experience_years": p.experience_years} if p else None
     return out
@@ -384,7 +402,7 @@ def signup_farmer(body: FarmerSignup, request: Request, response: Response, db: 
 def signup_expert(body: ExpertSignup, request: Request, response: Response, db: Session = Depends(get_db),
                   kb: KB = Depends(get_kb)):
     lang = body.lang if body.lang in LANGS else "en"
-    districts = set(_districts())
+    districts = _official_districts()
     bad = [x for x, allowed in ((body.designation, DESIGNATIONS), (body.qualification, QUALIFICATIONS)) if x not in allowed] \
         + [d for d in body.districts if d not in districts] + [c for c in body.crops if c not in kb.crops] \
         + [s for s in body.specialities if s not in SPECIALITIES] + [x for x in body.languages if x not in LANGS]

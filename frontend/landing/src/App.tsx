@@ -28,7 +28,6 @@ const OfficerAdvisories = lazy(() => import('./officer/pages/Advisories'))
 const OfficerInputs = lazy(() => import('./officer/pages/Inputs'))
 const OfficerModel = lazy(() => import('./officer/pages/ModelGaps'))
 const OfficerOfficers = lazy(() => import('./officer/pages/Officers'))
-const OfficerReference = lazy(() => import('./officer/pages/Reference'))
 const AuthLayout = lazy(() => import('./auth/AuthLayout'))
 const Login = lazy(() => import('./auth/Login'))
 const SignupChoose = lazy(() => import('./auth/SignupChoose'))
@@ -69,7 +68,9 @@ export default function App() {
               <Route path="inputs" element={<OfficerInputs />} />
               <Route path="model" element={<OfficerModel />} />
               <Route path="officers" element={<OfficerOfficers />} />
-              <Route path="reference" element={<OfficerReference />} />
+              {/* A console tab that has been taken away should land on the
+                  console, not on the public page. */}
+              <Route path="*" element={<Navigate to="/officer" replace />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
