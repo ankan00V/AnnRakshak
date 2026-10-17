@@ -58,12 +58,14 @@ Deployed now (8 Oct 2026): `icar+extra+more+paddy+asdid+local+cotton+thin-effici
 
 | | Result |
 |---|---|
-| Photo diagnosis, 2,329 held-out photos | advised 74%, **right on 89.4%** of those; the rest get one field question, a retake, or an expert |
-| — ICAR field photos alone (126) | advised 84%, **right on 95.3%** |
-| — the newer lab-sourced classes (2,203) | advised 73%, right on 89.0% |
-| Live video call, one full walk per class (47 classes) | **45 right, 1 cautious, 1 wrong**; look-alikes and minority readings go to the expert as "possible" |
+| Photo diagnosis, 2,329 held-out photos | advised 65%, **right on 96.0%** of those; the rest get one field question, a retake, or an expert |
+| — ICAR field photos alone (126) | advised 80%, **right on 98.0%** |
+| — the newer lab-sourced classes (2,203) | advised 65%, right on 95.9% |
+| Live video call, one full walk per class (47 classes) | **45 right, 2 cautious, 0 wrong**; look-alikes and minority readings go to the expert as "possible" |
 
-The newer classes are the weak half, and the gate is advising on them too readily: `maize_turcicum_leaf_blight` → `maize_gray_leaf_spot` and `rice_bacterial_leaf_blight` → `rice_tungro` are the two confusions worth fixing first, by crop-specific gate thresholds and more field photos for those classes, not by relaxing the bar.
+**How that number was earned.** The run before this one advised on 74% and was right on 89.4%: the model had grown from 20 classes to 46 and the per-class bars in `config.TARGET_GATE` had not been measured since. `ml/tune_gate.py` puts all 6,254 held-out images through the deployed model and asks, for each class, the lowest confidence bar that reaches 0.95 precision and what recall that costs. Fifteen classes now carry a bar of their own — rice downy mildew went 0.692 → 0.863, rice blast 0.807 → 0.975 — and the file records the numbers behind every entry.
+
+The app now advises less often and is right far more of the time when it does. Three classes (`cotton_alternaria_leaf_spot`, `maize_maydis_leaf_blight`, `rice_white_stem_borer`) are best at the global gate already, on 7–20 held-out photos each: no threshold helps them, and they are first in line for field photographs.
 
 ~50 photos per class for the ICAR set, fewer for some newer classes — treat per-class numbers as indicative; field accuracy is tracked separately, from expert verdicts.
 

@@ -100,14 +100,43 @@ photo goes to an expert instead of back to the farmer. Measured on the 44
 out-of-scope photos in the familiarity check: 32 of them fall below it."""
 
 TARGET_GATE = {
-    "rice_blast": 0.90,
-    "maize_common_rust": 0.90,
+    "maize_ear_rot": 0.80,
+    "maize_gray_leaf_spot": 0.95,
+    "maize_turcicum_leaf_blight": 0.90,
+    "rice_bacterial_leaf_streak": 0.95,
+    "rice_bacterial_panicle_blight": 0.95,
+    "rice_blast": 0.95,
+    "rice_brown_spot": 0.85,
+    "rice_downy_mildew": 0.95,
+    "rice_hispa": 0.95,
+    "rice_leaf_folder": 0.95,
+    "rice_sheath_blight": 0.95,
+    "rice_tungro": 0.95,
+    "soybean_frogeye_leaf_spot": 0.75,
+    "soybean_septoria_brown_spot": 0.95,
+    "soybean_yellow_mosaic": 0.95,
 }
-"""Classes learnt only from lab photos (single leaves on plain backdrops) must
-clear a higher bar before the app advises them — in the photo gate and for a
-'strong' view in the live walk. Measured on held-out images (2026-09-15):
-rice blast precision 0.868 at the global 0.70 -> 0.957 at 0.90 (recall 0.844);
-maize rust 0.963 -> 1.000 (recall 1.000); every other class 0.972 at 0.70.
+"""Classes the model names less reliably than the rest must clear a higher
+bar before the app advises them — in the photo gate and for a 'strong' view
+in the live walk. Measured by ml/tune_gate.py on held-out images (2026-10-17),
+choosing the lowest bar reaching 0.95 precision, or, where no bar
+reaches it, the bar that does best — those are marked (best) and want more
+field photographs rather than more arithmetic:
+maize ear rot 0.943 -> 0.971 at 0.80 (recall 1.000);
+maize gray leaf spot 0.918 -> 0.949 at 0.95 (recall 0.860) (best);
+maize turcicum leaf blight 0.947 -> 0.980 at 0.90 (recall 0.706);
+rice bacterial leaf streak 0.913 -> 0.976 at 0.95 (recall 0.953);
+rice bacterial panicle blight 0.758 -> 0.852 at 0.95 (recall 0.979) (best);
+rice blast 0.807 -> 0.975 at 0.95 (recall 0.561);
+rice brown spot 0.931 -> 0.960 at 0.85 (recall 0.535);
+rice downy mildew 0.692 -> 0.863 at 0.95 (recall 0.818) (best);
+rice hispa 0.844 -> 0.981 at 0.95 (recall 0.681);
+rice leaf folder 0.897 -> 0.960 at 0.95 (recall 0.828);
+rice sheath blight 0.817 -> 0.913 at 0.95 (recall 0.560) (best);
+rice tungro 0.872 -> 0.958 at 0.95 (recall 0.700);
+soybean frogeye leaf spot 0.940 -> 0.952 at 0.75 (recall 0.881);
+soybean septoria brown spot 0.604 -> 0.875 at 0.95 (recall 0.457) (best);
+soybean yellow mosaic 0.861 -> 0.923 at 0.95 (recall 0.585) (best).
 Between GATE and this bar the gate asks the look-alike question or sends the
 photo to an expert. Drop an entry once expert confirmations show the class
 holds up on farmers' field photos."""

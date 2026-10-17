@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta
 
 import pytest
 
+from app import config
 from app.config import FLOOR, GATE, MARGIN, PRIOR_MAX_BIAS
 from app.engine import advisory, assign, doubt, labelcheck, prior, risk, vision
 from app.engine.gate import Prediction, TopK, decide
@@ -392,13 +393,22 @@ def test_leaf_and_straw_colours_pass_the_vegetation_check(rgb):
 
 
 def test_a_lab_trained_class_must_clear_its_own_higher_bar():
-    # rice_blast was learnt from lab photos: 0.85 clears the global gate but not its 0.90
-    d = run_gate(topk(("rice_blast", 0.85), ("rice_brown_spot", 0.05)))
+    # rice_blast is named less reliably than the rest, so ml/tune_gate.py gave it
+    # a bar of its own. Read it rather than restate it: re-measuring the table is
+    # a routine thing and should not need this test edited.
+    bar = config.gate_for("rice_blast")
+    assert bar > config.GATE, "this test needs a class that carries its own bar"
+    under, over = round(bar - 0.05, 2), min(round(bar + 0.02, 2), 0.99)
+
+    d = run_gate(topk(("rice_blast", under), ("rice_brown_spot", 0.05)))
     assert (d.outcome, d.reason) == ("clarify", "LAB_CLASS_CONFIRM") and d.cue_id
-    d = run_gate(topk(("rice_blast", 0.85), ("rice_leaf_folder", 0.05)))
+    d = run_gate(topk(("rice_blast", under), ("rice_leaf_folder", 0.05)))
     assert (d.outcome, d.reason) == ("escalate", "LAB_CLASS_BELOW_GATE")
-    assert run_gate(topk(("rice_blast", 0.93), ("rice_brown_spot", 0.03))).outcome == "advise"
-    assert run_gate(topk(("rice_brown_spot", 0.75), ("rice_blast", 0.05))).outcome == "advise"  # others unchanged
+    assert run_gate(topk(("rice_blast", over), ("rice_brown_spot", 0.01))).outcome == "advise"
+    # a class on the global gate is unaffected by any of it
+    plain = next(t for t in ("rice_false_smut", "rice_skipper", "soybean_healthy")
+                 if config.gate_for(t) == config.GATE)
+    assert run_gate(topk((plain, 0.75), ("rice_blast", 0.05))).outcome == "advise"
 
 
 def test_closed_form_cam_is_the_same_map_as_grad_cam():
