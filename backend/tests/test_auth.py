@@ -9,10 +9,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from app import config, services
+from app.config import UPLOAD_DIR
 from app.db import Base, SessionLocal, engine
 from app.main import app
 from tests.test_api import _leaf_jpeg  # the same 1x1 leaf
-from app.models import ExpertProfile, Farm, FarmerProfile, OtpChallenge, Problem, User, UserSession
+from app.models import Diagnosis, ExpertProfile, Farm, FarmerProfile, OtpChallenge, Problem, User, UserSession
 from app.routers import auth as auth_router
 
 SOWN = (date.today() - timedelta(days=40)).isoformat()
@@ -684,3 +685,38 @@ def test_an_officers_own_states_travel_with_their_profile(client, mail):
         "specialities": ["plant_pathology"], "languages": ["en"]})
     assert r.status_code == 201, r.text
     assert r.json()["profile"]["states"] == ["Punjab"]
+
+
+def test_a_farmer_can_take_their_data_and_have_it_erased(client, mail):
+    """Consent at sign-up is half a bargain. The other half is being able to
+    see what the app holds, and to have the person in it erased."""
+    farmer_signup(client, mail)
+    me = client.get("/api/auth/me").json()
+    farm_id = me["farm_ids"][0]
+    r = client.post(f"/api/farms/{farm_id}/diagnose",
+                    files={"image": ("x.jpg", _leaf_jpeg(), "image/jpeg")},
+                    data={"lang": "en", "demo_scenario": "clear"}).json()
+    photo = (r.get("image_url") or "").removeprefix("/media/")
+
+    # Everything we hold, in their hands.
+    out = client.get("/api/auth/me/data")
+    assert out.status_code == 200 and "attachment" in out.headers["content-disposition"]
+    data = out.json()
+    assert data["account"]["phone"] == "+919876543210"
+    assert data["farms"][0]["crop"] == "rice" and data["profile"]["village"] == "Mohadi"
+    assert data["photographs"] and data["photographs"][0]["file"] == photo
+
+    assert client.post("/api/auth/me/erase", json={"confirm": "no"}).status_code == 422
+
+    gone = client.post("/api/auth/me/erase", json={"confirm": "DELETE"})
+    assert gone.status_code == 200 and gone.json()["photographs"] == 1
+    assert client.get("/api/auth/me").status_code == 401        # the session went with them
+
+    with SessionLocal() as db:
+        assert db.scalar(select(User).where(User.phone == "+919876543210")) is None
+        farm = db.get(Farm, farm_id)
+        assert farm is not None                                  # the district keeps its record
+        assert farm.farmer_name == "(erased)" and farm.user_id is None
+        assert farm.village is None and farm.phone is None
+        assert db.scalar(select(Diagnosis).where(Diagnosis.image_path.is_not(None))) is None
+    assert not (UPLOAD_DIR / photo).exists()                     # the file, not only the row

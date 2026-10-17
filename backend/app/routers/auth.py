@@ -24,6 +24,7 @@ every code goes to the email (config.OTP_CHANNEL).
 
 from __future__ import annotations
 
+import json
 from datetime import date
 from typing import Literal
 
@@ -32,7 +33,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import auth, config, geo, mailer, services
+from app import auth, config, erasure, geo, mailer, services
 from app.db import SUPERVISOR_DESIGNATIONS, get_db
 from app.i18n import LANGS
 from app.kb import KB, get_kb, tr
@@ -488,6 +489,47 @@ def me(request: Request, db: Session = Depends(get_db)):
     if user is None:
         raise HTTPException(401, "not signed in")
     return _me(db, user)
+
+
+@router.get("/me/data")
+def my_data(request: Request, db: Session = Depends(get_db)):
+    """Everything this account holds, as a file the farmer can keep.
+
+    The Act calls it the right to access; a farmer calls it wanting to see
+    what an app knows about them. Either way it is one tap in the account
+    menu, not a letter to an office."""
+    me = auth.signed_in(request, db)
+    if me is None:
+        raise HTTPException(401, "sign in first")
+    data = erasure.export_account(db, me)
+    name = f"annrakshak-{me.id}-{date.today().isoformat()}.json"
+    return Response(content=json.dumps(data, ensure_ascii=False, indent=2),
+                    media_type="application/json",
+                    headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
+class EraseIn(BaseModel):
+    confirm: str
+    """The farmer types DELETE. A tap that cannot be undone should cost more
+    than a tap."""
+
+
+@router.post("/me/erase")
+def erase_me(body: EraseIn, request: Request, response: Response, db: Session = Depends(get_db)):
+    """Erase the person; keep the district's disease record with nobody in it.
+
+    What goes and what stays is set out in app/erasure.py, and the answer says
+    what was removed rather than only that something was."""
+    me = auth.signed_in(request, db)
+    if me is None:
+        raise HTTPException(401, "sign in first")
+    if body.confirm.strip().upper() != "DELETE":
+        raise HTTPException(422, "type DELETE to confirm")
+    if me.is_demo:
+        raise HTTPException(403, "the demo account is shared; it is not anyone's to erase")
+    removed = erasure.erase_account(db, me)
+    response.delete_cookie(auth.COOKIE, path="/")
+    return {"erased": True, **removed}
 
 
 @router.post("/logout")

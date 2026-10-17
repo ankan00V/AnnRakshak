@@ -3,6 +3,15 @@ import type { Lang } from '../api/types'
 // App chrome only. Advisory content, alert reasons and tasks arrive from the
 // API already in the farmer's language (authored in the knowledge base).
 const en = {
+  yourData: 'Your data',
+  downloadData: 'Download everything we hold',
+  deleteAccount: 'Delete my account',
+  deleteWhat: 'Your name, phone, village, your fields and every photo you sent are erased. The disease records stay with the district, with nothing in them that points to you.',
+  deleteTypeToConfirm: 'Type DELETE to confirm',
+  deleteConfirmWord: 'DELETE',
+  deleteForever: 'Erase, and this cannot be undone',
+  deleteCancel: 'Keep my account',
+  deleteDone: 'Your account is erased.',
   home: 'Home',
   scan: 'Scan',
   spray: 'Spray check',
@@ -550,6 +559,15 @@ const en = {
 type Key = keyof typeof en
 
 const hi: Partial<Record<Key, string>> = {
+  yourData: 'आपका डेटा',
+  downloadData: 'हमारे पास जो कुछ है, डाउनलोड करें',
+  deleteAccount: 'मेरा खाता मिटाएँ',
+  deleteWhat: 'आपका नाम, फ़ोन, गाँव, आपके खेत और भेजी हुई हर फ़ोटो मिटा दी जाएगी। बीमारी का रिकॉर्ड ज़िले के पास रहेगा, पर उसमें आपका कोई नाम-पता नहीं रहेगा।',
+  deleteTypeToConfirm: 'पक्का करने के लिए DELETE लिखें',
+  deleteConfirmWord: 'DELETE',
+  deleteForever: 'मिटाएँ — यह वापस नहीं होगा',
+  deleteCancel: 'खाता रहने दें',
+  deleteDone: 'आपका खाता मिटा दिया गया है।',
   home: 'होम',
   scan: 'जाँच',
   spray: 'छिड़काव',
@@ -1089,6 +1107,15 @@ const hi: Partial<Record<Key, string>> = {
 }
 
 const mr: Partial<Record<Key, string>> = {
+  yourData: 'तुमचा डेटा',
+  downloadData: 'आमच्याकडे जे आहे ते उतरवून घ्या',
+  deleteAccount: 'माझे खाते पुसून टाका',
+  deleteWhat: 'तुमचे नाव, फोन, गाव, तुमची शेते आणि पाठवलेला प्रत्येक फोटो पुसला जाईल. रोगाची नोंद जिल्ह्याकडे राहील, पण त्यात तुमचा काहीही पत्ता राहणार नाही.',
+  deleteTypeToConfirm: 'खात्रीसाठी DELETE लिहा',
+  deleteConfirmWord: 'DELETE',
+  deleteForever: 'पुसून टाका — हे परत मिळणार नाही',
+  deleteCancel: 'खाते राहू द्या',
+  deleteDone: 'तुमचे खाते पुसले आहे.',
   home: 'होम',
   scan: 'तपासणी',
   spray: 'फवारणी',

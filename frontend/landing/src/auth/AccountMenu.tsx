@@ -1,18 +1,33 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Headphones, LogOut, ShieldCheck } from 'lucide-react'
+import { Download, Headphones, LogOut, ShieldCheck, Trash2 } from 'lucide-react'
+import { api } from '../api/client'
 import { useAuth } from './AuthContext'
 
+/** Labels for the two things the law gives a farmer over their own data.
+ *  Absent, the section is not shown — an officer's account is a different
+ *  matter: their cases are a record the district keeps. */
+export type PrivacyLabels = {
+  yourData: string; downloadData: string; deleteAccount: string; deleteWhat: string
+  typeToConfirm: string; confirmWord: string; forever: string; cancel: string; done: string
+}
+
 /** The signed-in person in a dark header: initials, and a menu with who they
- *  are and Log out. Labels default to English (the expert screens). */
-export default function AccountMenu({ logoutLabel = 'Log out', demoLabel = 'Demo', extra }: {
+ *  are, what they may do with their own data, and Log out. Labels default to
+ *  English (the expert screens). */
+export default function AccountMenu({ logoutLabel = 'Log out', demoLabel = 'Demo', extra, privacy }: {
   logoutLabel?: string; demoLabel?: string
   /** One more item above Log out (the farmer app's "App tour"). */
   extra?: { label: string; onClick: () => void }
+  privacy?: PrivacyLabels
 }) {
   const { me, logout } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+  const [erasing, setErasing] = useState(false)
+  const [typed, setTyped] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [erased, setErased] = useState(false)
   const box = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -57,6 +72,60 @@ export default function AccountMenu({ logoutLabel = 'Log out', demoLabel = 'Demo
               <Headphones className="w-4 h-4" />
               {extra.label}
             </button>
+          )}
+          {privacy && !me.is_demo && (
+            <div className="mt-4 pt-3 border-t border-soil-dark/10">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-soil-dark/45">{privacy.yourData}</p>
+              <a href={api.myDataUrl} download
+                className="mt-2 flex items-center gap-2 text-sm text-leaf-deep font-medium hover:underline">
+                <Download className="w-4 h-4" />
+                {privacy.downloadData}
+              </a>
+              {!erasing ? (
+                <button onClick={() => setErasing(true)}
+                  className="mt-2 flex items-center gap-2 text-sm text-ember font-medium hover:underline">
+                  <Trash2 className="w-4 h-4" />
+                  {privacy.deleteAccount}
+                </button>
+              ) : (
+                <div className="mt-2 rounded-xl bg-ember/5 border border-ember/20 p-3">
+                  <p className="text-[12px] leading-snug text-soil-dark/80">{privacy.deleteWhat}</p>
+                  <label className="mt-2 block text-[11px] text-soil-dark/60">{privacy.typeToConfirm}</label>
+                  <input value={typed} onChange={(e) => setTyped(e.target.value)} autoFocus
+                    aria-label={privacy.typeToConfirm}
+                    className="mt-1 w-full min-h-[40px] rounded-lg border border-soil-dark/20 bg-white px-3 text-sm" />
+                  {erased ? (
+                    // Said here rather than in an alert box: the last thing this
+                    // account sees should still look like the app.
+                    <p className="mt-3 text-sm font-medium text-leaf-deep">{privacy.done}</p>
+                  ) : (
+                    <>
+                      <button
+                        disabled={busy || typed.trim().toUpperCase() !== privacy.confirmWord}
+                        onClick={async () => {
+                          setBusy(true)
+                          try {
+                            await api.eraseAccount(typed.trim().toUpperCase())
+                            setErased(true)
+                            // A moment to read it, then out — there is no
+                            // account to come back to.
+                            setTimeout(() => window.location.replace('/'), 1800)
+                          } finally {
+                            setBusy(false)
+                          }
+                        }}
+                        className="mt-2 w-full min-h-[40px] rounded-full bg-ember text-cream text-sm font-semibold disabled:opacity-40">
+                        {privacy.forever}
+                      </button>
+                      <button onClick={() => { setErasing(false); setTyped('') }}
+                        className="mt-1.5 w-full min-h-[36px] text-sm text-soil-dark/70">
+                        {privacy.cancel}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           )}
           <button onClick={() => { navigate('/', { replace: true }); void logout() }}
             className={`${extra ? 'mt-2' : 'mt-4'} w-full min-h-[42px] rounded-full border border-soil-dark/15 text-sm font-medium flex items-center justify-center gap-2 hover:bg-cream`}>

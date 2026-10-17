@@ -123,6 +123,13 @@ export const api = {
   demoLogin: (role: Role) => req<Me>('/api/auth/demo', json({ role })),
   logout: () => req<{ signed_out: boolean }>('/api/auth/logout', { method: 'POST' }),
 
+  /** Everything this account holds, as a file. A browser download, not a fetch:
+   *  the server names it and the phone saves it. */
+  myDataUrl: '/api/auth/me/data',
+  eraseAccount: (confirm: string) =>
+    req<{ erased: boolean; farms: number; problems: number; photographs: number }>(
+      '/api/auth/me/erase', json({ confirm })),
+
   krishiHello: (lang: Lang, screen: string) =>
     req<{ text: string; suggestions: KrishiChip[] }>(`/api/krishi/hello?lang=${lang}&screen=${screen}`),
   krishiAsk: (body: { text?: string; topic?: string; lang: Lang; screen: string; farm_id?: number | null;

@@ -124,6 +124,12 @@ function Shell() {
               if (farmId != null) api.setFarmLang(farmId, code).catch(() => undefined)
             }} />
             <AccountMenu logoutLabel={t('authLogout')} demoLabel={t('demoFarm')}
+              privacy={{
+                yourData: t('yourData'), downloadData: t('downloadData'),
+                deleteAccount: t('deleteAccount'), deleteWhat: t('deleteWhat'),
+                typeToConfirm: t('deleteTypeToConfirm'), confirmWord: t('deleteConfirmWord'),
+                forever: t('deleteForever'), cancel: t('deleteCancel'), done: t('deleteDone'),
+              }}
               extra={farm ? { label: t('tourMenu'), onClick: startTour } : undefined} />
           </div>
         </div>

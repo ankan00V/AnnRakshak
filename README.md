@@ -104,6 +104,24 @@ Optional: `.venv/bin/python backend/demo_story.py` to fill the dashboards by run
 
 Tests: `cd backend && ../.venv/bin/python -m pytest -q` (always on the deterministic stub, never the paid voice API)
 
+## What a farmer can do with their own data
+
+Consent at sign-up is half a bargain. The account menu holds the other half:
+
+- **Download everything we hold** — one file: the account, the profile, every
+  field, every problem, every photograph, every alert and every email we sent.
+- **Delete my account** — the person is erased. Name, phone, email, village,
+  the fields' coordinates, the sessions, the push subscriptions, the record of
+  our emails, and every photograph, as files on disk and not only rows.
+
+What survives erasure is the disease, with nobody in it: a confirmed case of
+bacterial blight in Bhandara in September is a fact about a district, not about
+a person. The case keeps its crop, date and district; the farm loses its name,
+its village and its precise location (rounded to about 11 km). That is the
+anonymisation the DPDP Act contemplates, and it is why the surveillance map
+does not develop holes when somebody leaves. The rules are in
+`backend/app/erasure.py`, in one place, in words.
+
 ## Deploy it
 
 One image serves the browser app and the API from the same origin — a
