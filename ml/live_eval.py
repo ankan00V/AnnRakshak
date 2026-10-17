@@ -39,6 +39,7 @@ from PIL import Image  # noqa: E402
 
 sys.path.insert(0, str(ROOT / "ml"))
 from composite import composite, is_plain  # noqa: E402
+from holdout import target_of  # noqa: E402
 from PIL import ImageEnhance  # noqa: E402
 
 from app import services  # noqa: E402
@@ -92,24 +93,7 @@ def main() -> None:
     farmer_router.limit = lambda *a, **k: None  # the eval uploads hundreds a minute; a farmer never does
     meta = json.loads((ART / "meta.json").read_text())
     c2t = meta["class_to_target"]
-    targets = set(c2t.values())
 
-    def truth_of(cls: str) -> str | None:
-        """The advisory target a held-out folder stands for.
-
-        A folder is named for the class it was collected as, and a later model
-        may have merged that class away: the fall-armyworm damage photos are
-        now trained and served as fall armyworm itself. Resolve the folder to a
-        target it still has, and say so when it has none, rather than dying on
-        a KeyError halfway through an evaluation."""
-        if cls in c2t:
-            return c2t[cls]
-        if cls in targets:
-            return cls
-        merged = cls.rsplit("_", 1)[0]
-        if merged in c2t:
-            return c2t[merged]
-        return merged if merged in targets else None
     split = json.loads((ART / "split.json").read_text())
     icar = [ROOT / p for p in split["test"]]
     extra = [ROOT / p for p in split.get("extra_test", [])]
@@ -117,10 +101,10 @@ def main() -> None:
     for p in icar + extra:
         by_class[p.parent.name].append(p)
 
-    skipped = {cls: len(ps) for cls, ps in by_class.items() if truth_of(cls) is None}
+    skipped = {cls: len(ps) for cls, ps in by_class.items() if target_of(cls, c2t) is None}
     for cls, n in skipped.items():
         print(f"skipping {cls}: {n} held-out images, no target in this model")
-    by_class = {cls: ps for cls, ps in by_class.items() if truth_of(cls) is not None}
+    by_class = {cls: ps for cls, ps in by_class.items() if target_of(cls, c2t) is not None}
     crops = sorted({cls.split("_")[0] for cls in by_class})  # every crop the model knows
     with TestClient(app) as c, SessionLocal() as db:
         farms = {}
@@ -152,7 +136,7 @@ def main() -> None:
                            data={"lang": "en"}).json()
                 gate = r.get("gate") or {}
                 alts = gate.get("alternatives") or [{}]
-                photo.append({"cls": cls, "truth": truth_of(cls), "outcome": gate.get("outcome"),
+                photo.append({"cls": cls, "truth": target_of(cls, c2t), "outcome": gate.get("outcome"),
                               "top": alts[0].get("id"), "src": "icar" if p in icar else "extra"})
         # ---------------- 2. live ---------------------------------------------------
         live = []
@@ -209,7 +193,7 @@ def main() -> None:
                 while m["type"] != "summary":
                     m = ws.receive_json()
                 s = m["summary"]
-            live.append({"cls": cls, "truth": truth_of(cls), "frames": sent, "completed": done,
+            live.append({"cls": cls, "truth": target_of(cls, c2t), "frames": sent, "completed": done,
                          "verdict": s["verdict"], "seen": [x["target"] for x in s["seen"]],
                          "possible": [x["target"] for x in s["possible"]], "src": "icar" if paths[0] in icar else "extra"})
             print(f"  live {cls:32s} frames {sent:2d} verdict {s['verdict']:8s} seen {live[-1]['seen']} possible {live[-1]['possible']}")

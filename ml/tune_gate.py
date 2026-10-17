@@ -41,8 +41,10 @@ os.environ.update({"ANNRAKSHAK_DATA_DIR": _tmp, "ANNRAKSHAK_DB_URL": f"sqlite://
                    "ANNRAKSHAK_WATCH": "off", "REDIS_URL": ""})
 os.environ.pop("ANNRAKSHAK_VISION", None)  # the real model, not the stub
 sys.path.insert(0, str(ROOT / "backend"))
+sys.path.insert(0, str(ROOT / "ml"))
 
 from app.engine import vision  # noqa: E402
+from holdout import target_of  # noqa: E402
 
 ART = ROOT / "ml" / "artifacts"
 BARS = (0.70, 0.75, 0.80, 0.85, 0.90, 0.95)
@@ -55,19 +57,6 @@ MEANINGFUL_GAIN = 0.02
 """How much precision a higher bar must buy a class that cannot reach the
 target before it is worth the recall it costs. Below this the bar is noise on a
 handful of held-out images, and the class wants photographs instead."""
-
-
-def truth_of(folder: str, c2t: dict, targets: set[str]) -> str | None:
-    """The advisory target a held-out folder stands for, including folders named
-    for a class a later model merged away."""
-    if folder in c2t:
-        return c2t[folder]
-    if folder in targets:
-        return folder
-    merged = folder.rsplit("_", 1)[0]
-    if merged in c2t:
-        return c2t[merged]
-    return merged if merged in targets else None
 
 
 def main() -> None:
@@ -104,7 +93,7 @@ def main() -> None:
     said: list[tuple[str, str, float]] = []   # (true target, predicted target, confidence)
     skipped: dict[str, int] = {}
     for folder, paths in sorted(by_class.items()):
-        truth = truth_of(folder, c2t, targets)
+        truth = target_of(folder, c2t)
         if truth is None:
             skipped[folder] = len(paths)
             continue
