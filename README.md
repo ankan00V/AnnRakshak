@@ -104,6 +104,37 @@ Optional: `.venv/bin/python backend/demo_story.py` to fill the dashboards by run
 
 Tests: `cd backend && ../.venv/bin/python -m pytest -q` (always on the deterministic stub, never the paid voice API)
 
+## Deploy it
+
+One image serves the browser app and the API from the same origin — a
+first-party session cookie, no CORS, and every farmer's photograph fetched with
+the viewer's own session.
+
+```bash
+cp .env.example .env     # ANNRAKSHAK_PUBLIC_URL, SMTP, GROQ_API_KEY, POSTGRES_PASSWORD
+docker compose up --build
+```
+
+That is the API, Postgres and Redis. The trained model is mounted from
+`ml/artifacts/` rather than baked in — without it the API still starts and
+serves the labelled stub, and `/health` says so.
+
+**What production refuses to do.** With `ANNRAKSHAK_ENV=production` the app
+will not start while a one-tap demo sign-in is enabled, while an expert can
+verify themselves, while the session cookie may travel over plain HTTP, or
+while sign-in codes are being written to a file instead of sent
+(`config.start_checks`). On a laptop the same list is printed as warnings.
+
+**Scaling past one container.** The background watcher — weather rules, the
+risk sweep, push and email — must run in exactly one process, or every farmer
+gets each alert twice. Run more API containers with `ANNRAKSHAK_WATCH=off` and
+leave it on in one. Redis carries the live updates between them, so an alert
+raised in one container reaches a tab held open by another.
+
+**Behind a proxy.** Set `ANNRAKSHAK_TRUST_PROXY=on` only when something in
+front really does set `X-Forwarded-For`; otherwise that header is whatever the
+caller typed and every per-IP limit counts a fiction.
+
 ## Data
 
 ICAR crop disease & insect-pest images (rice, maize), a second wave of 10,174 de-duplicated cotton, soybean, maize and rice field photos (`data/ingest_more.py`), IMD rainfall (subdivision monthly 1901–2017, normals, monsoon departures), MoSPI ENVSTATS pesticide consumption, ICAR technology repository (24 entries linked to our pests), live Open-Meteo weather, and INSAT-3DS Hydro-Estimator rainfall from MOSDAC. Provenance, hashes and caveats in `data/DATASETS.md`.

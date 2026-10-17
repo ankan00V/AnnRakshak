@@ -15,6 +15,44 @@ from dotenv import load_dotenv
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 load_dotenv(BACKEND_DIR.parent / ".env")  # secrets only (API keys); never thresholds
 
+
+def _flag(name: str, default: bool) -> bool:
+    """An on/off setting, with a default that may differ in production."""
+    raw = os.environ.get(name)
+    return default if raw is None else raw.strip().lower() in ("on", "1", "true", "yes")
+
+
+ENV = os.environ.get("ANNRAKSHAK_ENV", "dev").strip().lower()
+PROD = ENV in ("prod", "production")
+"""What this process is: a laptop, or a server with farmers' data on it.
+
+Several settings are convenient on a laptop and wrong in front of real users —
+a one-tap demo sign-in, experts who verify themselves, a cookie that will
+travel over plain HTTP. Each of those now defaults the safe way when
+ANNRAKSHAK_ENV=production, and start_checks() below refuses to start if one of
+them has been turned back on by hand without the operator saying so."""
+
+WEB_DIR = Path(os.environ["ANNRAKSHAK_WEB_DIR"]) if os.environ.get("ANNRAKSHAK_WEB_DIR") else None
+"""The built browser app, served by this process when set (the Dockerfile sets
+it). One origin for the app and the API: a first-party session cookie, no CORS,
+and a farmer's photographs fetched with the viewer's own session."""
+
+ALLOWED_ORIGINS = [o.strip().rstrip("/") for o in
+                   (os.environ.get("ANNRAKSHAK_ORIGINS") or "").split(",") if o.strip()]
+"""Where the browser app is served from, when that is not the same origin as
+this API. Empty is the normal case: one host serves both (see the Dockerfile),
+and then no cross-origin request happens at all."""
+
+TRUST_PROXY = _flag("ANNRAKSHAK_TRUST_PROXY", False)
+"""Whether X-Forwarded-For may be believed. On behind a load balancer or
+reverse proxy that sets it; off otherwise, because a client can send that
+header itself and a per-IP limit that believes it is no limit at all."""
+
+PUBLIC_DOCS = _flag("ANNRAKSHAK_PUBLIC_DOCS", not PROD)
+"""/docs and /openapi.json. On for a laptop and for a judge reading the API;
+off in production, where the schema of an authenticated API is not public
+business."""
+
 SARVAM_API_KEY = os.environ.get("SARVAM_API_KEY")
 SARVAM_API_KEYS = list(dict.fromkeys(
     k.strip() for k in [*(os.environ.get("SARVAM_API_KEYS") or "").split(","), SARVAM_API_KEY or ""] if k.strip()))
@@ -197,12 +235,12 @@ AGRO_CACHE_MINUTES = 30
 AUTH_ENFORCE = os.environ.get("ANNRAKSHAK_AUTH", "on") != "off"
 """Every farm, problem, alert and expert endpoint checks who is asking. Tests
 of the older flows turn it off; the auth tests turn it on."""
-DEMO_LOGIN = os.environ.get("ANNRAKSHAK_DEMO_LOGIN", "on") != "off"
+DEMO_LOGIN = _flag("ANNRAKSHAK_DEMO_LOGIN", not PROD)
 """'Try the demo' sign-in to the seeded demo farms / a demo expert. Off in production."""
 OTP_CHANNEL = "email"
 """Where one-time codes go. Both roles give a mobile number at sign-up, but
 there is no free SMS gateway yet, so every code is emailed (SMTP above)."""
-EXPERT_AUTO_VERIFY = os.environ.get("ANNRAKSHAK_EXPERT_AUTO_VERIFY", "on") != "off"
+EXPERT_AUTO_VERIFY = _flag("ANNRAKSHAK_EXPERT_AUTO_VERIFY", not PROD)
 """Hackathon builds verify experts at sign-up; production sets this off and the district office verifies."""
 OTP_DIGITS = 6
 OTP_TTL_MINUTES = 5
@@ -213,7 +251,7 @@ SESSION_HOURS = 24
 SINGLE_SESSION = True
 """Signing in ends the account's other sessions, so one account is open in one
 browser at a time. Demo accounts are exempt: judges share them."""
-COOKIE_SECURE = os.environ.get("ANNRAKSHAK_COOKIE_SECURE", "off") == "on"  # on behind HTTPS
+COOKIE_SECURE = _flag("ANNRAKSHAK_COOKIE_SECURE", PROD)  # on behind HTTPS
 
 # --- Notifications: in-app (SSE), phone (Web Push) and email ---------------
 
@@ -243,3 +281,34 @@ EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND") or ("smtp" if SMTP_HOST else "ou
 
 FOLLOWUP_DUE_DAYS = 4
 CASE_ETA_MINUTES_PER_POSITION = 20
+
+
+# --------------------------------------------------------------------------
+# What production must not start without
+# --------------------------------------------------------------------------
+
+def start_checks() -> list[str]:
+    """Everything that is fine on a laptop and wrong in front of farmers.
+
+    Called from the app's lifespan. A laptop gets warnings it can ignore; a
+    process that says it is production refuses to start, because every item
+    here is something a farmer or an officer would pay for: a stranger signing
+    in as a demo officer and reading real cases, a session cookie travelling
+    over plain HTTP, a database that disappears with the container.
+    """
+    problems = []
+    if DEMO_LOGIN:
+        problems.append("ANNRAKSHAK_DEMO_LOGIN is on: anyone can sign in as a demo farmer or officer")
+    if EXPERT_AUTO_VERIFY:
+        problems.append("ANNRAKSHAK_EXPERT_AUTO_VERIFY is on: an officer verifies themselves and may "
+                        "read any farmer's case")
+    if not COOKIE_SECURE:
+        problems.append("ANNRAKSHAK_COOKIE_SECURE is off: the session cookie will travel over plain HTTP")
+    if DB_URL.startswith("sqlite"):
+        problems.append("the database is SQLite: set ANNRAKSHAK_DB_URL to Postgres for more than one worker")
+    if PUBLIC_APP_URL.startswith("http://localhost"):
+        problems.append("ANNRAKSHAK_PUBLIC_URL is still localhost: links in emails and notifications "
+                        "will not reach anyone")
+    if EMAIL_BACKEND == "outbox":
+        problems.append("EMAIL_BACKEND is 'outbox': sign-in codes are written to a file, not sent")
+    return problems

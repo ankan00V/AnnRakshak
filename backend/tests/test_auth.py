@@ -11,6 +11,7 @@ from sqlalchemy import select
 from app import config, services
 from app.db import Base, SessionLocal, engine
 from app.main import app
+from tests.test_api import _leaf_jpeg  # the same 1x1 leaf
 from app.models import ExpertProfile, Farm, FarmerProfile, OtpChallenge, Problem, User, UserSession
 from app.routers import auth as auth_router
 
@@ -496,6 +497,30 @@ def test_a_real_farmers_case_is_never_routed_to_a_demo_officer(client, mail):
         picked = services.assign_case(db, case, farm)
         db.commit()
     assert picked is None  # no real officer yet, and the demo one is not eligible
+
+
+def test_a_farmers_photo_is_not_served_to_a_stranger(client, mail):
+    """The photo is of someone's field. A URL that leaks — a screenshot, a log,
+    a shared link — must not be the photograph itself."""
+    farmer_signup(client, mail)
+    me = client.get("/api/auth/me").json()
+    farm_id = me["farm_ids"][0]
+    r = client.post(f"/api/farms/{farm_id}/diagnose",
+                    files={"image": ("x.jpg", _leaf_jpeg(), "image/jpeg")},
+                    data={"lang": "en", "demo_scenario": "clear"}).json()
+    url = r.get("image_url")
+    assert url and url.startswith("/media/")
+    assert client.get(url).status_code == 200          # its own farmer
+
+    with TestClient(app) as stranger:                  # nobody at all
+        assert stranger.get(url).status_code == 404
+        # a second farmer, signed in, still may not have it
+        farmer_signup(stranger, mail, phone="9876500001", email="other@example.com")
+        assert stranger.get(url).status_code == 404
+        # an officer may: a case arrives on their desk with the photo in it
+        expert_signup(stranger, mail)
+        assert stranger.get(url).status_code == 200
+    assert client.get("/media/../../etc/passwd").status_code in (404, 400)
 
 
 def test_voice_needs_a_signed_in_user(client):
