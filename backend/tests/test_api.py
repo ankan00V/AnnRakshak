@@ -351,9 +351,15 @@ def test_the_map_and_the_sweep_stay_on_one_side_of_the_demo_line(client):
         demo_id = demo.id
     diagnose(client, demo_id, "unsure")
 
-    # Signed out is the real side: the demo farmer must not appear on the map.
-    names = [p["farmer_name"] for p in client.get("/api/officials/hotspots").json()["points"]]
+    # Signed out is the real side: the demo farmer must not appear on the map,
+    # in its pins or in the alert layer that carries the same coordinates.
+    spots = client.get("/api/officials/hotspots").json()
+    names = [p["farmer_name"] for p in spots["points"]]
     assert names and "Demo Sunita" not in names
+    with SessionLocal() as db:
+        demo_farm = db.get(Farm, demo_id)
+        assert all(a["lat"] != demo_farm.lat or a["lon"] != demo_farm.lon
+                   for a in spots["active_alerts"])
 
     before = _alert_count()
     client.post("/api/officials/risk/run-all")

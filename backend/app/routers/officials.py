@@ -168,13 +168,16 @@ def hotspots(request: Request, days: int = 45, lang: str = "en",
             # A pin nobody can open is a picture: carry the field it stands for.
             "farm_id": f.id, "farmer_name": f.farmer_name,
         })
-    farms = {f.id: f for f in db.scalars(select(Farm)).all()}
+    # The alert layer of the same map: these carry a field's coordinates too,
+    # so they follow the same line as the pins above.
+    farms = {f.id: f for f in db.scalars(select(Farm).where(Farm.is_demo.is_(demo))).all()}
     alerts = [
         {"lat": farms[a.farm_id].lat, "lon": farms[a.farm_id].lon, "district": farms[a.farm_id].district,
          "target": a.target, "name": tr(kb.targets[a.target]["names"], lang), "level": a.level,
          "trigger": a.trigger}
-        for a in db.scalars(select(Alert).where(Alert.outcome.is_(None),
-                                                Alert.issued_on >= date.today() - timedelta(days=7))).all()
+        for a in db.scalars(select(Alert).join(Farm, Farm.id == Alert.farm_id)
+                            .where(Alert.outcome.is_(None), Farm.is_demo.is_(demo),
+                                   Alert.issued_on >= date.today() - timedelta(days=7))).all()
     ]
     return {"points": points, "active_alerts": alerts, "radius_km": services.SPREAD_RADIUS_KM}
 
