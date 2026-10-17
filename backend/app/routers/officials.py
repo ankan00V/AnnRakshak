@@ -136,13 +136,20 @@ def summary(request: Request, lang: str = "en", db: Session = Depends(get_db), k
 
 
 @router.get("/hotspots")
-def hotspots(days: int = 45, lang: str = "en", db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+def hotspots(request: Request, days: int = 45, lang: str = "en",
+             db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    # A pin carries a farmer's name and the coordinates of their field. The
+    # demo line decides whose: a demo viewer sees the seeded farms, never a
+    # real farmer, and a district officer is never shown a demo pin as a case.
+    demo = _demo(request, db)
     since = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=days)
     confs = {c.problem_id: c for c in db.scalars(select(Confirmation)).all()}
     advised = {a.problem_id for a in db.scalars(select(Advisory)).all()}
     open_case = {c.problem_id for c in db.scalars(select(Case).where(Case.status == "open")).all()}
     points = []
-    for p in db.scalars(select(Problem).options(joinedload(Problem.farm)).where(Problem.opened_at >= since)).all():
+    for p in db.scalars(select(Problem).options(joinedload(Problem.farm))
+                        .join(Farm, Farm.id == Problem.farm_id)
+                        .where(Problem.opened_at >= since, Farm.is_demo.is_(demo))).all():
         f = p.farm
         if p.id in confs:
             status, target = "confirmed", confs[p.id].final_label
@@ -172,13 +179,17 @@ def hotspots(days: int = 45, lang: str = "en", db: Session = Depends(get_db), kb
     return {"points": points, "active_alerts": alerts, "radius_km": services.SPREAD_RADIUS_KM}
 
 @router.get("/outlook")
-def risk_outlook(lang: str = "en", db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+def risk_outlook(request: Request, lang: str = "en",
+                 db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
     """Where each pest/disease is building, for planning preventive action:
-    open alerts from the last 7 days grouped by target."""
+    open alerts from the last 7 days grouped by target, on the caller's side of
+    the demo line."""
+    demo = _demo(request, db)
     since = date.today() - timedelta(days=7)
-    farms = {f.id: f for f in db.scalars(select(Farm)).all()}
+    farms = {f.id: f for f in db.scalars(select(Farm).where(Farm.is_demo.is_(demo))).all()}
     groups: dict[str, dict] = {}
-    for a in db.scalars(select(Alert).where(Alert.issued_on >= since)).all():
+    for a in db.scalars(select(Alert).join(Farm, Farm.id == Alert.farm_id)
+                        .where(Alert.issued_on >= since, Farm.is_demo.is_(demo))).all():
         g = groups.setdefault(a.target, {
             "target": a.target, "name": tr(kb.targets[a.target]["names"], lang),
             "crop": kb.targets[a.target]["crop"], "farms": set(), "districts": set(),
@@ -261,8 +272,12 @@ def route_cases(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/risk/run-all")
-def run_all(db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
-    results = [services.run_risk(db, kb, f) for f in db.scalars(select(Farm)).all()]
+def run_all(request: Request, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    # This one writes: a sweep run from a demo session was issuing real alerts
+    # to real farms, which a demo must never do.
+    demo = _demo(request, db)
+    results = [services.run_risk(db, kb, f)
+               for f in db.scalars(select(Farm).where(Farm.is_demo.is_(demo))).all()]
     return {"farms": len(results), "alerts_issued": sum(len(r["issued"]) for r in results),
             "weather_sources": dict(Counter(r["weather_source"] for r in results))}
 
