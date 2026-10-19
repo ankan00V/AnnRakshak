@@ -5,6 +5,7 @@ import { api } from '../../api/client'
 import type { CropInfo, Home as HomeData } from '../../api/types'
 import { useAsync, useWide } from '../../lib/hooks'
 import { EYEBROW, MAIN, ROW, SIDE, SPLIT } from '../layout'
+import SeasonSwitch from '../components/SeasonSwitch'
 import { Card, ErrorBox, SectionTitle } from '../../ui/kit'
 import { HomeSkeleton } from '../components/Skeletons'
 import AlertCard from '../components/AlertCard'
@@ -27,6 +28,12 @@ export default function Home() {
   const crop = crops.data?.find((c) => c.id === d.farm.crop)
   const openAlerts = d.alerts.filter((a) => a.outcome === null || a.outcome === 'snoozed')
   const due = d.followups_due
+
+  // The field's own lifecycle: close the season when the crop comes off, and
+  // start the next one here rather than registering the plot again.
+  const season = (
+    <SeasonSwitch farm={d.farm} crops={crops.data ?? null} onChange={() => home.reload()} />
+  )
 
   const followups = (
     <>
@@ -163,6 +170,7 @@ export default function Home() {
           </div>
           <aside className={`${SIDE} space-y-8`}>
             <WeatherStrip weather={d.weather} rain={d.rain_context} />
+            {season}
             {recentProblems}
           </aside>
         </div>
@@ -178,6 +186,8 @@ export default function Home() {
       {location}
 
       {followups}
+
+      {season}
 
       <WeatherNowCard />
 

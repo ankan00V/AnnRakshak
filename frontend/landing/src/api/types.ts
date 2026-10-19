@@ -21,6 +21,13 @@ export interface Farm {
   das: number
   lang: Lang
   is_demo: boolean
+  /** 'growing' or 'fallow'. The row is the field; the crop on it is a season. */
+  status?: 'growing' | 'fallow'
+  harvested_on?: string | null
+  /** Past the last stage the crop calendar knows: time to close the season. */
+  season_over?: boolean
+  /** Seasons this field has already finished. */
+  seasons?: number
   /** The worst alert standing against this field in the last week, if any.
    *  Sent with the list so the picker can say which field needs a person. */
   alert?: FarmAlert | null
@@ -114,6 +121,12 @@ export interface CaseBrief {
   /** The officer this case was routed to; null when no officer covers the district yet. */
   assigned_to: number | null
   assigned_name: string | null
+  /** When this desk has to have answered by. Past it the case moves to the next
+   *  eligible officer on its own. */
+  respond_by: string | null
+  /** How many desks have already let that clock run out. */
+  handovers: number
+  response_hours?: number
 }
 
 /** The district office's own work: what needs a person today. */

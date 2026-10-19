@@ -357,6 +357,10 @@ def case_briefs(db: Session, cases: list[Case]) -> dict[int, dict]:
             "id": c.id, "status": c.status, "reason": c.reason,
             "queue_position": pos, "eta_minutes": pos * CASE_ETA_MINUTES_PER_POSITION,
             "assigned_to": c.assigned_to, "assigned_name": names.get(c.assigned_to),
+            # The clock the case moves on by. An officer should be able to see
+            # what they are being held to, not discover it when the case leaves.
+            "respond_by": c.response_due_at.isoformat() if c.response_due_at else None,
+            "handovers": c.handovers or 0,
         }
     return out
 
@@ -372,6 +376,9 @@ def case_brief(db: Session, case: Case) -> dict:
         "eta_minutes": pos * CASE_ETA_MINUTES_PER_POSITION,
         "assigned_to": case.assigned_to,
         "assigned_name": officer.name if officer else None,
+        "respond_by": case.response_due_at.isoformat() if case.response_due_at else None,
+        "handovers": case.handovers or 0,
+        "response_hours": CASE_RESPONSE_HOURS,
     }
 
 

@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import auth, cache, geo, llm, services, voice
+from app import auth, cache, config, geo, llm, services, voice
 from app.db import get_db
 from app.limits import limit
 from app.engine import labelcheck, vision
@@ -29,6 +29,16 @@ MAX_UPLOAD_BYTES = 12 * 1024 * 1024
 def _farm(db: Session, farm_id: int) -> Farm:
     farm = db.get(Farm, farm_id)
     if farm is None:
+        raise HTTPException(404, "farm not found")
+    return farm
+
+
+def _own_farm(db: Session, farm_id: int, request: Request) -> Farm:
+    """A farm the signed-in farmer may change. An officer may read a field
+    (auth.can_open_farm) but may not sow or harvest on somebody's land."""
+    farm = _farm(db, farm_id)
+    me = auth.signed_in(request, db) if config.AUTH_ENFORCE else None
+    if config.AUTH_ENFORCE and not (me and me.role == "farmer" and farm.user_id == me.id):
         raise HTTPException(404, "farm not found")
     return farm
 

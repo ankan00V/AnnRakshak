@@ -146,6 +146,10 @@ export const api = {
   samples: (crop: string) => req<{ url: string; true_class: string; expected: 'advise' | 'clarify' | 'escalate' | 'retake' | null }[]>(`/api/samples?crop=${crop}`),
   farms: (lang: Lang) => req<Farm[]>(`/api/farms?lang=${lang}`),
   createFarm: (body: Record<string, unknown>) => req<Farm>('/api/farms', json(body)),
+  harvest: (farmId: number, body: { harvested_on?: string; note?: string }) =>
+    req<Farm>(`/api/farms/${farmId}/harvest`, { method: 'POST', body: JSON.stringify(body) }),
+  sow: (farmId: number, body: { crop: string; sowing_date: string; date_basis?: 'sown' | 'transplanted'; variety?: string }) =>
+    req<Farm>(`/api/farms/${farmId}/sow`, { method: 'POST', body: JSON.stringify(body) }),
   setFarmLang: (farmId: number, lang: Lang) =>
     req<Farm>(`/api/farms/${farmId}`, { ...json({ lang }), method: 'PATCH' }),
   setFarmLocation: (farmId: number, lat: number, lon: number, confirmFar = false) =>

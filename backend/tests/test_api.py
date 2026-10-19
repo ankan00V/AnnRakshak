@@ -757,3 +757,46 @@ def test_a_case_stops_circulating_once_everyone_has_had_it(client):
             services.sweep_overdue_cases(db, kb=get_kb())
     with SessionLocal() as db:
         assert db.get(Case, case_id).handovers <= MAX_CASE_HANDOVERS
+
+
+def kb_for_tests():
+    from app.kb import get_kb
+    return get_kb()
+
+
+def test_a_field_outlives_its_crop(client):
+    """A farm row is the field, not the sowing. The season closes, the row
+    stays, and sowing again is a new season on the same field — which is the
+    whole point: a farmer growing rice a second year should not end up with
+    two rice farms in their list."""
+    before = len(client.get("/api/farms").json())
+
+    r = client.post("/api/farms/1/harvest", json={"note": "cut on time"})
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "fallow" and r.json()["harvested_on"]
+
+    with SessionLocal() as db:
+        farm = db.get(Farm, 1)
+        assert farm.status == "fallow"
+        assert [s.crop for s in farm.seasons] == ["rice"]
+
+    r = client.post("/api/farms/1/sow", json={"crop": "rice", "sowing_date": date.today().isoformat()})
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "growing" and r.json()["das"] == 0
+
+    assert len(client.get("/api/farms").json()) == before, "the field was not cloned"
+    with SessionLocal() as db:
+        assert len(db.get(Farm, 1).seasons) == 1, "the finished season is kept as history"
+
+
+def test_a_fallow_field_is_not_warned_about(client, monkeypatch):
+    """The risk engine must leave a field alone once the crop is off it."""
+    client.post("/api/farms/2/harvest", json={})
+    with SessionLocal() as db:
+        out = services.run_risk(db, kb_for_tests(), db.get(Farm, 2))
+    assert out["issued"] == [] and out["why"] == "field is fallow"
+
+
+def test_a_harvest_cannot_predate_the_sowing(client):
+    r = client.post("/api/farms/1/harvest", json={"harvested_on": "2020-01-01"})
+    assert r.status_code == 422

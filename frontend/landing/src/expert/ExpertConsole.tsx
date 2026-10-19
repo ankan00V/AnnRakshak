@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Bug, CheckCircle2, FlaskRound, HelpCircle, Loader2, MapPin, Send, Timer, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
-import type { CaseBundle, CaseListItem, CaseSatellite } from '../api/types'
+import type { CaseBundle, CaseListItem, CaseSatellite, CaseBrief } from '../api/types'
 import { useAsync } from '../lib/hooks'
 import { useAuth } from '../auth/AuthContext'
 import { Bone, BoneLines, Card, ErrorBox, GradCamOverlay, Loading, Pill } from '../ui/kit'
@@ -172,6 +172,21 @@ function Waiting({ c, active }: { c: CaseListItem; active: boolean }) {
   return <Pill tone={active ? 'dark' : hours > 24 ? 'ember' : 'neutral'}>waiting {label}</Pill>
 }
 
+/** The clock on this desk. The case moves to the next eligible officer when it
+ *  runs out, so the officer holding it should be able to see it rather than
+ *  find out by losing the case. */
+export function RespondBy({ c, active }: { c: CaseBrief; active?: boolean }) {
+  if (c.status !== 'open' || !c.respond_by) return null
+  const left = (new Date(c.respond_by).getTime() - Date.now()) / 3.6e6
+  if (left > 4) return null          // plenty of time: not worth the ink
+  const late = left <= 0
+  return (
+    <Pill tone={active ? 'dark' : late ? 'ember' : 'ochre'}>
+      {late ? 'moving on' : left < 1 ? `${Math.max(1, Math.round(left * 60))} min left` : `${Math.round(left)} h left`}
+    </Pill>
+  )
+}
+
 export function CaseRow({ c, active, onClick }: { c: CaseListItem; active: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick}
@@ -193,6 +208,7 @@ export function CaseRow({ c, active, onClick }: { c: CaseListItem; active: boole
             ? <Pill tone={active ? 'dark' : 'leaf'}>{c.assigned_name}</Pill>
             : <Pill tone={active ? 'dark' : 'ochre'}>unassigned</Pill>}
           <Waiting c={c} active={active} />
+          <RespondBy c={c} active={active} />
         </span>
       </span>
     </button>
@@ -289,6 +305,14 @@ function CaseDetail({ b, onBack, onResolved }: { b: CaseBundle; onBack: () => vo
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {open && b.case.respond_by && (
+            <span className="text-xs text-soil-dark/60">
+              {new Date(b.case.respond_by).getTime() > Date.now()
+                ? `Answer by ${new Date(b.case.respond_by).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                : 'Past its time — moving to another desk'}
+              {b.case.handovers > 0 && ` · ${b.case.handovers} desk${b.case.handovers === 1 ? '' : 's'} before you`}
+            </span>
+          )}
           {open && <HandOff b={b} onDone={onResolved} />}
           {open && (
             <span className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ${timer.s > 180 ? 'bg-ember/10 text-ember' : 'bg-leaf/10 text-leaf-deep'}`}>
