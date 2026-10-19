@@ -46,41 +46,28 @@ FARMS = [
 ]
 
 
-OFFICERS_PER_DISTRICT = 5
-
-# Surnames common in Vidarbha and Marathwada, so the queue reads like a real office.
-OFFICER_NAMES = ["Deshmukh", "Wankhede", "Ingle", "Patil", "Gaikwad", "Rathod", "Shelke", "Bhoyar"]
-# A district office as it actually staffs up: the KVK scientist who heads the
-# subject-matter team and the taluka Agriculture Officer carry a supervisor's
-# authority (app.db.SUPERVISOR_DESIGNATIONS); the assistants and the FPO
-# agronomist advise. Keep the two supervisor-grade posts first -- seed_officers
-# reads seniority off the index.
-DESIGNATIONS = ["kvk_scientist", "agri_officer", "agri_assistant", "private_agronomist", "agri_assistant"]
-
-
 def seed_officers(db, districts: list[str]) -> int:
-    """Five officers per district, verified, each covering only their own."""
-    made = 0
-    for d, district in enumerate(sorted(districts)):
-        for i in range(OFFICERS_PER_DISTRICT):
-            surname = OFFICER_NAMES[(d + i) % len(OFFICER_NAMES)]
-            slug = f"{district.lower().replace(' ', '')}{i + 1}"
-            u = User(role="expert", name=f"{'Dr. ' if i == 0 else ''}{surname}",
-                     email=f"officer.{slug}@krishi.test", lang="mr", is_demo=True)
-            db.add(u)
-            db.flush()
-            db.add(ExpertProfile(
-                user_id=u.id, designation=DESIGNATIONS[i % len(DESIGNATIONS)],
-                organisation=f"KVK {district}", employee_id=f"MH-{district[:3].upper()}-{i + 1:03d}",
-                qualification="phd" if i == 0 else "msc_agri", experience_years=14 - 2 * i,
-                districts=[district], crops=["rice", "maize", "cotton", "soybean"],
-                specialities=["plant_pathology", "entomology"], languages=["mr", "hi", "en"],
-                verified=True,
-                # The rank follows the post, exactly as it does for a real
-                # sign-up, so the demo districts cannot drift from the rule.
-                supervisor=DESIGNATIONS[i % len(DESIGNATIONS)] in SUPERVISOR_DESIGNATIONS))
-            made += 1
-    return made
+    """One demo officer, covering the demo districts.
+
+    A real district office staffs five to a district and the queue hands the
+    next case to the freest of them; that rule lives in the engine
+    (app.engine.assign) and applies to every officer who signs up for real. It
+    does not need to be acted out in the demo. Sixty-five seeded names only
+    made the roster a page to scroll and put other people's names on the cases
+    a visitor opened.
+    """
+    u = User(role="expert", name="Dr. Kale", email="officer.demo@krishi.test", lang="mr", is_demo=True)
+    db.add(u)
+    db.flush()
+    db.add(ExpertProfile(
+        user_id=u.id, designation="kvk_scientist", organisation=f"KVK {sorted(districts)[0]}",
+        employee_id="MH-DEMO-001", qualification="phd", experience_years=14,
+        districts=sorted(districts), crops=["rice", "maize", "cotton", "soybean"],
+        specialities=["plant_pathology", "entomology"], languages=["mr", "hi", "en"],
+        verified=True,
+        # The rank follows the post, exactly as it does for a real sign-up.
+        supervisor="kvk_scientist" in SUPERVISOR_DESIGNATIONS))
+    return 1
 
 
 def main() -> None:
