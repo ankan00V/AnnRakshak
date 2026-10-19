@@ -90,7 +90,7 @@ UI_SOURCE = ROOT / "frontend" / "landing" / "src" / "lib" / "i18n.ts"
 UI_OUT = ROOT / "frontend" / "landing" / "src" / "locales"
 KB_FILES = ["crops.json", "targets.json", "advisories.json", "cues.json", "risk_rules.json",
             "agromet.json", "icar_technologies.json", "krishi.json"]
-MODULES = ["app.services", "app.notify", "app.mailer", "app.live", "app.engine.advisory", "app.engine.risk",
+MODULES = ["app.services", "app.notify", "app.mailer", "app.live", "app.office", "app.engine.advisory", "app.engine.risk",
            "app.engine.fieldnow", "app.engine.livescan", "app.routers.weather", "app.auth", "app.routers.auth",
            "app.krishi", "app.live"]
 NOTE = ("Machine translated from the approved English (engines under 'models'); placeholders checked. "
