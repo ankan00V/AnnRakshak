@@ -18,7 +18,6 @@ const Spray = lazy(() => import('./farmer/screens/Spray'))
 const Alerts = lazy(() => import('./farmer/screens/Alerts'))
 const History = lazy(() => import('./farmer/screens/History'))
 const ProblemDetail = lazy(() => import('./farmer/screens/History').then((m) => ({ default: m.ProblemDetail })))
-const ExpertConsole = lazy(() => import('./expert/ExpertConsole'))
 const OfficerShell = lazy(() => import('./officer/OfficerShell'))
 const OfficerToday = lazy(() => import('./officer/pages/Today'))
 const OfficerQueue = lazy(() => import('./officer/pages/Queue'))
@@ -58,7 +57,8 @@ export default function App() {
               <Route path="history" element={<History />} />
               <Route path="history/:id" element={<ProblemDetail />} />
             </Route>
-            <Route path="/expert" element={<RequireRole role="expert"><ExpertConsole /></RequireRole>} />
+            {/* One queue, not two: the district office's is the better of the pair. */}
+            <Route path="/expert" element={<Navigate to="/officer/queue" replace />} />
             <Route path="/officer" element={<RequireRole role="expert"><OfficerShell /></RequireRole>}>
               <Route index element={<OfficerToday />} />
               <Route path="queue" element={<OfficerQueue />} />

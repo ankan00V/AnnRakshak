@@ -7,7 +7,6 @@ import { useAuth } from '../auth/AuthContext'
 import AccountMenu from '../auth/AccountMenu'
 import { useAsync } from '../lib/hooks'
 import Darpan from './Darpan'
-import { PortalSwitch } from './PortalSwitch'
 import { Toasts } from '../ui/Toast'
 import BrandMark from '../ui/BrandMark'
 
@@ -76,7 +75,6 @@ export default function OfficerShell() {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <PortalSwitch here="office" />
             <button onClick={runSweep} disabled={sweeping} title="Score every farm against today's weather"
               className="flex items-center gap-2 rounded-full bg-ochre text-cream text-sm font-medium px-3.5 py-2 disabled:opacity-60 hover:brightness-110 transition">
               {sweeping ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
