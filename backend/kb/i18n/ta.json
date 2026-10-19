@@ -5,7 +5,7 @@
   "sarvam-translate:v1"
  ],
  "source": "en",
- "updated": "2026-10-17",
+ "updated": "2026-10-19",
  "strings": {
   "(includes readings from your field sensor)": "(உங்கள் கள உணரியிலிருந்து வரும் அளவீடுகள் உட்பட)",
   "A Trichogramma strain bred to survive insecticide sprays, so egg parasitism continues in fields that are also sprayed.": "பூச்சிக்கொல்லி தெளிப்புகளிலிருந்து தப்பிப் பிழைக்கக்கூடிய ஒரு டிரைகோகிராமா வகை உருவாக்கப்பட்டது, எனவே தெளிக்கப்பட்ட வயல்களிலும் முட்டை ஒட்டுண்ணித் தொற்று தொடர்கிறது.",
@@ -385,6 +385,7 @@
   "How does it decide irrigation?": "அது எவ்வாறு நீர்ப்பாசனத்தை தீர்மானிக்கிறது?",
   "How much fertilizer should I put?": "நான் எவ்வளவு உரம் போட வேண்டும்?",
   "Humidity": "ஈரப்பதம்",
+  "Humidity stayed above {rh}% and {mm} mm of rain fell over {run} days in a row ({first} to {last}). Water standing in the field favours {name}.": "ஈரப்பதம் {rh}% க்கும் அதிகமாக இருந்தது மற்றும் {mm} மிமீ மழை தொடர்ந்து {run} நாட்களில் ({first} முதல் {last} வரை) பெய்தது. வயலில் நிற்கும் நீர் {name} க்கு சாதகமாக இருக்கிறது.",
   "Humidity stayed above {rh}% with average temperature {tlo}–{thi}°C for {run} days in a row ({first} to {last}). These conditions favour {name}.": "ஈரப்பதம் {rh}%க்கு மேல் இருந்தது, சராசரி வெப்பநிலை {tlo}–{thi}°C ஆக {run} நாட்கள் தொடர்ந்தன ({first} முதல் {last} வரை). இந்த நிலைமைகள் {name}க்கு சாதகமாக இருந்தன.",
   "I am an agriculture officer": "நான் ஒரு விவசாய அதிகாரி",
   "I am confused about what is wrong with my crop": "எனது பயிரில் என்ன தவறு உள்ளது என்று நான் குழப்பமடைகிறேன்",

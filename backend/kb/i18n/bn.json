@@ -6,7 +6,7 @@
   "sarvam-translate:v1"
  ],
  "source": "en",
- "updated": "2026-10-17",
+ "updated": "2026-10-19",
  "strings": {
   "(includes readings from your field sensor)": "(আপনার ফিল্ড সেন্সর থেকে রিডিং সহ)",
   "A Trichogramma strain bred to survive insecticide sprays, so egg parasitism continues in fields that are also sprayed.": "কীটনাশক স্প্রে থেকে বেঁচে থাকার জন্য একটি ট্রাইকোগ্রাম্মা স্ট্রেইন প্রজনন করে, তাই যে ক্ষেত্রগুলিতে স্প্রে করা হয় সেখানে ডিম পরজীবী হিসাবে অব্যাহত থাকে।",
@@ -386,6 +386,7 @@
   "How does it decide irrigation?": "এটি কীভাবে সেচের সিদ্ধান্ত নেয়?",
   "How much fertilizer should I put?": "আমার কত সার রাখা উচিত?",
   "Humidity": "আর্দ্রতা",
+  "Humidity stayed above {rh}% and {mm} mm of rain fell over {run} days in a row ({first} to {last}). Water standing in the field favours {name}.": "আর্দ্রতা {rh}% এর উপরে ছিল এবং {mm} মিমি বৃষ্টিপাত পরপর {run} দিন ধরে ({first} থেকে {last}) হয়েছিল। মাঠে দাঁড়িয়ে থাকা জল পছন্দ করে {name}।",
   "Humidity stayed above {rh}% with average temperature {tlo}–{thi}°C for {run} days in a row ({first} to {last}). These conditions favour {name}.": "আর্দ্রতা ক্রমাগত {run} দিন ধরে {tlo}–{thi}°C গড় তাপমাত্রার সাথে {rh}% এর উপরে ছিল ({first} থেকে {last})। এই পরিস্থিতি {name} কে অনুকূল করে।",
   "I am an agriculture officer": "আমি একজন কৃষি কর্মকর্তা",
   "I am confused about what is wrong with my crop": "আমার ফসলের কী হয়েছে তা নিয়ে আমি বিভ্রান্ত",

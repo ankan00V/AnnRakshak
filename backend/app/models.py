@@ -274,6 +274,17 @@ class Case(Base):
     snoozed_until: Mapped[datetime | None] = mapped_column(DateTime)
     """Set aside until a time — waiting on a lab, or on the farmer sending a
     better photo. Out of the queue, never out of the record: it comes back."""
+    response_due_at: Mapped[datetime | None] = mapped_column(DateTime, index=True)
+    """When the officer holding this has to have answered by. Past it the case
+    moves to the next eligible desk on its own (services.sweep_overdue_cases):
+    a farmer waiting on a photograph of their dying crop is not a queue
+    position, and nobody should have to ask an office to chase it."""
+    handovers: Mapped[int] = mapped_column(Integer, default=0)
+    """How many desks it has already passed. Capped, so a case that nobody is
+    answering stops circulating and is put in front of a supervisor instead."""
+    passed_over: Mapped[list | None] = mapped_column(JSON)
+    """The officers who held it and let the clock run out. They are not offered
+    it again while anyone else is eligible."""
 
 
 class OfficerAction(Base):

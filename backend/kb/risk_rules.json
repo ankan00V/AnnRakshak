@@ -1133,11 +1133,11 @@
     "tillering"
    ],
    "weather": {
-    "rain_mm": 40,
     "rh_min": 85,
-    "days": 3
+    "days": 3,
+    "rain_total_min": 40
    },
-   "source": "Downy mildew (crazy top) starts where water stands after heavy rain, in nurseries and field low spots (CABI compendium).",
+   "source": "Downy mildew (crazy top) starts where water stands after heavy rain, in nurseries and field low spots (CABI compendium). Water, not a temperature band, is what it waits for: the rule asks for the rain over the humid run rather than a band the kharif nursery is inside anyway.",
    "tasks": {
     "en": [
      "Check the low, water-logged patches for thickened, twisted, pale leaves.",

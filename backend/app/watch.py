@@ -138,6 +138,19 @@ def cycle(db: Session | None = None, kb: KB | None = None, now: datetime | None 
                 stats["errors"] += 1
                 log.exception("watch: farm %s failed", farm.id)
         stats["farms"] = len(farms)
+
+        # A case whose officer let the clock run out moves to the next eligible
+        # desk. Both sides of the demo line, each on its own: a demo case is
+        # never handed to an officer who reviews real farmers.
+        for demo in (False, True):
+            try:
+                swept = services.sweep_overdue_cases(db, demo=demo, kb=kb, now=now)
+                stats["cases_handed_on"] += swept["moved"]
+                stats["cases_nobody_else_can_take"] += swept["stayed"]
+            except Exception:  # noqa: BLE001  the weather sweep must still finish
+                db.rollback()
+                stats["errors"] += 1
+                log.exception("watch: case sweep (demo=%s) failed", demo)
     finally:
         if own:
             db.close()

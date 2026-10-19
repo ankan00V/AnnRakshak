@@ -2,7 +2,7 @@
 which farm once signed in."""
 
 import re
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -13,7 +13,7 @@ from app.config import UPLOAD_DIR
 from app.db import Base, SessionLocal, engine
 from app.main import app
 from tests.test_api import _leaf_jpeg  # the same 1x1 leaf
-from app.models import Diagnosis, ExpertProfile, Farm, FarmerProfile, OtpChallenge, Problem, User, UserSession
+from app.models import Case, Diagnosis, ExpertProfile, Farm, FarmerProfile, OtpChallenge, Problem, User, UserSession
 from app.routers import auth as auth_router
 
 SOWN = (date.today() - timedelta(days=40)).isoformat()
@@ -720,3 +720,63 @@ def test_a_farmer_can_take_their_data_and_have_it_erased(client, mail):
         assert farm.village is None and farm.phone is None
         assert db.scalar(select(Diagnosis).where(Diagnosis.image_path.is_not(None))) is None
     assert not (UPLOAD_DIR / photo).exists()                     # the file, not only the row
+
+
+def _case_on(desk_id: int | None) -> int:
+    """An open case on a real farm, optionally already on somebody's desk.
+
+    Real, not the fixture's demo farm: an officer who signed up here is a real
+    account, and the two sides never see each other's cases."""
+    with SessionLocal() as db:
+        farm = db.scalar(select(Farm).where(Farm.is_demo.is_(False)))
+        if farm is None:
+            farm = Farm(farmer_name="Ramesh", crop="rice",
+                        sowing_date=date.today() - timedelta(days=40), district="Bhandara",
+                        lat=21.17, lon=79.65, area_acres=2, is_demo=False)
+            db.add(farm)
+            db.flush()
+        p = Problem(farm_id=farm.id, status="open")
+        db.add(p)
+        db.flush()
+        c = Case(problem_id=p.id, status="open", reason="BELOW_FLOOR",
+                 created_at=datetime.now(), assigned_to=desk_id)
+        db.add(c)
+        db.commit()
+        return c.id
+
+
+def test_an_officer_sees_their_own_desk_and_not_a_colleagues(client, mail):
+    """A case carries a farmer's name, their village and photographs of their
+    field. A district's staff have no reason to read one another's."""
+    me = _expert(client, mail, verified=True, supervisor=False)
+    other = _colleague()
+    mine, theirs = _case_on(me), _case_on(other)
+
+    listed = [c["id"] for c in client.get("/api/cases?status=open").json()]
+    assert mine in listed and theirs not in listed
+    assert client.get(f"/api/cases/{mine}").status_code == 200
+    assert client.get(f"/api/cases/{theirs}").status_code == 404   # not 403: not theirs to know of
+    # Asking for the whole queue does not widen it.
+    assert theirs not in [c["id"] for c in client.get("/api/cases?status=open&scope=all").json()]
+
+
+def test_a_supervisor_sees_the_whole_queue(client, mail):
+    boss = _expert(client, mail, verified=True, supervisor=True)
+    other = _colleague()
+    mine, theirs = _case_on(boss), _case_on(other)
+    listed = [c["id"] for c in client.get("/api/cases?status=open&scope=all").json()]
+    assert mine in listed and theirs in listed
+    assert client.get(f"/api/cases/{theirs}").status_code == 200
+
+
+def test_only_a_supervisor_places_a_case_by_name(client, mail):
+    """The system routes cases. An officer may give one up; they may not decide
+    whose desk it lands on, and they cannot read the roster to choose from."""
+    _expert(client, mail, verified=True, supervisor=False)
+    other = _colleague()
+    case_id = _case_on(None)
+    assert client.post(f"/api/cases/{case_id}/reassign",
+                       json={"to_user_id": other}).status_code == 403
+    assert client.get("/api/cases/officers/list").status_code == 403
+    # Handing it back to the system is theirs to do.
+    assert client.post(f"/api/cases/{case_id}/reassign", json={}).status_code == 200

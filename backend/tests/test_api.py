@@ -14,7 +14,7 @@ from app import cache, geo, services
 from app.db import Base, SessionLocal, engine
 from app.engine.weather import Day, Window
 from app.main import app
-from app.models import Alert, Farm
+from app.models import Alert, Case, Farm, OfficerAction
 
 
 def _leaf_jpeg() -> bytes:
@@ -146,7 +146,10 @@ def test_supervisor_can_route_a_backlog_and_see_the_load(client):
     assert all(o["oldest_wait_hours"] is not None for o in after["officers"])
 
 
-def test_an_officer_can_hand_a_case_to_a_named_colleague(client):
+def test_a_case_can_be_placed_by_name_when_there_is_nobody_to_be(client):
+    """These flows run with sign-in off, where there is no officer to be and so
+    no supervisor to check. Who may place a case by name when sign-in is on is
+    held in test_auth.py."""
     ids = _officers(3)
     r = diagnose(client, 1, "unsure")
     case_id = r["case"]["id"]
@@ -703,3 +706,54 @@ def test_the_picker_reads_the_alerts_once_however_many_fields(client):
     finally:
         event.remove(eng, "before_cursor_execute", count)
     assert len(reads) == 1, f"one read for the whole list, got {len(reads)}"
+
+
+def test_a_case_nobody_answers_moves_to_the_next_desk_on_its_own(client):
+    """The district promises a farmer 24 hours; one desk gets eight of them.
+    Past that the case moves without anyone having to chase it."""
+    from datetime import datetime as dt
+
+    from app.config import CASE_RESPONSE_HOURS, MAX_CASE_HANDOVERS
+    from app.kb import get_kb
+
+    ids = _officers(3)
+    case_id = diagnose(client, 1, "unsure")["case"]["id"]
+    with SessionLocal() as db:
+        case = db.get(Case, case_id)
+        first = case.assigned_to
+        assert first in ids
+        assert case.response_due_at is not None, "assignment must start a clock"
+        # Nothing is due yet, so nothing moves.
+        assert services.sweep_overdue_cases(db, kb=get_kb())["moved"] == 0
+
+        case.response_due_at = dt.now() - timedelta(minutes=1)
+        db.commit()
+        assert services.sweep_overdue_cases(db, kb=get_kb())["moved"] == 1
+
+    with SessionLocal() as db:
+        case = db.get(Case, case_id)
+        assert case.assigned_to != first, "it must not go back to the desk that let it lapse"
+        assert case.handovers == 1 and first in (case.passed_over or [])
+        assert case.response_due_at > dt.now()          # the new desk gets its own clock
+        moved = db.scalar(select(OfficerAction).where(OfficerAction.action == "auto_handover"))
+        assert moved is not None and moved.detail["from_user_id"] == first
+
+
+def test_a_case_stops_circulating_once_everyone_has_had_it(client):
+    """A case nobody will answer is a staffing problem. Passing it round for
+    ever is how that stays invisible, so the passing stops and it waits."""
+    from datetime import datetime as dt
+
+    from app.config import MAX_CASE_HANDOVERS
+    from app.kb import get_kb
+
+    _officers(2)
+    case_id = diagnose(client, 1, "unsure")["case"]["id"]
+    for _ in range(MAX_CASE_HANDOVERS + 2):
+        with SessionLocal() as db:
+            case = db.get(Case, case_id)
+            case.response_due_at = dt.now() - timedelta(minutes=1)
+            db.commit()
+            services.sweep_overdue_cases(db, kb=get_kb())
+    with SessionLocal() as db:
+        assert db.get(Case, case_id).handovers <= MAX_CASE_HANDOVERS

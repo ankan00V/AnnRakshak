@@ -282,6 +282,22 @@ EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND") or ("smtp" if SMTP_HOST else "ou
 FOLLOWUP_DUE_DAYS = 4
 CASE_ETA_MINUTES_PER_POSITION = 20
 
+# --- How long one officer may hold a case ---------------------------------
+
+CASE_RESPONSE_HOURS = 8
+"""The clock on one desk. The district's promise to the farmer is 24 hours
+(office.SLA_HOURS); this is the share of it any one officer gets before the
+case moves on by itself. Three desks still fit inside the promise, which is
+where MAX_CASE_HANDOVERS comes from."""
+
+MAX_CASE_HANDOVERS = 3
+"""After this many desks have let the clock run out, the case stops being
+passed around and waits for a supervisor. A case nobody will answer is a
+staffing problem, and circulating it forever hides that."""
+
+assert CASE_RESPONSE_HOURS * MAX_CASE_HANDOVERS <= 24, \
+    "a case must not be able to outlive the district's own 24-hour promise"
+
 
 # --------------------------------------------------------------------------
 # What production must not start without

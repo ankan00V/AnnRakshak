@@ -16,13 +16,16 @@ from datetime import UTC, date, datetime, timedelta
 from functools import lru_cache
 
 from PIL import Image
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.i18n import month_name as i18n_month
+from app import config
 from app.config import (
     CASE_ETA_MINUTES_PER_POSITION,
+    CASE_RESPONSE_HOURS,
     FOLLOWUP_DUE_DAYS,
+    MAX_CASE_HANDOVERS,
     KB_DIR,
     MAX_RISK_ALERTS_PER_FARM_PER_DAY,
     SATELLITE_MAX_AGE_DAYS,
@@ -44,6 +47,7 @@ from app.models import (
     FollowUp,
     LabelPrior,
     Observation,
+    OfficerAction,
     Problem,
     SensorReading,
     TrapReading,
@@ -319,7 +323,8 @@ def case_brief(db: Session, case: Case) -> dict:
     }
 
 
-def officers_for(db: Session, district: str | None, demo: bool = False) -> list[assign.Candidate]:
+def officers_for(db: Session, district: str | None, demo: bool = False,
+                 crop: str | None = None, kind: str | None = None) -> list[assign.Candidate]:
     """Verified officers who cover this district, with the load each is carrying.
 
     Demo and real never mix: a showcase farm's case goes to a demo officer, and
@@ -327,15 +332,18 @@ def officers_for(db: Session, district: str | None, demo: bool = False) -> list[
     tapped "try the demo". Nobody covering the district? Fall back to every
     officer on the same side of that line, so a case is never stranded."""
     rows = db.execute(
-        select(User.id, ExpertProfile.districts)
+        select(User.id, ExpertProfile.districts, ExpertProfile.crops, ExpertProfile.specialities)
         .join(ExpertProfile, ExpertProfile.user_id == User.id)
         .where(User.role == "expert", ExpertProfile.verified.is_(True),
                User.is_demo.is_(demo))
     ).all()
-    covering = [uid for uid, districts in rows if district and district in (districts or [])]
-    user_ids = covering or [uid for uid, _ in rows]
+    user_ids = [r[0] for r in rows]
     if not user_ids:
         return []
+    wanted = assign.SPECIALITY_FOR_KIND.get(kind or "")
+    fit = {r[0]: (bool(district and district in (r[1] or [])),
+                  bool(crop and crop in (r[2] or [])),
+                  bool(wanted and wanted in (r[3] or []))) for r in rows}
 
     open_counts = dict(db.execute(
         select(Case.assigned_to, func.count(Case.id))
@@ -348,16 +356,45 @@ def officers_for(db: Session, district: str | None, demo: bool = False) -> list[
         .where(Case.assigned_to.in_(user_ids))
         .group_by(Case.assigned_to)
     ).all())
-    return [assign.Candidate(uid, open_counts.get(uid, 0), last_active.get(uid)) for uid in user_ids]
+    return [assign.Candidate(uid, open_counts.get(uid, 0), last_active.get(uid), *fit[uid])
+            for uid in user_ids]
 
 
 def case_is_visible_to(db: Session, case: Case, user: User | None) -> bool:
-    """A demo account sees demo farms; a real account sees real ones. Checked on
-    every case route, not only in the list, so an id cannot be guessed across."""
+    """Whose case this is to read.
+
+    Two lines, both checked on every case route and not only in the list, so an
+    id cannot be guessed across either:
+
+      the demo line   a demo account sees demo farms, a real account real ones;
+      the desk        an officer sees the cases routed to them, and not their
+                      colleagues'. A case carries a farmer's name, their
+                      village, photographs of their field and an officer's
+                      verdict on it; there is no reason for the whole district's
+                      staff to read each other's. A supervisor sees all of it,
+                      because routing a backlog and answering for the office is
+                      the job.
+    """
     if user is None:
         return True  # sign-in is off (older flow tests); the routers guard that
     problem = db.get(Problem, case.problem_id)
-    return bool(problem and problem.farm.is_demo == user.is_demo)
+    if not (problem and problem.farm.is_demo == user.is_demo):
+        return False
+    if is_supervisor(db, user):
+        return True
+    # Unassigned means no officer covers that district yet: it belongs to
+    # whoever can take it rather than to nobody.
+    return case.assigned_to in (None, user.id)
+
+
+def is_supervisor(db: Session, user: User | None) -> bool:
+    """With sign-in off there is nobody to be, so there is nothing to withhold —
+    the same convention as auth.can_open_farm, and the older flow tests rely on
+    it."""
+    if not config.AUTH_ENFORCE:
+        return True
+    profile = db.get(ExpertProfile, user.id) if user and user.role == "expert" else None
+    return bool(profile and profile.supervisor)
 
 
 def workload(db: Session, district: str | None = None, demo: bool = False) -> list[dict]:
@@ -448,16 +485,70 @@ def reassign_case(db: Session, case: Case, to_user_id: int | None) -> int | None
     return picked if picked is not None else assign_case(db, case, problem.farm)
 
 
-def assign_case(db: Session, case: Case, farm: Farm, exclude: set[int] | None = None) -> int | None:
-    """Route a case to the officer who can reach it soonest (app.engine.assign)."""
-    candidates = [c for c in officers_for(db, farm.district, demo=farm.is_demo)
-                  if c.user_id not in (exclude or set())]
-    picked = assign.pick(candidates)
+def assign_case(db: Session, case: Case, farm: Farm, exclude: set[int] | None = None,
+                kb: KB | None = None) -> int | None:
+    """Route a case to the officer who should answer it (app.engine.assign).
+
+    Also starts the clock: the officer it lands on has CASE_RESPONSE_HOURS to
+    answer, and after that sweep_overdue_cases moves it on without anybody
+    having to notice."""
+    problem = db.get(Problem, case.problem_id)
+    target = problem.target if problem else None
+    kind = None
+    if target and kb is not None:
+        kind = (kb.targets.get(target) or {}).get("kind")
+    candidates = officers_for(db, farm.district, demo=farm.is_demo, crop=farm.crop, kind=kind)
+    skip = set(exclude or set()) | set(case.passed_over or [])
+    picked = assign.pick(candidates, exclude=skip)
     if picked is not None:
         case.assigned_to = picked
         case.assigned_at = datetime.now()
+        case.response_due_at = case.assigned_at + timedelta(hours=CASE_RESPONSE_HOURS)
         db.flush()
     return picked
+
+
+def sweep_overdue_cases(db: Session, demo: bool = False, kb: KB | None = None,
+                        now: datetime | None = None) -> dict:
+    """Move every case whose holder let the clock run out.
+
+    The district promises a farmer 24 hours. One desk gets eight of them; past
+    that the case goes to the next eligible officer, and the desk that did not
+    answer is recorded and passed over while anyone else is eligible. After
+    MAX_CASE_HANDOVERS the passing stops: a case nobody answers is a staffing
+    problem, and circulating it forever is how that stays invisible."""
+    now = now or datetime.now()
+    overdue = db.scalars(
+        select(Case).join(Problem, Problem.id == Case.problem_id)
+        .join(Farm, Farm.id == Problem.farm_id)
+        .where(Case.status == "open", Case.assigned_to.is_not(None),
+               Case.response_due_at.is_not(None), Case.response_due_at < now,
+               Case.handovers < MAX_CASE_HANDOVERS, Farm.is_demo.is_(demo),
+               or_(Case.snoozed_until.is_(None), Case.snoozed_until <= now))
+    ).all()
+    moved, stuck = 0, 0
+    for case in overdue:
+        problem = db.get(Problem, case.problem_id)
+        if problem is None:
+            continue
+        held = case.assigned_to
+        case.passed_over = [*(case.passed_over or []), held] if held else (case.passed_over or [])
+        picked = assign_case(db, case, problem.farm, kb=kb)
+        if picked is None or picked == held:
+            # Nobody else is eligible. Leave it where it is, give the desk a
+            # fresh clock so it is not swept every half hour, and let the
+            # overdue count in front of a supervisor say what is happening.
+            case.response_due_at = now + timedelta(hours=CASE_RESPONSE_HOURS)
+            stuck += 1
+            continue
+        case.handovers = (case.handovers or 0) + 1
+        moved += 1
+        office_log = {"from_user_id": held, "to_user_id": picked, "handover": case.handovers}
+        db.add(OfficerAction(actor_id=None, actor_name="AnnRakshak", action="auto_handover",
+                             subject="case", subject_id=case.id, detail=office_log,
+                             is_demo=demo))
+    db.commit()
+    return {"considered": len(overdue), "moved": moved, "stayed": stuck}
 
 
 def escalate(db: Session, problem: Problem, reason: str) -> Case:

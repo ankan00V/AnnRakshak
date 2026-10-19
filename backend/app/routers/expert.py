@@ -29,11 +29,16 @@ def list_cases(status: Literal["open", "resolved", "all"] = "open",
                sort: Literal["oldest", "newest", "waiting"] = "oldest",
                lang: str = "en",
                request: Request = None, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
-    """The district's queue, filtered the way an officer actually narrows it:
-    their own desk, one district, one crop, one problem, or only what has been
-    waiting too long. `scope=mine` also keeps unplaced cases, which stay
-    everybody's to pick up."""
+    """What this officer has to answer, narrowed the way they narrow it: one
+    district, one crop, one problem, or only what has been waiting too long.
+
+    An officer sees the cases the system routed to them. They are not shown
+    their colleagues' — a case carries a farmer's name, their village and
+    photographs of their field, and a district's staff have no reason to read
+    one another's. A supervisor sees the whole queue, which is what `scope`
+    is for; for everybody else it is their own desk whatever they ask for."""
     me = auth.current_user(request, db)
+    boss = services.is_supervisor(db, me)
     q = (select(Case).join(Problem, Problem.id == Case.problem_id)
          .join(Farm, Farm.id == Problem.farm_id))
     if me is not None:
@@ -41,7 +46,11 @@ def list_cases(status: Literal["open", "resolved", "all"] = "open",
         q = q.where(Farm.is_demo.is_(me.is_demo))
     if status != "all":
         q = q.where(Case.status == status)
-    if scope == "mine":
+    if not boss and me is not None:
+        # Unplaced cases are included: nobody covers that district yet, so they
+        # belong to whoever can take them rather than to nobody.
+        q = q.where(or_(Case.assigned_to == me.id, Case.assigned_to.is_(None)))
+    elif scope == "mine":
         q = q.where(or_(Case.assigned_to == (me.id if me else None), Case.assigned_to.is_(None)))
     elif scope == "unassigned":
         q = q.where(Case.assigned_to.is_(None))
@@ -182,7 +191,15 @@ class ReassignIn(BaseModel):
 
 @router.post("/{case_id}/reassign")
 def reassign(case_id: int, body: ReassignIn, request: Request, db: Session = Depends(get_db)):
-    """Hand a case on: wrong speciality, too long a queue, or off for the day."""
+    """Hand a case back: wrong speciality, or off for the day.
+
+    An ordinary officer may give a case up but not give it to a person: the
+    system routes it, which is what keeps "who is carrying what" out of the
+    hands of whoever asks loudest. Naming the next holder is a supervisor's
+    decision, and it is recorded as one."""
+    me = auth.current_user(request, db)
+    if body.to_user_id is not None and not services.is_supervisor(db, me):
+        raise HTTPException(403, "the system routes cases; ask a supervisor to place one by name")
     case = _case_for(request, db, case_id)
     if case.status != "open":
         raise HTTPException(409, "case is already resolved")
@@ -196,9 +213,13 @@ def reassign(case_id: int, body: ReassignIn, request: Request, db: Session = Dep
     return services.case_brief(db, case) | {"assigned_to": picked}
 
 
-@router.get("/officers/list")
+@router.get("/officers/list", dependencies=[Depends(auth.require_supervisor)])
 def officers(request: Request, district: str | None = None, db: Session = Depends(get_db)):
-    """Officers a case can be handed to, with what each is carrying."""
+    """Who is carrying what — a supervisor's view, for placing a backlog.
+
+    It was every officer's view, which made the district's staffing, each
+    colleague's load and the names behind it readable by anyone who signed up
+    and was verified."""
     me = auth.current_user(request, db)
     return services.workload(db, district, demo=bool(me and me.is_demo))
 

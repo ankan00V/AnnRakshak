@@ -5,7 +5,7 @@
   "bhashini:ai4bharat/indictrans-v2-all-gpu--t4"
  ],
  "source": "en",
- "updated": "2026-10-17",
+ "updated": "2026-10-19",
  "strings": {
   "(includes readings from your field sensor)": "(તમારા ક્ષેત્ર સંવેદકના વાંચનનો સમાવેશ થાય છે)",
   "A Trichogramma strain bred to survive insecticide sprays, so egg parasitism continues in fields that are also sprayed.": "જંતુનાશક સ્પ્રેમાં ટકી રહેવા માટે ટ્રાઇકોગ્રામા જાતનો ઉછેર કરવામાં આવે છે, તેથી ઇંડાનો પરોપજીવીપણું એવા ખેતરોમાં ચાલુ રહે છે જ્યાં છંટકાવ પણ કરવામાં આવે છે.",
@@ -384,6 +384,7 @@
   "How does it decide irrigation?": "તે સિંચાઈ કેવી રીતે નક્કી કરે છે?",
   "How much fertilizer should I put?": "મારે કેટલું ખાતર મૂકવું જોઈએ?",
   "Humidity": "ભેજનું પ્રમાણ",
+  "Humidity stayed above {rh}% and {mm} mm of rain fell over {run} days in a row ({first} to {last}). Water standing in the field favours {name}.": "ભેજ {rh}% થી ઉપર રહ્યો અને {mm} મીમી વરસાદ સતત {run} દિવસોમાં ({first} થી {last}) પડ્યો. ખેતરમાં ઊભું પાણી {name} ની તરફેણ કરે છે.",
   "Humidity stayed above {rh}% with average temperature {tlo}–{thi}°C for {run} days in a row ({first} to {last}). These conditions favour {name}.": "સતત {run} દિવસ ({first} થી {last}) માટે સરેરાશ તાપમાન {tlo}-{thi} °C સાથે ભેજ {rh}% થી ઉપર રહી હતી. આ શરતો {name} ને અનુકૂળ છે.",
   "I am an agriculture officer": "હું એક કૃષિ અધિકારી છું",
   "I am confused about what is wrong with my crop": "હું મૂંઝવણમાં છું કે મારા પાકમાં શું ખોટું છે",
