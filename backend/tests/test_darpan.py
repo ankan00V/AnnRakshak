@@ -261,3 +261,24 @@ def test_officer_performance_needs_a_resolved_case_before_it_claims_anything(cli
     out = ask("how are my officers doing")
     assert out["intent"] == "performance"
     assert "nothing to measure" in " ".join(out["lines"])
+
+
+def test_darpan_does_not_read_the_roster_to_an_ordinary_officer(client):
+    """"Who is free" is the district's staffing. An officer who is not a
+    supervisor is told about their own desk instead."""
+    _case("Bhandara")
+    me = _officer()
+    with SessionLocal() as db:
+        db.get(ExpertProfile, me.id).supervisor = False
+        db.commit()
+    out = ask("who is free")
+    assert out["intent"] == "officers"
+    said = " ".join(out["lines"])
+    assert "desk" in said or "assigned to you" in said
+    assert "carrying the most" not in said
+
+    with SessionLocal() as db:          # a supervisor still gets the roster
+        db.get(ExpertProfile, me.id).supervisor = True
+        db.commit()
+    assert "Every desk is clear." in " ".join(ask("who is free")["lines"]) or \
+        "carrying the most" in " ".join(ask("who is free")["lines"])

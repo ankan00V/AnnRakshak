@@ -798,6 +798,19 @@ export interface WeatherView {
   seasonal: { group: string; name: string; targets: string[]; district_calls_this_month: number; state_share_this_month: number; calls: number }[]
 }
 
+export interface PesticideBaseline {
+  available: boolean
+  state: string
+  source: string
+  unit_note: string
+  chemical: [string, number][]
+  bio: [string, number][]
+  india_chemical: [string, number][]
+  latest_share_pct: number | null
+  rank: number | null
+  states_ranked: number
+}
+
 export interface KccPanel {
   available: boolean
   month: number

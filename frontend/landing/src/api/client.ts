@@ -22,6 +22,7 @@ import type {
   Hotspots,
   IndentRow,
   KccPanel,
+  PesticideBaseline,
   KrishiAnswer,
   KrishiChip,
   LabelVerdict,
@@ -238,6 +239,7 @@ export const api = {
   hotspots: () => req<Hotspots>('/api/officials/hotspots'),
   modelCard: () => req<ModelCard>('/api/officials/model'),
   outlook: () => req<OutlookRow[]>('/api/officials/outlook'),
+  pesticideBaseline: () => req<PesticideBaseline>('/api/officials/pesticides'),
   kcc: () => req<KccPanel>('/api/officials/kcc'),
   addSensor: (farmId: number, readings: Record<string, unknown>[]) =>
     req<{ stored: number }>(`/api/farms/${farmId}/sensor`, json(readings)),

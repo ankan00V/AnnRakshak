@@ -20,14 +20,17 @@ import BrandMark from '../ui/BrandMark'
  *  before choosing a screen, and the district's live state across the top of
  *  every page.
  */
-const TABS: { to: string; end?: boolean; icon: typeof Sunrise; label: string; count?: 'queue' | 'gaps' | 'officers' }[] = [
+const TABS: { to: string; end?: boolean; icon: typeof Sunrise; label: string;
+  count?: 'queue' | 'gaps' | 'officers'; supervisorOnly?: boolean }[] = [
   { to: '/officer', end: true, icon: Sunrise, label: 'Today' },
   { to: '/officer/queue', icon: ClipboardList, label: 'Queue', count: 'queue' },
   { to: '/officer/map', icon: MapIcon, label: 'Map' },
   { to: '/officer/advisories', icon: Megaphone, label: 'Advisories' },
   { to: '/officer/inputs', icon: Package, label: 'Inputs' },
   { to: '/officer/model', icon: BrainCircuit, label: 'Model & gaps', count: 'gaps' },
-  { to: '/officer/officers', icon: Users, label: 'Officers', count: 'officers' },
+  // Staffing — colleagues' names, their loads, who is waiting to be let in —
+  // is the office's business and not every officer's.
+  { to: '/officer/officers', icon: Users, label: 'Officers', count: 'officers', supervisorOnly: true },
 ]
 
 export default function OfficerShell() {
@@ -40,6 +43,9 @@ export default function OfficerShell() {
   const work = useAsync(() => api.worklist(), [], 'worklist')
   const summary = useAsync(() => api.summary(), [], 'summary')
   const states = me?.profile?.states ?? []
+
+  const boss = me?.profile?.supervisor === true
+  const tabs = TABS.filter((t) => !t.supervisorOnly || boss)
 
   const counts: Record<string, number | null> = {
     queue: summary.data?.totals.open_cases ?? null,
@@ -75,18 +81,18 @@ export default function OfficerShell() {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={runSweep} disabled={sweeping} title="Score every farm against today's weather"
+            {boss && <button onClick={runSweep} disabled={sweeping} title="Score every farm against today's weather"
               className="flex items-center gap-2 rounded-full bg-ochre text-cream text-sm font-medium px-3.5 py-2 disabled:opacity-60 hover:brightness-110 transition">
               {sweeping ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               <span className="hidden sm:inline">Run risk sweep</span>
-            </button>
+            </button>}
             <AccountMenu />
           </div>
         </div>
 
         {/* Phone and tablet: the rail lies down under the header. */}
         <nav className="lg:hidden flex gap-1 px-2 overflow-x-auto no-scrollbar border-t border-cream/10">
-          {TABS.map(({ to, end, icon: Icon, label, count }) => (
+          {tabs.map(({ to, end, icon: Icon, label, count }) => (
             <NavLink key={to} to={to} end={end}
               className={({ isActive }) => `flex items-center gap-2 whitespace-nowrap px-3 py-2.5 text-sm border-b-2 transition-colors ${
                 isActive ? 'border-ochre text-cream font-medium' : 'border-transparent text-cream/60'}`}>
@@ -99,7 +105,7 @@ export default function OfficerShell() {
       </header>
 
       <nav className="hidden lg:flex flex-col gap-1 fixed left-0 top-16 bottom-0 w-56 bg-soil-dark/95 px-3 pt-4">
-        {TABS.map(({ to, end, icon: Icon, label, count }) => (
+        {tabs.map(({ to, end, icon: Icon, label, count }) => (
           <NavLink key={to} to={to} end={end}
             className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 min-h-[42px] text-[14px] transition-colors ${
               isActive ? 'bg-cream/10 text-cream font-medium' : 'text-cream/60 hover:text-cream hover:bg-cream/5'}`}>
@@ -120,7 +126,7 @@ export default function OfficerShell() {
 
       <main className="px-4 py-5 lg:pl-[calc(14rem+2.5rem)] lg:pr-10 lg:pt-7 lg:pb-16">
         <div className="lg:mx-auto lg:max-w-6xl space-y-5 lg:space-y-7">
-          <Standing work={work.data} summary={summary.data} />
+          <Standing work={work.data} summary={summary.data} boss={boss} />
           {sweep && <div className="rounded-xl bg-leaf/10 text-leaf-deep text-sm px-4 py-2">{sweep}</div>}
           <div key={key} className="animate-fadein space-y-5 lg:space-y-7">
             <Outlet />
@@ -147,18 +153,21 @@ function Badge({ n }: { n: number }) {
 /** Where the district stands, on every screen: five numbers, each a door to
  *  the screen that settles it. A scoreboard would be decoration; these are the
  *  things an officer is answerable for. */
-function Standing({ work, summary }: { work: Worklist | null; summary: Summary | null }) {
+function Standing({ work, summary, boss }: { work: Worklist | null; summary: Summary | null; boss: boolean }) {
   const cells = [
     { label: 'Open cases', v: summary?.totals.open_cases, to: '/officer/queue', warn: false },
     { label: 'Past SLA', v: work?.overdue_count, to: '/officer/queue?overdue=1', warn: (work?.overdue_count ?? 0) > 0 },
     { label: 'Unassigned', v: work?.unrouted.length, to: '/officer', warn: (work?.unrouted.length ?? 0) > 0 },
-    { label: 'Officers waiting', v: work?.pending_officers, to: '/officer/officers', warn: (work?.pending_officers ?? 0) > 0 },
+    // Who is waiting to be let in is a door only a supervisor can walk through.
+    ...(boss ? [{ label: 'Officers waiting', v: work?.pending_officers, to: '/officer/officers',
+                  warn: (work?.pending_officers ?? 0) > 0 }] : []),
     { label: 'Farms watched', v: summary?.totals.farms, to: '/officer/map', warn: false },
   ]
   return (
     <section aria-label="District standing"
-      className="rounded-2xl bg-white border border-soil-dark/10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5
-                 divide-x divide-y sm:divide-y-0 divide-soil-dark/10 overflow-hidden">
+      className={`rounded-2xl bg-white border border-soil-dark/10 grid grid-cols-2 sm:grid-cols-3 ${
+        cells.length === 5 ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}
+                 divide-x divide-y sm:divide-y-0 divide-soil-dark/10 overflow-hidden`}>
       {cells.map(({ label, v, to, warn }) => (
         <Link key={label} to={to} className="px-4 py-3 hover:bg-cream transition-colors">
           <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-soil-dark/45">{label}</p>

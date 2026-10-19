@@ -26,7 +26,7 @@ from datetime import datetime, timedelta
 
 from fastapi import Depends, HTTPException, Request, Response, WebSocket
 from starlette.requests import HTTPConnection
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app import config
@@ -241,7 +241,25 @@ def can_open_farm(user: User | None, farm: Farm, db: Session | None = None) -> b
         if db is None:
             return True            # no session here: the router's own gate stands
         profile = expert_profile(db, user)
-        return profile is not None and profile.verified
+        if profile is None or not profile.verified:
+            return False
+        if farm.is_demo != user.is_demo:
+            return False           # the demo line runs through officers too
+        if profile.supervisor:
+            return True
+        # An officer opens the farm behind a case on their own desk. Scoping the
+        # case list and leaving the farm open would have been no scoping at all:
+        # the farmer's name, village, photographs and history are on this side
+        # of it too. An unplaced case counts — nobody covers that district yet,
+        # so it belongs to whoever can take it.
+        from app.models import Case, Problem  # noqa: PLC0415  (models imports auth's siblings)
+
+        return db.scalar(
+            select(Case.id).join(Problem, Problem.id == Case.problem_id)
+            .where(Problem.farm_id == farm.id,
+                   or_(Case.assigned_to == user.id, Case.assigned_to.is_(None)))
+            .limit(1)
+        ) is not None
     return farm.user_id == user.id or (user.is_demo and farm.is_demo)
 
 

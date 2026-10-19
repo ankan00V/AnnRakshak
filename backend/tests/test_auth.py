@@ -275,11 +275,44 @@ def test_farmers_see_only_their_own_farms(client, mail):
     assert len(client.get("/api/farms").json()) == 2
 
 
-def test_experts_open_any_farm_and_the_consoles(client, mail):
+def test_an_officer_opens_the_farm_behind_their_own_case_and_no_other(client, mail):
+    """Scoping the case list and leaving the farm open would be no scoping at
+    all: the farmer's name, village, photographs and history are on that side
+    of it too."""
     expert_signup(client, mail)
-    assert client.get("/api/farms/1").status_code == 200
+    other_desk = _colleague(email="third@kvk.org.in")   # its own session: not inside ours
+    with SessionLocal() as db:
+        me = db.scalar(select(User).where(User.email == "dr.kale@kvk.org.in"))
+        mine = Farm(farmer_name="Mine", crop="rice", sowing_date=date.today() - timedelta(days=40),
+                    district="Bhandara", lat=21.1, lon=79.6, area_acres=2, is_demo=False)
+        theirs = Farm(farmer_name="Theirs", crop="rice", sowing_date=date.today() - timedelta(days=40),
+                      district="Bhandara", lat=21.2, lon=79.7, area_acres=2, is_demo=False)
+        db.add_all([mine, theirs])
+        db.flush()
+        for farm, holder in ((mine, me.id), (theirs, other_desk)):
+            p = Problem(farm_id=farm.id, status="open")
+            db.add(p)
+            db.flush()
+            db.add(Case(problem_id=p.id, status="open", reason="BELOW_FLOOR",
+                        created_at=datetime.now(), assigned_to=holder))
+        mine_id, theirs_id, my_id = mine.id, theirs.id, me.id
+        # A KVK scientist is a supervisory post, and this test is about the
+        # officer who is not one.
+        db.get(ExpertProfile, me.id).supervisor = False
+        db.commit()
+
+    assert client.get(f"/api/farms/{mine_id}").status_code == 200
+    assert client.get(f"/api/farms/{theirs_id}").status_code == 403
+    assert client.get("/api/farms/1").status_code == 403          # the fixture's demo farm
     assert client.get("/api/cases").status_code == 200
     assert client.get("/api/officials/summary").status_code == 200
+
+    with SessionLocal() as db:                                     # a supervisor opens the district
+        db.get(ExpertProfile, my_id).supervisor = True
+        db.commit()
+    assert client.get(f"/api/farms/{theirs_id}").status_code == 200
+    assert client.get("/api/farms/1").status_code == 403           # but never across the demo line
+
     r = client.post("/api/farms", json={"farmer_name": "X", "crop": "maize", "sowing_date": SOWN,
                                         "district": "Bhandara", "lat": 21.3, "lon": 79.7, "area_acres": 1})
     assert r.status_code == 403
@@ -780,3 +813,18 @@ def test_only_a_supervisor_places_a_case_by_name(client, mail):
     assert client.get("/api/cases/officers/list").status_code == 403
     # Handing it back to the system is theirs to do.
     assert client.post(f"/api/cases/{case_id}/reassign", json={}).status_code == 200
+
+
+def test_district_wide_writes_are_supervisor_work(client, mail):
+    """Each of these reaches every farm in the district: alerts raised, phones
+    woken, email sent. They were open to any verified officer, and the watcher
+    sweep to any signed-in account at all."""
+    _expert(client, mail, verified=True, supervisor=False)
+    assert client.post("/api/officials/risk/run-all").status_code == 403
+    assert client.post("/api/officials/watch/run").status_code == 403
+
+
+def test_a_farmer_cannot_start_a_district_sweep(client, mail):
+    farmer_signup(client, mail)
+    assert client.post("/api/officials/watch/run").status_code == 403
+    assert client.post("/api/officials/risk/run-all").status_code == 403

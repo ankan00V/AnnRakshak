@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { BadgeCheck, Loader2, UserPlus } from 'lucide-react'
 import { api } from '../../api/client'
 import { useAsync } from '../../lib/hooks'
@@ -9,14 +10,14 @@ import { OfficerLoadPanel, PageHead, PanelBone, pct } from '../panels'
 /** Staff. Who is carrying what, and who is still waiting to be let in —
  *  verification is a real decision the district office makes by hand. */
 export default function Officers() {
-  const pending = useAsync(() => api.pendingOfficers(), [])
   const { me } = useAuth()
+  // The whole screen is the office's staffing: colleagues by name, what each
+  // carries, who is waiting to be let in, and how fast each desk clears. An
+  // officer has their own queue; this is not theirs to read.
+  const mayVerify = me?.profile?.supervisor === true
+  const pending = useAsync(() => (mayVerify ? api.pendingOfficers() : Promise.resolve([])), [mayVerify])
   const [busy, setBusy] = useState<number | null>(null)
   const [failed, setFailed] = useState<string | null>(null)
-  // Letting a colleague in is a supervisor's decision; an officer who could
-  // verify arrivals could verify themselves, which is the same as not checking
-  // anyone. So the list is visible to the district and the button is not.
-  const mayVerify = me?.profile?.supervisor === true
 
   const verify = async (id: number) => {
     setBusy(id)
@@ -29,6 +30,22 @@ export default function Officers() {
     } finally {
       setBusy(null)
     }
+  }
+
+  if (!mayVerify) {
+    // Reached by typing the URL: the tab is not shown to an officer, the
+    // server refuses each of these reads, and a page of refusals reads like a
+    // fault. Say what it is instead.
+    return (
+      <>
+        <PageHead title="Officers" purpose="The district's staffing." />
+        <Card className="p-5 text-sm text-soil-dark/70">
+          Who is on the books, what each desk carries and who is waiting to be let in are the
+          district office's to see. Your own queue is under <Link to="/officer/queue"
+            className="text-leaf-deep font-medium underline underline-offset-2">Queue</Link>.
+        </Card>
+      </>
+    )
   }
 
   return (
