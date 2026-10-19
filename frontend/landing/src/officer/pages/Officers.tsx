@@ -76,6 +76,25 @@ export default function Officers() {
                       {o.districts.slice(0, 3).map((d) => <Pill key={d} tone="leaf">{d}</Pill>)}
                       {o.districts.length > 3 && <Pill tone="leaf">+{o.districts.length - 3}</Pill>}
                     </span>
+                    {/* Verifying somebody used to mean deciding from a name and
+                        an employee ID. This is the office they give, and the
+                        person who can confirm they work there — which is the
+                        check: a phone call. */}
+                    {o.office && (
+                      <span className="mt-1 block text-xs text-soil-dark/60">
+                        {o.office}{o.office_phone ? ` · ${o.office_phone}` : ''}
+                        {o.posted_since ? ` · in post since ${o.posted_since.slice(0, 7)}` : ''}
+                      </span>
+                    )}
+                    {o.reporting && (
+                      <span className="mt-1 block text-xs">
+                        <span className="text-soil-dark/55">Vouched by </span>
+                        <span className="font-medium">{o.reporting.name}</span>
+                        <span className="text-soil-dark/55">, {o.reporting.designation} · </span>
+                        <a href={o.reporting.contact.includes('@') ? `mailto:${o.reporting.contact}` : `tel:${o.reporting.contact}`}
+                          className="text-leaf-deep underline underline-offset-2">{o.reporting.contact}</a>
+                      </span>
+                    )}
                   </span>
                   {mayVerify ? (
                     <button onClick={() => verify(o.user_id)} disabled={busy === o.user_id}

@@ -4,6 +4,7 @@ import asyncio
 import logging
 import os
 import re
+from pathlib import Path
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Request
@@ -172,6 +173,13 @@ def mount_web(target, web_dir) -> None:
         wanted = (web_dir / path).resolve()
         if path and root in wanted.parents and wanted.is_file():
             return FileResponse(wanted)        # favicon, manifest, the service worker
+        # A path that asks for a file must not be answered with the shell. A
+        # relative asset base once made /signup/expert ask for
+        # /signup/assets/index.js; this returned index.html with it, the browser
+        # refused the MIME type, and the page went blank with the real cause
+        # three steps away. A 404 says what happened.
+        if "." in Path(path).name:
+            raise HTTPException(404, "not found")
         index = web_dir / "index.html"
         if not index.is_file():
             raise HTTPException(404, "not found")

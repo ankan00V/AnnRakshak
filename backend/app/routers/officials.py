@@ -141,7 +141,9 @@ def hotspots(request: Request, days: int = 45, lang: str = "en",
     # A pin carries a farmer's name and the coordinates of their field. The
     # demo line decides whose: a demo viewer sees the seeded farms, never a
     # real farmer, and a district officer is never shown a demo pin as a case.
-    demo = _demo(request, db)
+    me = _me(request, db)
+    demo = bool(me and me.is_demo)
+    boss = services.is_supervisor(db, me)
     since = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=days)
     confs = {c.problem_id: c for c in db.scalars(select(Confirmation)).all()}
     advised = {a.problem_id for a in db.scalars(select(Advisory)).all()}
@@ -161,12 +163,16 @@ def hotspots(request: Request, days: int = 45, lang: str = "en",
             continue
         if target and target.endswith("_healthy"):
             continue
+        # A pin nobody can open is a picture, so it carries the field it stands
+        # for — but only for someone who may open that field. For an officer the
+        # map is the shape of an outbreak, not a list of their neighbours.
+        identify = boss or auth.can_open_farm(me, f, db)
         points.append({
             "problem_id": p.id, "lat": f.lat, "lon": f.lon, "district": f.district, "crop": f.crop,
             "target": target, "name": tr(kb.targets[target]["names"], lang) if target in kb.targets else None,
             "status": status, "on": p.opened_at.date().isoformat() if p.opened_at else None,
-            # A pin nobody can open is a picture: carry the field it stands for.
-            "farm_id": f.id, "farmer_name": f.farmer_name,
+            "farm_id": f.id if identify else None,
+            "farmer_name": f.farmer_name if identify else None,
         })
     # The alert layer of the same map: these carry a field's coordinates too,
     # so they follow the same line as the pins above.
@@ -427,10 +433,16 @@ def verify_officer(user_id: int, body: VerifyIn, request: Request, db: Session =
 @router.get("/farms/{farm_id}")
 def farm_dossier(farm_id: int, request: Request, lang: str = "en",
                  db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
-    """One farm, everything the office knows about it."""
+    """One farm, everything the office knows about it.
+
+    Everything is the word: the farmer's name and number, where the field is,
+    every photograph they have sent and every verdict on it. This route wrote
+    its own check — the demo line only — and so stayed open to any verified
+    officer after the farm itself stopped being. One rule, in auth, for every
+    door into a farm."""
     farm = db.get(Farm, farm_id)
     me = _me(request, db)
-    if farm is None or (me is not None and farm.is_demo != me.is_demo):
+    if farm is None or not auth.can_open_farm(me, farm, db):
         raise HTTPException(404, "farm not found")
     return office.farm_dossier(db, kb, farm, lang)
 

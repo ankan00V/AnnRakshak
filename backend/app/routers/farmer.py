@@ -339,6 +339,52 @@ def alert_outcome(alert_id: int, body: AlertOutcomeIn, db: Session = Depends(get
     return services.record_alert_outcome(db, kb, alert, body.outcome, body.lang)
 
 
+class HarvestIn(BaseModel):
+    harvested_on: date | None = None
+    note: str | None = Field(default=None, max_length=200)
+
+
+@router.post("/farms/{farm_id}/harvest")
+def harvest(farm_id: int, body: HarvestIn, request: Request, db: Session = Depends(get_db),
+            kb: KB = Depends(get_kb), lang: Lang = "en"):
+    """The season is over: the crop came off this field.
+
+    The field stays on the farmer's list. What was growing becomes a season in
+    its history, the risk engine stops warning about a crop that is no longer
+    there, and the days-after-sowing stop running away."""
+    farm = _own_farm(db, farm_id, request)
+    if body.harvested_on and body.harvested_on > date.today():
+        raise HTTPException(422, "a harvest cannot be in the future")
+    if body.harvested_on and body.harvested_on < farm.sowing_date:
+        raise HTTPException(422, "a harvest cannot be before the sowing")
+    services.close_season(db, farm, on=body.harvested_on, note=body.note)
+    return services.farm_view(kb, farm, lang)
+
+
+class SowIn(BaseModel):
+    crop: str
+    sowing_date: date
+    date_basis: Literal["sown", "transplanted"] = "sown"
+    variety: str | None = Field(default=None, max_length=80)
+
+
+@router.post("/farms/{farm_id}/sow")
+def sow(farm_id: int, body: SowIn, request: Request, db: Session = Depends(get_db),
+        kb: KB = Depends(get_kb), lang: Lang = "en"):
+    """The next season on the same field.
+
+    This is why a farm row is the field and not the sowing: a farmer who grows
+    rice again in June presses this, rather than registering the same plot a
+    second time and watching their list fill up with copies of it."""
+    farm = _own_farm(db, farm_id, request)
+    try:
+        services.sow_again(db, kb, farm, crop=body.crop, sowing_date=body.sowing_date,
+                           date_basis=body.date_basis, variety=body.variety)
+    except ValueError as e:
+        raise HTTPException(422, str(e)) from e
+    return services.farm_view(kb, farm, lang)
+
+
 @router.post("/farms/{farm_id}/risk/run")
 def run_risk(farm_id: int, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
     return services.run_risk(db, kb, _farm(db, farm_id))

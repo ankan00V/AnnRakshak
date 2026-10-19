@@ -270,6 +270,17 @@ def pending_officers(db: Session, *, demo: bool) -> list[dict]:
         "qualification": p.qualification, "experience_years": p.experience_years,
         "districts": p.districts or [], "crops": p.crops or [],
         "joined": u.created_at.isoformat() if getattr(u, "created_at", None) else None,
+        # What the sign-up now asks for, because a supervisor verifying a
+        # stranger was being asked to decide from a name and an employee ID.
+        # The reporting officer is the one that matters: it is a phone call.
+        "department": p.department,
+        "office": ", ".join(x for x in (p.office_address, p.block, p.pincode) if x) or None,
+        "office_phone": p.office_phone,
+        "joined_service_on": p.joined_service_on.isoformat() if p.joined_service_on else None,
+        "posted_since": p.posted_since.isoformat() if p.posted_since else None,
+        "reporting": {"name": p.reporting_name, "designation": p.reporting_designation,
+                      "contact": p.reporting_contact} if p.reporting_name else None,
+        "declared_at": p.declared_at.isoformat() if p.declared_at else None,
     } for u, p in rows]
 
 

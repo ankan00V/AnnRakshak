@@ -13,7 +13,7 @@ from app.config import UPLOAD_DIR
 from app.db import Base, SessionLocal, engine
 from app.main import app
 from tests.test_api import _leaf_jpeg  # the same 1x1 leaf
-from app.models import Case, Diagnosis, ExpertProfile, Farm, FarmerProfile, OtpChallenge, Problem, User, UserSession
+from app.models import Case, Confirmation, Diagnosis, ExpertProfile, Farm, FarmerProfile, OtpChallenge, Problem, User, UserSession
 from app.routers import auth as auth_router
 
 SOWN = (date.today() - timedelta(days=40)).isoformat()
@@ -67,7 +67,18 @@ def expert_signup(c: TestClient, mail, email="dr.kale@kvk.org.in", phone="912345
     assert r.status_code == 200, r.text
     return c.post("/api/auth/signup/expert", json={
         "challenge_id": r.json()["challenge_id"], "code": code_of(mail), "name": "Dr. S. Kale", "phone": phone,
-        "designation": "kvk_scientist", "organisation": "KVK Sakoli, Bhandara", "employee_id": "KVK-BH-0231",
+        "department": "state_agri", "office_address": "Krishi Bhavan, Civil Lines",
+        "block": "Sakoli", "state": "Maharashtra", "pincode": "441802",
+        "office_phone": "07184-255201", "joined_service_on": "2014-07-01",
+        "posted_since": "2022-06-15", "reporting_name": "Smt. A. Deshmukh",
+        "reporting_designation": "District Superintending Agriculture Officer",
+        "reporting_contact": "dsao.bhandara@maha.gov.in", "declaration": True, "designation": "kvk_scientist", "organisation": "KVK Sakoli, Bhandara", "employee_id": "KVK-BH-0231",
+        "department": "state_agri", "office_address": "Krishi Bhavan, Civil Lines",
+        "block": "Sakoli", "state": "Maharashtra", "pincode": "441802",
+        "office_phone": "07184-255201", "joined_service_on": "2014-07-01",
+        "posted_since": "2022-06-15", "reporting_name": "Smt. A. Deshmukh",
+        "reporting_designation": "District Superintending Agriculture Officer",
+        "reporting_contact": "dsao.bhandara@maha.gov.in", "declaration": True,
         "qualification": "phd", "experience_years": 12, "districts": ["Bhandara", "Gondia"],
         "crops": ["rice", "soybean"], "specialities": ["plant_pathology"], "languages": ["mr", "hi", "en"]})
 
@@ -425,7 +436,14 @@ def _expert(client, mail, *, verified: bool, supervisor: bool = False,
     client.post("/api/auth/signup/expert", json={
         "challenge_id": r.json()["challenge_id"], "code": code_of(mail), "name": "New Officer",
         "phone": phone, "designation": "agri_officer", "organisation": "DAO",
-        "employee_id": "E-1", "qualification": "bsc_agri", "experience_years": 3,
+        "employee_id": "E-1",
+        "department": "state_agri", "office_address": "Krishi Bhavan, Civil Lines",
+        "block": "Sakoli", "state": "Maharashtra", "pincode": "441802",
+        "office_phone": "07184-255201", "joined_service_on": "2014-07-01",
+        "posted_since": "2022-06-15", "reporting_name": "Smt. A. Deshmukh",
+        "reporting_designation": "District Superintending Agriculture Officer",
+        "reporting_contact": "dsao.bhandara@maha.gov.in", "declaration": True,
+        "qualification": "bsc_agri", "experience_years": 3,
         "districts": ["Bhandara"], "crops": ["rice"], "specialities": ["entomology"],
         "languages": ["mr"]})
     with SessionLocal() as db:
@@ -639,7 +657,11 @@ def test_the_post_decides_the_supervisor_rank(client, mail):
     r = client.post("/api/auth/signup/expert", json={
         "challenge_id": r.json()["challenge_id"], "code": code_of(mail), "name": "R. Ingle",
         "phone": "9123456781", "designation": "agri_assistant", "organisation": "Taluka Agri Office",
-        "employee_id": "MH-AA-77", "qualification": "bsc_agri", "experience_years": 4,
+        "employee_id": "MH-AA-77", "department": "state_agri",
+        "office_address": "Taluka Agri Office, Sakoli", "state": "Maharashtra", "pincode": "441802",
+        "reporting_name": "Shri P. Rathod", "reporting_designation": "Taluka Agriculture Officer",
+        "reporting_contact": "tao.sakoli@maha.gov.in", "declaration": True,
+        "qualification": "bsc_agri", "experience_years": 4,
         "districts": ["Bhandara"], "crops": ["rice"], "specialities": ["agronomy"], "languages": ["mr"]})
     assert r.status_code == 201, r.text
     assert r.json()["profile"]["supervisor"] is False         # an assistant advises
@@ -682,7 +704,12 @@ def test_an_officer_outside_maharashtra_can_sign_up(client, mail):
                                            "email": "dr.bob@kvk.org.in", "phone": "9123456788"})
     r = client.post("/api/auth/signup/expert", json={
         "challenge_id": r.json()["challenge_id"], "code": code_of(mail), "name": "Dr. Bob",
-        "phone": "9123456788", "designation": "kvk_scientist", "organisation": "KVK Kapurthala, Punjab",
+        "phone": "9123456788", "department": "state_agri", "office_address": "Krishi Bhavan, Civil Lines",
+        "block": "Sakoli", "state": "Maharashtra", "pincode": "441802",
+        "office_phone": "07184-255201", "joined_service_on": "2014-07-01",
+        "posted_since": "2022-06-15", "reporting_name": "Smt. A. Deshmukh",
+        "reporting_designation": "District Superintending Agriculture Officer",
+        "reporting_contact": "dsao.bhandara@maha.gov.in", "declaration": True, "designation": "kvk_scientist", "organisation": "KVK Kapurthala, Punjab",
         "employee_id": "KVKPT001", "qualification": "bsc_agri", "experience_years": 13,
         "districts": ["Hoshiarpur", "Kapurthala"], "crops": ["rice"],
         "specialities": ["plant_pathology"], "languages": ["en", "hi"]})
@@ -697,7 +724,12 @@ def test_a_district_nobody_publishes_is_still_refused(client, mail):
                                            "email": "dr.nowhere@kvk.org.in", "phone": "9123456787"})
     r = client.post("/api/auth/signup/expert", json={
         "challenge_id": r.json()["challenge_id"], "code": code_of(mail), "name": "Dr. Nowhere",
-        "phone": "9123456787", "designation": "kvk_scientist", "organisation": "KVK",
+        "phone": "9123456787", "department": "state_agri", "office_address": "Krishi Bhavan, Civil Lines",
+        "block": "Sakoli", "state": "Maharashtra", "pincode": "441802",
+        "office_phone": "07184-255201", "joined_service_on": "2014-07-01",
+        "posted_since": "2022-06-15", "reporting_name": "Smt. A. Deshmukh",
+        "reporting_designation": "District Superintending Agriculture Officer",
+        "reporting_contact": "dsao.bhandara@maha.gov.in", "declaration": True, "designation": "kvk_scientist", "organisation": "KVK",
         "employee_id": "X-1", "qualification": "bsc_agri", "experience_years": 1,
         "districts": ["Atlantis"], "crops": ["rice"],
         "specialities": ["plant_pathology"], "languages": ["en"]})
@@ -712,7 +744,12 @@ def test_an_officers_own_states_travel_with_their_profile(client, mail):
                                            "email": "dr.rain@kvk.org.in", "phone": "9123456786"})
     r = client.post("/api/auth/signup/expert", json={
         "challenge_id": r.json()["challenge_id"], "code": code_of(mail), "name": "Dr. Rain",
-        "phone": "9123456786", "designation": "kvk_scientist", "organisation": "KVK Kapurthala",
+        "phone": "9123456786", "department": "state_agri", "office_address": "Krishi Bhavan, Civil Lines",
+        "block": "Sakoli", "state": "Maharashtra", "pincode": "441802",
+        "office_phone": "07184-255201", "joined_service_on": "2014-07-01",
+        "posted_since": "2022-06-15", "reporting_name": "Smt. A. Deshmukh",
+        "reporting_designation": "District Superintending Agriculture Officer",
+        "reporting_contact": "dsao.bhandara@maha.gov.in", "declaration": True, "designation": "kvk_scientist", "organisation": "KVK Kapurthala",
         "employee_id": "KVKPT002", "qualification": "bsc_agri", "experience_years": 4,
         "districts": ["Hoshiarpur", "Kapurthala"], "crops": ["rice"],
         "specialities": ["plant_pathology"], "languages": ["en"]})
@@ -828,3 +865,91 @@ def test_a_farmer_cannot_start_a_district_sweep(client, mail):
     farmer_signup(client, mail)
     assert client.post("/api/officials/watch/run").status_code == 403
     assert client.post("/api/officials/risk/run-all").status_code == 403
+
+
+def _expert_body(mail, challenge_id, **over) -> dict:
+    """A complete officer sign-up, as the form sends it."""
+    return {
+        "challenge_id": challenge_id, "code": code_of(mail), "name": "Dr. S. Kale",
+        "phone": "9123456700", "designation": "agri_officer", "department": "state_agri",
+        "organisation": "District Agriculture Office, Bhandara", "employee_id": "MH-DAO-118",
+        "office_address": "Krishi Bhavan, Civil Lines", "block": "Sakoli",
+        "state": "Maharashtra", "pincode": "441802", "office_phone": "07184-255201",
+        "joined_service_on": "2014-07-01", "posted_since": "2022-06-15",
+        "reporting_name": "Smt. A. Deshmukh",
+        "reporting_designation": "District Superintending Agriculture Officer",
+        "reporting_contact": "dsao.bhandara@maha.gov.in", "declaration": True,
+        "qualification": "msc_agri", "experience_years": 11, "districts": ["Bhandara"],
+        "crops": ["rice"], "specialities": ["entomology"], "languages": ["mr", "en"],
+    } | over
+
+
+def test_an_officer_gives_the_office_what_it_needs_to_check_them(client, mail):
+    """A farmer is asked the least that lets the app help them. An officer is
+    asking to read other people's fields, so the office is given enough to
+    check who they are — including somebody to ring."""
+    r = client.post("/api/auth/otp", json={"role": "expert", "purpose": "signup",
+                                           "email": "kale2@kvk.org.in", "phone": "9123456700"})
+    out = client.post("/api/auth/signup/expert",
+                      json=_expert_body(mail, r.json()["challenge_id"]))
+    assert out.status_code == 201, out.text
+    with SessionLocal() as db:
+        p = db.scalar(select(ExpertProfile).join(User, User.id == ExpertProfile.user_id)
+                      .where(User.email == "kale2@kvk.org.in"))
+        assert p.department == "state_agri" and p.pincode == "441802"
+        assert p.office_address.startswith("Krishi Bhavan")
+        assert p.reporting_name == "Smt. A. Deshmukh"
+        assert p.joined_service_on.year == 2014 and p.posted_since.year == 2022
+        assert p.declared_at is not None
+
+
+def test_the_undertaking_and_the_office_details_are_not_optional(client, mail):
+    def signup(email, phone, **over):
+        r = client.post("/api/auth/otp", json={"role": "expert", "purpose": "signup",
+                                               "email": email, "phone": phone})
+        return client.post("/api/auth/signup/expert",
+                           json=_expert_body(mail, r.json()["challenge_id"], phone=phone, **over))
+
+    assert signup("a@kvk.org.in", "9123456701", declaration=False).status_code == 422
+    assert signup("b@kvk.org.in", "9123456702", pincode="12").status_code == 422
+    assert signup("c@kvk.org.in", "9123456703", department="not_a_department").status_code == 422
+    assert signup("d@kvk.org.in", "9123456704", reporting_contact="").status_code == 422
+
+
+def test_the_dossier_and_the_map_follow_the_same_rule_as_the_case(client, mail):
+    """Every door into a farm is the same door. The dossier wrote its own check
+    and the map carried farmers' names to anyone who could see a pin."""
+    expert_signup(client, mail)
+    other_desk = _colleague(email="fourth@kvk.org.in")
+    with SessionLocal() as db:
+        me = db.scalar(select(User).where(User.email == "dr.kale@kvk.org.in"))
+        db.get(ExpertProfile, me.id).supervisor = False
+        farm = Farm(farmer_name="Someone Else", crop="rice",
+                    sowing_date=date.today() - timedelta(days=40), district="Bhandara",
+                    lat=21.2, lon=79.7, area_acres=2, is_demo=False)
+        db.add(farm)
+        db.flush()
+        p = Problem(farm_id=farm.id, status="open", target="rice_brown_spot",
+                    opened_at=datetime.now())
+        db.add(p)
+        db.flush()
+        db.add(Case(problem_id=p.id, status="open", reason="BELOW_FLOOR",
+                    created_at=datetime.now(), assigned_to=other_desk))
+        db.add(Confirmation(problem_id=p.id, verdict="confirmed", final_label="rice_brown_spot",
+                            expert_name="Someone", created_at=datetime.now()))
+        farm_id, my_id = farm.id, me.id
+        db.commit()
+
+    # 403 from the router's own path guard, which now asks the same question
+    assert client.get(f"/api/officials/farms/{farm_id}").status_code == 403
+    pins = client.get("/api/officials/hotspots").json()["points"]
+    mine = [p for p in pins if p["district"] == "Bhandara"]
+    assert mine, "the outbreak is still on the map"
+    assert all(p["farmer_name"] is None for p in mine), "but not whose field it is"
+
+    with SessionLocal() as db:
+        db.get(ExpertProfile, my_id).supervisor = True
+        db.commit()
+    assert client.get(f"/api/officials/farms/{farm_id}").status_code == 200
+    named = client.get("/api/officials/hotspots").json()["points"]
+    assert any(p["farmer_name"] == "Someone Else" for p in named)

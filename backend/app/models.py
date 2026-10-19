@@ -103,6 +103,34 @@ class ExpertProfile(Base):
     """May verify officers, route a backlog and move other people's cases.
     A reviewer verifying themselves is how a queue becomes nobody's."""
 
+    # --- what the district office needs to verify a stranger ---------------
+    # Sign-up used to ask for a name, a post and an employee ID, and a
+    # supervisor was then expected to decide from that whether this person may
+    # read farmers' cases. These are the fields a state agriculture department
+    # or KVK portal asks for, and they are here for one reason: so verification
+    # is a check rather than a guess.
+    department: Mapped[str | None] = mapped_column(String(30))
+    """Which service they belong to — state department, ICAR, a university, a
+    KVK, ATMA, or none of those."""
+    office_address: Mapped[str | None] = mapped_column(String(240))
+    block: Mapped[str | None] = mapped_column(String(80))
+    """The taluka or block the office sits in."""
+    state: Mapped[str | None] = mapped_column(String(60))
+    pincode: Mapped[str | None] = mapped_column(String(6))
+    office_phone: Mapped[str | None] = mapped_column(String(20))
+    """The office line. A number that answers when the mobile does not, and the
+    one a district office can ring to check that this person works there."""
+    joined_service_on: Mapped[date | None] = mapped_column(Date)
+    posted_since: Mapped[date | None] = mapped_column(Date)
+    reporting_name: Mapped[str | None] = mapped_column(String(120))
+    reporting_designation: Mapped[str | None] = mapped_column(String(60))
+    reporting_contact: Mapped[str | None] = mapped_column(String(120))
+    """Who to ring. This is what actually verifies an officer: a supervisor
+    calls the reporting officer named here."""
+    declared_at: Mapped[datetime | None] = mapped_column(DateTime)
+    """When they put their name to the undertaking — that the details are true
+    and that farmers' data is handled under the office's rules."""
+
 
 class OtpChallenge(Base):
     """One one-time code, sent to the account's email (SMS later). Only a salted
@@ -180,7 +208,44 @@ class Farm(Base):
     is_demo: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
+    status: Mapped[str] = mapped_column(String(10), default="growing", index=True)
+    """'growing' or 'fallow'. A farm row is the field, not the sowing.
+
+    It used to be both, so a farmer who finished a season had nothing to do
+    with the row: the days after sowing went on counting, the crop stage ran
+    off the end of the calendar, and the only way to sow again was to register
+    the same field a second time. A profile filled up with clones of one plot.
+    Now the season closes (status 'fallow'), the row stays, and sowing again
+    starts a new season on the same field."""
+    harvested_on: Mapped[date | None] = mapped_column(Date)
+    """When the standing crop was taken off. None while it is growing."""
+
     problems: Mapped[list[Problem]] = relationship(back_populates="farm")
+    seasons: Mapped[list["Season"]] = relationship(back_populates="farm")
+
+
+class Season(Base):
+    """A crop cycle that has finished on a field.
+
+    The standing crop lives on the farm row itself (crop, sowing_date), because
+    everything in the app asks the farm what is growing. A closed season is
+    copied here, so a field carries its own history: what it grew, when it went
+    in and when it came off."""
+
+    __tablename__ = "season"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    farm_id: Mapped[int] = mapped_column(ForeignKey("farm.id"), index=True)
+    crop: Mapped[str] = mapped_column(String(20))
+    variety: Mapped[str | None] = mapped_column(String(80))
+    sowing_date: Mapped[date] = mapped_column(Date)
+    date_basis: Mapped[str] = mapped_column(String(20), default="sown")
+    harvested_on: Mapped[date] = mapped_column(Date)
+    note: Mapped[str | None] = mapped_column(String(200))
+    """The farmer's own word on how it went, if they gave one."""
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    farm: Mapped[Farm] = relationship(back_populates="seasons")
 
 
 class Problem(Base):

@@ -52,6 +52,17 @@ DESIGNATIONS = {
     "icar": "ICAR institute scientist",
     "private_agronomist": "Private agronomist / FPO advisor",
 }
+DEPARTMENTS = {
+    "state_agri": "State Department of Agriculture",
+    "kvk": "Krishi Vigyan Kendra (ICAR)",
+    "icar": "ICAR institute",
+    "sau": "State Agricultural University",
+    "atma": "ATMA / extension project",
+    "other": "Other (FPO, NGO, private advisory)",
+}
+"""Which service an officer belongs to. A district office verifying a stranger
+asks this first, because where somebody works decides who can vouch for them."""
+
 QUALIFICATIONS = {"diploma": "Diploma in agriculture", "bsc_agri": "B.Sc. (Agri) or equivalent",
                   "msc_agri": "M.Sc. (Agri)", "phd": "Ph.D.", "other": "Other"}
 SPECIALITIES = {"plant_pathology": "Plant pathology (diseases)", "entomology": "Entomology (pests)",
@@ -85,6 +96,9 @@ MESSAGES = {
     "other_code": {"en": "This code was for a different kind of account. Ask for a new code.",
                    "hi": "यह कोड किसी दूसरे प्रकार के खाते के लिए था। नया कोड माँगें।",
                    "mr": "हा कोड दुसऱ्या प्रकारच्या खात्यासाठी होता. नवीन कोड मागा."},
+    "declaration": {"en": "Please confirm the undertaking before continuing.",
+                    "hi": "जारी रखने से पहले कृपया घोषणा की पुष्टि करें।",
+                    "mr": "पुढे जाण्यापूर्वी कृपया घोषणेची खात्री करा."},
     "consent": {"en": "Please agree to how your data is used.", "hi": "कृपया डेटा के उपयोग से सहमति दें।",
                 "mr": "कृपया माहितीच्या वापराला संमती द्या."},
     "pick_lists": {"en": "Please choose from the lists: {items}", "hi": "कृपया सूची में से चुनें: {items}",
@@ -128,6 +142,7 @@ def options(lang: str = "en", kb: KB = Depends(get_kb)):
         "languages": [{"code": c, "name": LANG_NAMES[c]} for c in LANGS],
         "irrigation": list(Irrigation.__args__),
         "designations": [{"id": k, "name": v} for k, v in DESIGNATIONS.items()],
+        "departments": [{"id": k, "name": v} for k, v in DEPARTMENTS.items()],
         "qualifications": [{"id": k, "name": v} for k, v in QUALIFICATIONS.items()],
         "specialities": [{"id": k, "name": v} for k, v in SPECIALITIES.items()],
         "otp": {"digits": config.OTP_DIGITS, "minutes": config.OTP_TTL_MINUTES, "channel": config.OTP_CHANNEL},
@@ -310,19 +325,48 @@ class FarmerSignup(BaseModel):
 
 
 class ExpertSignup(BaseModel):
+    """What an officer gives before they may read a farmer's case.
+
+    It is more than a farmer is asked for, deliberately. A farmer is asked the
+    least that lets the app help them; an officer is asking for access to other
+    people's fields, photographs and phone numbers, and a district office has
+    to be able to check who they are before granting it. Everything here is
+    something a state department or KVK portal already asks."""
+
     challenge_id: str
     code: str = Field(min_length=4, max_length=8)
     name: str = Field(min_length=2, max_length=120)
     phone: str = Field(max_length=20)
+
+    # The post
     designation: str
+    department: str
     organisation: str = Field(min_length=2, max_length=160)
     employee_id: str = Field(min_length=2, max_length=60)
+    joined_service_on: date | None = None
+    posted_since: date | None = None
+
+    # The office, so there is somewhere to write to and somewhere to ring
+    office_address: str = Field(min_length=4, max_length=240)
+    block: str | None = Field(default=None, max_length=80)
+    state: str = Field(min_length=2, max_length=60)
+    pincode: str = Field(pattern=r"^[1-9][0-9]{5}$")
+    office_phone: str | None = Field(default=None, max_length=20)
+
+    # Who can vouch for them. This is what verification actually rests on.
+    reporting_name: str = Field(min_length=2, max_length=120)
+    reporting_designation: str = Field(min_length=2, max_length=60)
+    reporting_contact: str = Field(min_length=5, max_length=120)
+
     qualification: str
     experience_years: int = Field(ge=0, le=60)
     districts: list[str] = Field(min_length=1, max_length=40)
     crops: list[str] = Field(min_length=1)
     specialities: list[str] = Field(min_length=1)
     languages: list[str] = Field(min_length=1)
+    declaration: bool
+    """They put their name to it: the details are true, and farmers' data is
+    handled under their office's rules."""
     lang: str = "en"
 
 
@@ -404,7 +448,10 @@ def signup_expert(body: ExpertSignup, request: Request, response: Response, db: 
                   kb: KB = Depends(get_kb)):
     lang = body.lang if body.lang in LANGS else "en"
     districts = _official_districts()
-    bad = [x for x, allowed in ((body.designation, DESIGNATIONS), (body.qualification, QUALIFICATIONS)) if x not in allowed] \
+    if not body.declaration:
+        raise HTTPException(422, _say("declaration", lang))
+    bad = [x for x, allowed in ((body.designation, DESIGNATIONS), (body.department, DEPARTMENTS),
+                                (body.qualification, QUALIFICATIONS)) if x not in allowed] \
         + [d for d in body.districts if d not in districts] + [c for c in body.crops if c not in kb.crops] \
         + [s for s in body.specialities if s not in SPECIALITIES] + [x for x in body.languages if x not in LANGS]
     if bad:
@@ -416,11 +463,23 @@ def signup_expert(body: ExpertSignup, request: Request, response: Response, db: 
                 lang=body.lang if body.lang in LANGS else "en")
     db.add(user)
     db.flush()
+    state, _ = geo.match_district(body.state, body.districts[0])
     db.add(ExpertProfile(user_id=user.id, designation=body.designation, organisation=body.organisation.strip(),
                          employee_id=body.employee_id.strip(), qualification=body.qualification,
                          experience_years=body.experience_years, districts=sorted(set(body.districts)),
                          crops=sorted(set(body.crops)), specialities=sorted(set(body.specialities)),
                          languages=sorted(set(body.languages)), verified=config.EXPERT_AUTO_VERIFY,
+                         # The office, so a district has somewhere to write and
+                         # somewhere to ring, and the person who can vouch for
+                         # them — which is what verification actually rests on.
+                         department=body.department, office_address=body.office_address.strip(),
+                         block=(body.block or "").strip() or None, state=state or body.state.strip(),
+                         pincode=body.pincode, office_phone=(body.office_phone or "").strip() or None,
+                         joined_service_on=body.joined_service_on, posted_since=body.posted_since,
+                         reporting_name=body.reporting_name.strip(),
+                         reporting_designation=body.reporting_designation.strip(),
+                         reporting_contact=body.reporting_contact.strip(),
+                         declared_at=auth.now(),
                          # The rank follows the post. Without this every sign-up
                          # was an ordinary desk, so a district whose officers had
                          # all signed up had nobody who could route its backlog

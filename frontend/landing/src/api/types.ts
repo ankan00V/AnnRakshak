@@ -191,6 +191,14 @@ export interface PendingOfficer {
   experience_years: number
   districts: string[]
   crops: string[]
+  /** What verification actually rests on: where they work, and who to ring. */
+  department: string | null
+  office: string | null
+  office_phone: string | null
+  joined_service_on: string | null
+  posted_since: string | null
+  reporting: { name: string; designation: string; contact: string } | null
+  declared_at: string | null
 }
 
 /** A problem an officer named that the model cannot: the training backlog. */
@@ -923,6 +931,7 @@ export interface AuthOptions {
   languages: { code: Lang; name: string }[]
   irrigation: Irrigation[]
   designations: { id: string; name: string }[]
+  departments: { id: string; name: string }[]
   qualifications: { id: string; name: string }[]
   specialities: { id: string; name: string }[]
   otp: { digits: number; minutes: number; channel: 'email' }

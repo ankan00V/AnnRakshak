@@ -49,6 +49,7 @@ from app.models import (
     Observation,
     OfficerAction,
     Problem,
+    Season,
     SensorReading,
     TrapReading,
     User,
@@ -179,6 +180,14 @@ def farm_view(kb: KB, farm: Farm, lang: str, today: date | None = None) -> dict:
         "das": das,
         "lang": farm.lang,
         "is_demo": farm.is_demo,
+        "status": farm.status,
+        "harvested_on": farm.harvested_on.isoformat() if farm.harvested_on else None,
+        # Past the last stage the crop calendar knows, the days after sowing go
+        # on counting and mean nothing. Saying so is how a farmer is asked to
+        # close the season instead of being left with a field that is 300 days
+        # old and still "maturing".
+        "season_over": farm.status == "growing" and das > kb.crops[farm.crop]["stages"][-1]["das"][1],
+        "seasons": db_seasons_count(farm),
     }
 
 
@@ -192,6 +201,49 @@ def _pred_view(kb: KB, p: gate.Prediction, lang: str) -> dict:
     else:
         v = {"id": p.target, "name": p.target.replace("_", " "), "signature": "", "crop": gate.crop_of(p.target)}
     return v | {"confidence": round(p.confidence, 4)}
+
+
+def db_seasons_count(farm: Farm) -> int:
+    """How many seasons this field has finished. Lazily loaded, so a view that
+    does not ask pays nothing."""
+    return len(farm.seasons)
+
+
+def close_season(db: Session, farm: Farm, *, on: date | None = None, note: str | None = None) -> dict:
+    """The crop is off. The field stays; what grew on it becomes history.
+
+    Nothing is deleted and nothing is cloned: the same row goes quiet until the
+    farmer sows again, and the risk engine leaves a fallow field alone rather
+    than warning about a crop that is not there."""
+    on = on or date.today()
+    db.add(Season(farm_id=farm.id, crop=farm.crop, variety=farm.variety, sowing_date=farm.sowing_date,
+                  date_basis=farm.date_basis, harvested_on=on, note=(note or "").strip()[:200] or None))
+    farm.status, farm.harvested_on = "fallow", on
+    # An open problem belongs to the season that has just ended.
+    for p in db.scalars(select(Problem).where(Problem.farm_id == farm.id, Problem.status == "open")).all():
+        p.status = "closed"
+    db.commit()
+    return {"status": farm.status, "harvested_on": on.isoformat()}
+
+
+def sow_again(db: Session, kb: KB, farm: Farm, *, crop: str, sowing_date: date,
+              date_basis: str = "sown", variety: str | None = None) -> dict:
+    """The next season on the same field.
+
+    This is the whole point of the status: a farmer who grows rice again in
+    June does not register the field a second time, so their list of farms
+    stays the list of their fields."""
+    if crop not in kb.crops:
+        raise ValueError(f"unknown crop {crop}")
+    if sowing_date > date.today():
+        raise ValueError("sowing date is in the future")
+    if farm.status == "growing":
+        close_season(db, farm, on=min(date.today(), sowing_date))
+    farm.crop, farm.variety = crop, (variety or None)
+    farm.sowing_date, farm.date_basis = sowing_date, date_basis
+    farm.status, farm.harvested_on = "growing", None
+    db.commit()
+    return {"status": farm.status, "crop": farm.crop, "sowing_date": farm.sowing_date.isoformat()}
 
 
 def alert_view(kb: KB, a: Alert, lang: str) -> dict:
@@ -1107,6 +1159,9 @@ def risk_scores(db: Session, kb: KB, farm: Farm, today: date, window,
 def run_risk(db: Session, kb: KB, farm: Farm, today: date | None = None, window=...,
              satellite: dict | None = None) -> dict:
     today = today or date.today()
+    # Nothing is standing on a fallow field, so nothing can be at risk on it.
+    if farm.status != "growing":
+        return {"issued": [], "spread_alerts": 0, "scores": [], "why": "field is fallow"}
     if window is ...:
         window = weather_for(db, farm)
     scores = risk_scores(db, kb, farm, today, window, satellite=satellite)
