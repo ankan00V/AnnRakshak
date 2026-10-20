@@ -84,24 +84,60 @@ def lookup_reviewed(english: str, lang: str) -> str | None:
 # Machine translation (offline job, not the request path)
 # --------------------------------------------------------------------------
 
+def marker(i: int) -> str:
+    """What a placeholder is replaced with while a translator has the sentence.
+
+    It was `<0>`, which reads as punctuation: the models delete it, or turn it
+    into a bare `0`. Measured over the five strings that kept failing, `<0>`
+    survived none of four and `XX0XX` survived all four — a run of capitals is
+    a word to a translator, and words come back. The difference is not
+    cosmetic: "near <0>°C, frost can form" came back as "near 0°C", which is a
+    frost warning with the wrong number in it."""
+    return f"XX{i}XX"
+
+
 def protect(text: str) -> tuple[str, list[str]]:
     names = PLACEHOLDER.findall(text)
     out = text
     for i, n in enumerate(names):
-        out = out.replace("{" + n + "}", f"<{i}>", 1)
+        out = out.replace("{" + n + "}", marker(i), 1)
     return out, names
 
 
 def restore(text: str, names: list[str]) -> str | None:
     """Put the placeholders back; None if the translation lost or duplicated one.
-    Bhashini often drops the '>' of a marker followed by a word ('<6 acres' for
-    '<6> acres'); that is repaired first rather than losing the whole line."""
+
+    Both marker shapes are accepted: the memory holds eight thousand strings
+    translated with the older `<0>`, and a re-run must not have to redo them.
+    Bhashini drops the '>' of a marker followed by a word ('<6 acres' for
+    '<6> acres') and spaces the capitals out ('XX 0 XX'); both are repaired
+    first rather than losing the whole line."""
     text = re.sub(r"<(\d+)(?!\d|>)", r"<\1>", text)
+    text = re.sub(r"X\s*X\s*(\d+)\s*X\s*X", r"XX\1XX", text)
     for i, n in enumerate(names):
-        if text.count(f"<{i}>") != 1:
+        hits = text.count(marker(i)) + text.count(f"<{i}>")
+        if hits != 1:
             return None
-        text = text.replace(f"<{i}>", "{" + n + "}")
+        text = text.replace(marker(i), "{" + n + "}").replace(f"<{i}>", "{" + n + "}")
     return text
+
+
+UNIT_BOUND = re.compile(r"\{[^{}]*\}\s*(?:km|mm|cm|kg|ml|°C|%|acres?|ha)\b")
+"""A placeholder that means nothing without the unit standing next to it."""
+
+
+def kept_order(out: str, count: int) -> bool:
+    """Whether the markers came back in the order they went out.
+
+    Word order is the translator's business and reordering is usually right —
+    Gujarati and Malayalam put the verb last. But a sentence like "{name} on a
+    {crop} farm {km} km from you" pins each placeholder to the words beside
+    it, and a model that moves one without the other produces "{crop}
+    kilometres away": every marker present, every count correct, and the
+    number is a crop. Where a placeholder is bound to a unit, order is the one
+    cheap signal that the pairing survived."""
+    order = [int(m.group(1) or m.group(2)) for m in re.finditer(r"XX(\d+)XX|<(\d+)>", out)]
+    return order == sorted(order) and len(order) == count
 
 
 def machine_translate(text: str, lang: str) -> str | None:
@@ -114,6 +150,8 @@ def machine_translate(text: str, lang: str) -> str | None:
         out = voice.translate(safe, "en", lang)
     except Exception:  # noqa: BLE001  one failed string must not stop the batch
         return None
+    if len(names) > 1 and UNIT_BOUND.search(text) and not kept_order(out, len(names)):
+        return None  # shuffled: better in English than with the wrong number
     out = tidy(text, out)
     return restore(out, names) if names else out
 
