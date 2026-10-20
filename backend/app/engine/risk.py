@@ -23,6 +23,11 @@ REASONS = {
         "hi": "{first} से {last} तक लगातार {run} दिन नमी {rh}% से ऊपर और औसत तापमान {tlo}–{thi}°C रहा। यह मौसम {name} के लिए अनुकूल है।",
         "mr": "{first} ते {last} सलग {run} दिवस आर्द्रता {rh}% पेक्षा जास्त व सरासरी तापमान {tlo}–{thi}°C राहिले. हे हवामान {name} साठी अनुकूल आहे.",
     },
+    "wet": {
+        "en": "Humidity stayed above {rh}% and {mm} mm of rain fell over {run} days in a row ({first} to {last}). Water standing in the field favours {name}.",
+        "hi": "{first} से {last} तक लगातार {run} दिन नमी {rh}% से ऊपर रही और {mm} मिमी बारिश हुई। खेत में पानी जमा रहने पर {name} को बढ़ावा मिलता है।",
+        "mr": "{first} ते {last} सलग {run} दिवस आर्द्रता {rh}% पेक्षा जास्त राहिली व {mm} मिमी पाऊस झाला. शेतात पाणी साचल्यास {name} ला पोषक ठरते.",
+    },
     "phenology": {
         "en": "Your crop is {das} days old ({stage}) — the stage when {name} usually attacks. Check before damage shows.",
         "hi": "आपकी फसल {das} दिन की है ({stage}) — इसी अवस्था में {name} का हमला होता है। नुकसान दिखने से पहले जाँचें।",
@@ -75,14 +80,35 @@ def _bump(level: str) -> str:
     return LEVELS[min(LEVELS.index(level) + 1, len(LEVELS) - 1)]
 
 
-# What a weather window must carry to be scored at all. The sentence a farmer
-# reads names the humidity, both ends of the temperature band and the run, so a
-# window without them cannot be turned into an honest alert.
-WEATHER_KEYS = ("rh_min", "t_min", "t_max", "days")
+# What a weather window must carry to be scored at all.
+#
+# Every rule needs the humidity and the run. Beyond that a rule says what makes
+# its own disease go, and there are two kinds here. Most are temperature rules:
+# a band the pathogen multiplies in, named at both ends in the sentence the
+# farmer reads. Downy mildew is the other kind — it does not wait for a
+# temperature, it waits for water to stand after heavy rain — so a rule may
+# instead carry the rain it needs. One or the other must be there: a window
+# with neither is half a rule, and firing on humidity alone would put a warning
+# on a phone that no source stands behind.
+WEATHER_KEYS = ("rh_min", "days")
 
 
 def missing_weather_keys(w: dict) -> list[str]:
-    return [k for k in WEATHER_KEYS if k not in w]
+    gaps = [k for k in WEATHER_KEYS if k not in w]
+    if ("t_min" in w) != ("t_max" in w):
+        gaps.append("t_min" if "t_min" not in w else "t_max")
+    elif "t_min" not in w and not ("rain_total_min" in w or "rain_min" in w):
+        gaps.append("a temperature band or the rain it needs")
+    return gaps
+
+
+def run_rain_mm(days: list[Day], first: Day | None, last: Day | None) -> float:
+    """Rain over the favourable run, for a rule whose trigger is standing water
+    rather than a temperature. A missing reading counts as no rain, which can
+    only hold an alert back."""
+    if first is None or last is None:
+        return 0.0
+    return sum(d.rain_mm or 0.0 for d in days if first.on <= d.on <= last.on)
 
 
 def favourable(day: Day, w: dict) -> bool:
@@ -202,12 +228,26 @@ def score_rule(
         if run < w["days"]:
             detail["why"] = f"favourable run {run} < {w['days']}"
             return Score(target, False, "low", "none", detail=detail)
+        # A rain rule has one more gate: the run must also have carried the
+        # water. Humidity for three days in a dry week is not standing water.
+        rain = run_rain_mm(window.days, first, last)
+        if "rain_total_min" in w and rain < w["rain_total_min"]:
+            detail |= {"rain_mm": round(rain, 1), "rain_needed": w["rain_total_min"]}
+            detail["why"] = f"run carried {rain:.0f} mm, needs {w['rain_total_min']}"
+            return Score(target, False, "low", "none", detail=detail)
+
         includes_forecast = last is not None and last.on > today
         used_sensor = any(d.from_sensor for d in window.days)
         level = "high" if run >= w["days"] + 3 else "medium"
-        parts = [{"key": "weather", "args": {"rh": w["rh_min"], "tlo": w["t_min"], "thi": w["t_max"], "run": run,
-                                             "first": first.on.isoformat(), "last": last.on.isoformat(),
-                                             "name": target_name}}]
+        common = {"rh": w["rh_min"], "run": run, "first": first.on.isoformat(),
+                  "last": last.on.isoformat(), "name": target_name}
+        # The sentence names what actually fired: a temperature band where the
+        # rule has one, the rain where that is what the disease waits for.
+        parts = ([{"key": "weather", "args": common | {"tlo": w["t_min"], "thi": w["t_max"]}}]
+                 if "t_min" in w else
+                 [{"key": "wet", "args": common | {"mm": round(rain)}}])
+        if "rain_total_min" in w:
+            detail |= {"rain_mm": round(rain, 1)}
         if includes_forecast:
             parts.append({"key": "forecast"})
         if used_sensor:

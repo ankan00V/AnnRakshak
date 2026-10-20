@@ -24,6 +24,7 @@ every code goes to the email (config.OTP_CHANNEL).
 
 from __future__ import annotations
 
+import json
 from datetime import date
 from typing import Literal
 
@@ -32,7 +33,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import auth, config, geo, mailer, services
+from app import auth, config, erasure, geo, mailer, services, turnstile
 from app.db import SUPERVISOR_DESIGNATIONS, get_db
 from app.i18n import LANGS
 from app.kb import KB, get_kb, tr
@@ -51,6 +52,17 @@ DESIGNATIONS = {
     "icar": "ICAR institute scientist",
     "private_agronomist": "Private agronomist / FPO advisor",
 }
+DEPARTMENTS = {
+    "state_agri": "State Department of Agriculture",
+    "kvk": "Krishi Vigyan Kendra (ICAR)",
+    "icar": "ICAR institute",
+    "sau": "State Agricultural University",
+    "atma": "ATMA / extension project",
+    "other": "Other (FPO, NGO, private advisory)",
+}
+"""Which service an officer belongs to. A district office verifying a stranger
+asks this first, because where somebody works decides who can vouch for them."""
+
 QUALIFICATIONS = {"diploma": "Diploma in agriculture", "bsc_agri": "B.Sc. (Agri) or equivalent",
                   "msc_agri": "M.Sc. (Agri)", "phd": "Ph.D.", "other": "Other"}
 SPECIALITIES = {"plant_pathology": "Plant pathology (diseases)", "entomology": "Entomology (pests)",
@@ -84,8 +96,19 @@ MESSAGES = {
     "other_code": {"en": "This code was for a different kind of account. Ask for a new code.",
                    "hi": "यह कोड किसी दूसरे प्रकार के खाते के लिए था। नया कोड माँगें।",
                    "mr": "हा कोड दुसऱ्या प्रकारच्या खात्यासाठी होता. नवीन कोड मागा."},
+    "declaration": {"en": "Please confirm the undertaking before continuing.",
+                    "hi": "जारी रखने से पहले कृपया घोषणा की पुष्टि करें।",
+                    "mr": "पुढे जाण्यापूर्वी कृपया घोषणेची खात्री करा."},
+    "not_a_person": {"en": "Please complete the check above and try again.",
+                     "hi": "कृपया ऊपर दी गई जाँच पूरी करें और फिर कोशिश करें।",
+                     "mr": "कृपया वरील तपासणी पूर्ण करा आणि पुन्हा प्रयत्न करा."},
     "consent": {"en": "Please agree to how your data is used.", "hi": "कृपया डेटा के उपयोग से सहमति दें।",
                 "mr": "कृपया माहितीच्या वापराला संमती द्या."},
+    "districts_are_granted": {
+        "en": "The district office adds a district to an officer's patch: {items}. You can drop one here.",
+        "hi": "किसी अधिकारी के क्षेत्र में ज़िला जोड़ना ज़िला कार्यालय का काम है: {items}। यहाँ आप ज़िला हटा सकते हैं।",
+        "mr": "अधिकाऱ्याच्या कार्यक्षेत्रात जिल्हा जोडणे हे जिल्हा कार्यालयाचे काम आहे: {items}. इथे तुम्ही जिल्हा काढू शकता.",
+    },
     "pick_lists": {"en": "Please choose from the lists: {items}", "hi": "कृपया सूची में से चुनें: {items}",
                    "mr": "कृपया यादीतून निवडा: {items}"},
     "no_place": {"en": "We could not find that place. Allow location while you are in the field, or check the "
@@ -127,10 +150,13 @@ def options(lang: str = "en", kb: KB = Depends(get_kb)):
         "languages": [{"code": c, "name": LANG_NAMES[c]} for c in LANGS],
         "irrigation": list(Irrigation.__args__),
         "designations": [{"id": k, "name": v} for k, v in DESIGNATIONS.items()],
+        "departments": [{"id": k, "name": v} for k, v in DEPARTMENTS.items()],
         "qualifications": [{"id": k, "name": v} for k, v in QUALIFICATIONS.items()],
         "specialities": [{"id": k, "name": v} for k, v in SPECIALITIES.items()],
         "otp": {"digits": config.OTP_DIGITS, "minutes": config.OTP_TTL_MINUTES, "channel": config.OTP_CHANNEL},
         "demo_login": config.DEMO_LOGIN,
+        # The widget's public half. Absent means no box is shown at all.
+        "turnstile_sitekey": config.TURNSTILE_SITEKEY if turnstile.configured() else None,
     }
 
 
@@ -199,6 +225,9 @@ class OtpIn(BaseModel):
     """Sign-up: checked for an existing account now, saved at sign-up."""
     identifier: str | None = Field(default=None, max_length=200)
     """Login: the mobile number or email on the account."""
+    turnstile_token: str | None = Field(default=None, max_length=2048)
+    """What the Cloudflare widget hands back. Checked here because this is the
+    call that spends money and reaches a real inbox."""
     lang: str = "en"
 
 
@@ -229,6 +258,10 @@ def check_identifiers(body: CheckIn, request: Request, db: Session = Depends(get
 def request_otp(body: OtpIn, request: Request, db: Session = Depends(get_db)):
     limit(f"otp:ip:{client_ip(request)}", 20, 900)
     lang = body.lang if body.lang in LANGS else "en"
+    # Both sign-up and login start here, so one check covers both screens.
+    passed, why = turnstile.verify(body.turnstile_token, client_ip(request))
+    if not passed:
+        raise HTTPException(403, _say("not_a_person", lang))
     if body.purpose == "signup":
         email = _email(body.email, lang)
         _unused(db, email, _phone(body.phone, lang), lang)
@@ -309,19 +342,48 @@ class FarmerSignup(BaseModel):
 
 
 class ExpertSignup(BaseModel):
+    """What an officer gives before they may read a farmer's case.
+
+    It is more than a farmer is asked for, deliberately. A farmer is asked the
+    least that lets the app help them; an officer is asking for access to other
+    people's fields, photographs and phone numbers, and a district office has
+    to be able to check who they are before granting it. Everything here is
+    something a state department or KVK portal already asks."""
+
     challenge_id: str
     code: str = Field(min_length=4, max_length=8)
     name: str = Field(min_length=2, max_length=120)
     phone: str = Field(max_length=20)
+
+    # The post
     designation: str
+    department: str
     organisation: str = Field(min_length=2, max_length=160)
     employee_id: str = Field(min_length=2, max_length=60)
+    joined_service_on: date | None = None
+    posted_since: date | None = None
+
+    # The office, so there is somewhere to write to and somewhere to ring
+    office_address: str = Field(min_length=4, max_length=240)
+    block: str | None = Field(default=None, max_length=80)
+    state: str = Field(min_length=2, max_length=60)
+    pincode: str = Field(pattern=r"^[1-9][0-9]{5}$")
+    office_phone: str | None = Field(default=None, max_length=20)
+
+    # Who can vouch for them. This is what verification actually rests on.
+    reporting_name: str = Field(min_length=2, max_length=120)
+    reporting_designation: str = Field(min_length=2, max_length=60)
+    reporting_contact: str = Field(min_length=5, max_length=120)
+
     qualification: str
     experience_years: int = Field(ge=0, le=60)
     districts: list[str] = Field(min_length=1, max_length=40)
     crops: list[str] = Field(min_length=1)
     specialities: list[str] = Field(min_length=1)
     languages: list[str] = Field(min_length=1)
+    declaration: bool
+    """They put their name to it: the details are true, and farmers' data is
+    handled under their office's rules."""
     lang: str = "en"
 
 
@@ -355,7 +417,16 @@ def _me(db: Session, user: User) -> dict:
                           # to an officer in Punjab.
                           "states": geo.states_of(p.districts), "crops": p.crops,
                           "specialities": p.specialities, "languages": p.languages, "verified": p.verified,
-                          "supervisor": p.supervisor, "experience_years": p.experience_years} if p else None
+                          "supervisor": p.supervisor, "experience_years": p.experience_years,
+                          "employee_id": p.employee_id, "qualification": p.qualification,
+                          "department": p.department, "office_address": p.office_address,
+                          "block": p.block, "state": p.state, "pincode": p.pincode,
+                          "office_phone": p.office_phone,
+                          "joined_service_on": p.joined_service_on.isoformat() if p.joined_service_on else None,
+                          "posted_since": p.posted_since.isoformat() if p.posted_since else None,
+                          "reporting_name": p.reporting_name,
+                          "reporting_designation": p.reporting_designation,
+                          "reporting_contact": p.reporting_contact} if p else None
     return out
 
 
@@ -403,7 +474,10 @@ def signup_expert(body: ExpertSignup, request: Request, response: Response, db: 
                   kb: KB = Depends(get_kb)):
     lang = body.lang if body.lang in LANGS else "en"
     districts = _official_districts()
-    bad = [x for x, allowed in ((body.designation, DESIGNATIONS), (body.qualification, QUALIFICATIONS)) if x not in allowed] \
+    if not body.declaration:
+        raise HTTPException(422, _say("declaration", lang))
+    bad = [x for x, allowed in ((body.designation, DESIGNATIONS), (body.department, DEPARTMENTS),
+                                (body.qualification, QUALIFICATIONS)) if x not in allowed] \
         + [d for d in body.districts if d not in districts] + [c for c in body.crops if c not in kb.crops] \
         + [s for s in body.specialities if s not in SPECIALITIES] + [x for x in body.languages if x not in LANGS]
     if bad:
@@ -415,11 +489,23 @@ def signup_expert(body: ExpertSignup, request: Request, response: Response, db: 
                 lang=body.lang if body.lang in LANGS else "en")
     db.add(user)
     db.flush()
+    state, _ = geo.match_district(body.state, body.districts[0])
     db.add(ExpertProfile(user_id=user.id, designation=body.designation, organisation=body.organisation.strip(),
                          employee_id=body.employee_id.strip(), qualification=body.qualification,
                          experience_years=body.experience_years, districts=sorted(set(body.districts)),
                          crops=sorted(set(body.crops)), specialities=sorted(set(body.specialities)),
                          languages=sorted(set(body.languages)), verified=config.EXPERT_AUTO_VERIFY,
+                         # The office, so a district has somewhere to write and
+                         # somewhere to ring, and the person who can vouch for
+                         # them — which is what verification actually rests on.
+                         department=body.department, office_address=body.office_address.strip(),
+                         block=(body.block or "").strip() or None, state=state or body.state.strip(),
+                         pincode=body.pincode, office_phone=(body.office_phone or "").strip() or None,
+                         joined_service_on=body.joined_service_on, posted_since=body.posted_since,
+                         reporting_name=body.reporting_name.strip(),
+                         reporting_designation=body.reporting_designation.strip(),
+                         reporting_contact=body.reporting_contact.strip(),
+                         declared_at=auth.now(),
                          # The rank follows the post. Without this every sign-up
                          # was an ordinary desk, so a district whose officers had
                          # all signed up had nobody who could route its backlog
@@ -482,12 +568,159 @@ def demo(body: DemoIn, request: Request, response: Response, db: Session = Depen
     return _me(db, user)
 
 
+class ProfileIn(BaseModel):
+    """What a person may change about themselves.
+
+    Not everything on the record: an officer cannot verify themselves, promote
+    themselves to supervisor, or rewrite the employee ID and the department the
+    district office checked them against. Those are the office's to change, and
+    a profile screen that offered them would be offering a way around
+    verification."""
+
+    # Either role. The phone and the email are deliberately absent: they are
+    # what a sign-in code is sent to, so changing one proves nothing unless a
+    # code proves it, and that belongs to the sign-in screen.
+    name: str | None = Field(default=None, min_length=2, max_length=120)
+    lang: str | None = None
+
+    # A farmer: where they are, and how much land they work
+    state: str | None = Field(default=None, max_length=60)
+    district: str | None = Field(default=None, max_length=60)
+    taluka: str | None = Field(default=None, max_length=80)
+    village: str | None = Field(default=None, max_length=80)
+    total_land_acres: float | None = Field(default=None, ge=0, le=100000)
+
+    # An officer: their post's reach and the office they sit in
+    organisation: str | None = Field(default=None, min_length=2, max_length=160)
+    experience_years: int | None = Field(default=None, ge=0, le=60)
+    districts: list[str] | None = None
+    crops: list[str] | None = None
+    specialities: list[str] | None = None
+    languages: list[str] | None = None
+    office_address: str | None = Field(default=None, max_length=240)
+    block: str | None = Field(default=None, max_length=80)
+    pincode: str | None = Field(default=None, max_length=6)
+    office_phone: str | None = Field(default=None, max_length=20)
+    # The reporting line is absent on purpose: it is the evidence the district
+    # office verified this person against, and a record you can rewrite is not
+    # evidence of anything.
+
+
+@router.patch("/me/profile")
+def update_profile(body: ProfileIn, request: Request, db: Session = Depends(get_db),
+                   kb: KB = Depends(get_kb)):
+    """Change your own details — the same record for both roles, one door.
+
+    Only the fields actually sent are touched, so a screen may save one line
+    without having to send the whole profile back."""
+    limit(f"profile:{client_ip(request)}", max_hits=30, window_s=60)
+    user = auth.current_user(request, db)
+    if user is None:
+        raise HTTPException(401, "not signed in")
+    sent = body.model_dump(exclude_unset=True)
+
+    if "name" in sent and sent["name"]:
+        user.name = sent["name"].strip()
+    if sent.get("lang"):
+        if sent["lang"] not in LANGS:
+            raise HTTPException(422, _say("pick_lists", user.lang, items=sent["lang"]))
+        user.lang = sent["lang"]
+
+    if user.role == "farmer":
+        p = db.get(FarmerProfile, user.id)
+        if p is None:
+            raise HTTPException(404, "no profile")
+        if sent.get("district") or sent.get("state"):
+            state, district = geo.match_district(sent.get("state") or p.state,
+                                                 sent.get("district") or p.district)
+            p.state, p.district = state, district or p.district
+        for f in ("taluka", "village"):
+            if f in sent:
+                setattr(p, f, (sent[f] or "").strip() or None)
+        if "total_land_acres" in sent:
+            p.total_land_acres = sent["total_land_acres"]
+    else:
+        p = db.get(ExpertProfile, user.id)
+        if p is None:
+            raise HTTPException(404, "no profile")
+        bad = [d for d in (sent.get("districts") or []) if d not in _official_districts()] \
+            + [c for c in (sent.get("crops") or []) if c not in kb.crops] \
+            + [x for x in (sent.get("specialities") or []) if x not in SPECIALITIES] \
+            + [x for x in (sent.get("languages") or []) if x not in LANGS]
+        if bad:
+            raise HTTPException(422, _say("pick_lists", user.lang, items=", ".join(bad[:5])))
+        # An officer's districts are not a preference, they are reach: a case
+        # is routed to whoever covers the district it came from, and that case
+        # carries a farmer's name, their village and photographs of their
+        # field. Adding one to your own record would be granting yourself the
+        # district office's permission, which is the one thing verification
+        # exists to withhold. Giving a district up asks for nothing, so it is
+        # yours to do; taking one on is theirs to grant, and a supervisor —
+        # who may already verify officers and route a whole district — has it.
+        if sent.get("districts") is not None and not services.is_supervisor(db, user):
+            added = [d for d in sent["districts"] if d not in (p.districts or [])]
+            if added:
+                raise HTTPException(403, _say("districts_are_granted", user.lang,
+                                              items=", ".join(sorted(added)[:5])))
+        for f in ("districts", "crops", "specialities", "languages"):
+            if sent.get(f):
+                setattr(p, f, sent[f])
+        for f in ("organisation", "office_address", "block", "pincode", "office_phone"):
+            if f in sent:
+                setattr(p, f, (sent[f] or "").strip() or None if isinstance(sent[f], str) else sent[f])
+        if sent.get("experience_years") is not None:
+            p.experience_years = sent["experience_years"]
+    db.commit()
+    return _me(db, user)
+
+
 @router.get("/me")
 def me(request: Request, db: Session = Depends(get_db)):
     user = auth.current_user(request, db)
     if user is None:
         raise HTTPException(401, "not signed in")
     return _me(db, user)
+
+
+@router.get("/me/data")
+def my_data(request: Request, db: Session = Depends(get_db)):
+    """Everything this account holds, as a file the farmer can keep.
+
+    The Act calls it the right to access; a farmer calls it wanting to see
+    what an app knows about them. Either way it is one tap in the account
+    menu, not a letter to an office."""
+    me = auth.signed_in(request, db)
+    if me is None:
+        raise HTTPException(401, "sign in first")
+    data = erasure.export_account(db, me)
+    name = f"annrakshak-{me.id}-{date.today().isoformat()}.json"
+    return Response(content=json.dumps(data, ensure_ascii=False, indent=2),
+                    media_type="application/json",
+                    headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
+class EraseIn(BaseModel):
+    confirm: str
+    """The farmer types DELETE. A tap that cannot be undone should cost more
+    than a tap."""
+
+
+@router.post("/me/erase")
+def erase_me(body: EraseIn, request: Request, response: Response, db: Session = Depends(get_db)):
+    """Erase the person; keep the district's disease record with nobody in it.
+
+    What goes and what stays is set out in app/erasure.py, and the answer says
+    what was removed rather than only that something was."""
+    me = auth.signed_in(request, db)
+    if me is None:
+        raise HTTPException(401, "sign in first")
+    if body.confirm.strip().upper() != "DELETE":
+        raise HTTPException(422, "type DELETE to confirm")
+    if me.is_demo:
+        raise HTTPException(403, "the demo account is shared; it is not anyone's to erase")
+    removed = erasure.erase_account(db, me)
+    response.delete_cookie(auth.COOKIE, path="/")
+    return {"erased": True, **removed}
 
 
 @router.post("/logout")

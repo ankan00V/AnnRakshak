@@ -6,7 +6,7 @@ export const phoneOk = (v: string) => PHONE_RE.test(v.replace(/[\s-]/g, ''))
 export const emailOk = (v: string) => EMAIL_RE.test(v.trim())
 
 /** Where each role lands after signing in. */
-export const homeOf = (role: Role) => (role === 'expert' ? '/expert' : '/app')
+export const homeOf = (role: Role) => (role === 'expert' ? '/officer' : '/app')
 
 /** A `next=` path from the query string, only if it stays on this site. */
 export function safeNext(raw: string | null): string | null {

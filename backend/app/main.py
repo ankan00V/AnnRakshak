@@ -4,6 +4,7 @@ import asyncio
 import logging
 import os
 import re
+from pathlib import Path
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Request
@@ -108,7 +109,7 @@ def media(name: str, request: Request, db: Session = Depends(get_db)):
         .where(Diagnosis.image_path == name).limit(1)
     ).first()
     path = UPLOAD_DIR / name
-    if farm is None or not path.exists() or not can_open_farm(current_user(request, db), farm):
+    if farm is None or not path.exists() or not can_open_farm(current_user(request, db), farm, db):
         raise HTTPException(404, "not found")
     # Private: a shared cache must not hand this to the next person through it.
     return FileResponse(path, media_type="image/jpeg",
@@ -172,6 +173,13 @@ def mount_web(target, web_dir) -> None:
         wanted = (web_dir / path).resolve()
         if path and root in wanted.parents and wanted.is_file():
             return FileResponse(wanted)        # favicon, manifest, the service worker
+        # A path that asks for a file must not be answered with the shell. A
+        # relative asset base once made /signup/expert ask for
+        # /signup/assets/index.js; this returned index.html with it, the browser
+        # refused the MIME type, and the page went blank with the real cause
+        # three steps away. A 404 says what happened.
+        if "." in Path(path).name:
+            raise HTTPException(404, "not found")
         index = web_dir / "index.html"
         if not index.is_file():
             raise HTTPException(404, "not found")

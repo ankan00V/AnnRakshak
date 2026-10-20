@@ -16,9 +16,9 @@ const Weather = lazy(() => import('./farmer/screens/Weather'))
 const Result = lazy(() => import('./farmer/screens/Result'))
 const Spray = lazy(() => import('./farmer/screens/Spray'))
 const Alerts = lazy(() => import('./farmer/screens/Alerts'))
+const FarmerProfile = lazy(() => import('./farmer/screens/Profile'))
 const History = lazy(() => import('./farmer/screens/History'))
 const ProblemDetail = lazy(() => import('./farmer/screens/History').then((m) => ({ default: m.ProblemDetail })))
-const ExpertConsole = lazy(() => import('./expert/ExpertConsole'))
 const OfficerShell = lazy(() => import('./officer/OfficerShell'))
 const OfficerToday = lazy(() => import('./officer/pages/Today'))
 const OfficerQueue = lazy(() => import('./officer/pages/Queue'))
@@ -27,6 +27,7 @@ const OfficerMap = lazy(() => import('./officer/pages/MapPage'))
 const OfficerAdvisories = lazy(() => import('./officer/pages/Advisories'))
 const OfficerInputs = lazy(() => import('./officer/pages/Inputs'))
 const OfficerModel = lazy(() => import('./officer/pages/ModelGaps'))
+const OfficerProfile = lazy(() => import('./officer/pages/Profile'))
 const OfficerOfficers = lazy(() => import('./officer/pages/Officers'))
 const AuthLayout = lazy(() => import('./auth/AuthLayout'))
 const Login = lazy(() => import('./auth/Login'))
@@ -57,8 +58,10 @@ export default function App() {
               <Route path="alerts" element={<Alerts />} />
               <Route path="history" element={<History />} />
               <Route path="history/:id" element={<ProblemDetail />} />
+              <Route path="profile" element={<FarmerProfile />} />
             </Route>
-            <Route path="/expert" element={<RequireRole role="expert"><ExpertConsole /></RequireRole>} />
+            {/* One queue, not two: the district office's is the better of the pair. */}
+            <Route path="/expert" element={<Navigate to="/officer/queue" replace />} />
             <Route path="/officer" element={<RequireRole role="expert"><OfficerShell /></RequireRole>}>
               <Route index element={<OfficerToday />} />
               <Route path="queue" element={<OfficerQueue />} />
@@ -68,6 +71,7 @@ export default function App() {
               <Route path="inputs" element={<OfficerInputs />} />
               <Route path="model" element={<OfficerModel />} />
               <Route path="officers" element={<OfficerOfficers />} />
+              <Route path="profile" element={<OfficerProfile />} />
               {/* A console tab that has been taken away should land on the
                   console, not on the public page. */}
               <Route path="*" element={<Navigate to="/officer" replace />} />

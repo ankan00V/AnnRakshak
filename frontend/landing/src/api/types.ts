@@ -21,6 +21,13 @@ export interface Farm {
   das: number
   lang: Lang
   is_demo: boolean
+  /** 'growing' or 'fallow'. The row is the field; the crop on it is a season. */
+  status?: 'growing' | 'fallow'
+  harvested_on?: string | null
+  /** Past the last stage the crop calendar knows: time to close the season. */
+  season_over?: boolean
+  /** Seasons this field has already finished. */
+  seasons?: number
   /** The worst alert standing against this field in the last week, if any.
    *  Sent with the list so the picker can say which field needs a person. */
   alert?: FarmAlert | null
@@ -114,6 +121,12 @@ export interface CaseBrief {
   /** The officer this case was routed to; null when no officer covers the district yet. */
   assigned_to: number | null
   assigned_name: string | null
+  /** When this desk has to have answered by. Past it the case moves to the next
+   *  eligible officer on its own. */
+  respond_by: string | null
+  /** How many desks have already let that clock run out. */
+  handovers: number
+  response_hours?: number
 }
 
 /** The district office's own work: what needs a person today. */
@@ -191,6 +204,14 @@ export interface PendingOfficer {
   experience_years: number
   districts: string[]
   crops: string[]
+  /** What verification actually rests on: where they work, and who to ring. */
+  department: string | null
+  office: string | null
+  office_phone: string | null
+  joined_service_on: string | null
+  posted_since: string | null
+  reporting: { name: string; designation: string; contact: string } | null
+  declared_at: string | null
 }
 
 /** A problem an officer named that the model cannot: the training backlog. */
@@ -798,6 +819,19 @@ export interface WeatherView {
   seasonal: { group: string; name: string; targets: string[]; district_calls_this_month: number; state_share_this_month: number; calls: number }[]
 }
 
+export interface PesticideBaseline {
+  available: boolean
+  state: string
+  source: string
+  unit_note: string
+  chemical: [string, number][]
+  bio: [string, number][]
+  india_chemical: [string, number][]
+  latest_share_pct: number | null
+  rank: number | null
+  states_ranked: number
+}
+
 export interface KccPanel {
   available: boolean
   month: number
@@ -892,6 +926,18 @@ export interface Me {
      *  officer may not, so those controls are not offered to one. */
     supervisor?: boolean
     experience_years?: number
+    employee_id?: string
+    qualification?: string
+    department?: string | null
+    office_address?: string | null
+    block?: string | null
+    pincode?: string | null
+    office_phone?: string | null
+    joined_service_on?: string | null
+    posted_since?: string | null
+    reporting_name?: string | null
+    reporting_designation?: string | null
+    reporting_contact?: string | null
   } | null
 }
 
@@ -910,10 +956,13 @@ export interface AuthOptions {
   languages: { code: Lang; name: string }[]
   irrigation: Irrigation[]
   designations: { id: string; name: string }[]
+  departments: { id: string; name: string }[]
   qualifications: { id: string; name: string }[]
   specialities: { id: string; name: string }[]
   otp: { digits: number; minutes: number; channel: 'email' }
   demo_login: boolean
+  /** Cloudflare's public half. Null means no box is shown and none is required. */
+  turnstile_sitekey: string | null
 }
 
 // --- Krishi, the in-app helper -------------------------------------------------

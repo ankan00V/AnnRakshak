@@ -9,6 +9,9 @@ interface AuthState {
   loading: boolean
   /** After a successful login, sign-up or demo sign-in. */
   signIn: (me: Me) => void
+  /** After the holder edits their own record, so every screen showing their
+   *  name or their districts follows without a reload. */
+  update: (me: Me) => void
   logout: () => Promise<void>
 }
 
@@ -85,7 +88,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMe(null)
   }, [])
 
-  return <Ctx.Provider value={{ me, loading, signIn, logout }}>{children}</Ctx.Provider>
+  const update = useCallback((m: Me) => {
+    setMe(m)
+    remember(m)
+  }, [])
+
+  return <Ctx.Provider value={{ me, loading, signIn, update, logout }}>{children}</Ctx.Provider>
 }
 
 export function useAuth() {

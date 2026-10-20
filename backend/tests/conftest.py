@@ -16,7 +16,20 @@ os.environ["BHASHINI_INFERENCE_KEY"] = ""  # same for Bhashini: tests never call
 os.environ["ANNRAKSHAK_VISION"] = "stub"
 # Krishi's matcher and its fallbacks are what the tests pin down; the model that
 # reads messy questions is a network call and would make them flaky and slow.
-os.environ["ANNRAKSHAK_NIM"] = "off"
+#
+# This switch was ANNRAKSHAK_NIM when the model was NVIDIA's. The provider
+# changed to Groq and the setting became ANNRAKSHAK_LLM; this line did not,
+# so for a while the suite was calling the live API on every run of Krishi and
+# Darpan — slow, rate-limited, and flaky in a way that moved from file to file.
+# The keys are blanked too, so a stray read cannot reach the network either.
+os.environ["ANNRAKSHAK_LLM"] = "off"
+os.environ["GROQ_API_KEY"] = ""
+os.environ["GROQ_API_KEYS"] = ""
+# The sign-in widget is a call to Cloudflare. Blank keys take the box off, so
+# the suite neither reaches the network nor has to carry a token through every
+# sign-up; the tests that pin the check down set it themselves.
+os.environ["TURNSTILE_SITEKEY"] = ""
+os.environ["TURNSTILE_SECRET"] = ""
 # No background watcher, no real weather key, no real email in tests.
 os.environ["ANNRAKSHAK_WATCH"] = "off"
 os.environ["OPENWEATHER_API_KEY"] = ""

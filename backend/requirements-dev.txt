@@ -1,0 +1,5 @@
+# What the tests need on top of the server's own dependencies. The image
+# built by the Dockerfile installs requirements.txt alone: a test framework
+# is not something a server serving farmers should be carrying.
+-r requirements.txt
+pytest==8.3.4

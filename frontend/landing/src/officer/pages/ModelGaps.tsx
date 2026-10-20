@@ -2,7 +2,7 @@ import { FlaskConical } from 'lucide-react'
 import { api } from '../../api/client'
 import { useAsync } from '../../lib/hooks'
 import { Card, Pill } from '../../ui/kit'
-import { AccuracyPanel, GatePanel, KccPanel, ModelPanel, PageHead, PanelBone } from '../panels'
+import { AccuracyPanel, GatePanel, KccPanel, ModelPanel, PageHead, PanelBone, PesticidePanel } from '../panels'
 
 /** How the system is doing, and — the part that decides what gets built next —
  *  what officers keep seeing that the model has no name for. */
@@ -11,6 +11,7 @@ export default function ModelGaps() {
   const model = useAsync(() => api.modelCard(), [])
   const gaps = useAsync(() => api.gaps(), [])
   const kcc = useAsync(() => api.kcc(), [])
+  const spray = useAsync(() => api.pesticideBaseline(), [])
 
   return (
     <>
@@ -52,7 +53,12 @@ export default function ModelGaps() {
       </Card>
 
       {summary.data && <AccuracyPanel s={summary.data} />}
-      {kcc.data?.available && <KccPanel k={kcc.data} />}
+      {/* What farmers ring about, and what the spraying costs: the two
+          outside measures of whether this is working. */}
+      <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+        {kcc.data?.available && <KccPanel k={kcc.data} />}
+        {spray.data?.available && <PesticidePanel p={spray.data} />}
+      </div>
     </>
   )
 }

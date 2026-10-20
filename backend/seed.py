@@ -27,70 +27,47 @@ from app.db import SUPERVISOR_DESIGNATIONS, Base, SessionLocal, engine, init_db 
 from app.models import ExpertProfile, Farm, User  # noqa: E402
 
 # (name, lang, crop, variety, sowing, district, lat, lon, acres, soil)
+#
+# One farm per crop, in the district that crop is actually grown in. The demo
+# used to carry twenty — eight rice farms, six maize — which made the farmer's
+# own first screen a list to read rather than a choice to make, and filled the
+# office with other people's fields.
+#
+# What that costs, so it is not discovered at a demo: a confirmed case spreads
+# a warning to farms of the same crop within SPREAD_RADIUS_KM (5 km), and with
+# one farm per crop there is never a second farm to warn. Put a neighbour back
+# — same crop, a hundredth of a degree away — and that half of the story works
+# again.
 FARMS = [
-    # Vidarbha rice belt — a three-farm cluster near Bhandara for spread alerts.
     ("Sunita Bhoyar", "mr", "rice", "Sakoli-8", date(2026, 6, 28), "Bhandara", 21.170, 79.650, 2.5, "clay loam"),
-    ("Ramesh Kapgate", "mr", "rice", "Sakoli-8", date(2026, 6, 30), "Bhandara", 21.188, 79.668, 1.5, "clay loam"),
-    ("Vandana Meshram", "hi", "rice", "MTU-1010", date(2026, 7, 2), "Bhandara", 21.152, 79.631, 3.0, "clay"),
-    ("Anil Rahangdale", "hi", "rice", "MTU-1010", date(2026, 6, 25), "Gondia", 21.460, 80.190, 4.0, "clay loam"),
-    ("Kavita Wadhai", "mr", "rice", "Sindewahi-1", date(2026, 7, 1), "Chandrapur", 19.960, 79.300, 2.0, "loam"),
-    # Konkan rice.
-    ("Prakash Sawant", "mr", "rice", "Ratnagiri-24", date(2026, 6, 20), "Ratnagiri", 16.990, 73.310, 1.0, "laterite"),
-    ("Manisha Vartak", "mr", "rice", "Karjat-3", date(2026, 6, 22), "Palghar", 19.700, 72.770, 1.5, "laterite"),
-    ("Sanjay Chougule", "mr", "rice", "Indrayani", date(2026, 7, 5), "Kolhapur", 16.700, 74.240, 2.0, "black"),
-    # Marathwada / Khandesh maize — a cluster near Chhatrapati Sambhajinagar.
     ("Dnyaneshwar Jadhav", "mr", "maize", "hybrid", date(2026, 7, 4), "Chhatrapati Sambhajinagar", 19.880, 75.340, 3.0, "black"),
-    ("Shobha Kale", "mr", "maize", "hybrid", date(2026, 7, 8), "Chhatrapati Sambhajinagar", 19.902, 75.361, 2.0, "black"),
-    ("Imran Shaikh", "hi", "maize", "hybrid", date(2026, 7, 6), "Chhatrapati Sambhajinagar", 19.861, 75.322, 4.5, "medium black"),
-    ("Yogesh Patil", "mr", "maize", "hybrid", date(2026, 7, 10), "Jalgaon", 21.000, 75.560, 5.0, "medium black"),
-    ("Lata Pawar", "mr", "maize", "hybrid", date(2026, 7, 12), "Satara", 17.680, 74.000, 2.0, "medium black"),
-    ("Ganesh Kolte", "en", "maize", "hybrid", date(2026, 7, 15), "Pune", 18.520, 73.860, 1.5, "medium black"),
-    # Vidarbha cotton.
     ("Vijay Thakre", "mr", "cotton", "Bt hybrid", date(2026, 6, 15), "Yavatmal", 20.390, 78.120, 5.0, "black"),
-    ("Pushpa Rathod", "hi", "cotton", "Bt hybrid", date(2026, 6, 18), "Yavatmal", 20.412, 78.139, 3.5, "black"),
-    ("Mahesh Deshmukh", "mr", "cotton", "Bt hybrid", date(2026, 6, 20), "Amravati", 20.930, 77.750, 6.0, "black"),
-    # Marathwada soybean.
     ("Balaji Shinde", "mr", "soybean", "JS 335", date(2026, 6, 28), "Latur", 18.400, 76.560, 4.0, "medium black"),
-    ("Sarika Mane", "mr", "soybean", "JS 93-05", date(2026, 7, 1), "Latur", 18.421, 76.579, 2.5, "medium black"),
-    ("Nitin Wankhede", "mr", "soybean", "JS 335", date(2026, 6, 25), "Nanded", 19.150, 77.310, 3.0, "black"),
 ]
 
 
-OFFICERS_PER_DISTRICT = 5
-
-# Surnames common in Vidarbha and Marathwada, so the queue reads like a real office.
-OFFICER_NAMES = ["Deshmukh", "Wankhede", "Ingle", "Patil", "Gaikwad", "Rathod", "Shelke", "Bhoyar"]
-# A district office as it actually staffs up: the KVK scientist who heads the
-# subject-matter team and the taluka Agriculture Officer carry a supervisor's
-# authority (app.db.SUPERVISOR_DESIGNATIONS); the assistants and the FPO
-# agronomist advise. Keep the two supervisor-grade posts first -- seed_officers
-# reads seniority off the index.
-DESIGNATIONS = ["kvk_scientist", "agri_officer", "agri_assistant", "private_agronomist", "agri_assistant"]
-
-
 def seed_officers(db, districts: list[str]) -> int:
-    """Five officers per district, verified, each covering only their own."""
-    made = 0
-    for d, district in enumerate(sorted(districts)):
-        for i in range(OFFICERS_PER_DISTRICT):
-            surname = OFFICER_NAMES[(d + i) % len(OFFICER_NAMES)]
-            slug = f"{district.lower().replace(' ', '')}{i + 1}"
-            u = User(role="expert", name=f"{'Dr. ' if i == 0 else ''}{surname}",
-                     email=f"officer.{slug}@krishi.test", lang="mr", is_demo=True)
-            db.add(u)
-            db.flush()
-            db.add(ExpertProfile(
-                user_id=u.id, designation=DESIGNATIONS[i % len(DESIGNATIONS)],
-                organisation=f"KVK {district}", employee_id=f"MH-{district[:3].upper()}-{i + 1:03d}",
-                qualification="phd" if i == 0 else "msc_agri", experience_years=14 - 2 * i,
-                districts=[district], crops=["rice", "maize", "cotton", "soybean"],
-                specialities=["plant_pathology", "entomology"], languages=["mr", "hi", "en"],
-                verified=True,
-                # The rank follows the post, exactly as it does for a real
-                # sign-up, so the demo districts cannot drift from the rule.
-                supervisor=DESIGNATIONS[i % len(DESIGNATIONS)] in SUPERVISOR_DESIGNATIONS))
-            made += 1
-    return made
+    """One demo officer, covering the demo districts.
+
+    A real district office staffs five to a district and the queue hands the
+    next case to the freest of them; that rule lives in the engine
+    (app.engine.assign) and applies to every officer who signs up for real. It
+    does not need to be acted out in the demo. Sixty-five seeded names only
+    made the roster a page to scroll and put other people's names on the cases
+    a visitor opened.
+    """
+    u = User(role="expert", name="Dr. Kale", email="officer.demo@krishi.test", lang="mr", is_demo=True)
+    db.add(u)
+    db.flush()
+    db.add(ExpertProfile(
+        user_id=u.id, designation="kvk_scientist", organisation=f"KVK {sorted(districts)[0]}",
+        employee_id="MH-DEMO-001", qualification="phd", experience_years=14,
+        districts=sorted(districts), crops=["rice", "maize", "cotton", "soybean"],
+        specialities=["plant_pathology", "entomology"], languages=["mr", "hi", "en"],
+        verified=True,
+        # The rank follows the post, exactly as it does for a real sign-up.
+        supervisor="kvk_scientist" in SUPERVISOR_DESIGNATIONS))
+    return 1
 
 
 def main() -> None:

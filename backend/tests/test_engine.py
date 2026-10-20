@@ -630,20 +630,46 @@ def test_a_farm_with_no_state_still_reads():
     assert kb.stage_of(NoState(), date(2026, 9, 23))[1] == 125
 
 
-def test_a_rule_window_with_no_temperature_band_does_not_take_down_the_sweep():
-    """`rice_downy_mildew` has carried a weather window with no temperature
-    band since September. Scoring it raised KeyError inside the run-length
-    walk, which killed the worker mid-sweep — every request after that hung.
+def _wet_week(rain_per_day: float, rh: float = 92.0) -> Window:
+    return Window([Day(date.today() - timedelta(6 - i), rh, 23, 30, rain_per_day) for i in range(7)], "test", None)
 
-    It must not fire either: the sentence a farmer reads names both ends of the
-    band, and alerting on the half of a rule that happens to be filled in puts
-    a warning on a phone with no source behind it."""
-    humid = Window([Day(date.today() - timedelta(6 - i), 92, 23, 30, 60.0) for i in range(7)], "test", None)
-    rule = {"stages": ["nursery"], "weather": {"rh_min": 85, "days": 3, "rain_mm": 40}}
 
-    s = risk.score_rule("rice_downy_mildew", rule, target_name={"en": "Downy mildew"}, stage="nursery",
-                        stage_name={"en": "Nursery"}, das=12, window=humid, has_history=False)
+DOWNY = {"stages": ["nursery"], "weather": {"rh_min": 85, "days": 3, "rain_total_min": 40}}
 
+
+def score_downy(window):
+    return risk.score_rule("rice_downy_mildew", DOWNY, target_name={"en": "Downy mildew"}, stage="nursery",
+                           stage_name={"en": "Nursery"}, das=12, window=window, has_history=False)
+
+
+def test_downy_mildew_fires_when_the_water_actually_stood():
+    """It waits for water, not for a temperature. Three humid days carrying
+    40 mm between them is the rule its own CABI note describes."""
+    s = score_downy(_wet_week(20))
+    assert s.fired is True
+    assert s.detail["rain_mm"] >= 40
+    text = risk.reason_text(risk.reason_of(s.reason["_parts"]) if isinstance(s.reason, dict) and "_parts" in s.reason
+                            else s.reason, "en")
+    assert "mm of rain" in text and "Water standing" in text, text
+    assert "temperature" not in text, "a rain rule must not claim a temperature band it does not have"
+
+
+def test_downy_mildew_stays_quiet_in_a_humid_dry_week():
+    """Humidity for three days in a dry week is not standing water. Before
+    this the rain was a key the engine never read, so it would have fired."""
+    s = score_downy(_wet_week(2))
     assert s.fired is False
-    assert "t_min" in s.detail["why"] and "t_max" in s.detail["why"], s.detail
-    assert risk.missing_weather_keys({"rh_min": 85, "t_min": 20, "t_max": 30, "days": 3}) == []
+    assert "mm" in s.detail["why"], s.detail
+
+
+def test_a_half_written_window_still_cannot_fire():
+    """Neither a temperature band nor the rain it needs: that is half a rule,
+    and it must say so rather than alert on humidity alone — or crash, which
+    is what it used to do."""
+    s = risk.score_rule("x", {"stages": ["nursery"], "weather": {"rh_min": 85, "days": 3}},
+                        target_name={"en": "X"}, stage="nursery", stage_name={"en": "Nursery"},
+                        das=12, window=_wet_week(20), has_history=False)
+    assert s.fired is False
+    assert "temperature band or the rain" in s.detail["why"], s.detail
+    assert risk.missing_weather_keys({"rh_min": 85, "days": 3, "t_min": 20, "t_max": 30}) == []
+    assert risk.missing_weather_keys({"rh_min": 85, "days": 3, "rain_total_min": 40}) == []

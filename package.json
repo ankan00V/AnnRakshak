@@ -2,13 +2,9 @@
   "name": "annrakshak",
   "private": true,
   "workspaces": [
-    "frontend/landing",
-    "frontend/farmer-app",
-    "frontend/officer-dashboard"
+    "frontend/landing"
   ],
   "scripts": {
-    "dev:landing": "npm run dev -w frontend/landing",
-    "dev:farmer": "npm run dev -w frontend/farmer-app",
-    "dev:officer": "npm run dev -w frontend/officer-dashboard"
+    "dev:landing": "npm run dev -w frontend/landing"
   }
 }

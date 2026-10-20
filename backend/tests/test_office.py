@@ -283,3 +283,30 @@ def test_the_worklist_puts_the_longest_wait_first(client):
     assert [r["id"] for r in work["overdue_cases"]] == [ids[2][1], ids[1][1]]
     assert work["sla_hours"] == 24
     assert len(work["unrouted"]) == 3    # nobody verified covers them yet
+
+
+def test_an_advisory_is_written_in_every_language_the_app_speaks(client):
+    """The one message an officer writes to farmers directly.
+
+    office.py carried its own three-language list, so a Tamil or Bengali
+    household was sent English while the rest of the app spoke to them in their
+    own language — and the officer previewing it could not even see what would
+    arrive."""
+    from app.i18n import LANGS
+
+    officer = _officer()
+    with SessionLocal() as db:
+        view = office.preview(db, get_kb(), target="rice_brown_spot", crop="rice", districts=["Bhandara"],
+                              kind="advisory", note="Scouts found it in Sakoli.", officer=officer.name, demo=True)
+
+    assert sorted(view["reason"]) == sorted(LANGS)
+    assert sorted(view["tasks"]) == sorted(LANGS)
+    english = view["reason"]["en"]
+    for lang in LANGS:
+        if lang == "en":
+            continue
+        assert view["reason"][lang] != english, f"{lang} fell back to English"
+        assert view["tasks"][lang], f"{lang} has no inspection task"
+        # The officer's own note is prefixed by a line of ours; it must be
+        # translated too, not left in English in front of Tamil text.
+        assert "Officer's note" not in view["reason"][lang], f"{lang} kept the English note label"

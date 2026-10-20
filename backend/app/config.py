@@ -242,6 +242,18 @@ OTP_CHANNEL = "email"
 there is no free SMS gateway yet, so every code is emailed (SMTP above)."""
 EXPERT_AUTO_VERIFY = _flag("ANNRAKSHAK_EXPERT_AUTO_VERIFY", not PROD)
 """Hackathon builds verify experts at sign-up; production sets this off and the district office verifies."""
+# --- Cloudflare Turnstile (the "are you a person" box on sign-in) ---------
+
+TURNSTILE_SITEKEY = os.environ.get("TURNSTILE_SITEKEY", "1x00000000000000000000AA")
+TURNSTILE_SECRET = os.environ.get("TURNSTILE_SECRET", "1x0000000000000000000000000000000AA")
+"""Cloudflare's own test pair by default: a real widget, a real verification
+call, and nothing refused. Replace both with the site's keys and the same code
+starts turning scripts away. Set either to empty to take the box off entirely.
+
+Cloudflare publishes other test keys worth knowing while building this:
+  2x00000000000000000000AB / 2x0000000000000000000000000000000AA  always fails
+  3x00000000000000000000FF                                        always asks"""
+
 OTP_DIGITS = 6
 OTP_TTL_MINUTES = 5
 OTP_MAX_ATTEMPTS = 5
@@ -281,6 +293,22 @@ EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND") or ("smtp" if SMTP_HOST else "ou
 
 FOLLOWUP_DUE_DAYS = 4
 CASE_ETA_MINUTES_PER_POSITION = 20
+
+# --- How long one officer may hold a case ---------------------------------
+
+CASE_RESPONSE_HOURS = 8
+"""The clock on one desk. The district's promise to the farmer is 24 hours
+(office.SLA_HOURS); this is the share of it any one officer gets before the
+case moves on by itself. Three desks still fit inside the promise, which is
+where MAX_CASE_HANDOVERS comes from."""
+
+MAX_CASE_HANDOVERS = 3
+"""After this many desks have let the clock run out, the case stops being
+passed around and waits for a supervisor. A case nobody will answer is a
+staffing problem, and circulating it forever hides that."""
+
+assert CASE_RESPONSE_HOURS * MAX_CASE_HANDOVERS <= 24, \
+    "a case must not be able to outlive the district's own 24-hour promise"
 
 
 # --------------------------------------------------------------------------

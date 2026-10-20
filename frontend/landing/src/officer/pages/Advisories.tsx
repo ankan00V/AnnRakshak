@@ -9,7 +9,10 @@ import { MAIN, SIDE, SPLIT } from '../../ui/layout'
 import { Card, ErrorBox, Pill } from '../../ui/kit'
 import { OutlookPanel, PageHead, PanelBone } from '../panels'
 
-const LANGS: [string, string][] = [['mr', 'मराठी'], ['hi', 'हिन्दी'], ['en', 'English']]
+// Every language the app sends in. This list was three, so an officer could
+// check the Marathi, Hindi and English of what they were about to send and had
+// no way to read the Tamil or the Bengali a farmer would actually get.
+import { LANGS as APP_LANGS } from '../../lib/i18n'
 
 /** Maharashtra has issued pest advisories this way since CROPSAP (2009-10):
  *  surveillance comes in, an officer decides, and a location-specific advisory
@@ -208,9 +211,9 @@ export default function Advisories() {
               {Object.entries(preview.by_district).map(([d, n]) => <Pill key={d}>{d} · {n}</Pill>)}
             </div>
 
-            <div className="mt-3 flex gap-1.5">
-              {LANGS.map(([code, label]) => (
-                <button key={code} onClick={() => setLang(code)}
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {APP_LANGS.map(({ code, label }) => (
+                <button key={code} onClick={() => setLang(code)} lang={code} title={code}
                   className={`rounded-full px-2.5 py-1 text-xs ${lang === code ? 'bg-leaf-deep text-cream' : 'bg-white text-soil-dark/70 border border-soil-dark/15'}`}>
                   {label}
                 </button>

@@ -1,9 +1,9 @@
 import { useState, type ReactNode } from 'react'
 import {
-  Activity, BrainCircuit, CalendarRange, Gauge, PhoneCall, Loader2, RefreshCw, ShieldCheck, Stethoscope, Target, TriangleAlert, Users,
+  Activity, BrainCircuit, CalendarRange, FlaskConical, Gauge, PhoneCall, Loader2, RefreshCw, ShieldCheck, Stethoscope, Target, TriangleAlert, Users,
 } from 'lucide-react'
 import { api } from '../api/client'
-import type { KccPanel as KccData, ModelCard, OutlookRow, Summary } from '../api/types'
+import type { KccPanel as KccData, ModelCard, OutlookRow, PesticideBaseline, Summary } from '../api/types'
 import { useAsync } from '../lib/hooks'
 import { useAuth } from '../auth/AuthContext'
 import { Link } from 'react-router-dom'
@@ -12,8 +12,13 @@ import { Bone, BoneLines, Card, ErrorBox, Loading, Pill } from '../ui/kit'
 export const pct = (n: number | null | undefined, d = 0) => (n == null ? '—' : `${(n * 100).toFixed(d)}%`)
 
 export function OfficerLoadPanel() {
-  const w = useAsync(() => api.workload(), [])
   const { me } = useAuth()
+  // Who is carrying what is the office's view. An ordinary officer is not
+  // shown it and does not ask for it: the server would refuse, and a panel
+  // that renders an error where a colleague's name used to be is worse than
+  // no panel.
+  const boss = me?.profile?.supervisor === true
+  const w = useAsync(() => (boss ? api.workload() : Promise.resolve(null)), [boss])
   const [busy, setBusy] = useState(false)
   const [said, setSaid] = useState<string | null>(null)
   const [failed, setFailed] = useState<string | null>(null)
@@ -51,6 +56,8 @@ export function OfficerLoadPanel() {
   const idle = officers.length - officers.filter((o) => o.open_cases > 0).length
   const busiest = Math.max(1, ...carrying.map((o) => o.open_cases))
   const districts = new Set(officers.flatMap((o) => o.districts)).size
+
+  if (!boss) return null
 
   return (
     <Card className="p-4">
@@ -198,6 +205,32 @@ const MONTH = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'
  *  pipeline, knowledge-base file, service, endpoint, typed client — and shown
  *  on no screen at all.
  */
+export function PesticidePanel({ p }: { p: PesticideBaseline }) {
+  const max = Math.max(...p.chemical.map((c) => c[1]), 1)
+  const latest = p.chemical[p.chemical.length - 1]
+  return (
+    <Card className="p-4">
+      <h2 className="font-semibold flex items-center gap-2"><FlaskConical className="w-4 h-4 text-ember" /> Pesticide use baseline — {p.state}</h2>
+      <p className="text-xs text-soil-dark/60 mt-0.5">
+        The number "more targeted pesticide use" has to move. {p.state} used <b>{latest ? Math.round(latest[1]).toLocaleString('en-IN') : '—'} t</b> of chemical pesticides (technical grade) in {latest?.[0]} — <b>{p.latest_share_pct}%</b> of India, <b>#{p.rank}</b> of {p.states_ranked} states.
+      </p>
+      <div className="mt-4 flex items-end gap-1.5 h-20">
+        {p.chemical.map(([year, v]) => (
+          <div key={year} className="flex-1 flex flex-col items-center gap-1" title={`${year}: ${Math.round(v).toLocaleString('en-IN')} t`}>
+            <span className="text-[9px] text-soil-dark/60">{(v / 1000).toFixed(1)}k</span>
+            <span className="w-full rounded-t bg-ember/70" style={{ height: `${(v / max) * 96}px` }} />
+            <span className="text-[9px] text-soil-dark/50">{year.slice(2)}</span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-[11px] text-soil-dark/60">
+        AnnRakshak's lever: chemical rungs come last and collapsed, advice only above the confidence gate, and the spray check vetoes wrong-class, wrong-crop and herbicide sprays before they happen.
+      </p>
+      <p className="mt-2 text-[10px] text-soil-dark/40">{p.source}. {p.unit_note}</p>
+    </Card>
+  )
+}
+
 export function KccPanel({ k }: { k: KccData }) {
   const top = k.groups.slice(0, 6)
   const most = Math.max(1, ...top.map((g) => g.expected_this_month))

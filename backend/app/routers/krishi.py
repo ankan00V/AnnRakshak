@@ -48,10 +48,12 @@ class AskIn(BaseModel):
 
 @router.post("/ask")
 def ask(body: AskIn, request: Request, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
-    limit(f"krishi:{client_ip(request)}", 60, 60)
+    # Open on purpose: a farmer may ask before they hand over a phone number.
+    # Sixty a minute from one address was not that farmer, it was a bill.
+    limit(f"krishi:{client_ip(request)}", 15, 60)
     user = auth.current_user(request, db)
     farm = db.get(Farm, body.farm_id) if body.farm_id is not None else None
-    if farm is not None and not auth.can_open_farm(user, farm):
+    if farm is not None and not auth.can_open_farm(user, farm, db):
         farm = None  # not theirs: answer as if no farm is open
     # Krishi is a personal assistant once signed in, so the fields it may talk
     # about are read from the session, never from the request. body.farm_id only

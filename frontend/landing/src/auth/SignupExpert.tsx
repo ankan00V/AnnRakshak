@@ -10,6 +10,7 @@ import { Bone, Card, ErrorBox, Loading } from '../ui/kit'
 import { useAuth } from './AuthContext'
 import { emailOk, phoneOk } from './helpers'
 import { Actions, Chips, CodePanel, Field, FormCard, Input, Primary, Secondary, Select, Steps } from './parts'
+import Turnstile from './Turnstile'
 
 /** What an expert is asked, and why: it decides which cases reach them and
  *  whether their verdicts can be trusted. Their post and credentials (the
@@ -23,7 +24,10 @@ export default function SignupExpert() {
   const [step, setStep] = useState(0)
   const [f, setF] = useState({
     name: '', email: '', phone: '',
-    designation: 'kvk_scientist', organisation: '', employeeId: '', qualification: 'msc_agri', experience: '',
+    designation: 'kvk_scientist', department: 'state_agri', organisation: '', employeeId: '',
+    qualification: 'msc_agri', experience: '', joinedService: '', postedSince: '',
+    officeAddress: '', block: '', pincode: '', officePhone: '',
+    reportingName: '', reportingDesignation: '', reportingContact: '', declaration: false,
     state: '', districts: [] as string[], crops: [] as string[], specialities: [] as string[],
     languages: ['mr', 'hi', 'en'] as Lang[],
   })
@@ -33,6 +37,7 @@ export default function SignupExpert() {
   /** An identifier the server says is already on an account. Held per field so
    *  the complaint can sit under the box it belongs to. */
   const [taken, setTaken] = useState<{ field: string; message: string } | null>(null)
+  const [human, setHuman] = useState<string | null>(null)
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => {
     // Editing the field that was rejected clears the rejection; leaving it
     // there under a number the person has just corrected reads as a dead form.
@@ -47,6 +52,12 @@ export default function SignupExpert() {
     organisation: f.organisation.trim().length < 2,
     employeeId: f.employeeId.trim().length < 2,
     experience: !(f.experience !== '' && Number(f.experience) >= 0 && Number(f.experience) <= 60),
+    officeAddress: f.officeAddress.trim().length < 4,
+    pincode: !/^[1-9][0-9]{5}$/.test(f.pincode.trim()),
+    reportingName: f.reportingName.trim().length < 2,
+    reportingDesignation: f.reportingDesignation.trim().length < 2,
+    reportingContact: f.reportingContact.trim().length < 5,
+    declaration: !f.declaration,
     districts: f.districts.length === 0,
     crops: f.crops.length === 0,
     specialities: f.specialities.length === 0,
@@ -55,8 +66,12 @@ export default function SignupExpert() {
   const stepOk = [
     !bad.name && !bad.email && !bad.phone,
     !bad.organisation && !bad.employeeId && !bad.experience,
+    // The office and the person who can vouch for them: this is what the
+    // district office actually verifies against.
+    !bad.officeAddress && !bad.pincode && !bad.reportingName && !bad.reportingDesignation
+      && !bad.reportingContact,
     !bad.districts && !bad.crops && !bad.specialities && !bad.languages,
-    true,
+    !bad.declaration,
   ]
   const show = (k: keyof typeof bad) => touched && bad[k]
 
@@ -94,7 +109,8 @@ export default function SignupExpert() {
    *  mobile number on the screen that confirms an email address. */
   const sendCode = async () => {
     try {
-      return await api.requestOtp({ role: 'expert', purpose: 'signup', email: f.email.trim(), phone: f.phone, lang })
+      return await api.requestOtp({ role: 'expert', purpose: 'signup', email: f.email.trim(), phone: f.phone,
+                                    lang, turnstile_token: human })
     } catch (e) {
       const err = e as ApiError
       if (err.status === 409 && (err.field === 'email' || err.field === 'phone')) {
@@ -113,7 +129,8 @@ export default function SignupExpert() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [query, f.state, places.data],
   )
-  const titles = [t('authExpertStep1'), t('authExpertStep2'), t('authExpertStep3'), t('authFarmerStep4')]
+  const titles = [t('authExpertStep1'), t('authExpertStep2'), t('authExpertStepOffice'),
+                  t('authExpertStep3'), t('authFarmerStep4')]
   const o = options.data
   const name = (list: { id: string; name: string }[] | undefined, id: string) => list?.find((x) => x.id === id)?.name ?? id
 
@@ -190,10 +207,68 @@ export default function SignupExpert() {
               {o.qualifications.map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}
             </Select>
           </Field>
+          <Field label={t('authDepartment')}>
+            <Select value={f.department} onChange={(v) => set('department', v)}>
+              {(o.departments ?? []).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </Select>
+          </Field>
+          <div className="grid grid-cols-2 gap-3 lg:gap-4">
+            <Field label={t('authJoinedService')}>
+              <Input value={f.joinedService} onChange={(e) => set('joinedService', e.target.value)}
+                type="date" max={new Date().toISOString().slice(0, 10)} />
+            </Field>
+            <Field label={t('authPostedSince')}>
+              <Input value={f.postedSince} onChange={(e) => set('postedSince', e.target.value)}
+                type="date" max={new Date().toISOString().slice(0, 10)} />
+            </Field>
+          </div>
         </div>
       )}
 
+      {/* The office, and the person a district can ring. Verification used to
+          rest on a name and an employee ID; this is what it rests on now. */}
       {step === 2 && (
+        <div className="space-y-4">
+          <Field label={t('authOfficeAddress')} error={show('officeAddress') && t('authFixField')}>
+            <Input value={f.officeAddress} onChange={(e) => set('officeAddress', e.target.value)}
+              autoComplete="street-address" invalid={show('officeAddress')} />
+          </Field>
+          <div className="grid grid-cols-2 gap-3 lg:gap-4">
+            <Field label={t('authBlock')}>
+              <Input value={f.block} onChange={(e) => set('block', e.target.value)} />
+            </Field>
+            <Field label={t('authPincode')} error={show('pincode') && t('authFixField')}>
+              <Input value={f.pincode} onChange={(e) => set('pincode', e.target.value)}
+                inputMode="numeric" maxLength={6} invalid={show('pincode')} />
+            </Field>
+          </div>
+          <Field label={t('authOfficePhone')}>
+            <Input value={f.officePhone} onChange={(e) => set('officePhone', e.target.value)}
+              inputMode="tel" autoComplete="tel" />
+          </Field>
+
+          <Field group label={t('authReporting')} hint={t('authReportingHint')}>
+            <div className="space-y-3">
+              <Field label={t('authReportingName')} error={show('reportingName') && t('authFixField')}>
+                <Input value={f.reportingName} onChange={(e) => set('reportingName', e.target.value)}
+                  invalid={show('reportingName')} />
+              </Field>
+              <div className="grid grid-cols-2 gap-3 lg:gap-4">
+                <Field label={t('authReportingDesignation')} error={show('reportingDesignation') && t('authFixField')}>
+                  <Input value={f.reportingDesignation} onChange={(e) => set('reportingDesignation', e.target.value)}
+                    invalid={show('reportingDesignation')} />
+                </Field>
+                <Field label={t('authReportingContact')} error={show('reportingContact') && t('authFixField')}>
+                  <Input value={f.reportingContact} onChange={(e) => set('reportingContact', e.target.value)}
+                    invalid={show('reportingContact')} />
+                </Field>
+              </div>
+            </div>
+          </Field>
+        </div>
+      )}
+
+      {step === 3 && (
         <div className="space-y-5">
           <Field label={t('authState')}>
             <Select value={f.state} onChange={(v) => set('state', v)}>
@@ -244,7 +319,7 @@ export default function SignupExpert() {
         </div>
       )}
 
-      {step === 3 && (
+      {step === 4 && (
         <div className="space-y-4">
           <Card className="p-4">
             <p className="text-[11px] uppercase tracking-wider text-soil-dark/50 font-semibold mb-2">{t('authReview')}</p>
@@ -261,6 +336,10 @@ export default function SignupExpert() {
               <dd>{f.crops.map((c) => name(o.crops, c)).join(', ')}</dd>
               <dt className="text-soil-dark/55">{t('authSpecialities')}</dt>
               <dd>{f.specialities.map((s) => name(o.specialities, s)).join(', ')}</dd>
+              <dt className="text-soil-dark/55">{t('authOfficeAddress')}</dt>
+              <dd>{[f.officeAddress, f.block, f.pincode].filter(Boolean).join(', ')}</dd>
+              <dt className="text-soil-dark/55">{t('authReporting')}</dt>
+              <dd>{f.reportingName} · {f.reportingDesignation}</dd>
             </dl>
             <button type="button" onClick={() => setStep(0)} className="mt-3 text-[13px] text-leaf-deep font-medium">
               {t('authChange')}
@@ -270,12 +349,39 @@ export default function SignupExpert() {
             <ShieldCheck className="w-5 h-5 shrink-0 mt-0.5" />
             <p className="text-[13px] leading-snug">{t('authVerifyNote')}</p>
           </div>
+
+          {/* Put your name to it. An officer is asking to read other people's
+              fields; this is the sentence they are held to. */}
+          <Card className="p-4">
+            <p className="text-[11px] uppercase tracking-wider text-soil-dark/50 font-semibold">
+              {t('authDeclarationTitle')}
+            </p>
+            <p className="mt-1.5 text-[13px] leading-snug text-soil-dark/80">{t('authDeclaration')}</p>
+            <label className="mt-3 flex items-start gap-2.5 text-[13px] font-medium cursor-pointer">
+              <input type="checkbox" checked={f.declaration} className="mt-0.5 w-4 h-4 accent-[#1f3d2b]"
+                onChange={(e) => set('declaration', e.target.checked)} />
+              {t('authDeclarationAgree')}
+            </label>
+            {show('declaration') && (
+              <p className="mt-1.5 text-[12px] text-ember">{t('authPickOne')}</p>
+            )}
+          </Card>
+          <Turnstile lang={lang} onToken={setHuman} />
           <CodePanel
+            blocked={!f.declaration}
             sendLabel={t('authSendCodeTo').replace('{to}', f.email.trim())}
             request={() => sendCode()}
             verify={async (challenge_id, code) => signIn(await api.signupExpert({
               challenge_id, code, name: f.name.trim(), phone: f.phone, lang,
-              designation: f.designation, organisation: f.organisation.trim(), employee_id: f.employeeId.trim(),
+              designation: f.designation, department: f.department,
+              organisation: f.organisation.trim(), employee_id: f.employeeId.trim(),
+              joined_service_on: f.joinedService || null, posted_since: f.postedSince || null,
+              office_address: f.officeAddress.trim(), block: f.block.trim() || null,
+              state: f.state, pincode: f.pincode.trim(),
+              office_phone: f.officePhone.trim() || null,
+              reporting_name: f.reportingName.trim(),
+              reporting_designation: f.reportingDesignation.trim(),
+              reporting_contact: f.reportingContact.trim(), declaration: f.declaration,
               qualification: f.qualification, experience_years: Number(f.experience),
               districts: f.districts, crops: f.crops, specialities: f.specialities, languages: f.languages,
             }))}
@@ -286,7 +392,7 @@ export default function SignupExpert() {
 
       <Actions>
         {step > 0 && <Secondary onClick={() => setStep((s) => s - 1)}>{t('back')}</Secondary>}
-        {step < 3 && <Primary onClick={next} busy={checking}>{t('authNext')}</Primary>}
+        {step < 4 && <Primary onClick={next} busy={checking}>{t('authNext')}</Primary>}
       </Actions>
       </FormCard>
 

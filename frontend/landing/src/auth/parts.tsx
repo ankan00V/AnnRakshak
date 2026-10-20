@@ -195,11 +195,14 @@ export function CodeBoxes({ value, onChange, digits = 6, onComplete }: {
 
 /** Send a code, then take it. `request` asks the server to email a code;
  *  `verify` finishes the login or sign-up with it. */
-export function CodePanel({ sendLabel, request, verify, submitLabel }: {
+export function CodePanel({ sendLabel, request, verify, submitLabel, blocked }: {
   sendLabel: string
   request: () => Promise<OtpSent>
   verify: (challengeId: string, code: string) => Promise<void>
   submitLabel: string
+  /** Something on this screen is still outstanding — the officer's undertaking.
+   *  Sending a code first would spend the code and then refuse the sign-up. */
+  blocked?: boolean
 }) {
   const { t } = useFarmer()
   const [sent, setSent] = useState<OtpSent | null>(null)
@@ -247,7 +250,7 @@ export function CodePanel({ sendLabel, request, verify, submitLabel }: {
     return (
       <div className="space-y-3">
         {error && <ErrorBox error={error} />}
-        <Primary busy={busy} onClick={send}>{sendLabel}</Primary>
+        <Primary busy={busy} disabled={blocked} onClick={send}>{sendLabel}</Primary>
         <p className="text-[12px] text-soil-dark/50 text-center">{t('authEmailNote')}</p>
       </div>
     )

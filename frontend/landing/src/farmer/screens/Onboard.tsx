@@ -141,9 +141,14 @@ export default function Onboard() {
                         when the list holds more than one person's fields. */}
                     <span className="block text-sm lg:text-[15px] font-medium truncate lg:whitespace-normal lg:leading-snug">
                       {f.crop_name} · {f.village || f.district}
+                      {f.status === 'fallow' && <span className="font-normal text-soil-dark/45"> · {t('seasonFallowTag')}</span>}
                     </span>
                     <span className="block text-xs text-soil-dark/60 truncate lg:whitespace-normal lg:leading-snug">
-                      {f.stage_name} · {f.das} {t('daysOld')} · {f.area_acres} {t('acres')}
+                      {/* A fallow field has no stage and no age: saying "maturing,
+                          240 days" about bare ground is the bug this replaced. */}
+                      {f.status === 'fallow'
+                        ? `${t('seasonRestingShort')} · ${f.area_acres} ${t('acres')}`
+                        : `${f.stage_name} · ${f.das} ${t('daysOld')} · ${f.area_acres} ${t('acres')}`}
                     </span>
                     {f.farmer_name !== me?.name && (
                       <span className="block text-[11px] text-soil-dark/45 truncate">{f.farmer_name}</span>

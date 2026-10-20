@@ -7,7 +7,12 @@ import { defineConfig } from 'vite'
 const API = process.env.ANNRAKSHAK_API ?? 'http://127.0.0.1:8010'
 
 export default defineConfig({
-  base: './',
+  // Absolute, not './'. A relative base resolves against the current URL's
+  // directory, so a cold load of a two-level route — /signup/expert,
+  // /officer/queue, /app/history/12 — asked for /signup/assets/index.js, got
+  // the SPA shell back as text/html, and rendered a blank page. In-app
+  // navigation hid it; a refresh or a shared link did not.
+  base: '/',
   plugins: [react()],
   server: {
     // slim.sh maps https://annrakshak.test → localhost:5173; Vite 8 refuses

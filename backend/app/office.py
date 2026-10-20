@@ -31,7 +31,7 @@ from datetime import UTC, date, datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.kb import KB, tr
+from app.kb import KB, tr, trl
 from app.models import (
     Advisory,
     Alert,
@@ -58,10 +58,15 @@ ADVISORY_REASON = {
     },
 }
 
-NOTE = {"en": " Officer's note: {note}", "hi": " अधिकारी की टिप्पणी: {note}",
-        "mr": " अधिकाऱ्याची टिप्पणी: {note}"}
+NOTE = {"en": "Officer's note: {note}", "hi": "अधिकारी की टिप्पणी: {note}",
+        "mr": "अधिकाऱ्याची टिप्पणी: {note}"}
 
-LANGS = ("en", "hi", "mr")
+# Every language the app speaks, not the three this file used to carry. An
+# advisory is the one message an officer writes to farmers directly, and it was
+# reaching a Tamil or Bengali household in English while the rest of the app
+# spoke to them in their own. The wording below is translated through the same
+# memory as the knowledge base (translate_i18n.py reads this module).
+from app.i18n import LANGS  # noqa: E402
 
 MAX_FARMS_PER_ISSUE = 5000
 """A single advisory cannot quietly become a state-wide broadcast."""
@@ -134,7 +139,11 @@ def preview(db: Session, kb: KB, *, target: str, crop: str, districts: list[str]
     reason = {
         lang: tr(ADVISORY_REASON[kind], lang).format(
             officer=officer, name=tr(names, lang), district=where)
-        + (tr(NOTE, lang).format(note=note) if note else "")
+        # The leading space is ours, not the sentence's: the translation memory
+        # is keyed by stripped English, so looking the note up with its space
+        # attached missed every machine-translated language and left "Officer's
+        # note:" in English in front of Tamil text.
+        + (" " + tr({k: v.strip() for k, v in NOTE.items()}, lang).format(note=note) if note else "")
         for lang in LANGS
     }
     return {
@@ -142,7 +151,13 @@ def preview(db: Session, kb: KB, *, target: str, crop: str, districts: list[str]
         "districts": districts, "farms": len(farms), "audience": audience,
         "over_limit": len(farms) > MAX_FARMS_PER_ISSUE,
         "reason": reason,
-        "tasks": rule.get("tasks") or {},
+        # Resolved for every language the app speaks, not just the three the
+        # rule file authors by hand. A farmer reading Tamil already received
+        # Tamil — trl() falls back to the translation memory — but the officer
+        # checking the wording before they sent it was shown three languages
+        # and an empty list for the rest, which reads as a product that only
+        # speaks three.
+        "tasks": {lang: trl(rule.get("tasks"), lang) for lang in LANGS},
         "by_district": dict(sorted(_count_by_district(farms).items())),
     }
 
@@ -270,6 +285,17 @@ def pending_officers(db: Session, *, demo: bool) -> list[dict]:
         "qualification": p.qualification, "experience_years": p.experience_years,
         "districts": p.districts or [], "crops": p.crops or [],
         "joined": u.created_at.isoformat() if getattr(u, "created_at", None) else None,
+        # What the sign-up now asks for, because a supervisor verifying a
+        # stranger was being asked to decide from a name and an employee ID.
+        # The reporting officer is the one that matters: it is a phone call.
+        "department": p.department,
+        "office": ", ".join(x for x in (p.office_address, p.block, p.pincode) if x) or None,
+        "office_phone": p.office_phone,
+        "joined_service_on": p.joined_service_on.isoformat() if p.joined_service_on else None,
+        "posted_since": p.posted_since.isoformat() if p.posted_since else None,
+        "reporting": {"name": p.reporting_name, "designation": p.reporting_designation,
+                      "contact": p.reporting_contact} if p.reporting_name else None,
+        "declared_at": p.declared_at.isoformat() if p.declared_at else None,
     } for u, p in rows]
 
 

@@ -42,3 +42,16 @@ def test_a_path_cannot_walk_out_of_the_web_root(served):
     for attempt in ("../secret.txt", "..%2fsecret.txt", "assets/../../secret.txt"):
         r = served.get(f"/{attempt}")
         assert "not for the web" not in r.text
+
+
+def test_a_missing_asset_is_a_404_and_not_the_shell(served):
+    """A relative asset base once made a two-level route ask for
+    /signup/assets/index.js. Answering that with index.html is how a blank page
+    happens: the browser refuses the MIME type and the real cause is three
+    steps away."""
+    r = served.get("/signup/assets/index-abc123.js")
+    assert r.status_code == 404
+    assert "AnnRakshak" not in r.text
+
+    # A route with a dot in it is still a route, not a file.
+    assert served.get("/officer/queue").status_code == 200

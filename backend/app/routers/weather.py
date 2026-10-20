@@ -347,6 +347,8 @@ def unsubscribe_one_click(token: str = "", db: Session = Depends(get_db)):
 # Ops
 # --------------------------------------------------------------------------
 
-@router.post("/officials/watch/run", dependencies=[Depends(auth.require("expert"))])
+@router.post("/officials/watch/run",
+             dependencies=[Depends(auth.require("expert")), Depends(auth.require_verified),
+                           Depends(auth.require_supervisor)])
 async def watch_run():
     return await run_in_threadpool(watch.cycle)

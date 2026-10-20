@@ -7,7 +7,7 @@ let html = readFileSync(resolve(dist, 'index.html'), 'utf8')
 
 html = html.replace(
   /<script type="module"[^>]*src="([^"]+)"[^>]*><\/script>/,
-  (_, src) => `<script type="module">${readFileSync(resolve(dist, src), 'utf8')}</script>`,
+  (_, src) => `<script type="module">${readFileSync(resolve(dist, src.replace(/^\//, '')), 'utf8')}</script>`,
 )
 html = html.replace(
   /<link rel="stylesheet"[^>]*href="([^"]+)"[^>]*>/,

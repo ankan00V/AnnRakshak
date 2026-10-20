@@ -1,14 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Bug, CheckCircle2, FlaskRound, HelpCircle, Inbox, Loader2, MapPin, Send, Timer, UserCheck, Users } from 'lucide-react'
+import { ArrowLeft, Bug, CheckCircle2, FlaskRound, HelpCircle, Loader2, MapPin, Send, Timer, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { PortalSwitch } from '../officer/PortalSwitch'
 import { api } from '../api/client'
-import type { CaseBundle, CaseListItem, CaseSatellite } from '../api/types'
+import type { CaseBundle, CaseListItem, CaseSatellite, CaseBrief } from '../api/types'
 import { useAsync } from '../lib/hooks'
 import { useAuth } from '../auth/AuthContext'
 import { Bone, BoneLines, Card, ErrorBox, GradCamOverlay, Loading, Pill } from '../ui/kit'
-import AccountMenu from '../auth/AccountMenu'
-import BrandMark from '../ui/BrandMark'
 
 const REASON_LABEL: Record<string, string> = {
   BELOW_FLOOR: 'Model unsure',
@@ -23,78 +20,15 @@ const REASON_LABEL: Record<string, string> = {
   FOLLOWUP_WORSE: 'Got worse after treatment',
   INSPECTION_FOUND: 'Found during alert check',
 }
-
-export default function ExpertConsole() {
-  const [tab, setTab] = useState<'open' | 'resolved'>('open')
-  // The district's queue is the default view; an officer narrows to their own.
-  const [scope, setScope] = useState<'mine' | 'all'>('all')
-  const list = useAsync(() => api.cases({ status: tab, scope }), [tab, scope])
-  const [selected, setSelected] = useState<number | null>(null)
-
-  return (
-    <div className="min-h-screen bg-cream text-soil-dark">
-      <header className="bg-soil-dark text-cream">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight"><BrandMark size={30} />AnnRakshak</Link>
-            <span className="text-cream/40">/</span>
-            <span className="flex items-center gap-1.5 text-sm"><UserCheck className="w-4 h-4 text-ochre" /> Expert validation</span>
-          </div>
-          <nav className="flex items-center gap-3 text-sm text-cream/70">
-            <PortalSwitch here="review" />
-            <AccountMenu />
-          </nav>
-        </div>
-      </header>
-
-      <div className={`max-w-7xl mx-auto px-4 md:px-6 py-5 grid gap-5 ${selected ? 'md:grid-cols-[340px_1fr]' : ''}`}>
-        <aside className={`${selected ? 'hidden md:block' : ''}`}>
-          <div className="flex rounded-full bg-white border border-soil-dark/10 p-1 mb-3">
-            {(['open', 'resolved'] as const).map((s) => (
-              <button key={s} onClick={() => { setTab(s); setSelected(null) }}
-                className={`flex-1 rounded-full py-1.5 text-sm font-medium capitalize ${tab === s ? 'bg-leaf-deep text-cream' : 'text-soil-dark/60'}`}>
-                {s}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center justify-between gap-2 mb-3 px-1">
-            <div className="flex rounded-full bg-white border border-soil-dark/10 p-0.5 text-xs">
-              {([['mine', 'My queue'], ['all', 'All district']] as const).map(([k, label]) => (
-                <button key={k} onClick={() => { setScope(k); setSelected(null) }}
-                  className={`rounded-full px-3 py-1 font-medium ${scope === k ? 'bg-leaf-deep text-cream' : 'text-soil-dark/60'}`}>
-                  {label}
-                </button>
-              ))}
-            </div>
-            {list.data && <span className="text-xs text-soil-dark/60">{list.data.length} case{list.data.length === 1 ? '' : 's'}</span>}
-          </div>
-          {list.loading && !list.data && <QueueSkeleton />}
-          {list.error && <ErrorBox error={list.error} onRetry={list.reload} />}
-          {list.data && list.data.length === 0 && (
-            <Card className="p-6 text-center text-sm text-soil-dark/60">
-              <Inbox className="w-6 h-6 mx-auto mb-2 text-leaf" />
-              Queue is clear.
-            </Card>
-          )}
-          <ul className={selected ? 'space-y-2' : 'space-y-2 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-2 md:space-y-0'}>
-            {list.data?.map((c) => (
-              <li key={c.id}>
-                <CaseRow c={c} active={selected === c.id} onClick={() => setSelected(c.id)} />
-              </li>
-            ))}
-          </ul>
-        </aside>
-
-        {selected && (
-          <main>
-            <CaseView id={selected} onBack={() => setSelected(null)} onResolved={() => { list.reload(); }} />
-          </main>
-        )}
-      </div>
-    </div>
-  )
-}
-
+/* The standalone "Expert validation" screen stood here.
+ *
+ * It listed the same cases as the district office's queue, opened the same
+ * case view below it, and offered strictly less: no district or crop filter,
+ * no bulk assign, no snooze, no keyboard triage, no saved views, no SLA
+ * column. Two screens for one job, and the weaker one was where an expert
+ * landed at sign-in. /expert now redirects to the queue; everything it was
+ * built on is still here, and the queue has always imported it from this file.
+ */
 
 /** Evidence the photo cannot give: is the whole field losing vigour, or only
  *  the leaf in the picture? Clear Sentinel-2 / Landsat 8 scenes, newest last. */
@@ -167,7 +101,13 @@ function districtLabel(districts: string[]): string {
 
 /** Hand a case on: wrong speciality, a queue too long, or off for the day. */
 function HandOff({ b, onDone }: { b: CaseBundle; onDone: () => void }) {
-  const officers = useAsync(() => api.officers(b.farm.district), [b.farm.district])
+  // Who else is on the books is the office's business, not every officer's: an
+  // ordinary desk may give a case up, and the system decides where it goes.
+  const { me } = useAuth()
+  const mayPlaceByName = me?.profile?.supervisor === true
+  const officers = useAsync(
+    () => (mayPlaceByName ? api.officers(b.farm.district) : Promise.resolve([])),
+    [b.farm.district, mayPlaceByName])
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<Error | null>(null)
@@ -201,8 +141,8 @@ function HandOff({ b, onDone }: { b: CaseBundle; onDone: () => void }) {
             <span className="font-medium">Whoever is freest</span>
             <span className="block text-[11px] text-soil-dark/60">Routes by open cases, then who has waited longest</span>
           </button>
-          <div className="my-1 border-t border-soil-dark/10" />
-          {others.length === 0 && (
+          {mayPlaceByName && <div className="my-1 border-t border-soil-dark/10" />}
+          {mayPlaceByName && others.length === 0 && (
             <p className="px-3 py-2 text-xs text-soil-dark/60">No other officer is verified yet.</p>
           )}
           {others.map((o) => (
@@ -232,6 +172,21 @@ function Waiting({ c, active }: { c: CaseListItem; active: boolean }) {
   return <Pill tone={active ? 'dark' : hours > 24 ? 'ember' : 'neutral'}>waiting {label}</Pill>
 }
 
+/** The clock on this desk. The case moves to the next eligible officer when it
+ *  runs out, so the officer holding it should be able to see it rather than
+ *  find out by losing the case. */
+export function RespondBy({ c, active }: { c: CaseBrief; active?: boolean }) {
+  if (c.status !== 'open' || !c.respond_by) return null
+  const left = (new Date(c.respond_by).getTime() - Date.now()) / 3.6e6
+  if (left > 4) return null          // plenty of time: not worth the ink
+  const late = left <= 0
+  return (
+    <Pill tone={active ? 'dark' : late ? 'ember' : 'ochre'}>
+      {late ? 'moving on' : left < 1 ? `${Math.max(1, Math.round(left * 60))} min left` : `${Math.round(left)} h left`}
+    </Pill>
+  )
+}
+
 export function CaseRow({ c, active, onClick }: { c: CaseListItem; active: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick}
@@ -253,6 +208,7 @@ export function CaseRow({ c, active, onClick }: { c: CaseListItem; active: boole
             ? <Pill tone={active ? 'dark' : 'leaf'}>{c.assigned_name}</Pill>
             : <Pill tone={active ? 'dark' : 'ochre'}>unassigned</Pill>}
           <Waiting c={c} active={active} />
+          <RespondBy c={c} active={active} />
         </span>
       </span>
     </button>
@@ -349,6 +305,14 @@ function CaseDetail({ b, onBack, onResolved }: { b: CaseBundle; onBack: () => vo
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {open && b.case.respond_by && (
+            <span className="text-xs text-soil-dark/60">
+              {new Date(b.case.respond_by).getTime() > Date.now()
+                ? `Answer by ${new Date(b.case.respond_by).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                : 'Past its time — moving to another desk'}
+              {b.case.handovers > 0 && ` · ${b.case.handovers} desk${b.case.handovers === 1 ? '' : 's'} before you`}
+            </span>
+          )}
           {open && <HandOff b={b} onDone={onResolved} />}
           {open && (
             <span className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ${timer.s > 180 ? 'bg-ember/10 text-ember' : 'bg-leaf/10 text-leaf-deep'}`}>

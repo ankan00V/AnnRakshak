@@ -22,6 +22,7 @@ import type {
   Hotspots,
   IndentRow,
   KccPanel,
+  PesticideBaseline,
   KrishiAnswer,
   KrishiChip,
   LabelVerdict,
@@ -104,6 +105,8 @@ const json = (body: unknown): RequestInit => ({
 })
 
 export const api = {
+  saveProfile: (body: Record<string, unknown>) =>
+    req<Me>('/api/auth/me/profile', { ...json(body), method: 'PATCH' }),
   me: () => req<Me>('/api/auth/me'),
   places: () => req<{ states: StatePlaces[] }>('/api/geo/places'),
   whereAmI: (lat: number, lon: number) =>
@@ -114,7 +117,8 @@ export const api = {
   authOptions: (lang: Lang) => req<AuthOptions>(`/api/auth/options?lang=${lang}`),
   checkIdentifiers: (body: { email?: string; phone?: string; lang: Lang }) =>
     req<{ free: boolean; field: string | null; message: string | null }>('/api/auth/check', json(body)),
-  requestOtp: (body: { role: Role; purpose: 'signup' | 'login'; email?: string; phone?: string; identifier?: string; lang: Lang }) =>
+  requestOtp: (body: { role: Role; purpose: 'signup' | 'login'; email?: string; phone?: string;
+    identifier?: string; lang: Lang; turnstile_token?: string | null }) =>
     req<OtpSent>('/api/auth/otp', json(body)),
   login: (challengeId: string, code: string, role: Role, lang: Lang) =>
     req<Me>('/api/auth/login', json({ challenge_id: challengeId, code, role, lang })),
@@ -122,6 +126,13 @@ export const api = {
   signupExpert: (body: Record<string, unknown>) => req<Me>('/api/auth/signup/expert', json(body)),
   demoLogin: (role: Role) => req<Me>('/api/auth/demo', json({ role })),
   logout: () => req<{ signed_out: boolean }>('/api/auth/logout', { method: 'POST' }),
+
+  /** Everything this account holds, as a file. A browser download, not a fetch:
+   *  the server names it and the phone saves it. */
+  myDataUrl: '/api/auth/me/data',
+  eraseAccount: (confirm: string) =>
+    req<{ erased: boolean; farms: number; problems: number; photographs: number }>(
+      '/api/auth/me/erase', json({ confirm })),
 
   krishiHello: (lang: Lang, screen: string) =>
     req<{ text: string; suggestions: KrishiChip[] }>(`/api/krishi/hello?lang=${lang}&screen=${screen}`),
@@ -138,6 +149,10 @@ export const api = {
   samples: (crop: string) => req<{ url: string; true_class: string; expected: 'advise' | 'clarify' | 'escalate' | 'retake' | null }[]>(`/api/samples?crop=${crop}`),
   farms: (lang: Lang) => req<Farm[]>(`/api/farms?lang=${lang}`),
   createFarm: (body: Record<string, unknown>) => req<Farm>('/api/farms', json(body)),
+  harvest: (farmId: number, body: { harvested_on?: string; note?: string }) =>
+    req<Farm>(`/api/farms/${farmId}/harvest`, json(body)),
+  sow: (farmId: number, body: { crop: string; sowing_date: string; date_basis?: 'sown' | 'transplanted'; variety?: string }) =>
+    req<Farm>(`/api/farms/${farmId}/sow`, json(body)),
   setFarmLang: (farmId: number, lang: Lang) =>
     req<Farm>(`/api/farms/${farmId}`, { ...json({ lang }), method: 'PATCH' }),
   setFarmLocation: (farmId: number, lat: number, lon: number, confirmFar = false) =>
@@ -231,6 +246,7 @@ export const api = {
   hotspots: () => req<Hotspots>('/api/officials/hotspots'),
   modelCard: () => req<ModelCard>('/api/officials/model'),
   outlook: () => req<OutlookRow[]>('/api/officials/outlook'),
+  pesticideBaseline: () => req<PesticideBaseline>('/api/officials/pesticides'),
   kcc: () => req<KccPanel>('/api/officials/kcc'),
   addSensor: (farmId: number, readings: Record<string, unknown>[]) =>
     req<{ stored: number }>(`/api/farms/${farmId}/sensor`, json(readings)),

@@ -2,17 +2,18 @@
 which farm once signed in."""
 
 import re
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from app import config, services
+from app.config import UPLOAD_DIR
 from app.db import Base, SessionLocal, engine
 from app.main import app
 from tests.test_api import _leaf_jpeg  # the same 1x1 leaf
-from app.models import ExpertProfile, Farm, FarmerProfile, OtpChallenge, Problem, User, UserSession
+from app.models import Case, Confirmation, Diagnosis, ExpertProfile, Farm, FarmerProfile, OtpChallenge, Problem, User, UserSession
 from app.routers import auth as auth_router
 
 SOWN = (date.today() - timedelta(days=40)).isoformat()
@@ -66,7 +67,18 @@ def expert_signup(c: TestClient, mail, email="dr.kale@kvk.org.in", phone="912345
     assert r.status_code == 200, r.text
     return c.post("/api/auth/signup/expert", json={
         "challenge_id": r.json()["challenge_id"], "code": code_of(mail), "name": "Dr. S. Kale", "phone": phone,
-        "designation": "kvk_scientist", "organisation": "KVK Sakoli, Bhandara", "employee_id": "KVK-BH-0231",
+        "department": "state_agri", "office_address": "Krishi Bhavan, Civil Lines",
+        "block": "Sakoli", "state": "Maharashtra", "pincode": "441802",
+        "office_phone": "07184-255201", "joined_service_on": "2014-07-01",
+        "posted_since": "2022-06-15", "reporting_name": "Smt. A. Deshmukh",
+        "reporting_designation": "District Superintending Agriculture Officer",
+        "reporting_contact": "dsao.bhandara@maha.gov.in", "declaration": True, "designation": "kvk_scientist", "organisation": "KVK Sakoli, Bhandara", "employee_id": "KVK-BH-0231",
+        "department": "state_agri", "office_address": "Krishi Bhavan, Civil Lines",
+        "block": "Sakoli", "state": "Maharashtra", "pincode": "441802",
+        "office_phone": "07184-255201", "joined_service_on": "2014-07-01",
+        "posted_since": "2022-06-15", "reporting_name": "Smt. A. Deshmukh",
+        "reporting_designation": "District Superintending Agriculture Officer",
+        "reporting_contact": "dsao.bhandara@maha.gov.in", "declaration": True,
         "qualification": "phd", "experience_years": 12, "districts": ["Bhandara", "Gondia"],
         "crops": ["rice", "soybean"], "specialities": ["plant_pathology"], "languages": ["mr", "hi", "en"]})
 
@@ -274,11 +286,44 @@ def test_farmers_see_only_their_own_farms(client, mail):
     assert len(client.get("/api/farms").json()) == 2
 
 
-def test_experts_open_any_farm_and_the_consoles(client, mail):
+def test_an_officer_opens_the_farm_behind_their_own_case_and_no_other(client, mail):
+    """Scoping the case list and leaving the farm open would be no scoping at
+    all: the farmer's name, village, photographs and history are on that side
+    of it too."""
     expert_signup(client, mail)
-    assert client.get("/api/farms/1").status_code == 200
+    other_desk = _colleague(email="third@kvk.org.in")   # its own session: not inside ours
+    with SessionLocal() as db:
+        me = db.scalar(select(User).where(User.email == "dr.kale@kvk.org.in"))
+        mine = Farm(farmer_name="Mine", crop="rice", sowing_date=date.today() - timedelta(days=40),
+                    district="Bhandara", lat=21.1, lon=79.6, area_acres=2, is_demo=False)
+        theirs = Farm(farmer_name="Theirs", crop="rice", sowing_date=date.today() - timedelta(days=40),
+                      district="Bhandara", lat=21.2, lon=79.7, area_acres=2, is_demo=False)
+        db.add_all([mine, theirs])
+        db.flush()
+        for farm, holder in ((mine, me.id), (theirs, other_desk)):
+            p = Problem(farm_id=farm.id, status="open")
+            db.add(p)
+            db.flush()
+            db.add(Case(problem_id=p.id, status="open", reason="BELOW_FLOOR",
+                        created_at=datetime.now(), assigned_to=holder))
+        mine_id, theirs_id, my_id = mine.id, theirs.id, me.id
+        # A KVK scientist is a supervisory post, and this test is about the
+        # officer who is not one.
+        db.get(ExpertProfile, me.id).supervisor = False
+        db.commit()
+
+    assert client.get(f"/api/farms/{mine_id}").status_code == 200
+    assert client.get(f"/api/farms/{theirs_id}").status_code == 403
+    assert client.get("/api/farms/1").status_code == 403          # the fixture's demo farm
     assert client.get("/api/cases").status_code == 200
     assert client.get("/api/officials/summary").status_code == 200
+
+    with SessionLocal() as db:                                     # a supervisor opens the district
+        db.get(ExpertProfile, my_id).supervisor = True
+        db.commit()
+    assert client.get(f"/api/farms/{theirs_id}").status_code == 200
+    assert client.get("/api/farms/1").status_code == 403           # but never across the demo line
+
     r = client.post("/api/farms", json={"farmer_name": "X", "crop": "maize", "sowing_date": SOWN,
                                         "district": "Bhandara", "lat": 21.3, "lon": 79.7, "area_acres": 1})
     assert r.status_code == 403
@@ -391,7 +436,14 @@ def _expert(client, mail, *, verified: bool, supervisor: bool = False,
     client.post("/api/auth/signup/expert", json={
         "challenge_id": r.json()["challenge_id"], "code": code_of(mail), "name": "New Officer",
         "phone": phone, "designation": "agri_officer", "organisation": "DAO",
-        "employee_id": "E-1", "qualification": "bsc_agri", "experience_years": 3,
+        "employee_id": "E-1",
+        "department": "state_agri", "office_address": "Krishi Bhavan, Civil Lines",
+        "block": "Sakoli", "state": "Maharashtra", "pincode": "441802",
+        "office_phone": "07184-255201", "joined_service_on": "2014-07-01",
+        "posted_since": "2022-06-15", "reporting_name": "Smt. A. Deshmukh",
+        "reporting_designation": "District Superintending Agriculture Officer",
+        "reporting_contact": "dsao.bhandara@maha.gov.in", "declaration": True,
+        "qualification": "bsc_agri", "experience_years": 3,
         "districts": ["Bhandara"], "crops": ["rice"], "specialities": ["entomology"],
         "languages": ["mr"]})
     with SessionLocal() as db:
@@ -517,8 +569,20 @@ def test_a_farmers_photo_is_not_served_to_a_stranger(client, mail):
         # a second farmer, signed in, still may not have it
         farmer_signup(stranger, mail, phone="9876500001", email="other@example.com")
         assert stranger.get(url).status_code == 404
-        # an officer may: a case arrives on their desk with the photo in it
+        # an officer may — but only one the district office has verified. An
+        # account that signed up as an expert two minutes ago is not that.
         expert_signup(stranger, mail)
+        with SessionLocal() as db:
+            prof = db.scalar(select(ExpertProfile).join(User, User.id == ExpertProfile.user_id)
+                             .where(User.email == "dr.kale@kvk.org.in"))
+            prof.verified = False
+            db.commit()
+        assert stranger.get(url).status_code == 404
+        with SessionLocal() as db:
+            prof = db.scalar(select(ExpertProfile).join(User, User.id == ExpertProfile.user_id)
+                             .where(User.email == "dr.kale@kvk.org.in"))
+            prof.verified = True
+            db.commit()
         assert stranger.get(url).status_code == 200
     assert client.get("/media/../../etc/passwd").status_code in (404, 400)
 
@@ -593,7 +657,11 @@ def test_the_post_decides_the_supervisor_rank(client, mail):
     r = client.post("/api/auth/signup/expert", json={
         "challenge_id": r.json()["challenge_id"], "code": code_of(mail), "name": "R. Ingle",
         "phone": "9123456781", "designation": "agri_assistant", "organisation": "Taluka Agri Office",
-        "employee_id": "MH-AA-77", "qualification": "bsc_agri", "experience_years": 4,
+        "employee_id": "MH-AA-77", "department": "state_agri",
+        "office_address": "Taluka Agri Office, Sakoli", "state": "Maharashtra", "pincode": "441802",
+        "reporting_name": "Shri P. Rathod", "reporting_designation": "Taluka Agriculture Officer",
+        "reporting_contact": "tao.sakoli@maha.gov.in", "declaration": True,
+        "qualification": "bsc_agri", "experience_years": 4,
         "districts": ["Bhandara"], "crops": ["rice"], "specialities": ["agronomy"], "languages": ["mr"]})
     assert r.status_code == 201, r.text
     assert r.json()["profile"]["supervisor"] is False         # an assistant advises
@@ -636,7 +704,12 @@ def test_an_officer_outside_maharashtra_can_sign_up(client, mail):
                                            "email": "dr.bob@kvk.org.in", "phone": "9123456788"})
     r = client.post("/api/auth/signup/expert", json={
         "challenge_id": r.json()["challenge_id"], "code": code_of(mail), "name": "Dr. Bob",
-        "phone": "9123456788", "designation": "kvk_scientist", "organisation": "KVK Kapurthala, Punjab",
+        "phone": "9123456788", "department": "state_agri", "office_address": "Krishi Bhavan, Civil Lines",
+        "block": "Sakoli", "state": "Maharashtra", "pincode": "441802",
+        "office_phone": "07184-255201", "joined_service_on": "2014-07-01",
+        "posted_since": "2022-06-15", "reporting_name": "Smt. A. Deshmukh",
+        "reporting_designation": "District Superintending Agriculture Officer",
+        "reporting_contact": "dsao.bhandara@maha.gov.in", "declaration": True, "designation": "kvk_scientist", "organisation": "KVK Kapurthala, Punjab",
         "employee_id": "KVKPT001", "qualification": "bsc_agri", "experience_years": 13,
         "districts": ["Hoshiarpur", "Kapurthala"], "crops": ["rice"],
         "specialities": ["plant_pathology"], "languages": ["en", "hi"]})
@@ -651,7 +724,12 @@ def test_a_district_nobody_publishes_is_still_refused(client, mail):
                                            "email": "dr.nowhere@kvk.org.in", "phone": "9123456787"})
     r = client.post("/api/auth/signup/expert", json={
         "challenge_id": r.json()["challenge_id"], "code": code_of(mail), "name": "Dr. Nowhere",
-        "phone": "9123456787", "designation": "kvk_scientist", "organisation": "KVK",
+        "phone": "9123456787", "department": "state_agri", "office_address": "Krishi Bhavan, Civil Lines",
+        "block": "Sakoli", "state": "Maharashtra", "pincode": "441802",
+        "office_phone": "07184-255201", "joined_service_on": "2014-07-01",
+        "posted_since": "2022-06-15", "reporting_name": "Smt. A. Deshmukh",
+        "reporting_designation": "District Superintending Agriculture Officer",
+        "reporting_contact": "dsao.bhandara@maha.gov.in", "declaration": True, "designation": "kvk_scientist", "organisation": "KVK",
         "employee_id": "X-1", "qualification": "bsc_agri", "experience_years": 1,
         "districts": ["Atlantis"], "crops": ["rice"],
         "specialities": ["plant_pathology"], "languages": ["en"]})
@@ -666,9 +744,315 @@ def test_an_officers_own_states_travel_with_their_profile(client, mail):
                                            "email": "dr.rain@kvk.org.in", "phone": "9123456786"})
     r = client.post("/api/auth/signup/expert", json={
         "challenge_id": r.json()["challenge_id"], "code": code_of(mail), "name": "Dr. Rain",
-        "phone": "9123456786", "designation": "kvk_scientist", "organisation": "KVK Kapurthala",
+        "phone": "9123456786", "department": "state_agri", "office_address": "Krishi Bhavan, Civil Lines",
+        "block": "Sakoli", "state": "Maharashtra", "pincode": "441802",
+        "office_phone": "07184-255201", "joined_service_on": "2014-07-01",
+        "posted_since": "2022-06-15", "reporting_name": "Smt. A. Deshmukh",
+        "reporting_designation": "District Superintending Agriculture Officer",
+        "reporting_contact": "dsao.bhandara@maha.gov.in", "declaration": True, "designation": "kvk_scientist", "organisation": "KVK Kapurthala",
         "employee_id": "KVKPT002", "qualification": "bsc_agri", "experience_years": 4,
         "districts": ["Hoshiarpur", "Kapurthala"], "crops": ["rice"],
         "specialities": ["plant_pathology"], "languages": ["en"]})
     assert r.status_code == 201, r.text
     assert r.json()["profile"]["states"] == ["Punjab"]
+
+
+def test_a_farmer_can_take_their_data_and_have_it_erased(client, mail):
+    """Consent at sign-up is half a bargain. The other half is being able to
+    see what the app holds, and to have the person in it erased."""
+    farmer_signup(client, mail)
+    me = client.get("/api/auth/me").json()
+    farm_id = me["farm_ids"][0]
+    r = client.post(f"/api/farms/{farm_id}/diagnose",
+                    files={"image": ("x.jpg", _leaf_jpeg(), "image/jpeg")},
+                    data={"lang": "en", "demo_scenario": "clear"}).json()
+    photo = (r.get("image_url") or "").removeprefix("/media/")
+
+    # Everything we hold, in their hands.
+    out = client.get("/api/auth/me/data")
+    assert out.status_code == 200 and "attachment" in out.headers["content-disposition"]
+    data = out.json()
+    assert data["account"]["phone"] == "+919876543210"
+    assert data["farms"][0]["crop"] == "rice" and data["profile"]["village"] == "Mohadi"
+    assert data["photographs"] and data["photographs"][0]["file"] == photo
+
+    assert client.post("/api/auth/me/erase", json={"confirm": "no"}).status_code == 422
+
+    gone = client.post("/api/auth/me/erase", json={"confirm": "DELETE"})
+    assert gone.status_code == 200 and gone.json()["photographs"] == 1
+    assert client.get("/api/auth/me").status_code == 401        # the session went with them
+
+    with SessionLocal() as db:
+        assert db.scalar(select(User).where(User.phone == "+919876543210")) is None
+        farm = db.get(Farm, farm_id)
+        assert farm is not None                                  # the district keeps its record
+        assert farm.farmer_name == "(erased)" and farm.user_id is None
+        assert farm.village is None and farm.phone is None
+        assert db.scalar(select(Diagnosis).where(Diagnosis.image_path.is_not(None))) is None
+    assert not (UPLOAD_DIR / photo).exists()                     # the file, not only the row
+
+
+def _case_on(desk_id: int | None) -> int:
+    """An open case on a real farm, optionally already on somebody's desk.
+
+    Real, not the fixture's demo farm: an officer who signed up here is a real
+    account, and the two sides never see each other's cases."""
+    with SessionLocal() as db:
+        farm = db.scalar(select(Farm).where(Farm.is_demo.is_(False)))
+        if farm is None:
+            farm = Farm(farmer_name="Ramesh", crop="rice",
+                        sowing_date=date.today() - timedelta(days=40), district="Bhandara",
+                        lat=21.17, lon=79.65, area_acres=2, is_demo=False)
+            db.add(farm)
+            db.flush()
+        p = Problem(farm_id=farm.id, status="open")
+        db.add(p)
+        db.flush()
+        c = Case(problem_id=p.id, status="open", reason="BELOW_FLOOR",
+                 created_at=datetime.now(), assigned_to=desk_id)
+        db.add(c)
+        db.commit()
+        return c.id
+
+
+def test_an_officer_sees_their_own_desk_and_not_a_colleagues(client, mail):
+    """A case carries a farmer's name, their village and photographs of their
+    field. A district's staff have no reason to read one another's."""
+    me = _expert(client, mail, verified=True, supervisor=False)
+    other = _colleague()
+    mine, theirs = _case_on(me), _case_on(other)
+
+    listed = [c["id"] for c in client.get("/api/cases?status=open").json()]
+    assert mine in listed and theirs not in listed
+    assert client.get(f"/api/cases/{mine}").status_code == 200
+    assert client.get(f"/api/cases/{theirs}").status_code == 404   # not 403: not theirs to know of
+    # Asking for the whole queue does not widen it.
+    assert theirs not in [c["id"] for c in client.get("/api/cases?status=open&scope=all").json()]
+
+
+def test_a_supervisor_sees_the_whole_queue(client, mail):
+    boss = _expert(client, mail, verified=True, supervisor=True)
+    other = _colleague()
+    mine, theirs = _case_on(boss), _case_on(other)
+    listed = [c["id"] for c in client.get("/api/cases?status=open&scope=all").json()]
+    assert mine in listed and theirs in listed
+    assert client.get(f"/api/cases/{theirs}").status_code == 200
+
+
+def test_only_a_supervisor_places_a_case_by_name(client, mail):
+    """The system routes cases. An officer may give one up; they may not decide
+    whose desk it lands on, and they cannot read the roster to choose from."""
+    _expert(client, mail, verified=True, supervisor=False)
+    other = _colleague()
+    case_id = _case_on(None)
+    assert client.post(f"/api/cases/{case_id}/reassign",
+                       json={"to_user_id": other}).status_code == 403
+    assert client.get("/api/cases/officers/list").status_code == 403
+    # Handing it back to the system is theirs to do.
+    assert client.post(f"/api/cases/{case_id}/reassign", json={}).status_code == 200
+
+
+def test_district_wide_writes_are_supervisor_work(client, mail):
+    """Each of these reaches every farm in the district: alerts raised, phones
+    woken, email sent. They were open to any verified officer, and the watcher
+    sweep to any signed-in account at all."""
+    _expert(client, mail, verified=True, supervisor=False)
+    assert client.post("/api/officials/risk/run-all").status_code == 403
+    assert client.post("/api/officials/watch/run").status_code == 403
+
+
+def test_a_farmer_cannot_start_a_district_sweep(client, mail):
+    farmer_signup(client, mail)
+    assert client.post("/api/officials/watch/run").status_code == 403
+    assert client.post("/api/officials/risk/run-all").status_code == 403
+
+
+def _expert_body(mail, challenge_id, **over) -> dict:
+    """A complete officer sign-up, as the form sends it."""
+    return {
+        "challenge_id": challenge_id, "code": code_of(mail), "name": "Dr. S. Kale",
+        "phone": "9123456700", "designation": "agri_officer", "department": "state_agri",
+        "organisation": "District Agriculture Office, Bhandara", "employee_id": "MH-DAO-118",
+        "office_address": "Krishi Bhavan, Civil Lines", "block": "Sakoli",
+        "state": "Maharashtra", "pincode": "441802", "office_phone": "07184-255201",
+        "joined_service_on": "2014-07-01", "posted_since": "2022-06-15",
+        "reporting_name": "Smt. A. Deshmukh",
+        "reporting_designation": "District Superintending Agriculture Officer",
+        "reporting_contact": "dsao.bhandara@maha.gov.in", "declaration": True,
+        "qualification": "msc_agri", "experience_years": 11, "districts": ["Bhandara"],
+        "crops": ["rice"], "specialities": ["entomology"], "languages": ["mr", "en"],
+    } | over
+
+
+def test_an_officer_gives_the_office_what_it_needs_to_check_them(client, mail):
+    """A farmer is asked the least that lets the app help them. An officer is
+    asking to read other people's fields, so the office is given enough to
+    check who they are — including somebody to ring."""
+    r = client.post("/api/auth/otp", json={"role": "expert", "purpose": "signup",
+                                           "email": "kale2@kvk.org.in", "phone": "9123456700"})
+    out = client.post("/api/auth/signup/expert",
+                      json=_expert_body(mail, r.json()["challenge_id"]))
+    assert out.status_code == 201, out.text
+    with SessionLocal() as db:
+        p = db.scalar(select(ExpertProfile).join(User, User.id == ExpertProfile.user_id)
+                      .where(User.email == "kale2@kvk.org.in"))
+        assert p.department == "state_agri" and p.pincode == "441802"
+        assert p.office_address.startswith("Krishi Bhavan")
+        assert p.reporting_name == "Smt. A. Deshmukh"
+        assert p.joined_service_on.year == 2014 and p.posted_since.year == 2022
+        assert p.declared_at is not None
+
+
+def test_the_undertaking_and_the_office_details_are_not_optional(client, mail):
+    def signup(email, phone, **over):
+        r = client.post("/api/auth/otp", json={"role": "expert", "purpose": "signup",
+                                               "email": email, "phone": phone})
+        return client.post("/api/auth/signup/expert",
+                           json=_expert_body(mail, r.json()["challenge_id"], phone=phone, **over))
+
+    assert signup("a@kvk.org.in", "9123456701", declaration=False).status_code == 422
+    assert signup("b@kvk.org.in", "9123456702", pincode="12").status_code == 422
+    assert signup("c@kvk.org.in", "9123456703", department="not_a_department").status_code == 422
+    assert signup("d@kvk.org.in", "9123456704", reporting_contact="").status_code == 422
+
+
+def test_the_dossier_and_the_map_follow_the_same_rule_as_the_case(client, mail):
+    """Every door into a farm is the same door. The dossier wrote its own check
+    and the map carried farmers' names to anyone who could see a pin."""
+    expert_signup(client, mail)
+    other_desk = _colleague(email="fourth@kvk.org.in")
+    with SessionLocal() as db:
+        me = db.scalar(select(User).where(User.email == "dr.kale@kvk.org.in"))
+        db.get(ExpertProfile, me.id).supervisor = False
+        farm = Farm(farmer_name="Someone Else", crop="rice",
+                    sowing_date=date.today() - timedelta(days=40), district="Bhandara",
+                    lat=21.2, lon=79.7, area_acres=2, is_demo=False)
+        db.add(farm)
+        db.flush()
+        p = Problem(farm_id=farm.id, status="open", target="rice_brown_spot",
+                    opened_at=datetime.now())
+        db.add(p)
+        db.flush()
+        db.add(Case(problem_id=p.id, status="open", reason="BELOW_FLOOR",
+                    created_at=datetime.now(), assigned_to=other_desk))
+        db.add(Confirmation(problem_id=p.id, verdict="confirmed", final_label="rice_brown_spot",
+                            expert_name="Someone", created_at=datetime.now()))
+        farm_id, my_id = farm.id, me.id
+        db.commit()
+
+    # 403 from the router's own path guard, which now asks the same question
+    assert client.get(f"/api/officials/farms/{farm_id}").status_code == 403
+    pins = client.get("/api/officials/hotspots").json()["points"]
+    mine = [p for p in pins if p["district"] == "Bhandara"]
+    assert mine, "the outbreak is still on the map"
+    assert all(p["farmer_name"] is None for p in mine), "but not whose field it is"
+
+    with SessionLocal() as db:
+        db.get(ExpertProfile, my_id).supervisor = True
+        db.commit()
+    assert client.get(f"/api/officials/farms/{farm_id}").status_code == 200
+    named = client.get("/api/officials/hotspots").json()["points"]
+    assert any(p["farmer_name"] == "Someone Else" for p in named)
+
+
+def test_the_sign_in_widget_guards_the_request_for_a_code(client, mail, monkeypatch):
+    """Both sign-up and login start by asking for a code, which costs money and
+    reaches a real inbox, so one check covers both screens."""
+    from app import turnstile
+    from app.routers import auth as auth_router
+
+    seen: list[str | None] = []
+
+    def refuse(token, ip=None):
+        seen.append(token)
+        return False, "invalid-input-response"
+
+    monkeypatch.setattr(auth_router.turnstile, "verify", refuse)
+    r = client.post("/api/auth/otp", json={"role": "farmer", "purpose": "signup",
+                                           "email": "x@example.com", "phone": "9876500099",
+                                           "turnstile_token": "a-bad-token"})
+    assert r.status_code == 403 and "check" in r.json()["detail"]
+    assert seen == ["a-bad-token"], "the token reaches the verifier"
+    assert not mail, "and no code is sent"
+
+    monkeypatch.setattr(auth_router.turnstile, "verify", lambda token, ip=None: (True, None))
+    assert client.post("/api/auth/otp", json={"role": "farmer", "purpose": "signup",
+                                              "email": "x@example.com", "phone": "9876500099",
+                                              "turnstile_token": "a-good-token"}).status_code == 200
+
+    # Cloudflare unreachable: the request goes through rather than locking a
+    # farmer out, because the emailed code is still the real door.
+    def explode(*a, **k):
+        raise RuntimeError("no network")
+
+    monkeypatch.setattr(turnstile, "configured", lambda: True)
+    monkeypatch.setattr(turnstile.httpx, "post", explode)
+    assert turnstile.verify("whatever", "1.2.3.4") == (True, None)
+
+
+def test_with_no_keys_there_is_no_box_and_nothing_to_pass(client):
+    """Blank keys take the widget off: the API says so, and a code can still be
+    asked for."""
+    from app import turnstile
+
+    assert turnstile.configured() is False
+    assert client.get("/api/auth/options").json()["turnstile_sitekey"] is None
+    assert turnstile.verify(None) == (True, None)
+
+
+def test_a_farmer_can_correct_their_own_details(client, mail):
+    """One door for both roles: your own record, yours to change."""
+    farmer_signup(client, mail)
+    r = client.patch("/api/auth/me/profile", json={"name": "Ramesh K. Patil", "village": "Sakoli",
+                                                   "total_land_acres": 3.5, "lang": "mr"})
+    assert r.status_code == 200, r.text
+    me = r.json()
+    assert me["name"] == "Ramesh K. Patil" and me["lang"] == "mr"
+    assert me["profile"]["village"] == "Sakoli" and me["profile"]["total_land_acres"] == 3.5
+    # Sending one line does not blank the rest.
+    assert me["profile"]["district"]
+
+
+def test_an_officer_cannot_grant_themselves_another_district(client, mail):
+    """Coverage is reach, not preference.
+
+    A case is routed to whoever covers the district it came from, and it
+    carries a farmer's name, their village and photographs of their field. An
+    officer who could add a district to their own record would be granting
+    themselves the district office's permission — which is the one thing
+    verification exists to withhold."""
+    # An agriculture assistant: verified, and not a supervisor.
+    _expert(client, mail, verified=True, supervisor=False)   # covers Bhandara
+
+    grab = client.patch("/api/auth/me/profile", json={"districts": ["Bhandara", "Mumbai"]})
+    assert grab.status_code == 403, grab.text
+    assert "Mumbai" in grab.json()["detail"]
+    assert client.get("/api/auth/me").json()["profile"]["districts"] == ["Bhandara"]
+
+    # Giving one up asks for nothing, so it stays theirs to do.
+    drop = client.patch("/api/auth/me/profile", json={"districts": []})
+    assert drop.status_code == 200, drop.text
+
+
+def test_a_supervisor_may_take_on_a_district(client, mail):
+    """A supervisor already verifies officers and routes a district's backlog;
+    withholding this from them would be a lock with the key beside it."""
+    expert_signup(client, mail)   # a KVK scientist: supervisor by post
+    assert client.get("/api/auth/me").json()["profile"]["supervisor"] is True
+    r = client.patch("/api/auth/me/profile", json={"districts": ["Bhandara", "Gondia", "Nagpur"]})
+    assert r.status_code == 200, r.text
+    assert "Nagpur" in r.json()["profile"]["districts"]
+
+
+def test_the_record_the_office_checked_is_not_self_service(client, mail):
+    """The reporting line and the sign-in phone are what the office verified
+    this person against. A record its holder can rewrite is not evidence."""
+    expert_signup(client, mail)
+    before = client.get("/api/auth/me").json()
+    r = client.patch("/api/auth/me/profile", json={
+        "organisation": "KVK Sakoli", "reporting_name": "Nobody", "phone": "9000000009"})
+    assert r.status_code == 200, r.text
+    after = r.json()
+    assert after["profile"]["organisation"] == "KVK Sakoli", "the office address is theirs to correct"
+    assert after["profile"]["reporting_name"] == before["profile"]["reporting_name"]
+    assert after["phone"] == before["phone"]

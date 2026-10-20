@@ -141,7 +141,9 @@ def hotspots(request: Request, days: int = 45, lang: str = "en",
     # A pin carries a farmer's name and the coordinates of their field. The
     # demo line decides whose: a demo viewer sees the seeded farms, never a
     # real farmer, and a district officer is never shown a demo pin as a case.
-    demo = _demo(request, db)
+    me = _me(request, db)
+    demo = bool(me and me.is_demo)
+    boss = services.is_supervisor(db, me)
     since = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=days)
     confs = {c.problem_id: c for c in db.scalars(select(Confirmation)).all()}
     advised = {a.problem_id for a in db.scalars(select(Advisory)).all()}
@@ -161,12 +163,16 @@ def hotspots(request: Request, days: int = 45, lang: str = "en",
             continue
         if target and target.endswith("_healthy"):
             continue
+        # A pin nobody can open is a picture, so it carries the field it stands
+        # for — but only for someone who may open that field. For an officer the
+        # map is the shape of an outbreak, not a list of their neighbours.
+        identify = boss or auth.can_open_farm(me, f, db)
         points.append({
             "problem_id": p.id, "lat": f.lat, "lon": f.lon, "district": f.district, "crop": f.crop,
             "target": target, "name": tr(kb.targets[target]["names"], lang) if target in kb.targets else None,
             "status": status, "on": p.opened_at.date().isoformat() if p.opened_at else None,
-            # A pin nobody can open is a picture: carry the field it stands for.
-            "farm_id": f.id, "farmer_name": f.farmer_name,
+            "farm_id": f.id if identify else None,
+            "farmer_name": f.farmer_name if identify else None,
         })
     # The alert layer of the same map: these carry a field's coordinates too,
     # so they follow the same line as the pins above.
@@ -180,6 +186,46 @@ def hotspots(request: Request, days: int = 45, lang: str = "en",
                                    Alert.issued_on >= date.today() - timedelta(days=7))).all()
     ]
     return {"points": points, "active_alerts": alerts, "radius_km": services.SPREAD_RADIUS_KM}
+
+@router.get("/pesticides")
+def pesticide_baseline(request: Request, db: Session = Depends(get_db), state: str | None = None):
+    """State pesticide consumption (MoSPI ENVSTATS / DPPQS), the baseline that
+    'more targeted pesticide use' is measured against.
+
+    Whose baseline: the state this officer works in, read off the districts
+    they cover. It was pinned to Maharashtra, so every officer in the country
+    was shown Maharashtra's tonnage as the number their work has to move.
+    """
+    state = state or next(iter(geo.states_of(_mine(request, db))), "Maharashtra")
+    path = services.KB_DIR / "mospi_pesticides.json"
+    if not path.exists():
+        return {"available": False}
+    data = json.loads(path.read_text())
+    states = data["states"]
+    india: dict[str, float] = defaultdict(float)
+    for s in states.values():
+        for year, v in s.get("chemical", []):
+            india[year] += v
+    mine = states.get(state, {})
+    chem = mine.get("chemical", [])
+    latest = chem[-1] if chem else None
+    ranking = sorted(
+        ((name, s["chemical"][-1][1]) for name, s in states.items() if s.get("chemical")),
+        key=lambda kv: -kv[1],
+    )
+    return {
+        "available": True,
+        "state": state,
+        "source": data["_source"],
+        "unit_note": data["_unit_note"],
+        "chemical": chem,
+        "bio": mine.get("bio", []),
+        "india_chemical": sorted(india.items()),
+        "latest_share_pct": round(100 * latest[1] / india[latest[0]], 1) if latest and india[latest[0]] else None,
+        "rank": next((i + 1 for i, (n, _) in enumerate(ranking) if n == state), None),
+        "states_ranked": len(ranking),
+    }
+
 
 @router.get("/outlook")
 def risk_outlook(request: Request, lang: str = "en",
@@ -249,9 +295,15 @@ def model_card():
     return {"is_stub": False, **{k: meta.get(k) for k in keep}}
 
 
-@router.get("/workload")
+@router.get("/workload", dependencies=[Depends(auth.require_supervisor)])
 def officer_workload(request: Request, db: Session = Depends(get_db)):
-    """Who is carrying what, so a supervisor can see a queue building up."""
+    """Who is carrying what, so a supervisor can see a queue building up.
+
+    This one, /performance, /actions, /officers/pending and the weekly report
+    are the district's staffing: names, loads, how fast each desk clears and
+    how often it agreed with the model. Every verified officer could read all
+    of it. An officer needs their own desk and the farmer in front of them;
+    the rest is the office's business."""
     demo = bool((me := auth.current_user(request, db)) and me.is_demo)
     rows = services.workload(db, demo=demo)
     unplaced = db.scalar(
@@ -274,7 +326,7 @@ def route_cases(request: Request, db: Session = Depends(get_db)):
     return out
 
 
-@router.post("/risk/run-all")
+@router.post("/risk/run-all", dependencies=[Depends(auth.require_supervisor)])
 def run_all(request: Request, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
     # This one writes: a sweep run from a demo session was issuing real alerts
     # to real farms, which a demo must never do.
@@ -291,6 +343,13 @@ def run_all(request: Request, db: Session = Depends(get_db), kb: KB = Depends(ge
 
 def _me(request: Request, db: Session) -> User | None:
     return auth.current_user(request, db)
+
+def _mine(request: Request, db: Session) -> list[str]:
+    """The districts the signed-in officer covers, empty when we have none."""
+    me = _me(request, db)
+    prof = db.get(ExpertProfile, me.id) if me else None
+    return list(prof.districts or []) if prof else []
+
 
 def _demo(request: Request, db: Session) -> bool:
     me = _me(request, db)
@@ -351,7 +410,7 @@ def advisory_history(request: Request, db: Session = Depends(get_db)):
     return office.history(db, demo=_demo(request, db))
 
 
-@router.get("/officers/pending")
+@router.get("/officers/pending", dependencies=[Depends(auth.require_supervisor)])
 def pending_officers(request: Request, db: Session = Depends(get_db)):
     """Sign-ups waiting for the district office to let them in."""
     return office.pending_officers(db, demo=_demo(request, db))
@@ -374,10 +433,16 @@ def verify_officer(user_id: int, body: VerifyIn, request: Request, db: Session =
 @router.get("/farms/{farm_id}")
 def farm_dossier(farm_id: int, request: Request, lang: str = "en",
                  db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
-    """One farm, everything the office knows about it."""
+    """One farm, everything the office knows about it.
+
+    Everything is the word: the farmer's name and number, where the field is,
+    every photograph they have sent and every verdict on it. This route wrote
+    its own check — the demo line only — and so stayed open to any verified
+    officer after the farm itself stopped being. One rule, in auth, for every
+    door into a farm."""
     farm = db.get(Farm, farm_id)
     me = _me(request, db)
-    if farm is None or (me is not None and farm.is_demo != me.is_demo):
+    if farm is None or not auth.can_open_farm(me, farm, db):
         raise HTTPException(404, "farm not found")
     return office.farm_dossier(db, kb, farm, lang)
 
@@ -409,13 +474,13 @@ def trends(request: Request, db: Session = Depends(get_db)):
     return office.trends(db, demo=_demo(request, db))
 
 
-@router.get("/performance")
+@router.get("/performance", dependencies=[Depends(auth.require_supervisor)])
 def performance(request: Request, db: Session = Depends(get_db)):
     """What each officer cleared, how long it waited, how often they agreed."""
     return office.performance(db, demo=_demo(request, db))
 
 
-@router.get("/report")
+@router.get("/report", dependencies=[Depends(auth.require_supervisor)])
 def weekly_report(request: Request, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
     """The week as a file, for what the office files upward."""
     csv_text = office.weekly_report(db, kb, demo=_demo(request, db))
@@ -423,7 +488,7 @@ def weekly_report(request: Request, db: Session = Depends(get_db), kb: KB = Depe
         "Content-Disposition": f'attachment; filename="annrakshak-week-{date.today().isoformat()}.csv"'})
 
 
-@router.get("/actions")
+@router.get("/actions", dependencies=[Depends(auth.require_supervisor)])
 def office_actions(request: Request, db: Session = Depends(get_db)):
     """Who did what: verifications, routings and advisories, newest first."""
     return office.actions(db, demo=_demo(request, db))

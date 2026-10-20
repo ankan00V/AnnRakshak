@@ -48,7 +48,6 @@ export default function Queue() {
   // Moving somebody else's cases is a supervisor's call, so an ordinary desk
   // gets "take it" rather than a bulk control the server declines. Taking a
   // case onto your own desk is everybody's.
-  const mayMoveOthers = me?.profile?.supervisor === true
   const cursor = useRef(0)
 
   const query: CaseQuery = useMemo(() => ({
@@ -64,7 +63,12 @@ export default function Queue() {
 
   const key = JSON.stringify(query)
   const list = useAsync(() => api.cases(query), [key])
-  const officers = useAsync(() => api.officers(query.district), [query.district])
+  // Only a supervisor may place a case by name, so only a supervisor asks
+  // who is on the books.
+  const mayMoveOthers = me?.profile?.supervisor === true
+  const officers = useAsync(
+    () => (mayMoveOthers ? api.officers(query.district) : Promise.resolve([])),
+    [query.district, mayMoveOthers])
 
   const set = (k: string, v: string | null) => {
     const next = new URLSearchParams(params)

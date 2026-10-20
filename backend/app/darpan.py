@@ -421,6 +421,11 @@ def _advisories(db, kb, *, demo, args, officer, text):
 
 
 def _officers(db, kb, *, demo, args, officer, text):
+    """Who is free, who is loaded, who is waiting to be let in — the district's
+    staffing, which is a supervisor's business. An officer asking gets their
+    own desk instead, which is what they can actually act on."""
+    if not services.is_supervisor(db, officer):
+        return _mine(db, kb, demo=demo, args=args, officer=officer, text=text)
     load = services.workload(db, demo=demo)
     pending = office.pending_officers(db, demo=demo)
     carrying = sorted([o for o in load if o["open_cases"]], key=lambda o: -o["open_cases"])
@@ -628,7 +633,10 @@ def _trend(db, kb, *, demo, args, officer, text):
 
 
 def _performance(db, kb, *, demo, args, officer, text):
-    """How desks are doing: what they cleared and how long it took."""
+    """How desks are doing: what they cleared and how long it took. Named
+    colleagues, so: supervisors. Anyone else is told about their own."""
+    if not services.is_supervisor(db, officer):
+        return _mine(db, kb, demo=demo, args=args, officer=officer, text=text)
     rows = office.performance(db, demo=demo)
     done = [r for r in rows if r.get("resolved")]
     if not done:
