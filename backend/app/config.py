@@ -43,6 +43,16 @@ ALLOWED_ORIGINS = [o.strip().rstrip("/") for o in
 this API. Empty is the normal case: one host serves both (see the Dockerfile),
 and then no cross-origin request happens at all."""
 
+PUSH_HOSTS = tuple(h.strip().lower() for h in
+                   (os.environ.get("ANNRAKSHAK_PUSH_HOSTS")
+                    or "fcm.googleapis.com,android.googleapis.com,.push.services.mozilla.com,"
+                       ".notify.windows.com,.push.apple.com").split(",") if h.strip())
+"""Where a push subscription may point. A subscription endpoint is a URL the
+browser hands us and the server later posts to, so an unchecked one turns this
+service into an HTTP client for whoever asks — including at addresses only this
+machine can reach. A leading dot matches any host under that domain. Set
+ANNRAKSHAK_PUSH_HOSTS to add a self-hosted push service."""
+
 TRUST_PROXY = _flag("ANNRAKSHAK_TRUST_PROXY", False)
 """Whether X-Forwarded-For may be believed. On behind a load balancer or
 reverse proxy that sets it; off otherwise, because a client can send that

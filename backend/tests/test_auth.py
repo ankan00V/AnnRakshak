@@ -13,7 +13,8 @@ from app.config import UPLOAD_DIR
 from app.db import Base, SessionLocal, engine
 from app.main import app
 from tests.test_api import _leaf_jpeg  # the same 1x1 leaf
-from app.models import Case, Confirmation, Diagnosis, ExpertProfile, Farm, FarmerProfile, OtpChallenge, Problem, User, UserSession
+from app.models import (Case, Confirmation, Diagnosis, ExpertProfile, Farm, FarmerProfile, OtpChallenge,
+                        Problem, PushSubscription, User, UserSession)
 from app.routers import auth as auth_router
 
 SOWN = (date.today() - timedelta(days=40)).isoformat()
@@ -1056,3 +1057,47 @@ def test_the_record_the_office_checked_is_not_self_service(client, mail):
     assert after["profile"]["organisation"] == "KVK Sakoli", "the office address is theirs to correct"
     assert after["profile"]["reporting_name"] == before["profile"]["reporting_name"]
     assert after["phone"] == before["phone"]
+
+def test_a_spray_check_cannot_name_somebody_elses_problem(client, mail):
+    """The problem id travels in the body, where the router's ownership check
+    cannot see it. Naming a stranger's problem would answer which disease is on
+    their field — the one thing a farmer's record is meant to keep."""
+    farmer_signup(client, mail)
+    mine = client.get("/api/auth/me").json()["farm_ids"][0]
+    client.post(f"/api/farms/{mine}/diagnose", files={"image": ("x.jpg", _leaf_jpeg(), "image/jpeg")},
+                data={"lang": "en", "demo_scenario": "clear"})
+    with SessionLocal() as db:
+        theirs = db.scalar(select(Problem).where(Problem.farm_id == mine))
+    assert theirs is not None and theirs.target
+
+    with TestClient(app) as other:
+        farmer_signup(other, mail, phone="9876500002", email="nosy@example.com")
+        their_farm = other.get("/api/auth/me").json()["farm_ids"][0]
+        r = other.post("/api/labelcheck", json={"farm_id": their_farm, "product": "carbendazim",
+                                                "problem_id": theirs.id})
+        assert r.status_code == 404
+        # And the farm it does own still answers.
+        assert other.post("/api/labelcheck", json={"farm_id": their_farm,
+                                                   "product": "carbendazim"}).status_code == 200
+
+
+def test_a_stranger_cannot_silence_a_farmers_phone(client, mail):
+    """Unsubscribing takes the endpoint in the body, so the router never checks
+    it. It used to delete whatever row matched, for anyone who asked."""
+    farmer_signup(client, mail)
+    farm_id = client.get("/api/auth/me").json()["farm_ids"][0]
+    endpoint = "https://fcm.googleapis.com/fcm/send/a-real-phone"
+    assert client.post(f"/api/farms/{farm_id}/push/subscribe",
+                       json={"endpoint": endpoint,
+                             "keys": {"p256dh": "B" * 60, "auth": "a" * 16}}).status_code == 201
+
+    with TestClient(app) as stranger:  # nobody at all
+        assert stranger.post("/api/push/unsubscribe", json={"endpoint": endpoint}).status_code == 401
+        farmer_signup(stranger, mail, phone="9876500003", email="other2@example.com")
+        assert stranger.post("/api/push/unsubscribe", json={"endpoint": endpoint}).status_code == 404
+    with SessionLocal() as db:
+        assert db.query(PushSubscription).count() == 1, "the phone is still subscribed"
+
+    assert client.post("/api/push/unsubscribe", json={"endpoint": endpoint}).status_code == 200
+    with SessionLocal() as db:
+        assert db.query(PushSubscription).count() == 0

@@ -482,9 +482,17 @@ async def _read_capped(upload: UploadFile) -> bytes:
 
 def _label_target(db: Session, farm: Farm, problem_id: int | None) -> str | None:
     """The problem a spray is being checked against: the one named, else the
-    field's latest open diagnosis. A healthy result is no target at all."""
+    field's latest open diagnosis. A healthy result is no target at all.
+
+    The problem id arrives in the body, where the router's ownership check
+    cannot see it — that check reads the URL. So it is checked here: naming
+    somebody else's problem would otherwise answer which disease is on their
+    field, which is the one thing a farmer's record is supposed to keep."""
     if problem_id is not None:
-        target = _problem(db, problem_id).target
+        problem = _problem(db, problem_id)
+        if problem.farm_id != farm.id:
+            raise HTTPException(404, "problem not found")
+        target = problem.target
     else:
         latest = db.scalar(select(Problem).where(
             Problem.farm_id == farm.id, Problem.status == "open", Problem.target.is_not(None)
