@@ -36,8 +36,13 @@ export default function Features() {
   return (
     <section id="features" className="w-full bg-cream text-soil-dark">
       <div className="max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-28">
-        <Reveal className="max-w-3xl">
-          <h2 className="font-instrument-serif text-[2rem] sm:text-5xl md:text-[3.5rem] leading-[1.05] text-balance">
+        {/* The sentence wants to be read as one line, and above 1152px it can
+            be: the column stops growing there, so 1056px is all the room this
+            heading will ever get and 44px is what fits it. Narrower than that
+            it keeps the larger size and wraps. */}
+        <Reveal className="max-w-3xl min-[1152px]:max-w-none">
+          <h2 className="font-instrument-serif text-[2rem] sm:text-5xl md:text-[3.5rem] min-[1152px]:text-[2.75rem]
+                         leading-[1.05] text-balance min-[1152px]:text-pretty">
             Built for how farmers actually work — and honest when it isn’t sure.
           </h2>
         </Reveal>
