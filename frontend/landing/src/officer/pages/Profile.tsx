@@ -34,8 +34,15 @@ export default function Profile() {
   const [crops, setCrops] = useState<string[]>(p?.crops ?? [])
   const [specialities, setSpecialities] = useState<string[]>(p?.specialities ?? [])
 
+  // Which districts this officer may put on their own record. Taking one on
+  // is reach — a case from that district gets routed to them, carrying a
+  // farmer's name, their village and photographs of their field — so only a
+  // supervisor may widen a patch here; anyone else may drop one. The server
+  // refuses the rest either way; this is so the screen does not offer what it
+  // knows will be refused.
+  const mine = p?.districts ?? []
   const inState = places.data?.states.find((s) => s.name === (p?.state ?? ''))?.districts ?? []
-  const choices = (inState.length ? inState.map((d) => d.name) : (p?.districts ?? []))
+  const choices = p?.supervisor && inState.length ? inState.map((d) => d.name) : mine
   const toggle = (list: string[], set: (v: string[]) => void, id: string) =>
     set(list.includes(id) ? list.filter((x) => x !== id) : [...list, id])
 
@@ -77,7 +84,9 @@ export default function Profile() {
           </ProfileCard>
 
           <ProfileCard title="What you cover"
-            sub="New cases and outbreak alerts from these districts reach you first.">
+            sub={p?.supervisor
+              ? 'New cases and outbreak alerts from these districts reach you first.'
+              : 'New cases and outbreak alerts from these districts reach you first. The district office adds a district to your patch — you can drop one here.'}>
             <div className="flex flex-wrap gap-1.5">
               {choices.map((d) => (
                 <button key={d} type="button" onClick={() => toggle(districts, setDistricts, d)}
