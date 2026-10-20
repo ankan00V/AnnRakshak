@@ -185,6 +185,28 @@ def end_session(db: Session, token: str | None, response: Response) -> None:
     response.delete_cookie(COOKIE, path="/")
 
 
+def forget_spent_codes_and_dead_sessions(db: Session, when: datetime | None = None) -> dict:
+    """Drop the rows that have stopped meaning anything.
+
+    Both of these tables only ever grew. A row is written for every code ever
+    asked for — holding the address it was sent to, for people who never
+    finished signing up — and for every sign-in that ever happened. Nothing
+    reads either one once it is spent: a code is good for five minutes and a
+    session for a day. Keeping them is a bill, and in the case of the codes it
+    is a list of the phone number of everybody who ever tried.
+
+    Erasure already takes a person's own rows (app/erasure.py). This is the
+    other half: the rows of people who never asked, and never will."""
+    when = when or now()
+    codes = db.query(OtpChallenge).filter(
+        OtpChallenge.expires_at < when - timedelta(days=config.SPENT_CODE_DAYS)).delete(synchronize_session=False)
+    sessions = db.query(UserSession).filter(
+        or_(UserSession.expires_at < when - timedelta(days=config.DEAD_SESSION_DAYS),
+            UserSession.revoked_at < when - timedelta(days=config.DEAD_SESSION_DAYS))).delete(synchronize_session=False)
+    db.commit()
+    return {"codes_forgotten": codes, "sessions_forgotten": sessions}
+
+
 def user_from_token(db: Session, token: str | None) -> User | None:
     if not token:
         return None

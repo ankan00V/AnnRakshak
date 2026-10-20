@@ -55,3 +55,23 @@ def test_a_missing_asset_is_a_404_and_not_the_shell(served):
 
     # A route with a dot in it is still a route, not a file.
     assert served.get("/officer/queue").status_code == 200
+
+
+def test_health_says_little_in_production(monkeypatch):
+    """/health is the one route with no session in front of it, so whatever it
+    prints, it prints to the internet. A container needs "ok" and whether the
+    real model is loaded; which providers are wired up, which satellite product
+    is read and what it said when it last failed are a map, not a status."""
+    from fastapi.testclient import TestClient
+
+    from app import main
+
+    with TestClient(main.app) as c:
+        full = c.get("/health").json()
+        assert {"kb", "satellite_rain"} <= set(full), "a laptop still prints everything"
+
+        monkeypatch.setattr(main, "PROD", True)
+        terse = c.get("/health").json()
+    assert terse["status"] == "ok"
+    assert set(terse) == {"status", "service", "model", "voice"}
+    assert set(terse["model"]) == {"is_stub"} and set(terse["voice"]) == {"configured"}

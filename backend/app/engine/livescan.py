@@ -31,7 +31,7 @@ from PIL import Image
 
 from app.config import FLOOR, GATE, MARGIN, gate_for
 from app.engine.gate import crop_of, is_healthy
-from app.engine.vision import vegetation_fraction
+from app.engine.vision import MAX_PIXELS, vegetation_fraction
 from app.kb import tr
 
 # --- frame quality -----------------------------------------------------------
@@ -390,6 +390,12 @@ MIN_SIDE = 64  # smaller than this is a camera glitch (a stopped track gives 0-2
 
 def decode(jpeg: bytes) -> Image.Image:
     im = Image.open(io.BytesIO(jpeg))
+    # The socket caps a frame at 400 KB, which is not a cap on what it decodes
+    # to: a flat image compresses far past a hundred to one. The header is read
+    # before anything is expanded (the same bar as the photo path).
+    w, h = im.size
+    if w * h > MAX_PIXELS:
+        raise ValueError(f"frame too large to decode: {im.size}")
     im.load()
     if min(im.size) < MIN_SIDE:
         raise ValueError(f"frame too small: {im.size}")

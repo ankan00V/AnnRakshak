@@ -271,7 +271,7 @@ def test_watch_issues_each_notice_once(world):
 
 def test_phone_gets_warnings_at_night_and_advice_waits_for_morning(world):
     c, sent = world
-    c.post("/api/farms/1/push/subscribe", json={"endpoint": "https://push.example/abc",
+    c.post("/api/farms/1/push/subscribe", json={"endpoint": "https://fcm.googleapis.com/fcm/send/abc",
                                                 "keys": {"p256dh": "B" * 60, "auth": "a" * 16}})
     night = NOW.replace(hour=23)
     b = bundle(now=night, hour=lambda t, row: (row.update(code=95, prob=80) if t == night.replace(hour=23) + timedelta(hours=2) else None,
@@ -285,7 +285,7 @@ def test_phone_gets_warnings_at_night_and_advice_waits_for_morning(world):
 
 def test_gone_phone_is_forgotten(world):
     c, sent = world
-    c.post("/api/farms/1/push/subscribe", json={"endpoint": "https://push.example/gone",
+    c.post("/api/farms/1/push/subscribe", json={"endpoint": "https://fcm.googleapis.com/fcm/send/gone",
                                                 "keys": {"p256dh": "B" * 60, "auth": "a" * 16}})
     assert c.post("/api/farms/1/push/test").json()["removed"] == 1
     with SessionLocal() as db:
@@ -415,3 +415,25 @@ def test_watch_creates_the_polygon_once_and_issues_a_greenness_notice(world, mon
     with SessionLocal() as db:
         n = db.query(Notice).filter(Notice.rule == "greenness_drop").one()
         assert db.get(Farm, 1).agro_polygon_id == "poly-1" and n.values["after"] == 0.58
+
+
+def test_a_subscription_may_only_point_at_a_push_service(world):
+    """An endpoint is a URL this server posts to later, by itself, from inside
+    whatever network it runs in. Unchecked, "subscribe me" is a request to make
+    the server fetch an address of the caller's choosing."""
+    c, _ = world
+    keys = {"p256dh": "B" * 60, "auth": "a" * 16}
+    for bad in ("https://10.0.0.5/steal", "https://169.254.169.254/latest/meta-data/",
+                "https://evil.example.com/hook"):
+        r = c.post("/api/farms/1/push/subscribe", json={"endpoint": bad, "keys": keys})
+        assert r.status_code == 422, f"{bad} was accepted"
+    with SessionLocal() as db:
+        assert db.query(PushSubscription).count() == 0
+
+    for good in ("https://fcm.googleapis.com/fcm/send/abc",
+                 "https://updates.push.services.mozilla.com/wpush/v2/abc",
+                 "https://web.push.apple.com/abc"):
+        assert c.post("/api/farms/1/push/subscribe",
+                      json={"endpoint": good, "keys": keys}).status_code == 201
+    with SessionLocal() as db:
+        assert db.query(PushSubscription).count() == 3

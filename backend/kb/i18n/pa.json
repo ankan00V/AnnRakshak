@@ -5,7 +5,7 @@
   "bhashini:ai4bharat/indictrans-v2-all-gpu--t4"
  ],
  "source": "en",
- "updated": "2026-10-19",
+ "updated": "2026-10-20",
  "strings": {
   "(includes readings from your field sensor)": "(ਤੁਹਾਡੇ ਫੀਲਡ ਸੈਂਸਰ ਤੋਂ ਰੀਡਿੰਗ ਸ਼ਾਮਲ ਹੈ)",
   "A Trichogramma strain bred to survive insecticide sprays, so egg parasitism continues in fields that are also sprayed.": "ਕੀਟਨਾਸ਼ਕ ਸਪਰੇਅ ਤੋਂ ਬਚਣ ਲਈ ਇੱਕ ਟ੍ਰਾਈਕੋਗ੍ਰਾਮਮਾ ਸਟ੍ਰੇਨ ਪੈਦਾ ਕੀਤਾ ਜਾਂਦਾ ਹੈ, ਇਸ ਲਈ ਉਨ੍ਹਾਂ ਖੇਤਾਂ ਵਿੱਚ ਅੰਡੇ ਦਾ ਪਰਜੀਵੀਵਾਦ ਜਾਰੀ ਰਹਿੰਦਾ ਹੈ ਜਿਨ੍ਹਾਂ ਦਾ ਛਿਡ਼ਕਾਅ ਵੀ ਕੀਤਾ ਜਾਂਦਾ ਹੈ।",
@@ -745,6 +745,7 @@
   "The code has expired. Ask for a new code.": "ਕੋਡ ਦੀ ਮਿਆਦ ਖਤਮ ਹੋ ਗਈ ਹੈ। ਇੱਕ ਨਵਾਂ ਕੋਡ ਮੰਗੋ।",
   "The coloured patch shows which part of your photo the AI used to decide. If it sits on the spots or damage, the answer is based on the right thing. If it sits on soil or background, take a closer photo of the leaf.": "ਰੰਗੀਨ ਪੈਚ ਦਰਸਾਉਂਦਾ ਹੈ ਕਿ ਤੁਹਾਡੀ ਫੋਟੋ ਦਾ ਕਿਹਡ਼ਾ ਹਿੱਸਾ AI ਫੈਸਲਾ ਕਰਦਾ ਸੀ। ਜੇ ਇਹ ਚਟਾਨਾਂ'ਤੇ ਬੈਠਦਾ ਹੈ ਜਾਂ ਨੁਕਸਾਨ ਪਹੁੰਚਾਉਂਦਾ ਹੈ, ਤਾਂ ਜਵਾਬ ਸਹੀ ਚੀਜ਼'ਤੇ ਅਧਾਰਤ ਹੈ। ਜੇ ਇਹ ਮਿੱਟੀ ਜਾਂ ਪਿਛੋਕਡ਼'ਤੇ ਬੈਠਦਾ ਹੈ, ਤਾਂ ਪੱਤੇ ਦੀ ਨਜ਼ਦੀਕੀ ਫੋਟੋ ਲਓ।",
   "The crop is maturing — irrigation is normally stopped now.": "ਫਸਲ ਪੱਕ ਰਹੀ ਹੈ-ਸਿੰਚਾਈ ਹੁਣ ਆਮ ਤੌਰ ਉੱਤੇ ਬੰਦ ਹੋ ਜਾਂਦੀ ਹੈ।",
+  "The district office adds a district to an officer's patch: {items}. You can drop one here.": "ਜ਼ਿਲ੍ਹਾ ਦਫ਼ਤਰ ਇੱਕ ਅਧਿਕਾਰੀ ਦੇ ਪੈਚ ਵਿੱਚ ਇੱਕ ਜ਼ਿਲ੍ਹਾ ਜੋਡ਼ਦਾ ਹੈ: {items}। ਤੁਸੀਂ ਇੱਕ ਨੂੰ ਇੱਥੇ ਛੱਡ ਸਕਦੇ ਹੋ।",
   "The district office has not verified your account yet, so no case can be opened.": "ਜ਼ਿਲ੍ਹਾ ਦਫ਼ਤਰ ਨੇ ਹਾਲੇ ਤੱਕ ਤੁਹਾਡੇ ਖਾਤੇ ਦੀ ਤਸਦੀਕ ਨਹੀਂ ਕੀਤੀ ਹੈ, ਇਸ ਲਈ ਕੋਈ ਕੇਸ ਨਹੀਂ ਖੋਲ੍ਹਿਆ ਜਾ ਸਕਦਾ।",
   "The forecast shows these conditions continuing.": "ਭਵਿੱਖਬਾਣੀ ਦਰਸਾਉਂਦੀ ਹੈ ਕਿ ਇਹ ਸਥਿਤੀਆਂ ਜਾਰੀ ਹਨ।",
   "The model is trained on ICAR photos and field photos from Indian fields.": "ਮਾਡਲ ਨੂੰ ਭਾਰਤੀ ਖੇਤਰਾਂ ਤੋਂ ਆਈ. ਸੀ. ਏ. ਆਰ. ਦੀਆਂ ਫੋਟੋਆਂ ਅਤੇ ਫੀਲਡ ਫੋਟੋਆਂ ਦੀ ਸਿਖਲਾਈ ਦਿੱਤੀ ਜਾਂਦੀ ਹੈ।",

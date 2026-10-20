@@ -43,6 +43,16 @@ ALLOWED_ORIGINS = [o.strip().rstrip("/") for o in
 this API. Empty is the normal case: one host serves both (see the Dockerfile),
 and then no cross-origin request happens at all."""
 
+PUSH_HOSTS = tuple(h.strip().lower() for h in
+                   (os.environ.get("ANNRAKSHAK_PUSH_HOSTS")
+                    or "fcm.googleapis.com,android.googleapis.com,.push.services.mozilla.com,"
+                       ".notify.windows.com,.push.apple.com").split(",") if h.strip())
+"""Where a push subscription may point. A subscription endpoint is a URL the
+browser hands us and the server later posts to, so an unchecked one turns this
+service into an HTTP client for whoever asks — including at addresses only this
+machine can reach. A leading dot matches any host under that domain. Set
+ANNRAKSHAK_PUSH_HOSTS to add a self-hosted push service."""
+
 TRUST_PROXY = _flag("ANNRAKSHAK_TRUST_PROXY", False)
 """Whether X-Forwarded-For may be believed. On behind a load balancer or
 reverse proxy that sets it; off otherwise, because a client can send that
@@ -264,6 +274,18 @@ SINGLE_SESSION = True
 """Signing in ends the account's other sessions, so one account is open in one
 browser at a time. Demo accounts are exempt: judges share them."""
 COOKIE_SECURE = _flag("ANNRAKSHAK_COOKIE_SECURE", PROD)  # on behind HTTPS
+
+SPENT_CODE_DAYS = int(os.environ.get("ANNRAKSHAK_SPENT_CODE_DAYS") or 1)
+"""How long a used or expired one-time code is kept before the row goes.
+
+A challenge row holds the address the code was sent to — of anyone who ever
+asked for one, including people who never finished signing up. The code is good
+for five minutes, so nothing needs the row a day later, and a table that only
+ever grows is both a bill and a list of everybody's phone number."""
+
+DEAD_SESSION_DAYS = int(os.environ.get("ANNRAKSHAK_DEAD_SESSION_DAYS") or 30)
+"""How long a finished session is kept after it expired or was revoked — long
+enough to answer "was this account signed in last week", not forever."""
 
 # --- Notifications: in-app (SSE), phone (Web Push) and email ---------------
 

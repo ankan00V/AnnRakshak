@@ -24,6 +24,7 @@ log = logging.getLogger("annrakshak.farmer")
 router = APIRouter(prefix="/api", tags=["farmer"], dependencies=[Depends(auth.require())])
 Lang = Literal["en", "hi", "mr", "bn", "ta", "te", "kn", "ml", "gu", "pa"]  # Odia off for now: app/i18n.py
 MAX_UPLOAD_BYTES = 12 * 1024 * 1024
+CHUNK_BYTES = 256 * 1024
 
 
 def _farm(db: Session, farm_id: int) -> Farm:
@@ -264,11 +265,9 @@ async def diagnose(
 ):
     farm = _farm(db, farm_id)
     limit(f"diagnose:{farm_id}", 30, 60)
-    data = await image.read()
+    data = await _read_capped(image)
     if not data:
         raise HTTPException(422, "empty image")
-    if len(data) > MAX_UPLOAD_BYTES:
-        raise HTTPException(413, "image too large (max 12 MB)")
     try:
         return services.diagnose(db, kb, farm, data, lang, demo_scenario)
     except vision.UnreadableImage as exc:
@@ -462,11 +461,38 @@ class LabelCheckIn(BaseModel):
     lang: Lang = "en"
 
 
+async def _read_capped(upload: UploadFile) -> bytes:
+    """Read an upload, refusing it the moment it goes past the cap.
+
+    `await upload.read()` with no argument returns the whole body, so the
+    server holds whatever was sent before it can decide the file is too big —
+    which makes "too large" an answer you have to buy the memory for. Read it a
+    chunk at a time instead and stop at the first chunk that crosses the line."""
+    chunks, total = [], 0
+    while True:
+        chunk = await upload.read(CHUNK_BYTES)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > MAX_UPLOAD_BYTES:
+            raise HTTPException(413, "image too large (max 12 MB)")
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
 def _label_target(db: Session, farm: Farm, problem_id: int | None) -> str | None:
     """The problem a spray is being checked against: the one named, else the
-    field's latest open diagnosis. A healthy result is no target at all."""
+    field's latest open diagnosis. A healthy result is no target at all.
+
+    The problem id arrives in the body, where the router's ownership check
+    cannot see it — that check reads the URL. So it is checked here: naming
+    somebody else's problem would otherwise answer which disease is on their
+    field, which is the one thing a farmer's record is supposed to keep."""
     if problem_id is not None:
-        target = _problem(db, problem_id).target
+        problem = _problem(db, problem_id)
+        if problem.farm_id != farm.id:
+            raise HTTPException(404, "problem not found")
+        target = problem.target
     else:
         latest = db.scalar(select(Problem).where(
             Problem.farm_id == farm.id, Problem.status == "open", Problem.target.is_not(None)

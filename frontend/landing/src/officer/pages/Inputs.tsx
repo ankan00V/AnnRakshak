@@ -19,7 +19,8 @@ export default function Inputs() {
           <h2 className="font-semibold flex items-center gap-2"><Package className="w-4 h-4 text-leaf" /> Inputs to stock</h2>
           <p className="text-xs text-soil-dark/60 mt-0.5">
             From what is building this week: how many farms, how many acres, and the ICAR inputs for it.
-            Quantities are a starting point for the office, not a bill.
+            Quantities are a starting point for the office, not a bill, and the input column is a sourced
+            ICAR catalogue — where it is empty, nothing is listed for that problem yet.
           </p>
         </div>
         <a href="/api/officials/indent?fmt=csv" download
@@ -55,7 +56,13 @@ export default function Inputs() {
                     <td className="py-3 pr-3 tabular-nums">{r.acres}</td>
                     <td className="py-3 pr-3 text-xs text-soil-dark/70">{r.districts.join(', ')}</td>
                     <td className="py-3">
-                      {r.suggested.length === 0 ? <span className="text-xs text-soil-dark/50">—</span> : (
+                      {/* A dash here would read as "nothing to stock", which for
+                          rice blast is not what it means. The catalogue is a
+                          sourced ICAR list and it does not cover every problem
+                          yet; say which it is. */}
+                      {r.suggested.length === 0 ? (
+                        <span className="text-xs text-soil-dark/50">No ICAR bio-input catalogued yet</span>
+                      ) : (
                         <ul className="space-y-1.5">
                           {r.suggested.map((s) => (
                             <li key={s.input} className="text-xs">

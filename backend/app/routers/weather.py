@@ -18,6 +18,7 @@ from __future__ import annotations
 import asyncio
 import json
 from datetime import datetime
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, StreamingResponse
@@ -26,8 +27,8 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
-from app import auth, live, notify, services, watch
-from app.config import EMAIL_BACKEND
+from app import auth, config, live, notify, services, watch
+from app.config import EMAIL_BACKEND, PUSH_HOSTS
 from app.db import get_db
 from app.engine import agromet, agroweather, satellite
 from app.kb import KB, get_kb, tr
@@ -184,28 +185,65 @@ class SubscriptionIn(BaseModel):
     keys: Keys
 
 
+def _push_host_allowed(endpoint: str) -> bool:
+    """Whether this subscription points at a browser's own push service.
+
+    The endpoint is a URL the page hands us and the watcher posts to later, in
+    the background, from inside the network this server sits in. Unchecked,
+    "subscribe me" is a request to make this service fetch an address of the
+    caller's choosing — https://10.0.0.5/, the metadata service, anything the
+    machine can reach. The browsers publish where their endpoints live, so the
+    list is short and the check is cheap."""
+    host = (urlparse(endpoint).hostname or "").lower()
+    return any(host == h or (h.startswith(".") and host.endswith(h)) for h in PUSH_HOSTS)
+
+
 @router.post("/farms/{farm_id}/push/subscribe", status_code=201)
-def subscribe(farm_id: int, body: SubscriptionIn, db: Session = Depends(get_db)):
+def subscribe(farm_id: int, body: SubscriptionIn, request: Request, db: Session = Depends(get_db)):
     farm = _farm(db, farm_id)
+    if not _push_host_allowed(body.endpoint):
+        raise HTTPException(422, "that is not a push service this app sends to")
     s = db.scalar(select(PushSubscription).where(PushSubscription.endpoint == body.endpoint))
     if s is None:
         s = PushSubscription(endpoint=body.endpoint, farm_id=farm.id, p256dh=body.keys.p256dh, auth=body.keys.auth)
         db.add(s)
-    else:  # same phone, maybe switched farm
+    else:
+        # The same phone, maybe switched farm — or someone else's phone, whose
+        # endpoint this caller somehow holds. Moving a subscription means the
+        # alerts that phone gets change, so it is only moved by someone who
+        # could already open the farm it is on.
+        _mine(db, s, auth.signed_in(request, db) if config.AUTH_ENFORCE else None)
         s.farm_id, s.p256dh, s.auth, s.failures = farm.id, body.keys.p256dh, body.keys.auth, 0
     db.commit()
     return {"subscribed": True}
 
 
 class EndpointIn(BaseModel):
-    endpoint: str
+    endpoint: str = Field(min_length=10, max_length=2000)
+
+
+def _mine(db: Session, sub: PushSubscription, me) -> PushSubscription:
+    """The subscription, if this person may act on the farm it belongs to."""
+    farm = db.get(Farm, sub.farm_id)
+    if config.AUTH_ENFORCE and not (farm is not None and auth.can_open_farm(me, farm, db)):
+        raise HTTPException(404, "not found")
+    return sub
 
 
 @router.post("/push/unsubscribe")
-def unsubscribe(body: EndpointIn, db: Session = Depends(get_db)):
+def unsubscribe(body: EndpointIn, request: Request, db: Session = Depends(get_db)):
+    """Turn this browser's notifications off.
+
+    The endpoint is not in the URL, so the router's ownership check never sees
+    it; this route used to delete whatever row matched, for anyone who asked,
+    signed in or not. Silencing somebody's weather warnings is not a thing a
+    stranger gets to do."""
+    # Who is asking comes first. Looking the endpoint up before that would
+    # answer "is this one of ours" to anybody who sent a guess.
+    me = auth.signed_in(request, db) if config.AUTH_ENFORCE else None
     s = db.scalar(select(PushSubscription).where(PushSubscription.endpoint == body.endpoint))
     if s:
-        db.delete(s)
+        db.delete(_mine(db, s, me))
         db.commit()
     return {"subscribed": False}
 

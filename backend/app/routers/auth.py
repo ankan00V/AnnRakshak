@@ -542,6 +542,24 @@ class DemoIn(BaseModel):
     role: Role
 
 
+DEMO_OFFICE = {
+    "department": "kvk",
+    "office_address": "Krishi Vigyan Kendra, Sakoli Road",
+    "block": "Sakoli",
+    "state": "Maharashtra",
+    "pincode": "441802",
+    "office_phone": "07184255033",
+    "joined_service_on": date(2016, 7, 1),
+    "posted_since": date(2022, 4, 1),
+    "reporting_name": "Smt. A. Deshmukh",
+    "reporting_designation": "District Agriculture Officer",
+    "reporting_contact": "dao.bhandara@example.gov.in",
+}
+"""The rest of a district officer's record, for the demo account. Sign-up asks
+all of this now and the officer's own record screen shows it, so a demo that
+answers none of it is a page of blanks in front of a judge."""
+
+
 @router.post("/demo")
 def demo(body: DemoIn, request: Request, response: Response, db: Session = Depends(get_db),
          kb: KB = Depends(get_kb)):
@@ -562,7 +580,17 @@ def demo(body: DemoIn, request: Request, response: Response, db: Session = Depen
             db.add(ExpertProfile(user_id=user.id, designation="kvk_scientist", organisation="Demo KVK",
                                  employee_id="DEMO", qualification="msc_agri", experience_years=10,
                                  districts=_districts(), crops=list(kb.crops), specialities=list(SPECIALITIES),
-                                 languages=["en", "hi", "mr"], verified=True, supervisor=True))
+                                 languages=["en", "hi", "mr"], verified=True, supervisor=True,
+                                 **DEMO_OFFICE))
+    elif user.role == "expert":
+        # The demo account was made before sign-up asked where an officer sits
+        # and who vouches for them, so its own record screen showed half a
+        # page of blanks to whoever opened it. Fill what is still empty,
+        # without touching anything a demo session has changed.
+        p = db.get(ExpertProfile, user.id)
+        for field, value in DEMO_OFFICE.items():
+            if p is not None and getattr(p, field, None) is None:
+                setattr(p, field, value)
     auth.start_session(db, user, response, request.headers.get("user-agent"))
     db.commit()
     return _me(db, user)

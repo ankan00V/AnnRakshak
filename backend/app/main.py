@@ -138,10 +138,22 @@ app.include_router(voice.router)
 
 @app.get("/health")
 def health():
+    """Is this process up, and is it answering with a real model.
+
+    Terse in production on purpose. This is the one route with no session in
+    front of it, so whatever it prints is printed to the internet: which
+    providers are wired up, which satellite product is being read, when the
+    last fetch was and what it said when it failed. None of that is a secret,
+    and all of it is a map. The container's health check needs "ok"; an
+    officer who needs the rest has /api/officials/model behind their sign-in,
+    and a laptop still prints everything."""
+    out = {"status": "ok", "service": "annrakshak-api",
+           "model": {"is_stub": vision.model_status()["is_stub"]},
+           "voice": {"configured": voice.status()["configured"]}}
+    if PROD:
+        return out
     kb = get_kb()
-    return {
-        "status": "ok",
-        "service": "annrakshak-api",
+    return out | {
         "kb": {"targets": len(kb.targets), "cues": len(kb.cues), "rules": len(kb.rules)},
         "model": vision.model_status(),
         "voice": voice.status(),
