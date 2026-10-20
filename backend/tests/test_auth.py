@@ -998,3 +998,61 @@ def test_with_no_keys_there_is_no_box_and_nothing_to_pass(client):
     assert turnstile.configured() is False
     assert client.get("/api/auth/options").json()["turnstile_sitekey"] is None
     assert turnstile.verify(None) == (True, None)
+
+
+def test_a_farmer_can_correct_their_own_details(client, mail):
+    """One door for both roles: your own record, yours to change."""
+    farmer_signup(client, mail)
+    r = client.patch("/api/auth/me/profile", json={"name": "Ramesh K. Patil", "village": "Sakoli",
+                                                   "total_land_acres": 3.5, "lang": "mr"})
+    assert r.status_code == 200, r.text
+    me = r.json()
+    assert me["name"] == "Ramesh K. Patil" and me["lang"] == "mr"
+    assert me["profile"]["village"] == "Sakoli" and me["profile"]["total_land_acres"] == 3.5
+    # Sending one line does not blank the rest.
+    assert me["profile"]["district"]
+
+
+def test_an_officer_cannot_grant_themselves_another_district(client, mail):
+    """Coverage is reach, not preference.
+
+    A case is routed to whoever covers the district it came from, and it
+    carries a farmer's name, their village and photographs of their field. An
+    officer who could add a district to their own record would be granting
+    themselves the district office's permission — which is the one thing
+    verification exists to withhold."""
+    # An agriculture assistant: verified, and not a supervisor.
+    _expert(client, mail, verified=True, supervisor=False)   # covers Bhandara
+
+    grab = client.patch("/api/auth/me/profile", json={"districts": ["Bhandara", "Mumbai"]})
+    assert grab.status_code == 403, grab.text
+    assert "Mumbai" in grab.json()["detail"]
+    assert client.get("/api/auth/me").json()["profile"]["districts"] == ["Bhandara"]
+
+    # Giving one up asks for nothing, so it stays theirs to do.
+    drop = client.patch("/api/auth/me/profile", json={"districts": []})
+    assert drop.status_code == 200, drop.text
+
+
+def test_a_supervisor_may_take_on_a_district(client, mail):
+    """A supervisor already verifies officers and routes a district's backlog;
+    withholding this from them would be a lock with the key beside it."""
+    expert_signup(client, mail)   # a KVK scientist: supervisor by post
+    assert client.get("/api/auth/me").json()["profile"]["supervisor"] is True
+    r = client.patch("/api/auth/me/profile", json={"districts": ["Bhandara", "Gondia", "Nagpur"]})
+    assert r.status_code == 200, r.text
+    assert "Nagpur" in r.json()["profile"]["districts"]
+
+
+def test_the_record_the_office_checked_is_not_self_service(client, mail):
+    """The reporting line and the sign-in phone are what the office verified
+    this person against. A record its holder can rewrite is not evidence."""
+    expert_signup(client, mail)
+    before = client.get("/api/auth/me").json()
+    r = client.patch("/api/auth/me/profile", json={
+        "organisation": "KVK Sakoli", "reporting_name": "Nobody", "phone": "9000000009"})
+    assert r.status_code == 200, r.text
+    after = r.json()
+    assert after["profile"]["organisation"] == "KVK Sakoli", "the office address is theirs to correct"
+    assert after["profile"]["reporting_name"] == before["profile"]["reporting_name"]
+    assert after["phone"] == before["phone"]
