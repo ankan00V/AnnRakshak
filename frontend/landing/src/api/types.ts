@@ -926,6 +926,18 @@ export interface Me {
      *  officer may not, so those controls are not offered to one. */
     supervisor?: boolean
     experience_years?: number
+    employee_id?: string
+    qualification?: string
+    department?: string | null
+    office_address?: string | null
+    block?: string | null
+    pincode?: string | null
+    office_phone?: string | null
+    joined_service_on?: string | null
+    posted_since?: string | null
+    reporting_name?: string | null
+    reporting_designation?: string | null
+    reporting_contact?: string | null
   } | null
 }
 
@@ -949,6 +961,8 @@ export interface AuthOptions {
   specialities: { id: string; name: string }[]
   otp: { digits: number; minutes: number; channel: 'email' }
   demo_login: boolean
+  /** Cloudflare's public half. Null means no box is shown and none is required. */
+  turnstile_sitekey: string | null
 }
 
 // --- Krishi, the in-app helper -------------------------------------------------

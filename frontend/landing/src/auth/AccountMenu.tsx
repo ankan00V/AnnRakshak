@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Headphones, LogOut, ShieldCheck, Trash2 } from 'lucide-react'
+import { Download, Headphones, LogOut, ShieldCheck, Trash2, UserRound } from 'lucide-react'
 import { api } from '../api/client'
 import { useAuth } from './AuthContext'
 
@@ -15,8 +15,10 @@ export type PrivacyLabels = {
 /** The signed-in person in a dark header: initials, and a menu with who they
  *  are, what they may do with their own data, and Log out. Labels default to
  *  English (the expert screens). */
-export default function AccountMenu({ logoutLabel = 'Log out', demoLabel = 'Demo', extra, privacy }: {
+export default function AccountMenu({ logoutLabel = 'Log out', demoLabel = 'Demo', extra, privacy, profile }: {
   logoutLabel?: string; demoLabel?: string
+  /** Where this role's own record lives, and what to call it. */
+  profile?: { to: string; label: string }
   /** One more item above Log out (the farmer app's "App tour"). */
   extra?: { label: string; onClick: () => void }
   privacy?: PrivacyLabels
@@ -66,6 +68,13 @@ export default function AccountMenu({ logoutLabel = 'Log out', demoLabel = 'Demo
               </span>
             )}
           </div>
+          {profile && (
+            <button onClick={() => { setOpen(false); navigate(profile.to) }}
+              className="mt-4 w-full min-h-[42px] rounded-full border border-soil-dark/15 text-sm font-medium flex items-center justify-center gap-2 hover:bg-cream">
+              <UserRound className="w-4 h-4" />
+              {profile.label}
+            </button>
+          )}
           {extra && (
             <button onClick={() => { setOpen(false); extra.onClick() }}
               className="mt-4 w-full min-h-[42px] rounded-full bg-leaf-deep text-cream text-sm font-medium flex items-center justify-center gap-2 hover:brightness-110">

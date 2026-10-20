@@ -105,6 +105,8 @@ const json = (body: unknown): RequestInit => ({
 })
 
 export const api = {
+  saveProfile: (body: Record<string, unknown>) =>
+    req<Me>('/api/auth/me/profile', { ...json(body), method: 'PATCH' }),
   me: () => req<Me>('/api/auth/me'),
   places: () => req<{ states: StatePlaces[] }>('/api/geo/places'),
   whereAmI: (lat: number, lon: number) =>
@@ -115,7 +117,8 @@ export const api = {
   authOptions: (lang: Lang) => req<AuthOptions>(`/api/auth/options?lang=${lang}`),
   checkIdentifiers: (body: { email?: string; phone?: string; lang: Lang }) =>
     req<{ free: boolean; field: string | null; message: string | null }>('/api/auth/check', json(body)),
-  requestOtp: (body: { role: Role; purpose: 'signup' | 'login'; email?: string; phone?: string; identifier?: string; lang: Lang }) =>
+  requestOtp: (body: { role: Role; purpose: 'signup' | 'login'; email?: string; phone?: string;
+    identifier?: string; lang: Lang; turnstile_token?: string | null }) =>
     req<OtpSent>('/api/auth/otp', json(body)),
   login: (challengeId: string, code: string, role: Role, lang: Lang) =>
     req<Me>('/api/auth/login', json({ challenge_id: challengeId, code, role, lang })),
@@ -147,9 +150,9 @@ export const api = {
   farms: (lang: Lang) => req<Farm[]>(`/api/farms?lang=${lang}`),
   createFarm: (body: Record<string, unknown>) => req<Farm>('/api/farms', json(body)),
   harvest: (farmId: number, body: { harvested_on?: string; note?: string }) =>
-    req<Farm>(`/api/farms/${farmId}/harvest`, { method: 'POST', body: JSON.stringify(body) }),
+    req<Farm>(`/api/farms/${farmId}/harvest`, json(body)),
   sow: (farmId: number, body: { crop: string; sowing_date: string; date_basis?: 'sown' | 'transplanted'; variety?: string }) =>
-    req<Farm>(`/api/farms/${farmId}/sow`, { method: 'POST', body: JSON.stringify(body) }),
+    req<Farm>(`/api/farms/${farmId}/sow`, json(body)),
   setFarmLang: (farmId: number, lang: Lang) =>
     req<Farm>(`/api/farms/${farmId}`, { ...json({ lang }), method: 'PATCH' }),
   setFarmLocation: (farmId: number, lat: number, lon: number, confirmFar = false) =>

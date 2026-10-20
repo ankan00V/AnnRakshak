@@ -25,6 +25,11 @@ os.environ["ANNRAKSHAK_VISION"] = "stub"
 os.environ["ANNRAKSHAK_LLM"] = "off"
 os.environ["GROQ_API_KEY"] = ""
 os.environ["GROQ_API_KEYS"] = ""
+# The sign-in widget is a call to Cloudflare. Blank keys take the box off, so
+# the suite neither reaches the network nor has to carry a token through every
+# sign-up; the tests that pin the check down set it themselves.
+os.environ["TURNSTILE_SITEKEY"] = ""
+os.environ["TURNSTILE_SECRET"] = ""
 # No background watcher, no real weather key, no real email in tests.
 os.environ["ANNRAKSHAK_WATCH"] = "off"
 os.environ["OPENWEATHER_API_KEY"] = ""

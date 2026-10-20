@@ -86,7 +86,7 @@ export default function OfficerShell() {
               {sweeping ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               <span className="hidden sm:inline">Run risk sweep</span>
             </button>}
-            <AccountMenu />
+            <AccountMenu profile={{ to: '/officer/profile', label: 'My record' }} />
           </div>
         </div>
 

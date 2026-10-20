@@ -124,6 +124,7 @@ function Shell() {
               if (farmId != null) api.setFarmLang(farmId, code).catch(() => undefined)
             }} />
             <AccountMenu logoutLabel={t('authLogout')} demoLabel={t('demoFarm')}
+              profile={{ to: '/app/profile', label: t('profileMenu') }}
               privacy={{
                 yourData: t('yourData'), downloadData: t('downloadData'),
                 deleteAccount: t('deleteAccount'), deleteWhat: t('deleteWhat'),
@@ -146,7 +147,9 @@ function Shell() {
       <main className={`flex-1 w-full max-w-md mx-auto px-4 pt-5 pb-28 animate-fadein lg:max-w-none lg:px-10 lg:pt-8 lg:pb-16 ${
         farmId != null ? 'lg:pl-[calc(16rem+2.5rem)]' : ''}`} key={pathname}>
         <div className={`lg:mx-auto ${farmId == null || wideRoute ? 'lg:max-w-6xl' : 'lg:max-w-3xl'}`}>
-          {farmId == null ? <Onboard /> : <Outlet />}
+          {/* Picking a field comes before the screens about a field — but not
+              before your own details, which belong to you and not to a plot. */}
+          {farmId == null && pathname !== '/app/profile' ? <Onboard /> : <Outlet />}
         </div>
       </main>
 
