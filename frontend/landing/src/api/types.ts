@@ -236,6 +236,10 @@ export interface IndentRow {
   high: number
   inputs: { id: string; short: string; institute?: string | null }[]
   suggested: { input: string; institute?: string | null; quantity: string; order_by: string | null }[]
+  /** The advice ladder's biological step, when no ICAR product is catalogued
+   *  for this problem. Not always a thing to buy — brown planthopper's is
+   *  "protect the spiders already in the field" — so the screen labels it. */
+  biological: string | null
 }
 
 /** Darpan's answer: lines built from the district's own rows, and the screens
