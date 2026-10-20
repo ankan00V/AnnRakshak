@@ -22,6 +22,13 @@ export default {
         cream: '#f7f3ec',
         ember: '#b0472a',
       },
+      backgroundImage: {
+        // The closing panel's scrim. Solid leaf-deep across the top, where the
+        // sources strip is, and across the bottom behind the footer; open
+        // through the middle so the harvest playing behind it can actually be
+        // seen under the headline. Tuned against the footage, not guessed.
+        'cta-scrim': 'linear-gradient(to bottom, #1f3d2b 0%, #1f3d2b 30%, rgba(31,61,43,0.10) 58%, rgba(31,61,43,0.70) 78%, #1f3d2b 94%)',
+      },
       keyframes: {
         fadein: {
           from: { opacity: '0', transform: 'translateY(4px)' },

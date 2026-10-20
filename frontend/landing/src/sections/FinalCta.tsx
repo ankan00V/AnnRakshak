@@ -2,6 +2,7 @@ import { Globe, Mail } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import BrandMark from '../ui/BrandMark'
 import Reveal from '../ui/Reveal'
+import HarvestBackdrop from '../ui/HarvestBackdrop'
 import { useAuth } from '../auth/AuthContext'
 import { homeOf } from '../auth/helpers'
 import { useFarmer } from '../farmer/FarmerContext'
@@ -18,8 +19,11 @@ export default function FinalCta() {
   const { me, logout } = useAuth()
   const { t } = useFarmer()
   return (
-    <section id="cta" className="w-full bg-leaf-deep text-cream">
-      <div className="max-w-6xl mx-auto px-6 md:px-12 pt-20 md:pt-28">
+    <section id="cta" className="relative w-full bg-leaf-deep text-cream">
+      {/* The closing block asks whether you are ready to protect your harvest.
+          Behind it, a harvest. */}
+      <HarvestBackdrop />
+      <div className="relative max-w-6xl mx-auto px-6 md:px-12 pt-20 md:pt-28">
         <Reveal>
           <div className="grid gap-y-7 gap-x-8 sm:grid-cols-2 lg:grid-cols-4 border-y border-cream/15 py-8">
             {SOURCES.map(({ name, line }) => (
@@ -32,7 +36,7 @@ export default function FinalCta() {
         </Reveal>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 md:px-12 pt-16 md:pt-20 pb-10 text-center">
+      <div className="relative max-w-4xl mx-auto px-6 md:px-12 pt-16 md:pt-20 pb-10 text-center">
         <h2 className="font-instrument-serif text-[2rem] sm:text-4xl md:text-5xl leading-[1.05] text-balance">
           {t('landReady')}
         </h2>
