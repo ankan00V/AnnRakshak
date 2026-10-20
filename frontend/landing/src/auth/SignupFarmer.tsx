@@ -10,6 +10,7 @@ import { Bone, Card, Loading } from '../ui/kit'
 import { useAuth } from './AuthContext'
 import { emailOk, phoneOk } from './helpers'
 import { Actions, Chips, CodePanel, Field, FormCard, Input, Primary, Secondary, Steps } from './parts'
+import Turnstile from './Turnstile'
 import WherePicker, { type Where } from './WherePicker'
 
 const IRRIGATION: Irrigation[] = ['rainfed', 'canal', 'borewell', 'open_well', 'farm_pond', 'drip', 'sprinkler']
@@ -89,6 +90,7 @@ export default function SignupFarmer() {
                                               lat: null, lon: null, fromGps: false })
   const [more, setMore] = useState(false)
   const [touched, setTouched] = useState(false)
+  const [human, setHuman] = useState<string | null>(null)
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }))
 
   const bad = {
@@ -285,12 +287,16 @@ export default function SignupFarmer() {
             <span className="text-[13px] leading-snug text-soil-dark/80">{t('authConsent')}</span>
           </label>
           {f.consent && (
-            <CodePanel
-              sendLabel={t('authSendCodeTo').replace('{to}', f.email.trim())}
-              request={() => api.requestOtp({ role: 'farmer', purpose: 'signup', email: f.email.trim(), phone: f.phone, lang })}
-              verify={async (challenge_id, code) => signIn(await api.signupFarmer({ ...payload(), challenge_id, code }))}
-              submitLabel={t('authCreate')}
-            />
+            <>
+              <Turnstile lang={lang} onToken={setHuman} />
+              <CodePanel
+                sendLabel={t('authSendCodeTo').replace('{to}', f.email.trim())}
+                request={() => api.requestOtp({ role: 'farmer', purpose: 'signup', email: f.email.trim(),
+                                                phone: f.phone, lang, turnstile_token: human })}
+                verify={async (challenge_id, code) => signIn(await api.signupFarmer({ ...payload(), challenge_id, code }))}
+                submitLabel={t('authCreate')}
+              />
+            </>
           )}
         </div>
       )}

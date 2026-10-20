@@ -8,6 +8,7 @@ import { useAsync } from '../lib/hooks'
 import { useAuth } from './AuthContext'
 import { emailOk, phoneOk } from './helpers'
 import { CodePanel, Field, FormCard, Input, Primary } from './parts'
+import Turnstile from './Turnstile'
 
 export function RoleSwitch({ role, onChange }: { role: Role; onChange: (r: Role) => void }) {
   const { t } = useFarmer()
@@ -35,6 +36,7 @@ export default function Login() {
   const role: Role = params.get('role') === 'expert' ? 'expert' : 'farmer'
   const [identifier, setIdentifier] = useState('')
   const [ready, setReady] = useState(false)
+  const [human, setHuman] = useState<string | null>(null)
   const [demoBusy, setDemoBusy] = useState<Role | null>(null)
   const [demoError, setDemoError] = useState<Error | null>(null)
   const options = useAsync(() => api.authOptions(lang), [lang])
@@ -84,9 +86,11 @@ export default function Login() {
               <span className="truncate">{identifier}</span>
               <button className="text-leaf-deep font-medium" onClick={() => setReady(false)}>{t('authChange')}</button>
             </div>
+            <Turnstile lang={lang} onToken={setHuman} />
             <CodePanel
               sendLabel={t('authSendCode')}
-              request={() => api.requestOtp({ role, purpose: 'login', identifier: identifier.trim(), lang })}
+              request={() => api.requestOtp({ role, purpose: 'login', identifier: identifier.trim(), lang,
+                                              turnstile_token: human })}
               verify={async (id, code) => signIn(await api.login(id, code, role, lang))}
               submitLabel={t('authVerify')}
             />

@@ -10,6 +10,7 @@ import { Bone, Card, ErrorBox, Loading } from '../ui/kit'
 import { useAuth } from './AuthContext'
 import { emailOk, phoneOk } from './helpers'
 import { Actions, Chips, CodePanel, Field, FormCard, Input, Primary, Secondary, Select, Steps } from './parts'
+import Turnstile from './Turnstile'
 
 /** What an expert is asked, and why: it decides which cases reach them and
  *  whether their verdicts can be trusted. Their post and credentials (the
@@ -36,6 +37,7 @@ export default function SignupExpert() {
   /** An identifier the server says is already on an account. Held per field so
    *  the complaint can sit under the box it belongs to. */
   const [taken, setTaken] = useState<{ field: string; message: string } | null>(null)
+  const [human, setHuman] = useState<string | null>(null)
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => {
     // Editing the field that was rejected clears the rejection; leaving it
     // there under a number the person has just corrected reads as a dead form.
@@ -107,7 +109,8 @@ export default function SignupExpert() {
    *  mobile number on the screen that confirms an email address. */
   const sendCode = async () => {
     try {
-      return await api.requestOtp({ role: 'expert', purpose: 'signup', email: f.email.trim(), phone: f.phone, lang })
+      return await api.requestOtp({ role: 'expert', purpose: 'signup', email: f.email.trim(), phone: f.phone,
+                                    lang, turnstile_token: human })
     } catch (e) {
       const err = e as ApiError
       if (err.status === 409 && (err.field === 'email' || err.field === 'phone')) {
@@ -363,6 +366,7 @@ export default function SignupExpert() {
               <p className="mt-1.5 text-[12px] text-ember">{t('authPickOne')}</p>
             )}
           </Card>
+          <Turnstile lang={lang} onToken={setHuman} />
           <CodePanel
             blocked={!f.declaration}
             sendLabel={t('authSendCodeTo').replace('{to}', f.email.trim())}

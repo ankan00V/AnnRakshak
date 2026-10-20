@@ -953,3 +953,48 @@ def test_the_dossier_and_the_map_follow_the_same_rule_as_the_case(client, mail):
     assert client.get(f"/api/officials/farms/{farm_id}").status_code == 200
     named = client.get("/api/officials/hotspots").json()["points"]
     assert any(p["farmer_name"] == "Someone Else" for p in named)
+
+
+def test_the_sign_in_widget_guards_the_request_for_a_code(client, mail, monkeypatch):
+    """Both sign-up and login start by asking for a code, which costs money and
+    reaches a real inbox, so one check covers both screens."""
+    from app import turnstile
+    from app.routers import auth as auth_router
+
+    seen: list[str | None] = []
+
+    def refuse(token, ip=None):
+        seen.append(token)
+        return False, "invalid-input-response"
+
+    monkeypatch.setattr(auth_router.turnstile, "verify", refuse)
+    r = client.post("/api/auth/otp", json={"role": "farmer", "purpose": "signup",
+                                           "email": "x@example.com", "phone": "9876500099",
+                                           "turnstile_token": "a-bad-token"})
+    assert r.status_code == 403 and "check" in r.json()["detail"]
+    assert seen == ["a-bad-token"], "the token reaches the verifier"
+    assert not mail, "and no code is sent"
+
+    monkeypatch.setattr(auth_router.turnstile, "verify", lambda token, ip=None: (True, None))
+    assert client.post("/api/auth/otp", json={"role": "farmer", "purpose": "signup",
+                                              "email": "x@example.com", "phone": "9876500099",
+                                              "turnstile_token": "a-good-token"}).status_code == 200
+
+    # Cloudflare unreachable: the request goes through rather than locking a
+    # farmer out, because the emailed code is still the real door.
+    def explode(*a, **k):
+        raise RuntimeError("no network")
+
+    monkeypatch.setattr(turnstile, "configured", lambda: True)
+    monkeypatch.setattr(turnstile.httpx, "post", explode)
+    assert turnstile.verify("whatever", "1.2.3.4") == (True, None)
+
+
+def test_with_no_keys_there_is_no_box_and_nothing_to_pass(client):
+    """Blank keys take the widget off: the API says so, and a code can still be
+    asked for."""
+    from app import turnstile
+
+    assert turnstile.configured() is False
+    assert client.get("/api/auth/options").json()["turnstile_sitekey"] is None
+    assert turnstile.verify(None) == (True, None)

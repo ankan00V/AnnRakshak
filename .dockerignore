@@ -1,0 +1,19 @@
+# What never belongs in the build context. Without this the daemon is handed
+# the datasets, the virtualenv and the model weights before it reads a line of
+# the Dockerfile — gigabytes, every build.
+.git
+.venv
+node_modules
+**/node_modules
+**/dist
+data/raw
+data/processed
+ml/artifacts
+ml/artifacts_v1
+ml/reports
+backend/data
+.env
+.claude
+skills-lock.json
+**/__pycache__
+**/*.pyc

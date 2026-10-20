@@ -33,7 +33,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import auth, config, erasure, geo, mailer, services
+from app import auth, config, erasure, geo, mailer, services, turnstile
 from app.db import SUPERVISOR_DESIGNATIONS, get_db
 from app.i18n import LANGS
 from app.kb import KB, get_kb, tr
@@ -99,6 +99,9 @@ MESSAGES = {
     "declaration": {"en": "Please confirm the undertaking before continuing.",
                     "hi": "जारी रखने से पहले कृपया घोषणा की पुष्टि करें।",
                     "mr": "पुढे जाण्यापूर्वी कृपया घोषणेची खात्री करा."},
+    "not_a_person": {"en": "Please complete the check above and try again.",
+                     "hi": "कृपया ऊपर दी गई जाँच पूरी करें और फिर कोशिश करें।",
+                     "mr": "कृपया वरील तपासणी पूर्ण करा आणि पुन्हा प्रयत्न करा."},
     "consent": {"en": "Please agree to how your data is used.", "hi": "कृपया डेटा के उपयोग से सहमति दें।",
                 "mr": "कृपया माहितीच्या वापराला संमती द्या."},
     "pick_lists": {"en": "Please choose from the lists: {items}", "hi": "कृपया सूची में से चुनें: {items}",
@@ -147,6 +150,8 @@ def options(lang: str = "en", kb: KB = Depends(get_kb)):
         "specialities": [{"id": k, "name": v} for k, v in SPECIALITIES.items()],
         "otp": {"digits": config.OTP_DIGITS, "minutes": config.OTP_TTL_MINUTES, "channel": config.OTP_CHANNEL},
         "demo_login": config.DEMO_LOGIN,
+        # The widget's public half. Absent means no box is shown at all.
+        "turnstile_sitekey": config.TURNSTILE_SITEKEY if turnstile.configured() else None,
     }
 
 
@@ -215,6 +220,9 @@ class OtpIn(BaseModel):
     """Sign-up: checked for an existing account now, saved at sign-up."""
     identifier: str | None = Field(default=None, max_length=200)
     """Login: the mobile number or email on the account."""
+    turnstile_token: str | None = Field(default=None, max_length=2048)
+    """What the Cloudflare widget hands back. Checked here because this is the
+    call that spends money and reaches a real inbox."""
     lang: str = "en"
 
 
@@ -245,6 +253,10 @@ def check_identifiers(body: CheckIn, request: Request, db: Session = Depends(get
 def request_otp(body: OtpIn, request: Request, db: Session = Depends(get_db)):
     limit(f"otp:ip:{client_ip(request)}", 20, 900)
     lang = body.lang if body.lang in LANGS else "en"
+    # Both sign-up and login start here, so one check covers both screens.
+    passed, why = turnstile.verify(body.turnstile_token, client_ip(request))
+    if not passed:
+        raise HTTPException(403, _say("not_a_person", lang))
     if body.purpose == "signup":
         email = _email(body.email, lang)
         _unused(db, email, _phone(body.phone, lang), lang)
