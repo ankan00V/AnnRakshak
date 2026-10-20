@@ -1183,3 +1183,21 @@ def test_the_demo_farmer_can_work_the_fields_it_is_shown(client):
     for farm in shown:
         r = client.post(f"/api/farms/{farm['id']}/harvest", json={})
         assert r.status_code == 200, f"field {farm['id']} was listed but not writable: {r.text}"
+
+
+def test_the_demo_farmer_cannot_delete_the_shared_demo_fields(client):
+    """Everyone who presses "try the demo" is handed the same four fields.
+    Harvesting one is reversible — the next visitor sows it again — but a
+    delete takes it away from every visitor after them, and from a judge, with
+    nothing in the app to put it back. A field they added themselves is theirs
+    to remove."""
+    client.post("/api/auth/demo", json={"role": "farmer"})
+    shared = client.get("/api/farms").json()[0]
+    assert client.delete(f"/api/farms/{shared['id']}").status_code == 404
+    assert any(f["id"] == shared["id"] for f in client.get("/api/farms").json()), "a shared field was taken"
+
+    mine = client.post("/api/farms", json={
+        "farmer_name": "Mine", "crop": "maize", "sowing_date": "2026-08-01",
+        "district": "Bhandara", "lat": 21.17, "lon": 79.65, "area_acres": 1.0,
+    }).json()
+    assert client.delete(f"/api/farms/{mine['id']}").status_code == 204

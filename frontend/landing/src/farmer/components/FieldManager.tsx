@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Loader2, Sprout, Trash2, Wheat } from 'lucide-react'
 import { api } from '../../api/client'
 import type { CropInfo, Farm } from '../../api/types'
+import { useAuth } from '../../auth/AuthContext'
 import { useFarmer } from '../FarmerContext'
 import { ErrorBox } from '../../ui/kit'
 
@@ -35,6 +36,11 @@ type Mode = null | 'off' | 'on' | 'remove'
 
 function Row({ farm, crops, onChange }: { farm: Farm; crops: CropInfo[] | null; onChange: () => void }) {
   const { t } = useFarmer()
+  const { me } = useAuth()
+  // The shared demo fields are handed to every visitor who tries the app.
+  // Working one is reversible; removing it would take the demo away from the
+  // next person, so the server refuses and the button does not pretend.
+  const removable = !(me?.is_demo && farm.is_demo)
   const [mode, setMode] = useState<Mode>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<Error | null>(null)
@@ -87,12 +93,12 @@ function Row({ farm, crops, onChange }: { farm: Farm; crops: CropInfo[] | null; 
             {fallow ? <Sprout className="w-3.5 h-3.5" /> : <Wheat className="w-3.5 h-3.5" />}
             {fallow ? t('profileFieldOn') : t('profileFieldOff')}
           </button>
-          <button onClick={() => setMode('remove')} aria-label={t('profileFieldRemove')}
+          {removable && <button onClick={() => setMode('remove')} aria-label={t('profileFieldRemove')}
             className="min-h-[36px] px-3 rounded-full text-[13px] text-soil-dark/45 hover:text-ember hover:bg-ember/[0.07]
                        flex items-center gap-1.5 transition-colors">
             <Trash2 className="w-3.5 h-3.5" />
             {t('profileFieldRemove')}
-          </button>
+          </button>}
         </div>
       )}
 

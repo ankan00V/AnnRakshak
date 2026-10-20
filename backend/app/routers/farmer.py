@@ -34,12 +34,15 @@ def _farm(db: Session, farm_id: int) -> Farm:
     return farm
 
 
-def _own_farm(db: Session, farm_id: int, request: Request) -> Farm:
+def _own_farm(db: Session, farm_id: int, request: Request, *, destructive: bool = False) -> Farm:
     """A farm the signed-in farmer may change. An officer may read a field
-    (auth.can_open_farm) but may not sow or harvest on somebody's land."""
+    (auth.can_open_farm) but may not sow or harvest on somebody's land.
+
+    `destructive` asks for the stricter half of the rule: the shared demo
+    fields may be worked, but only a field of one's own may be deleted."""
     farm = _farm(db, farm_id)
     me = auth.signed_in(request, db) if config.AUTH_ENFORCE else None
-    if not auth.may_change_farm(me, farm):
+    if not auth.may_change_farm(me, farm, destructive=destructive):
         raise HTTPException(404, "farm not found")
     return farm
 
@@ -406,7 +409,7 @@ def remove_farm(farm_id: int, request: Request, db: Session = Depends(get_db)):
     A farmer who did not know about sowing again may have registered the same
     plot once per season; this is how those copies go away. It takes the
     field's whole history with it, which is why the app asks twice."""
-    services.delete_farm(db, _own_farm(db, farm_id, request))
+    services.delete_farm(db, _own_farm(db, farm_id, request, destructive=True))
     return Response(status_code=204)
 
 
