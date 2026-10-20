@@ -52,11 +52,26 @@ class UnreadableImage(ValueError):
     pass
 
 
+# A photograph of a leaf is a few megapixels; a 48 MP phone sensor is 48. Past
+# that it is not a farmer's camera, and the arithmetic matters: a decoded pixel
+# costs three bytes of RAM whatever the file cost to send, so a 200 KB PNG can
+# ask for a gigabyte. PIL only warns at its own limit and errors at twice it,
+# so the size is read from the header — Image.open parses it without decoding —
+# and the picture is refused before a single row is expanded.
+MAX_PIXELS = 60_000_000
+Image.MAX_IMAGE_PIXELS = MAX_PIXELS  # PIL's own backstop, for any other caller
+
+
 def open_image(image_bytes: bytes) -> Image.Image:
     try:
         img = Image.open(io.BytesIO(image_bytes))
+        w, h = img.size
+        if w * h > MAX_PIXELS:
+            raise UnreadableImage(f"image too large to decode: {w}x{h}")
         img = ImageOps.exif_transpose(img)
         return img.convert("RGB")
+    except UnreadableImage:
+        raise
     except Exception as exc:  # PIL raises a zoo of types on bad input
         raise UnreadableImage("not a readable image") from exc
 

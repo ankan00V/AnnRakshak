@@ -24,6 +24,7 @@ log = logging.getLogger("annrakshak.farmer")
 router = APIRouter(prefix="/api", tags=["farmer"], dependencies=[Depends(auth.require())])
 Lang = Literal["en", "hi", "mr", "bn", "ta", "te", "kn", "ml", "gu", "pa"]  # Odia off for now: app/i18n.py
 MAX_UPLOAD_BYTES = 12 * 1024 * 1024
+CHUNK_BYTES = 256 * 1024
 
 
 def _farm(db: Session, farm_id: int) -> Farm:
@@ -264,11 +265,9 @@ async def diagnose(
 ):
     farm = _farm(db, farm_id)
     limit(f"diagnose:{farm_id}", 30, 60)
-    data = await image.read()
+    data = await _read_capped(image)
     if not data:
         raise HTTPException(422, "empty image")
-    if len(data) > MAX_UPLOAD_BYTES:
-        raise HTTPException(413, "image too large (max 12 MB)")
     try:
         return services.diagnose(db, kb, farm, data, lang, demo_scenario)
     except vision.UnreadableImage as exc:
@@ -460,6 +459,25 @@ class LabelCheckIn(BaseModel):
     product: str = Field(min_length=1, max_length=120)
     problem_id: int | None = None
     lang: Lang = "en"
+
+
+async def _read_capped(upload: UploadFile) -> bytes:
+    """Read an upload, refusing it the moment it goes past the cap.
+
+    `await upload.read()` with no argument returns the whole body, so the
+    server holds whatever was sent before it can decide the file is too big —
+    which makes "too large" an answer you have to buy the memory for. Read it a
+    chunk at a time instead and stop at the first chunk that crosses the line."""
+    chunks, total = [], 0
+    while True:
+        chunk = await upload.read(CHUNK_BYTES)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > MAX_UPLOAD_BYTES:
+            raise HTTPException(413, "image too large (max 12 MB)")
+        chunks.append(chunk)
+    return b"".join(chunks)
 
 
 def _label_target(db: Session, farm: Farm, problem_id: int | None) -> str | None:

@@ -800,3 +800,41 @@ def test_a_fallow_field_is_not_warned_about(client, monkeypatch):
 def test_a_harvest_cannot_predate_the_sowing(client):
     r = client.post("/api/farms/1/harvest", json={"harvested_on": "2020-01-01"})
     assert r.status_code == 422
+
+
+def _pixel_bomb(w: int = 10_000, h: int = 10_000) -> bytes:
+    """A tiny PNG that claims an enormous canvas.
+
+    Sixty-nine bytes on the wire, a hundred megapixels once decoded, which is
+    three hundred megabytes of memory per request. Pillow only warns at its own
+    limit and decodes anyway, so nothing stops this but reading the header."""
+    import struct
+    import zlib
+
+    buf = io.BytesIO()
+    Image.new("RGB", (1, 1), (10, 120, 40)).save(buf, "PNG")
+    raw = bytearray(buf.getvalue())
+    i = raw.index(b"IHDR")
+    raw[i + 4:i + 12] = struct.pack(">II", w, h)
+    raw[i + 17:i + 21] = struct.pack(">I", zlib.crc32(bytes(raw[i:i + 17])) & 0xFFFFFFFF)
+    return bytes(raw)
+
+
+def test_a_photograph_is_refused_before_it_is_expanded(client):
+    """A picture is checked by its header, not by decoding it and finding out."""
+    r = client.post("/api/farms/1/diagnose", files={"image": ("bomb.png", _pixel_bomb(), "image/png")},
+                    data={"lang": "en"})
+    assert r.status_code == 422
+    assert "could not read" in r.json()["detail"]
+
+
+def test_an_oversized_upload_is_refused_without_being_held(client, monkeypatch):
+    """The cap is enforced while the body arrives, not after it has all been
+    read into memory — otherwise "too large" costs the memory it refuses."""
+    from app.routers import farmer as farmer_router
+
+    monkeypatch.setattr(farmer_router, "MAX_UPLOAD_BYTES", 64 * 1024)
+    big = _leaf_jpeg() + b"\0" * (200 * 1024)
+    r = client.post("/api/farms/1/diagnose", files={"image": ("big.jpg", big, "image/jpeg")},
+                    data={"lang": "en"})
+    assert r.status_code == 413
