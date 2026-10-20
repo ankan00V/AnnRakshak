@@ -297,6 +297,22 @@ def farm_ids_for(db: Session, user: User | None) -> list[int] | None:
     return list(db.scalars(q).all())
 
 
+def may_change_farm(user: User | None, farm: Farm) -> bool:
+    """Whether this user may sow, harvest or remove this field.
+
+    It lives beside farm_ids_for because the two are one rule read from two
+    directions, and they had drifted: a demo farmer was shown every demo farm
+    and then told "farm not found" on each one, because listing allowed the
+    shared demo fields and writing did not. An officer may read a field; nobody
+    but the holder sows or harvests on somebody's land.
+    """
+    if not config.AUTH_ENFORCE:
+        return True
+    if user is None or user.role != "farmer":
+        return False
+    return farm.user_id == user.id or bool(user.is_demo and farm.is_demo)
+
+
 def _farm_of(db: Session, name: str, value: str) -> Farm | None:
     try:
         key = int(value)

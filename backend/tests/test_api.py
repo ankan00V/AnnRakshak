@@ -14,7 +14,7 @@ from app import cache, geo, services
 from app.db import Base, SessionLocal, engine
 from app.engine.weather import Day, Window
 from app.main import app
-from app.models import Alert, Case, Farm, OfficerAction
+from app.models import Alert, Case, Farm, OfficerAction, Problem, Season
 
 
 def _leaf_jpeg() -> bytes:
@@ -795,6 +795,48 @@ def test_a_fallow_field_is_not_warned_about(client, monkeypatch):
     with SessionLocal() as db:
         out = services.run_risk(db, kb_for_tests(), db.get(Farm, 2))
     assert out["issued"] == [] and out["why"] == "field is fallow"
+
+
+def test_a_harvested_field_stops_counting_days(client):
+    """The complaint this exists for: a field that was cut in November was
+    still gaining a day every morning, so by spring the app called it 260 days
+    old and read a maturing stage off a bare plot. The clock stops at the
+    harvest and stays stopped."""
+    on = date.today() - timedelta(days=30)
+    r = client.post("/api/farms/1/harvest", json={"harvested_on": on.isoformat()})
+    assert r.status_code == 200, r.text
+    frozen = r.json()["das"]
+
+    with SessionLocal() as db:
+        farm = db.get(Farm, 1)
+        later = services.farm_view(kb_for_tests(), farm, "en", today=date.today() + timedelta(days=45))
+    assert later["das"] == frozen, "a fallow field kept ageing"
+    assert frozen == (on - date.fromisoformat(client.get("/api/farms/1").json()["sowing_date"])).days
+
+    # Sowing again starts the next season's clock from zero.
+    client.post("/api/farms/1/sow", json={"crop": "rice", "sowing_date": date.today().isoformat()})
+    assert client.get("/api/farms/1").json()["das"] == 0
+
+
+def test_a_farmer_can_delete_a_field_and_its_history(client):
+    """The escape hatch for the copies a farmer made before they knew about
+    sowing again. It takes the field's own rows with it and leaves every other
+    field alone."""
+    before = {f["id"] for f in client.get("/api/farms").json()}
+    client.post("/api/farms/1/diagnose", files={"image": ("x.jpg", _leaf_jpeg(), "image/jpeg")},
+                 data={"demo_scenario": "clear"})
+
+    r = client.delete("/api/farms/1")
+    assert r.status_code == 204, r.text
+
+    after = {f["id"] for f in client.get("/api/farms").json()}
+    assert after == before - {1}
+    assert client.get("/api/farms/1").status_code == 404
+    with SessionLocal() as db:
+        assert db.get(Farm, 1) is None
+        assert db.scalars(select(Problem).where(Problem.farm_id == 1)).all() == []
+        assert db.scalars(select(Season).where(Season.farm_id == 1)).all() == []
+        assert db.get(Farm, 2) is not None, "a neighbour's field was taken too"
 
 
 def test_a_harvest_cannot_predate_the_sowing(client):

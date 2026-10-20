@@ -6,7 +6,7 @@ import logging
 from datetime import date
 from typing import Literal
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -39,7 +39,7 @@ def _own_farm(db: Session, farm_id: int, request: Request) -> Farm:
     (auth.can_open_farm) but may not sow or harvest on somebody's land."""
     farm = _farm(db, farm_id)
     me = auth.signed_in(request, db) if config.AUTH_ENFORCE else None
-    if config.AUTH_ENFORCE and not (me and me.role == "farmer" and farm.user_id == me.id):
+    if not auth.may_change_farm(me, farm):
         raise HTTPException(404, "farm not found")
     return farm
 
@@ -397,6 +397,17 @@ def sow(farm_id: int, body: SowIn, request: Request, db: Session = Depends(get_d
     except ValueError as e:
         raise HTTPException(422, str(e)) from e
     return services.farm_view(kb, farm, lang)
+
+
+@router.delete("/farms/{farm_id}", status_code=204)
+def remove_farm(farm_id: int, request: Request, db: Session = Depends(get_db)):
+    """Take a field off the farmer's list for good.
+
+    A farmer who did not know about sowing again may have registered the same
+    plot once per season; this is how those copies go away. It takes the
+    field's whole history with it, which is why the app asks twice."""
+    services.delete_farm(db, _own_farm(db, farm_id, request))
+    return Response(status_code=204)
 
 
 @router.post("/farms/{farm_id}/risk/run")

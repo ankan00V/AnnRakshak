@@ -60,14 +60,16 @@ export function useProfileSave() {
   return { save, busy, done, error }
 }
 
-export function SaveBar({ busy, done, error, onSave, label }: {
+export function SaveBar({ busy, done, error, onSave, label, disabled = false }: {
   busy: boolean; done: boolean; error: Error | null; onSave: () => void; label: string
+  /** Nothing has been typed yet, so there is nothing to send. */
+  disabled?: boolean
 }) {
   return (
     <>
       {error && <ErrorBox error={error} />}
       <div className="flex items-center gap-3">
-        <button onClick={onSave} disabled={busy}
+        <button onClick={onSave} disabled={busy || disabled}
           className="min-h-[46px] px-5 rounded-full bg-leaf-deep text-cream text-sm font-semibold flex items-center gap-2 disabled:opacity-60">
           {busy && <Loader2 className="w-4 h-4 animate-spin" />}
           {label}

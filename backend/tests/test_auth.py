@@ -1171,3 +1171,15 @@ def test_a_real_farmers_field_is_a_real_one(client, mail):
     assert r.status_code == 201, r.text
     with SessionLocal() as db:
         assert db.get(Farm, r.json()["id"]).is_demo is False
+
+def test_the_demo_farmer_can_work_the_fields_it_is_shown(client):
+    """Listing and writing are one rule read from two directions. They had
+    drifted: the demo account was shown four fields and told "farm not found"
+    on every one, so harvest, sow and remove all failed for the one account a
+    judge actually presses buttons in."""
+    client.post("/api/auth/demo", json={"role": "farmer"})
+    shown = client.get("/api/farms").json()
+    assert shown, "the demo farmer was shown nothing"
+    for farm in shown:
+        r = client.post(f"/api/farms/{farm['id']}/harvest", json={})
+        assert r.status_code == 200, f"field {farm['id']} was listed but not writable: {r.text}"

@@ -16,7 +16,7 @@ from datetime import UTC, date, datetime, timedelta
 from functools import lru_cache
 
 from PIL import Image
-from sqlalchemy import func, or_, select
+from sqlalchemy import delete as sql_delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.i18n import month_name as i18n_month
@@ -42,15 +42,20 @@ from app.models import (
     Case,
     Confirmation,
     Diagnosis,
+    EmailLog,
     ExpertProfile,
     Farm,
     FollowUp,
     LabelPrior,
+    LiveScan,
+    Notice,
     Observation,
     OfficerAction,
     Problem,
+    PushSubscription,
     Season,
     SensorReading,
+    SprayLog,
     TrapReading,
     User,
 )
@@ -158,7 +163,12 @@ def msg(code: str, lang: str) -> str:
 
 
 def farm_view(kb: KB, farm: Farm, lang: str, today: date | None = None) -> dict:
-    stage, das = kb.stage_of(farm, today)
+    # A harvested field's days stop at the harvest. Counting them to today is
+    # how a rice plot that came off in November ends up "260 days old and
+    # maturing" the following spring: the number keeps moving long after the
+    # crop it describes is gone, and every stage read off it is wrong.
+    asof = farm.harvested_on if farm.status == "fallow" and farm.harvested_on else today
+    stage, das = kb.stage_of(farm, asof)
     return {
         "id": farm.id,
         "farmer_name": farm.farmer_name,
@@ -244,6 +254,41 @@ def sow_again(db: Session, kb: KB, farm: Farm, *, crop: str, sowing_date: date,
     farm.status, farm.harvested_on = "growing", None
     db.commit()
     return {"status": farm.status, "crop": farm.crop, "sowing_date": farm.sowing_date.isoformat()}
+
+
+def delete_farm(db: Session, farm: Farm) -> None:
+    """Remove a field and everything that hangs off it.
+
+    This is the escape hatch for the mess the season switch exists to prevent:
+    a farmer who registered the same plot again every June, and now has four
+    copies of one field. Closing a season keeps the row; this takes it away.
+
+    It is a real delete, in one transaction and in dependency order, because a
+    farm that is merely hidden still turns up in a district sweep and still
+    counts in an officer's totals. An expert case open on this field goes with
+    it — the farmer has withdrawn the field, so there is nothing left to
+    confirm.
+    """
+    pids = list(db.scalars(select(Problem.id).where(Problem.farm_id == farm.id)))
+    cids = list(db.scalars(select(Case.id).where(Case.problem_id.in_(pids)))) if pids else []
+
+    # Confirmations point at both a case and a problem, so they go first.
+    if cids:
+        db.execute(sql_delete(Confirmation).where(Confirmation.case_id.in_(cids)))
+    if pids:
+        db.execute(sql_delete(Confirmation).where(Confirmation.problem_id.in_(pids)))
+    # Alerts carry a case id, so they clear before the cases do.
+    db.execute(sql_delete(Alert).where(Alert.farm_id == farm.id))
+    if pids:
+        for model in (Diagnosis, Observation, Advisory, FollowUp):
+            db.execute(sql_delete(model).where(model.problem_id.in_(pids)))
+        db.execute(sql_delete(Case).where(Case.problem_id.in_(pids)))
+    db.execute(sql_delete(Problem).where(Problem.farm_id == farm.id))
+    for model in (Season, TrapReading, SensorReading, LiveScan, Notice,
+                  PushSubscription, SprayLog, EmailLog):
+        db.execute(sql_delete(model).where(model.farm_id == farm.id))
+    db.delete(farm)
+    db.commit()
 
 
 def alert_view(kb: KB, a: Alert, lang: str) -> dict:
