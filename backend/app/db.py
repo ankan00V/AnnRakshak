@@ -81,6 +81,20 @@ ADDED_COLUMNS = {
 # Columns that outgrew their original width. create_all() never alters an
 # existing column, and SQLite does not enforce a VARCHAR length at all, so a
 # column too narrow for real data fails only against Postgres, in production.
+ADDED_INDEXES = {
+    # name -> (table, column). The name is the one SQLAlchemy gives an
+    # index=True column, so a database created fresh and one migrated here end
+    # up identical.
+    #
+    # farm.user_id: every farm list and every ownership check starts with
+    # "whose is it".
+    # diagnosis.image_path: /media/{name} finds the farm behind a photograph
+    # by this column, on every image the app shows — without the index that is
+    # a scan of every diagnosis ever made, per image.
+    "ix_farm_user_id": ("farm", "user_id"),
+    "ix_diagnosis_image_path": ("diagnosis", "image_path"),
+}
+
 WIDENED_COLUMNS = {
     "diagnosis": {"model_version": 255, "gate_reason": 80},
     "live_scan": {"model_version": 255},
@@ -109,6 +123,26 @@ def _widen_columns(eng, insp) -> None:
                     conn.execute(text(f'ALTER TABLE "{table}" ALTER COLUMN {col} TYPE VARCHAR({want})'))
 
 
+def _add_indexes(eng, insp) -> None:
+    """Create the indexes a table gained after it was first created.
+
+    create_all() builds a table's indexes with the table. A column that grew an
+    index later — because the query that reads it turned out to be on a hot
+    path — does not get one on a database that already exists, and nothing
+    says so: it stays correct and gets slower. CREATE INDEX IF NOT EXISTS is
+    understood by both SQLite and Postgres, so this is the same one line for
+    either."""
+    from sqlalchemy import text  # noqa: PLC0415
+
+    with eng.begin() as conn:
+        for name, (table, col) in ADDED_INDEXES.items():
+            if table not in insp.get_table_names():
+                continue
+            if any(ix["name"] == name for ix in insp.get_indexes(table)):
+                continue
+            conn.execute(text(f'CREATE INDEX IF NOT EXISTS {name} ON "{table}" ({col})'))
+
+
 def init_db(bind=None) -> None:
     from sqlalchemy import inspect, text  # noqa: PLC0415
 
@@ -127,6 +161,7 @@ def init_db(bind=None) -> None:
                     # `case` is a reserved SQL keyword; quote the table name.
                     conn.execute(text(f"ALTER TABLE \"{table}\" ADD COLUMN {col} {typ}"))
     _widen_columns(eng, insp)
+    _add_indexes(eng, insp)
     _backfill_expert_ranks(eng)
 
 

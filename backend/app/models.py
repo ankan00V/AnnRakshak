@@ -194,7 +194,7 @@ class Farm(Base):
     """Which emails: 'warnings' (right away) + daily summary, 'all', 'digest' (summary only) or 'off'."""
     email_token: Mapped[str | None] = mapped_column(String(40))
     agro_polygon_id: Mapped[str | None] = mapped_column(String(40))
-    user_id: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"), index=True)
     """The farmer who owns this farm; None for seeded demo farms."""
     irrigation: Mapped[str | None] = mapped_column(String(20))
     """rainfed | canal | borewell | open_well | farm_pond | drip | sprinkler"""
@@ -272,7 +272,8 @@ class Diagnosis(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     problem_id: Mapped[int] = mapped_column(ForeignKey("problem.id"))
-    image_path: Mapped[str | None] = mapped_column(String(255))
+    image_path: Mapped[str | None] = mapped_column(String(255), index=True)
+    """Indexed: /media/{name} looks a photograph up by it on every image shown."""
     topk: Mapped[list] = mapped_column(JSON)
     gate_outcome: Mapped[str] = mapped_column(String(10))
     gate_reason: Mapped[str] = mapped_column(String(REASON_LEN))

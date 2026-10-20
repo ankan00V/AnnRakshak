@@ -173,3 +173,32 @@ def test_columns_sized_exactly_to_their_contents_are_ones_that_cannot_grow():
     }
     for (table, column), expected in fixed.items():
         assert width(table, column) == expected, f"{table}.{column} changed size; is it still fixed-length?"
+
+
+def test_a_column_that_grew_an_index_gets_one_on_a_database_that_already_exists():
+    """create_all() builds a table's indexes with the table, and nothing after.
+
+    A column that earns an index later — because the query reading it turned
+    out to be on a hot path — would get one only on a database created after
+    the change. An older one stays correct and quietly gets slower, which is
+    the kind of thing nobody finds until the row count does it for them."""
+    from sqlalchemy import inspect, text
+
+    from app.db import ADDED_INDEXES, Base, engine, init_db
+
+    Base.metadata.drop_all(bind=engine)
+    init_db()
+    with engine.begin() as conn:  # an older database: the indexes were never made
+        for name in ADDED_INDEXES:
+            conn.execute(text(f"DROP INDEX {name}"))
+    insp = inspect(engine)
+    for name, (table, _) in ADDED_INDEXES.items():
+        assert not any(ix["name"] == name for ix in insp.get_indexes(table))
+
+    init_db()  # the upgrade
+
+    insp = inspect(engine)
+    for name, (table, column) in ADDED_INDEXES.items():
+        found = [ix for ix in insp.get_indexes(table) if ix["name"] == name]
+        assert found, f"{name} was not created on {table}"
+        assert found[0]["column_names"] == [column]
