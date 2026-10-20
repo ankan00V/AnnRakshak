@@ -1101,3 +1101,40 @@ def test_a_stranger_cannot_silence_a_farmers_phone(client, mail):
     assert client.post("/api/push/unsubscribe", json={"endpoint": endpoint}).status_code == 200
     with SessionLocal() as db:
         assert db.query(PushSubscription).count() == 0
+
+
+def test_spent_codes_and_finished_sessions_are_forgotten(client, mail):
+    """Neither table was ever pruned. A challenge row holds the address its
+    code was sent to — including for people who never finished signing up —
+    and one is written for every code ever asked for."""
+    from datetime import datetime as dt
+
+    from app import auth as auth_mod
+
+    farmer_signup(client, mail)
+    with SessionLocal() as db:
+        # Three codes nobody will ever use again, and a session that ended.
+        for i, dest in enumerate(["someone@example.com", "9876500010", "walked.away@example.com"]):
+            db.add(OtpChallenge(public_id=f"old-{i}", channel="email", destination=dest, purpose="signup",
+                                role="farmer", code_hash="x" * 64, salt="s" * 32,
+                                created_at=dt(2026, 1, 1), expires_at=dt(2026, 1, 1)))
+        dead = db.scalar(select(UserSession))
+        dead.expires_at = dt(2026, 1, 1)
+        db.commit()
+        assert db.query(OtpChallenge).count() >= 4
+
+    with SessionLocal() as db:
+        out = auth_mod.forget_spent_codes_and_dead_sessions(db)
+    assert out["codes_forgotten"] >= 3 and out["sessions_forgotten"] == 1
+    with SessionLocal() as db:
+        left = db.scalars(select(OtpChallenge.destination)).all()
+        assert "walked.away@example.com" not in left, "an address nobody needs is not kept"
+        assert db.query(UserSession).count() == 0
+
+    # A code still inside its five minutes, and a live session, are untouched.
+    farmer_signup(client, mail, phone="9876500011", email="fresh@example.com")
+    with SessionLocal() as db:
+        before = (db.query(OtpChallenge).count(), db.query(UserSession).count())
+        assert auth_mod.forget_spent_codes_and_dead_sessions(db) == {"codes_forgotten": 0,
+                                                                    "sessions_forgotten": 0}
+        assert (db.query(OtpChallenge).count(), db.query(UserSession).count()) == before

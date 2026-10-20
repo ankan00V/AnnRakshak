@@ -23,7 +23,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app import cache, notify, services
+from app import auth, cache, notify, services
 from app.config import DIGEST_HOUR, WATCH_MINUTES
 from app.db import SessionLocal
 from app.engine import agromet, agroweather, satellite
@@ -151,6 +151,15 @@ def cycle(db: Session | None = None, kb: KB | None = None, now: datetime | None 
                 db.rollback()
                 stats["errors"] += 1
                 log.exception("watch: case sweep (demo=%s) failed", demo)
+
+        # Spent one-time codes and finished sessions. Neither table was ever
+        # pruned, and the codes hold the address each one was sent to.
+        try:
+            stats.update(auth.forget_spent_codes_and_dead_sessions(db, now))
+        except Exception:  # noqa: BLE001  housekeeping must not stop the weather
+            db.rollback()
+            stats["errors"] += 1
+            log.exception("watch: retention sweep failed")
     finally:
         if own:
             db.close()
