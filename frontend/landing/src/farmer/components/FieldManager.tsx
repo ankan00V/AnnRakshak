@@ -47,6 +47,9 @@ function Row({ farm, crops, onChange }: { farm: Farm; crops: CropInfo[] | null; 
   const [crop, setCrop] = useState(farm.crop)
   const [sown, setSown] = useState(() => new Date().toISOString().slice(0, 10))
   const fallow = farm.status === 'fallow'
+  // Past its crop's season and still open: the clock has already stopped, so
+  // the row asks for the one thing only the farmer knows — the date.
+  const over = !fallow && farm.season_over === true
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true)
@@ -67,13 +70,16 @@ function Row({ farm, crops, onChange }: { farm: Farm; crops: CropInfo[] | null; 
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="flex items-center gap-2 text-[15px] font-medium leading-snug">
-            <span aria-hidden className={`w-1.5 h-1.5 rounded-full shrink-0 ${fallow ? 'bg-soil-dark/25' : 'bg-leaf'}`} />
+            <span aria-hidden className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+            fallow ? 'bg-soil-dark/25' : over ? 'bg-ochre' : 'bg-leaf'}`} />
             <span className="min-w-0">{farm.crop_name}</span>
           </p>
           <p className="mt-0.5 pl-[14px] text-[12px] leading-snug text-soil-dark/55">
             {farm.village || farm.district}
             {' · '}
-            {fallow ? t('seasonRestingShort') : `${farm.das} ${t('daysOld')} · ${farm.stage_name}`}
+            {fallow ? t('seasonRestingShort')
+              : over ? t('profileSeasonOver')
+              : `${farm.das} ${t('daysOld')} · ${farm.stage_name}`}
             {!!farm.seasons && ` · ${t('seasonCount').replace('{n}', String(farm.seasons))}`}
           </p>
         </div>
@@ -89,7 +95,9 @@ function Row({ farm, crops, onChange }: { farm: Farm; crops: CropInfo[] | null; 
         <div className="mt-2.5 pl-[14px] flex flex-wrap items-center gap-2">
           <button onClick={() => setMode(fallow ? 'on' : 'off')}
             className={`min-h-[36px] px-3.5 rounded-full text-[13px] font-medium flex items-center gap-1.5 transition-colors ${
-              fallow ? 'bg-leaf-deep text-cream' : 'border border-soil-dark/20 text-soil-dark/75 hover:bg-soil-dark/[0.04]'}`}>
+              fallow ? 'bg-leaf-deep text-cream'
+              : over ? 'bg-ochre text-cream'
+              : 'border border-soil-dark/20 text-soil-dark/75 hover:bg-soil-dark/[0.04]'}`}>
             {fallow ? <Sprout className="w-3.5 h-3.5" /> : <Wheat className="w-3.5 h-3.5" />}
             {fallow ? t('profileFieldOn') : t('profileFieldOff')}
           </button>

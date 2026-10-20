@@ -818,6 +818,40 @@ def test_a_harvested_field_stops_counting_days(client):
     assert client.get("/api/farms/1").json()["das"] == 0
 
 
+def test_a_field_nobody_closes_stops_at_the_end_of_its_season(client):
+    """The half a button cannot fix. A farmer who never presses anything had a
+    field gaining a day every morning for ever: sown in June, and by the next
+    summer "380 days old" and still reading a maturity stage off bare ground,
+    with the risk engine still scoring blast on it.
+
+    Nothing here is pressed. The clock stops at the crop's own season end, the
+    engine stops with it, and the field says it wants closing."""
+    with SessionLocal() as db:
+        farm = db.get(Farm, 1)
+        farm.sowing_date = date.today() - timedelta(days=380)
+        farm.date_basis = "sown"
+        db.commit()
+
+    f = client.get("/api/farms/1").json()
+    end = kb_for_tests().season_ends("rice")
+    assert f["status"] == "growing", "nothing was closed; this is the untouched case"
+    assert f["das"] == end, f"days ran past the season to {f['das']}"
+    assert f["season_over"] is True
+
+    with SessionLocal() as db:
+        out = services.run_risk(db, kb_for_tests(), db.get(Farm, 1))
+    assert out["issued"] == [] and out["why"] == "season is over"
+
+
+def test_a_season_end_is_well_past_the_usual_harvest(client):
+    """A standing crop must never be cut off early. Every crop's season end
+    sits past the day its last stage begins, with room for a late or staggered
+    picking — cotton is picked over months."""
+    kb = kb_for_tests()
+    for crop, c in kb.crops.items():
+        assert kb.season_ends(crop) > c["stages"][-1]["das"][0], crop
+
+
 def test_a_farmer_can_delete_a_field_and_its_history(client):
     """The escape hatch for the copies a farmer made before they knew about
     sowing again. It takes the field's own rows with it and leaves every other

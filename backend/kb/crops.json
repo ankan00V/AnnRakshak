@@ -1,336 +1,344 @@
 {
- "_note": "Growth stages by days after sowing. Windows are typical for medium-duration kharif varieties in Maharashtra; a farm's stage is derived on read from its sowing date, never stored. Rice is the one transplanted crop here: its stages are counted from the nursery sowing date, so a farm that gave its transplanting date instead (farm.date_basis == 'transplanted') has nursery_days added back before the stage is read. Asking which date it is costs one tap at sign-up and is worth it: the two are three weeks apart, which is a whole stage, and every risk rule and spray window is keyed to the stage. nursery_days is 21 for medium-duration kharif rice in Maharashtra (ICAR guidance 21-25 days). It is regional, not universal, so nursery_days_by_state overrides it where we have been shown otherwise: 319 paddy plots in the SICKLE dataset (Cauvery delta, both sowing and transplanting dates recorded) put the nursery at a median of 31 days, quartiles 31/31/33, and that holds across all five of its seasons even though season length swings from 111 days to 158 — samba there is transplanted with older seedlings. A state not listed gets the 21-day default. Their whole seasons ran 104 to 190 days, which the maturity window here (from day 126) sits inside.",
- "rice": {
-  "names": {
-   "en": "Rice (paddy)",
-   "hi": "धान",
-   "mr": "भात"
+  "_note": "Growth stages by days after sowing. Windows are typical for medium-duration kharif varieties in Maharashtra; a farm's stage is derived on read from its sowing date, never stored. Rice is the one transplanted crop here: its stages are counted from the nursery sowing date, so a farm that gave its transplanting date instead (farm.date_basis == 'transplanted') has nursery_days added back before the stage is read. Asking which date it is costs one tap at sign-up and is worth it: the two are three weeks apart, which is a whole stage, and every risk rule and spray window is keyed to the stage. nursery_days is 21 for medium-duration kharif rice in Maharashtra (ICAR guidance 21-25 days). It is regional, not universal, so nursery_days_by_state overrides it where we have been shown otherwise: 319 paddy plots in the SICKLE dataset (Cauvery delta, both sowing and transplanting dates recorded) put the nursery at a median of 31 days, quartiles 31/31/33, and that holds across all five of its seasons even though season length swings from 111 days to 158 — samba there is transplanted with older seedlings. A state not listed gets the 21-day default. Their whole seasons ran 104 to 190 days, which the maturity window here (from day 126) sits inside. season_ends_das is the day a standing crop is taken to be finished when nobody has said so: the days after sowing stop there, the risk engine stops scoring it, and the field asks to be closed. The last stage's own upper bound is an open sentinel (400) and was never a season end.",
+  "rice": {
+    "names": {
+      "en": "Rice (paddy)",
+      "hi": "धान",
+      "mr": "भात"
+    },
+    "photo_diagnosis": true,
+    "stages": [
+      {
+        "key": "nursery",
+        "das": [
+          0,
+          25
+        ],
+        "names": {
+          "en": "Nursery",
+          "hi": "नर्सरी",
+          "mr": "रोपवाटिका"
+        }
+      },
+      {
+        "key": "tillering",
+        "das": [
+          26,
+          55
+        ],
+        "names": {
+          "en": "Tillering",
+          "hi": "कल्ले निकलना",
+          "mr": "फुटवे"
+        }
+      },
+      {
+        "key": "panicle_initiation",
+        "das": [
+          56,
+          75
+        ],
+        "names": {
+          "en": "Panicle initiation",
+          "hi": "बाली बनना",
+          "mr": "लोंबी येणे"
+        }
+      },
+      {
+        "key": "flowering",
+        "das": [
+          76,
+          95
+        ],
+        "names": {
+          "en": "Flowering",
+          "hi": "फूल आना",
+          "mr": "फुलोरा"
+        }
+      },
+      {
+        "key": "grain_filling",
+        "das": [
+          96,
+          125
+        ],
+        "names": {
+          "en": "Grain filling",
+          "hi": "दाना भरना",
+          "mr": "दाणे भरणे"
+        }
+      },
+      {
+        "key": "maturity",
+        "das": [
+          126,
+          400
+        ],
+        "names": {
+          "en": "Maturity",
+          "hi": "पकना",
+          "mr": "पक्वता"
+        }
+      }
+    ],
+    "nursery_days": 21,
+    "nursery_days_by_state": {
+      "Tamil Nadu": 31,
+      "Puducherry": 31
+    },
+    "season_ends_das": 160,
+    "season_ends_note": "medium-duration kharif paddy is cut about 125-150 days from nursery sowing; 160 leaves room for a late variety"
   },
-  "photo_diagnosis": true,
-  "stages": [
-   {
-    "key": "nursery",
-    "das": [
-     0,
-     25
-    ],
+  "maize": {
     "names": {
-     "en": "Nursery",
-     "hi": "नर्सरी",
-     "mr": "रोपवाटिका"
-    }
-   },
-   {
-    "key": "tillering",
-    "das": [
-     26,
-     55
-    ],
+      "en": "Maize",
+      "hi": "मक्का",
+      "mr": "मका"
+    },
+    "photo_diagnosis": true,
+    "season_ends_das": 140,
+    "season_ends_note": "grain maize is harvested about 110-130 DAS; 140 leaves room for a late crop",
+    "stages": [
+      {
+        "key": "seedling",
+        "das": [
+          0,
+          15
+        ],
+        "names": {
+          "en": "Seedling",
+          "hi": "अंकुर",
+          "mr": "रोप"
+        }
+      },
+      {
+        "key": "whorl",
+        "das": [
+          16,
+          45
+        ],
+        "names": {
+          "en": "Whorl (knee-high)",
+          "hi": "गोभ अवस्था",
+          "mr": "पोंगा अवस्था"
+        }
+      },
+      {
+        "key": "tasseling",
+        "das": [
+          46,
+          60
+        ],
+        "names": {
+          "en": "Tasseling",
+          "hi": "नर मंजरी",
+          "mr": "तुरा येणे"
+        }
+      },
+      {
+        "key": "silking",
+        "das": [
+          61,
+          75
+        ],
+        "names": {
+          "en": "Silking",
+          "hi": "भुट्टा रेशा",
+          "mr": "स्त्रीकेसर"
+        }
+      },
+      {
+        "key": "grain_filling",
+        "das": [
+          76,
+          105
+        ],
+        "names": {
+          "en": "Grain filling",
+          "hi": "दाना भरना",
+          "mr": "दाणे भरणे"
+        }
+      },
+      {
+        "key": "maturity",
+        "das": [
+          106,
+          400
+        ],
+        "names": {
+          "en": "Maturity",
+          "hi": "पकना",
+          "mr": "पक्वता"
+        }
+      }
+    ]
+  },
+  "cotton": {
     "names": {
-     "en": "Tillering",
-     "hi": "कल्ले निकलना",
-     "mr": "फुटवे"
-    }
-   },
-   {
-    "key": "panicle_initiation",
-    "das": [
-     56,
-     75
-    ],
+      "en": "Cotton",
+      "hi": "कपास",
+      "mr": "कापूस"
+    },
+    "photo_diagnosis": true,
+    "season_ends_das": 240,
+    "season_ends_note": "pickings run from boll opening into the cold weather, commonly to 210-240 DAS",
+    "stages": [
+      {
+        "key": "emergence",
+        "das": [
+          0,
+          20
+        ],
+        "names": {
+          "en": "Emergence",
+          "hi": "अंकुरण",
+          "mr": "उगवण"
+        }
+      },
+      {
+        "key": "vegetative",
+        "das": [
+          21,
+          50
+        ],
+        "names": {
+          "en": "Vegetative",
+          "hi": "वानस्पतिक वृद्धि",
+          "mr": "शाखीय वाढ"
+        }
+      },
+      {
+        "key": "squaring",
+        "das": [
+          51,
+          70
+        ],
+        "names": {
+          "en": "Squaring",
+          "hi": "पुड़ी बनना",
+          "mr": "पाते लागणे"
+        }
+      },
+      {
+        "key": "flowering",
+        "das": [
+          71,
+          100
+        ],
+        "names": {
+          "en": "Flowering",
+          "hi": "फूल आना",
+          "mr": "फुलोरा"
+        }
+      },
+      {
+        "key": "boll_development",
+        "das": [
+          101,
+          150
+        ],
+        "names": {
+          "en": "Boll development",
+          "hi": "टिंडा बनना",
+          "mr": "बोंड वाढ"
+        }
+      },
+      {
+        "key": "boll_opening",
+        "das": [
+          151,
+          400
+        ],
+        "names": {
+          "en": "Boll opening",
+          "hi": "टिंडा खुलना",
+          "mr": "बोंड फुटणे"
+        }
+      }
+    ]
+  },
+  "soybean": {
     "names": {
-     "en": "Panicle initiation",
-     "hi": "बाली बनना",
-     "mr": "लोंबी येणे"
-    }
-   },
-   {
-    "key": "flowering",
-    "das": [
-     76,
-     95
-    ],
-    "names": {
-     "en": "Flowering",
-     "hi": "फूल आना",
-     "mr": "फुलोरा"
-    }
-   },
-   {
-    "key": "grain_filling",
-    "das": [
-     96,
-     125
-    ],
-    "names": {
-     "en": "Grain filling",
-     "hi": "दाना भरना",
-     "mr": "दाणे भरणे"
-    }
-   },
-   {
-    "key": "maturity",
-    "das": [
-     126,
-     400
-    ],
-    "names": {
-     "en": "Maturity",
-     "hi": "पकना",
-     "mr": "पक्वता"
-    }
-   }
-  ],
-  "nursery_days": 21,
-  "nursery_days_by_state": {
-   "Tamil Nadu": 31,
-   "Puducherry": 31
+      "en": "Soybean",
+      "hi": "सोयाबीन",
+      "mr": "सोयाबीन"
+    },
+    "photo_diagnosis": true,
+    "season_ends_das": 130,
+    "season_ends_note": "harvested about 95-120 DAS; 130 leaves room for a late crop",
+    "stages": [
+      {
+        "key": "emergence",
+        "das": [
+          0,
+          15
+        ],
+        "names": {
+          "en": "Emergence",
+          "hi": "अंकुरण",
+          "mr": "उगवण"
+        }
+      },
+      {
+        "key": "vegetative",
+        "das": [
+          16,
+          40
+        ],
+        "names": {
+          "en": "Vegetative",
+          "hi": "वानस्पतिक वृद्धि",
+          "mr": "शाखीय वाढ"
+        }
+      },
+      {
+        "key": "flowering",
+        "das": [
+          41,
+          60
+        ],
+        "names": {
+          "en": "Flowering",
+          "hi": "फूल आना",
+          "mr": "फुलोरा"
+        }
+      },
+      {
+        "key": "pod_formation",
+        "das": [
+          61,
+          80
+        ],
+        "names": {
+          "en": "Pod formation",
+          "hi": "फली बनना",
+          "mr": "शेंगा लागणे"
+        }
+      },
+      {
+        "key": "pod_filling",
+        "das": [
+          81,
+          100
+        ],
+        "names": {
+          "en": "Pod filling",
+          "hi": "दाना भरना",
+          "mr": "दाणे भरणे"
+        }
+      },
+      {
+        "key": "maturity",
+        "das": [
+          101,
+          400
+        ],
+        "names": {
+          "en": "Maturity",
+          "hi": "पकना",
+          "mr": "पक्वता"
+        }
+      }
+    ]
   }
- },
- "maize": {
-  "names": {
-   "en": "Maize",
-   "hi": "मक्का",
-   "mr": "मका"
-  },
-  "photo_diagnosis": true,
-  "stages": [
-   {
-    "key": "seedling",
-    "das": [
-     0,
-     15
-    ],
-    "names": {
-     "en": "Seedling",
-     "hi": "अंकुर",
-     "mr": "रोप"
-    }
-   },
-   {
-    "key": "whorl",
-    "das": [
-     16,
-     45
-    ],
-    "names": {
-     "en": "Whorl (knee-high)",
-     "hi": "गोभ अवस्था",
-     "mr": "पोंगा अवस्था"
-    }
-   },
-   {
-    "key": "tasseling",
-    "das": [
-     46,
-     60
-    ],
-    "names": {
-     "en": "Tasseling",
-     "hi": "नर मंजरी",
-     "mr": "तुरा येणे"
-    }
-   },
-   {
-    "key": "silking",
-    "das": [
-     61,
-     75
-    ],
-    "names": {
-     "en": "Silking",
-     "hi": "भुट्टा रेशा",
-     "mr": "स्त्रीकेसर"
-    }
-   },
-   {
-    "key": "grain_filling",
-    "das": [
-     76,
-     105
-    ],
-    "names": {
-     "en": "Grain filling",
-     "hi": "दाना भरना",
-     "mr": "दाणे भरणे"
-    }
-   },
-   {
-    "key": "maturity",
-    "das": [
-     106,
-     400
-    ],
-    "names": {
-     "en": "Maturity",
-     "hi": "पकना",
-     "mr": "पक्वता"
-    }
-   }
-  ]
- },
- "cotton": {
-  "names": {
-   "en": "Cotton",
-   "hi": "कपास",
-   "mr": "कापूस"
-  },
-  "photo_diagnosis": true,
-  "stages": [
-   {
-    "key": "emergence",
-    "das": [
-     0,
-     20
-    ],
-    "names": {
-     "en": "Emergence",
-     "hi": "अंकुरण",
-     "mr": "उगवण"
-    }
-   },
-   {
-    "key": "vegetative",
-    "das": [
-     21,
-     50
-    ],
-    "names": {
-     "en": "Vegetative",
-     "hi": "वानस्पतिक वृद्धि",
-     "mr": "शाखीय वाढ"
-    }
-   },
-   {
-    "key": "squaring",
-    "das": [
-     51,
-     70
-    ],
-    "names": {
-     "en": "Squaring",
-     "hi": "पुड़ी बनना",
-     "mr": "पाते लागणे"
-    }
-   },
-   {
-    "key": "flowering",
-    "das": [
-     71,
-     100
-    ],
-    "names": {
-     "en": "Flowering",
-     "hi": "फूल आना",
-     "mr": "फुलोरा"
-    }
-   },
-   {
-    "key": "boll_development",
-    "das": [
-     101,
-     150
-    ],
-    "names": {
-     "en": "Boll development",
-     "hi": "टिंडा बनना",
-     "mr": "बोंड वाढ"
-    }
-   },
-   {
-    "key": "boll_opening",
-    "das": [
-     151,
-     400
-    ],
-    "names": {
-     "en": "Boll opening",
-     "hi": "टिंडा खुलना",
-     "mr": "बोंड फुटणे"
-    }
-   }
-  ]
- },
- "soybean": {
-  "names": {
-   "en": "Soybean",
-   "hi": "सोयाबीन",
-   "mr": "सोयाबीन"
-  },
-  "photo_diagnosis": true,
-  "stages": [
-   {
-    "key": "emergence",
-    "das": [
-     0,
-     15
-    ],
-    "names": {
-     "en": "Emergence",
-     "hi": "अंकुरण",
-     "mr": "उगवण"
-    }
-   },
-   {
-    "key": "vegetative",
-    "das": [
-     16,
-     40
-    ],
-    "names": {
-     "en": "Vegetative",
-     "hi": "वानस्पतिक वृद्धि",
-     "mr": "शाखीय वाढ"
-    }
-   },
-   {
-    "key": "flowering",
-    "das": [
-     41,
-     60
-    ],
-    "names": {
-     "en": "Flowering",
-     "hi": "फूल आना",
-     "mr": "फुलोरा"
-    }
-   },
-   {
-    "key": "pod_formation",
-    "das": [
-     61,
-     80
-    ],
-    "names": {
-     "en": "Pod formation",
-     "hi": "फली बनना",
-     "mr": "शेंगा लागणे"
-    }
-   },
-   {
-    "key": "pod_filling",
-    "das": [
-     81,
-     100
-    ],
-    "names": {
-     "en": "Pod filling",
-     "hi": "दाना भरना",
-     "mr": "दाणे भरणे"
-    }
-   },
-   {
-    "key": "maturity",
-    "das": [
-     101,
-     400
-    ],
-    "names": {
-     "en": "Maturity",
-     "hi": "पकना",
-     "mr": "पक्वता"
-    }
-   }
-  ]
- }
 }

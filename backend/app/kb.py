@@ -121,6 +121,15 @@ class KB:
                 return s["key"], das
         return (stages[0]["key"] if das < 0 else stages[-1]["key"]), das
 
+    def season_ends(self, crop: str) -> int:
+        """The day a standing crop is taken to be finished when nobody says so.
+
+        Not the last stage's upper bound: that is an open sentinel (400) meant
+        to catch anything past maturity, so reading a season end off it meant a
+        field was only ever flagged after more than a year — by which time it
+        had been gaining a day every morning the whole time."""
+        return int(self.crops[crop]["season_ends_das"])
+
     def stage_name(self, crop: str, key: str, lang: str) -> str:
         for s in self.crops[crop]["stages"]:
             if s["key"] == key:

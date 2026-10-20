@@ -162,13 +162,35 @@ def msg(code: str, lang: str) -> str:
 # --------------------------------------------------------------------------
 
 
+def _season_over(kb: KB, farm: Farm, today: date | None = None) -> tuple[bool, int]:
+    """Whether a standing crop is past its season, and the day its clock stops.
+
+    The season end is authored per crop in the knowledge base and sits well
+    past the usual harvest, so a late or staggered picking is never cut off
+    early. Before this the check read the last stage's upper bound, which is an
+    open sentinel of 400 days: a field was flagged only after more than a year,
+    and counted upward the whole time.
+    """
+    end = kb.season_ends(farm.crop)
+    if farm.status != "growing":
+        return False, end
+    _, das = kb.stage_of(farm, today)
+    return das > end, end
+
+
 def farm_view(kb: KB, farm: Farm, lang: str, today: date | None = None) -> dict:
-    # A harvested field's days stop at the harvest. Counting them to today is
-    # how a rice plot that came off in November ends up "260 days old and
-    # maturing" the following spring: the number keeps moving long after the
-    # crop it describes is gone, and every stage read off it is wrong.
+    # Days after sowing stop twice over, and neither needs anyone's permission.
+    #
+    # A harvested field stops at its harvest. A field nobody has closed stops
+    # at the end of its crop's season, because the alternative is what this
+    # fixes: a rice plot sown in June gaining a day every morning for ever, so
+    # that by the spring the app calls it 260 days old and reads a maturing
+    # stage off bare ground. A farmer who never presses anything still gets a
+    # number that means something.
+    over, das_cap = _season_over(kb, farm, today)
     asof = farm.harvested_on if farm.status == "fallow" and farm.harvested_on else today
     stage, das = kb.stage_of(farm, asof)
+    das = min(das, das_cap)
     return {
         "id": farm.id,
         "farmer_name": farm.farmer_name,
@@ -192,11 +214,10 @@ def farm_view(kb: KB, farm: Farm, lang: str, today: date | None = None) -> dict:
         "is_demo": farm.is_demo,
         "status": farm.status,
         "harvested_on": farm.harvested_on.isoformat() if farm.harvested_on else None,
-        # Past the last stage the crop calendar knows, the days after sowing go
-        # on counting and mean nothing. Saying so is how a farmer is asked to
-        # close the season instead of being left with a field that is 300 days
-        # old and still "maturing".
-        "season_over": farm.status == "growing" and das > kb.crops[farm.crop]["stages"][-1]["das"][1],
+        # Past its crop's season, the days mean nothing. Saying so is how a
+        # farmer is asked to close the field instead of being left with one
+        # that is 300 days old and still "maturing".
+        "season_over": over,
         "seasons": db_seasons_count(farm),
     }
 
@@ -1214,6 +1235,12 @@ def run_risk(db: Session, kb: KB, farm: Farm, today: date | None = None, window=
     # Nothing is standing on a fallow field, so nothing can be at risk on it.
     if farm.status != "growing":
         return {"issued": [], "spread_alerts": 0, "scores": [], "why": "field is fallow"}
+    # Nor on one that is past its season and has not been closed. Warning a
+    # farmer about blast on a plot that was cut two months ago is the "without
+    # proper prediction" half of the same bug: the field asks to be closed
+    # instead.
+    if _season_over(kb, farm, today)[0]:
+        return {"issued": [], "spread_alerts": 0, "scores": [], "why": "season is over"}
     if window is ...:
         window = weather_for(db, farm)
     scores = risk_scores(db, kb, farm, today, window, satellite=satellite)
