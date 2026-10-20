@@ -163,6 +163,11 @@ def create_farm(body: FarmIn, request: Request, db: Session = Depends(get_db), k
     if user is not None:  # the account's contact details reach this field's alerts too
         farm.phone = farm.phone or user.phone
         farm.email = user.email
+        # Everything an officer sees is split on this flag — the queue, the
+        # hotspots, the summary, the indent. A field added from the shared
+        # demo account took the column's default and landed on the real side,
+        # which put a made-up farm into a district office's actual workload.
+        farm.is_demo = user.is_demo
     db.add(farm)
     db.commit()
     return services.farm_view(kb, farm, body.lang)

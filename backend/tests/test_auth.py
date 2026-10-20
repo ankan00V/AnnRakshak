@@ -1143,3 +1143,31 @@ def test_spent_codes_and_finished_sessions_are_forgotten(client, mail):
         assert auth_mod.forget_spent_codes_and_dead_sessions(db) == {"codes_forgotten": 0,
                                                                     "sessions_forgotten": 0}
         assert (db.query(OtpChallenge).count(), db.query(UserSession).count()) == before
+
+
+def test_a_field_added_from_the_demo_stays_on_the_demo_side(client):
+    """Everything an officer sees is split on Farm.is_demo — the queue, the
+    hotspots, the summary, the indent. A farm created while signed in as the
+    demo farmer took the column's default, which is False, so a judge pressing
+    "Add another field" put a made-up farm into a real district office's
+    workload."""
+    assert client.post("/api/auth/demo", json={"role": "farmer"}).status_code == 200
+    r = client.post("/api/farms", json={"farmer_name": "Judge Test", "crop": "rice",
+                                        "sowing_date": SOWN, "district": "Bhandara",
+                                        "lat": 21.17, "lon": 79.65, "area_acres": 1, "lang": "en"})
+    assert r.status_code == 201, r.text
+    with SessionLocal() as db:
+        farm = db.get(Farm, r.json()["id"])
+        assert farm.is_demo is True, "a demo account's farm is a demo farm"
+
+
+def test_a_real_farmers_field_is_a_real_one(client, mail):
+    """The other half of the same rule: a farmer who signed up adds fields that
+    an officer is meant to see."""
+    farmer_signup(client, mail)
+    r = client.post("/api/farms", json={"farmer_name": "Ramesh Patil", "crop": "cotton",
+                                        "sowing_date": SOWN, "district": "Yavatmal",
+                                        "lat": 20.39, "lon": 78.12, "area_acres": 3, "lang": "mr"})
+    assert r.status_code == 201, r.text
+    with SessionLocal() as db:
+        assert db.get(Farm, r.json()["id"]).is_demo is False

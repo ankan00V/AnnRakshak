@@ -39,6 +39,7 @@ const en = {
 
   welcome: 'Namaste! Which field are we protecting today?',
   welcomeSub: 'Pick your farm, or register a new one. Your location lets us warn you about weather and nearby outbreaks.',
+  welcomeSubDemo: 'Pick a field to look around. These four are the demo — create an account to protect your own.',
   registerFarm: 'Register a new farm',
   farmerName: 'Your name',
   crop: 'Crop',
@@ -632,6 +633,7 @@ const hi: Partial<Record<Key, string>> = {
   demoFarm: 'डेमो खेत',
   welcome: 'नमस्ते! आज किस खेत की रक्षा करें?',
   welcomeSub: 'अपना खेत चुनें या नया दर्ज करें। स्थान से हम मौसम और आसपास के प्रकोप की चेतावनी दे पाते हैं।',
+  welcomeSubDemo: 'देखने के लिए कोई खेत चुनें। ये चार डेमो खेत हैं — अपना खेत जोड़ने के लिए खाता बनाएँ।',
   registerFarm: 'नया खेत दर्ज करें',
   farmerName: 'आपका नाम',
   crop: 'फसल',
@@ -1218,6 +1220,7 @@ const mr: Partial<Record<Key, string>> = {
   demoFarm: 'डेमो शेत',
   welcome: 'नमस्कार! आज कोणत्या शेताचे रक्षण करूया?',
   welcomeSub: 'तुमचे शेत निवडा किंवा नवीन नोंदवा. स्थानामुळे आम्ही हवामान व जवळच्या प्रादुर्भावाची सूचना देऊ शकतो.',
+  welcomeSubDemo: 'पाहण्यासाठी एखादे शेत निवडा. ही चार डेमो शेते आहेत — स्वतःचे शेत जोडण्यासाठी खाते तयार करा.',
   registerFarm: 'नवीन शेत नोंदवा',
   farmerName: 'तुमचे नाव',
   crop: 'पीक',
