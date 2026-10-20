@@ -1093,6 +1093,11 @@ def test_a_stranger_cannot_silence_a_farmers_phone(client, mail):
 
     with TestClient(app) as stranger:  # nobody at all
         assert stranger.post("/api/push/unsubscribe", json={"endpoint": endpoint}).status_code == 401
+        # And an endpoint we hold nothing for gets the same answer, so the
+        # route is not an oracle for which endpoints are registered.
+        assert stranger.post("/api/push/unsubscribe",
+                             json={"endpoint": "https://fcm.googleapis.com/fcm/send/never-seen"}
+                             ).status_code == 401
         farmer_signup(stranger, mail, phone="9876500003", email="other2@example.com")
         assert stranger.post("/api/push/unsubscribe", json={"endpoint": endpoint}).status_code == 404
     with SessionLocal() as db:

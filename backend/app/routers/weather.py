@@ -212,7 +212,7 @@ def subscribe(farm_id: int, body: SubscriptionIn, request: Request, db: Session 
         # endpoint this caller somehow holds. Moving a subscription means the
         # alerts that phone gets change, so it is only moved by someone who
         # could already open the farm it is on.
-        _mine(db, s, request)
+        _mine(db, s, auth.signed_in(request, db) if config.AUTH_ENFORCE else None)
         s.farm_id, s.p256dh, s.auth, s.failures = farm.id, body.keys.p256dh, body.keys.auth, 0
     db.commit()
     return {"subscribed": True}
@@ -222,10 +222,9 @@ class EndpointIn(BaseModel):
     endpoint: str = Field(min_length=10, max_length=2000)
 
 
-def _mine(db: Session, sub: PushSubscription, request: Request) -> PushSubscription:
-    """The subscription, if the caller may act on the farm it belongs to."""
+def _mine(db: Session, sub: PushSubscription, me) -> PushSubscription:
+    """The subscription, if this person may act on the farm it belongs to."""
     farm = db.get(Farm, sub.farm_id)
-    me = auth.signed_in(request, db) if config.AUTH_ENFORCE else None
     if config.AUTH_ENFORCE and not (farm is not None and auth.can_open_farm(me, farm, db)):
         raise HTTPException(404, "not found")
     return sub
@@ -239,9 +238,12 @@ def unsubscribe(body: EndpointIn, request: Request, db: Session = Depends(get_db
     it; this route used to delete whatever row matched, for anyone who asked,
     signed in or not. Silencing somebody's weather warnings is not a thing a
     stranger gets to do."""
+    # Who is asking comes first. Looking the endpoint up before that would
+    # answer "is this one of ours" to anybody who sent a guess.
+    me = auth.signed_in(request, db) if config.AUTH_ENFORCE else None
     s = db.scalar(select(PushSubscription).where(PushSubscription.endpoint == body.endpoint))
     if s:
-        db.delete(_mine(db, s, request))
+        db.delete(_mine(db, s, me))
         db.commit()
     return {"subscribed": False}
 
