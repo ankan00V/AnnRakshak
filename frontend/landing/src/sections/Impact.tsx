@@ -1,5 +1,6 @@
 import { CheckCircle2, ClipboardCheck, Volume2 } from 'lucide-react'
 import Reveal from '../ui/Reveal'
+import FootageBackdrop from '../ui/FootageBackdrop'
 
 const FARMER_POINTS = [
   'Where to look, before the symptoms spread — from this field’s own weather and crop stage.',
@@ -29,8 +30,20 @@ function Points({ points, dot }: { points: string[]; dot: string }) {
 /** The alert as it reaches a Bhandara farmer: her language, her weather, two things to check. */
 function AlertVignette() {
   return (
-    <div className="mt-9 rounded-[1.75rem] bg-cream/[0.06] ring-1 ring-cream/10 p-3">
-      <div className="rounded-3xl bg-cream p-5 text-soil-dark shadow-xl shadow-black/20">
+    <div className="mt-9 rounded-[1.75rem] bg-cream/[0.06] ring-1 ring-cream/10 overflow-hidden">
+      {/* The field the alert is about, cropped to the part worth seeing: the
+          combine and the man standing in the cut paddy beside it. The card
+          overlaps it, so the band costs the column less than its own height
+          and nothing is ever read against moving grass. */}
+      <div className="relative h-[150px]">
+        <FootageBackdrop
+          src="/footage/field.mp4"
+          poster="/footage/field-poster.webp"
+          scrim={<div className="absolute inset-0 bg-gradient-to-b from-soil-dark/10 via-transparent to-soil-dark/85" />}
+        />
+      </div>
+      <div className="relative -mt-9 px-3 pb-3">
+      <div className="rounded-3xl bg-cream p-5 text-soil-dark shadow-xl shadow-black/30">
         <div className="flex items-center justify-between gap-3">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-ember/10 px-2.5 py-1 text-[11px] font-medium text-ember">
             जास्त धोका
@@ -59,10 +72,11 @@ function AlertVignette() {
           </ul>
         </div>
       </div>
-      <p className="px-2 pt-3 pb-1 text-[11px] text-cream/70">
-        A real alert: the rule is ICAR-IIRR’s, the weather is this farm’s, and it stays open until
-        she records what she found.
-      </p>
+        <p className="px-2 pt-3 text-[11px] text-cream/70">
+          A real alert: the rule is ICAR-IIRR’s, the weather is this farm’s, and it stays open until
+          she records what she found.
+        </p>
+      </div>
     </div>
   )
 }
