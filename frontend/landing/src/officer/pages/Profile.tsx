@@ -46,6 +46,12 @@ export default function Profile() {
   const toggle = (list: string[], set: (v: string[]) => void, id: string) =>
     set(list.includes(id) ? list.filter((x) => x !== id) : [...list, id])
 
+  // The record stores the department's id; the office's own name for it comes
+  // back with the sign-up options, and a slug is not what anybody calls their
+  // service.
+  const departmentName = (options.data?.departments ?? []).find((d) => d.id === p?.department)?.name
+    ?? p?.department
+
   const chip = (on: boolean) =>
     `rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${
       on ? 'bg-leaf-deep text-cream border-leaf-deep' : 'bg-white border-soil-dark/15 text-soil-dark/70'}`
@@ -135,7 +141,7 @@ export default function Profile() {
               <Fixed label="Name" value={me?.name} />
               <Fixed label="Post" value={p?.designation_name} />
               <Fixed label="Employee / staff ID" value={p?.employee_id} />
-              <Fixed label="Department" value={p?.department} />
+              <Fixed label="Department" value={departmentName} />
               <Fixed label="Reports to" value={[p?.reporting_name, p?.reporting_designation].filter(Boolean).join(' · ')} />
               <Fixed label="Sign-in email" value={me?.email} />
             </div>
