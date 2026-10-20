@@ -6,7 +6,7 @@
   "sarvam-translate:v1"
  ],
  "source": "en",
- "updated": "2026-10-19",
+ "updated": "2026-10-20",
  "strings": {
   "(includes readings from your field sensor)": "(ನಿಮ್ಮ ಕ್ಷೇತ್ರ ಸಂವೇದಕದಿಂದ ವಾಚನಗಳನ್ನು ಒಳಗೊಂಡಿದೆ)",
   "A Trichogramma strain bred to survive insecticide sprays, so egg parasitism continues in fields that are also sprayed.": "ಕೀಟನಾಶಕ ಸಿಂಪಡಣೆಯನ್ನು ತಡೆದುಕೊಳ್ಳಲು ತಳಿಯನ್ನು ಅಭಿವೃದ್ಧಿಪಡಿಸಲಾದ ಟ್ರೈಕೋಗ್ರಾಮಾದ ಒಂದು ತಳಿಯು, ಸಿಂಪಡಿಸಲಾಗುವ ಹೊಲಗಳಲ್ಲಿ ಮೊಟ್ಟೆಯ ಪರಾವಲಂಬಿತನವು ಮುಂದುವರಿಯುತ್ತದೆ.",
@@ -745,6 +745,7 @@
   "The code has expired. Ask for a new code.": "ಕೋಡ್ ಅವಧಿ ಮುಗಿದಿದೆ. ಹೊಸ ಕೋಡ್ಗಾಗಿ ಕೇಳಿ.",
   "The coloured patch shows which part of your photo the AI used to decide. If it sits on the spots or damage, the answer is based on the right thing. If it sits on soil or background, take a closer photo of the leaf.": "ಬಣ್ಣದ ಪ್ಯಾಚ್ ನಿಮ್ಮ ಫೋಟೋದ ಯಾವ ಭಾಗವನ್ನು AI ನಿರ್ಧರಿಸುತ್ತಿತ್ತು ಎಂಬುದನ್ನು ತೋರಿಸುತ್ತದೆ. ಅದು ತಾಣಗಳ ಮೇಲೆ ಕುಳಿತರೆ ಅಥವಾ ಹಾನಿಗೊಳಗಾಗಿದ್ದರೆ, ಉತ್ತರವು ಸರಿಯಾದ ವಿಷಯವನ್ನು ಆಧರಿಸಿದೆ. ಅದು ಮಣ್ಣಿನ ಮೇಲೆ ಅಥವಾ ಹಿನ್ನೆಲೆಯ ಮೇಲೆ ಕುಳಿತರೆ, ಎಲೆಯ ಹತ್ತಿರದ ಫೋಟೋವನ್ನು ತೆಗೆದುಕೊಳ್ಳಿ.",
   "The crop is maturing — irrigation is normally stopped now.": "ಬೆಳೆಯು ಪ್ರಬುದ್ಧವಾಗುತ್ತಿದೆ — ನೀರಾವರಿಯನ್ನು ಈಗ ಸಾಮಾನ್ಯವಾಗಿ ನಿಲ್ಲಿಸಲಾಗುತ್ತದೆ.",
+  "The district office adds a district to an officer's patch: {items}. You can drop one here.": "ಜಿಲ್ಲಾ ಕಚೇರಿಯು ಅಧಿಕಾರಿಯ ಪ್ಯಾಚ್ಗೆ ಜಿಲ್ಲೆಯನ್ನು ಸೇರಿಸುತ್ತದೆ: {items}. ನೀವು ಒಂದನ್ನು ಇಲ್ಲಿ ಬಿಡಬಹುದು.",
   "The district office has not verified your account yet, so no case can be opened.": "ಜಿಲ್ಲಾ ಕಚೇರಿಯು ನಿಮ್ಮ ಖಾತೆಯನ್ನು ಇನ್ನೂ ಪರಿಶೀಲಿಸಿಲ್ಲ, ಆದ್ದರಿಂದ ಯಾವುದೇ ಪ್ರಕರಣವನ್ನು ತೆರೆಯಲು ಸಾಧ್ಯವಿಲ್ಲ.",
   "The forecast shows these conditions continuing.": "ಮುನ್ಸೂಚನೆಯು ಈ ಪರಿಸ್ಥಿತಿಗಳು ಮುಂದುವರಿಯುವುದನ್ನು ತೋರಿಸುತ್ತದೆ.",
   "The model is trained on ICAR photos and field photos from Indian fields.": "ಈ ಮಾದರಿಯು ಭಾರತೀಯ ಕ್ಷೇತ್ರಗಳ ಐಸಿಎಆರ್ ಛಾಯಾಚಿತ್ರಗಳು ಮತ್ತು ಕ್ಷೇತ್ರ ಛಾಯಾಚಿತ್ರಗಳ ಮೇಲೆ ತರಬೇತಿ ಪಡೆದಿದೆ.",
