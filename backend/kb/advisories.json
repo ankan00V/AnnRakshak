@@ -532,7 +532,7 @@
   },
   "what_to_avoid": [
    {
-    "en": "Do not spray for white ears that are already visible — the larva has left; protect the next flush instead.",
+    "en": "Do not spray for white panicles that are already visible — the larva has left; protect the next flush instead.",
     "hi": "जो सफेद बालियाँ दिख चुकी हैं उन पर छिड़काव न करें — इल्ली निकल चुकी है।",
     "mr": "आधीच दिसणाऱ्या पांढऱ्या लोंब्यांसाठी फवारणी करू नका — अळी निघून गेलेली असते."
    }
@@ -577,7 +577,7 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if dead hearts exceed 10% or white ears appear across the field.",
+   "en": "Call an expert if dead hearts exceed 10% or white empty panicles appear across the field.",
    "hi": "मृत गोभ 10% से ज़्यादा हों या पूरे खेत में सफेद बालियाँ दिखें तो विशेषज्ञ को बुलाएँ।",
    "mr": "मेलेले गाभे 10% पेक्षा जास्त किंवा सगळीकडे पांढऱ्या लोंब्या दिसल्यास तज्ज्ञांना बोलवा."
   },
@@ -650,7 +650,7 @@
     "water_l_per_acre": 200,
     "verified": false,
     "timing": {
-     "en": "Alternative; acts on nymphs.",
+     "en": "Alternative; acts on the young hoppers.",
      "hi": "विकल्प; शिशुओं पर असर करता है।",
      "mr": "पर्याय; पिल्लांवर परिणाम करते."
     }
@@ -676,7 +676,7 @@
  },
  "maize_turcicum_leaf_blight": {
   "what_to_check": {
-   "en": "Check the lower leaves of 10 plants for long grey-green lesions; note if they reach the ear leaf.",
+   "en": "Check the lower leaves of 10 plants for long grey-green lesions; note if they reach the leaf beside the cob.",
    "hi": "10 पौधों की निचली पत्तियों पर लंबे धूसर-हरे धब्बे देखें; भुट्टे वाली पत्ती तक पहुँचे क्या।",
    "mr": "10 झाडांच्या खालच्या पानांवर लांब राखाडी-हिरवे चट्टे पाहा; कणसाच्या पानापर्यंत पोहोचले का ते नोंदवा."
   },
@@ -732,7 +732,7 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if lesions reach the ear leaf before grain filling.",
+   "en": "Call an expert if lesions reach the leaf beside the cob before grain filling.",
    "hi": "दाना भरने से पहले धब्बे भुट्टे वाली पत्ती तक पहुँचें तो विशेषज्ञ को बुलाएँ।",
    "mr": "दाणे भरण्यापूर्वी चट्टे कणसाच्या पानापर्यंत पोहोचले तर तज्ज्ञांना बोलवा."
   },
@@ -838,7 +838,7 @@
     "water_l_per_acre": 200,
     "verified": false,
     "timing": {
-     "en": "When pustules appear on the upper leaves before tasseling.",
+     "en": "When raised rust spots appear on the upper leaves before the top flower opens.",
      "hi": "नर मंजरी से पहले ऊपरी पत्तियों पर दाने दिखें तब।",
      "mr": "तुरा येण्यापूर्वी वरच्या पानांवर फोड दिसल्यास."
     }
@@ -858,7 +858,7 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if pustules cover the ear leaf.",
+   "en": "Call an expert if raised rust spots cover the leaf beside the cob.",
    "hi": "भुट्टे वाली पत्ती दानों से ढक जाए तो विशेषज्ञ को बुलाएँ।",
    "mr": "कणसाचे पान फोडांनी भरले तर तज्ज्ञांना बोलवा."
   },
@@ -920,7 +920,7 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if bands reach the ear or the ear husk rots.",
+   "en": "Call an expert if the bands reach the cob or the cover around it rots.",
    "hi": "पट्टियाँ भुट्टे तक पहुँचें या भुट्टे का छिलका सड़े तो विशेषज्ञ को बुलाएँ।",
    "mr": "पट्टे कणसापर्यंत पोहोचले किंवा कणसाचे आवरण कुजले तर तज्ज्ञांना बोलवा."
   },
@@ -1176,7 +1176,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Pick and destroy rosette flowers every week; terminate the crop by December and graze or shred the stalks."
+     "en": "Pick and destroy the flowers webbed shut every week; terminate the crop by December and graze or shred the stalks."
     }
    },
    {
@@ -1334,7 +1334,7 @@
     "water_l_per_acre": 200,
     "verified": false,
     "timing": {
-     "en": "Only after the threshold is crossed; acts on eggs and nymphs."
+     "en": "Only after the threshold is crossed; acts on eggs and young hoppers."
     }
    },
    {
@@ -1362,7 +1362,7 @@
  },
  "cotton_jassid": {
   "what_to_check": {
-   "en": "Count nymphs under 3 leaves (top, middle, bottom) on 20 plants. Threshold: 2 nymphs per leaf, or yellowing leaf edges.",
+   "en": "Count young hoppers under 3 crop leaves (top, middle, bottom) on 20 plants. Threshold: 2 per leaf, or yellowing leaf edges.",
    "hi": "20 पौधों पर 3 पत्तियों (ऊपर, बीच, नीचे) के नीचे शिशु गिनें। सीमा: प्रति पत्ती 2 शिशु, या पीले किनारे।",
    "mr": "20 झाडांवर 3 पानांखाली (वर, मध्य, खाली) पिल्ले मोजा. मर्यादा: प्रति पान 2 पिल्ले, किंवा पिवळ्या कडा."
   },
@@ -1562,7 +1562,7 @@
  },
  "soybean_rust": {
   "what_to_check": {
-   "en": "Turn over lower leaves and look with a hand lens for raised tan pustules.",
+   "en": "Turn over lower leaves and look with a hand lens for raised tan rust spots.",
    "hi": "निचली पत्तियाँ पलटकर लेंस से उभरे भूरे दाने देखें।",
    "mr": "खालची पाने उलटून भिंगाने उंचावलेले तपकिरी फोड पाहा."
   },
@@ -1671,7 +1671,7 @@
   },
   "what_to_avoid": [
    {
-    "en": "Do not spray for white ears that are already visible — the larva has left; protect the next flush instead.",
+    "en": "Do not spray for white panicles that are already visible — the larva has left; protect the next flush instead.",
     "hi": "जो सफेद बालियाँ दिख चुकी हैं उन पर छिड़काव न करें — इल्ली निकल चुकी है।",
     "mr": "आधीच दिसणाऱ्या पांढऱ्या लोंब्यांसाठी फवारणी करू नका — अळी निघून गेलेली असते."
    }
@@ -1716,7 +1716,7 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if dead hearts exceed 10% or white ears appear across the field.",
+   "en": "Call an expert if dead hearts exceed 10% or white empty panicles appear across the field.",
    "hi": "मृत गोभ 10% से ज़्यादा हों या पूरे खेत में सफेद बालियाँ दिखें तो विशेषज्ञ को बुलाएँ।",
    "mr": "मेलेले गाभे 10% पेक्षा जास्त किंवा सगळीकडे पांढऱ्या लोंब्या दिसल्यास तज्ज्ञांना बोलवा."
   },
@@ -1789,7 +1789,7 @@
  },
  "maize_aphid": {
   "what_to_check": {
-   "en": "Check tassels and the upper whorl of 20 plants and count plants with large aphid colonies.",
+   "en": "Check the top flower and the upper whorl of 20 plants and count plants with large aphid colonies.",
    "hi": "20 पौधों की नर मंजरी और ऊपरी गोभ देखें और बड़े माहू झुंड वाले पौधे गिनें।",
    "mr": "20 झाडांचे तुरे व वरचा पोंगा तपासा व मोठ्या माव्याच्या वसाहती असलेली झाडे मोजा."
   },
@@ -1825,14 +1825,14 @@
     "water_l_per_acre": 200,
     "verified": false,
     "timing": {
-     "en": "Only if colonies cover tassels on more than 1 in 5 plants before pollen shed.",
+     "en": "Only if colonies cover the top flower on more than 1 in 5 plants before pollen is shed.",
      "hi": "केवल तब जब परागण से पहले 5 में से 1 से ज़्यादा पौधों की नर मंजरी झुंडों से ढकी हो।",
      "mr": "फक्त परागीभवनापूर्वी 5 पैकी 1 पेक्षा जास्त झाडांचे तुरे वसाहतींनी झाकलेले असल्यास."
     }
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if tassels are blackened with sooty mould and pollen shed fails.",
+   "en": "Call an expert if the top flower is blackened with sooty mould and no pollen is shed.",
    "hi": "नर मंजरी काली फफूँद से ढक जाए और पराग न झड़े तो विशेषज्ञ को बुलाएँ।",
    "mr": "तुरे काळ्या बुरशीने झाकले व परागकण पडत नसतील तर तज्ज्ञांना बोलवा."
   },
@@ -2377,7 +2377,7 @@
     "water_l_per_acre": 200,
     "verified": false,
     "timing": {
-     "en": "When spots reach the leaves just below the ear before tasseling.",
+     "en": "When spots reach the leaves just below the cob before the top flower opens.",
      "hi": "नर मंजरी से पहले धब्बे भुट्टे के नीचे की पत्तियों तक पहुँचें तब।",
      "mr": "तुरा येण्यापूर्वी ठिपके कणसाखालच्या पानांपर्यंत पोहोचल्यावर."
     }
@@ -2397,7 +2397,7 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if spots reach the ear leaf before grain filling.",
+   "en": "Call an expert if spots reach the leaf beside the cob before grain filling.",
    "hi": "दाना भरने से पहले धब्बे भुट्टे वाली पत्ती तक पहुँचें तो विशेषज्ञ को बुलाएँ।",
    "mr": "दाणे भरण्यापूर्वी ठिपके कणसाच्या पानापर्यंत पोहोचले तर तज्ज्ञांना बोलवा."
   },
@@ -3000,7 +3000,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Get the soil tested and apply the recommended muriate of potash at sowing next season. For a crop already in the field, spray 1% potassium nitrate (10 g per litre of water) twice, a week apart, in the evening.",
+     "en": "Get the soil tested. Next season, mix the recommended muriate of potash into the soil as a basal dose. For a crop already in the field, spray 1% potassium nitrate (10 g per litre of water) twice, a week apart, in the evening.",
      "hi": "मिट्टी की जाँच कराएँ और अगले मौसम बुवाई के समय सिफ़ारिश के अनुसार म्यूरेट ऑफ़ पोटाश डालें। खड़ी फसल पर शाम के समय 1% पोटैशियम नाइट्रेट (10 ग्राम प्रति लीटर पानी) एक-एक हफ़्ते के अंतर से दो बार छिड़कें।",
      "mr": "माती परीक्षण करून घ्या आणि पुढील हंगामात पेरणीच्या वेळी शिफारशीनुसार म्युरेट ऑफ पोटॅश द्या. उभ्या पिकावर संध्याकाळी 1% पोटॅशियम नायट्रेट (10 ग्रॅम प्रति लिटर पाणी) आठवड्याच्या अंतराने दोनदा फवारा."
     }
