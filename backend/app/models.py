@@ -209,16 +209,33 @@ class Farm(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     status: Mapped[str] = mapped_column(String(10), default="growing", index=True)
-    """'growing' or 'fallow'. A farm row is the field, not the sowing.
+    """'growing', 'dormant' or 'fallow'. A farm row is the field, not the sowing.
 
     It used to be both, so a farmer who finished a season had nothing to do
     with the row: the days after sowing went on counting, the crop stage ran
     off the end of the calendar, and the only way to sow again was to register
     the same field a second time. A profile filled up with clones of one plot.
-    Now the season closes (status 'fallow'), the row stays, and sowing again
-    starts a new season on the same field."""
+    Now the season closes, the row stays, and sowing again starts a new season
+    on the same field.
+
+    'dormant' is the state that needs nobody. A field passes its crop's season
+    end and the farmer never presses anything — which is the ordinary case, not
+    the exception — so the field settles here on its own: the days stop, the
+    risk engine lets it alone, and it stops counting as a growing field in a
+    district's totals. It is not a claim that the crop came off, because nobody
+    has said so; it is the field saying it has gone quiet and wants an answer.
+    The farmer gives one by recording the harvest, or by saying the crop is
+    still standing, which puts it back to 'growing' for a while."""
     harvested_on: Mapped[date | None] = mapped_column(Date)
-    """When the standing crop was taken off. None while it is growing."""
+    """When the standing crop was taken off. None until a farmer says."""
+    season_check_on: Mapped[date | None] = mapped_column(Date)
+    """The day the farmer last said the crop was still standing.
+
+    A season end read off a crop calendar is a generalisation, and some fields
+    genuinely run past it. Without this, stopping the clock at that day would
+    quietly stop disease warnings on a standing crop — trading one silent wrong
+    answer for a worse one. Saying so holds the field open from that day, and
+    it asks again rather than staying open for ever."""
 
     problems: Mapped[list[Problem]] = relationship(back_populates="farm")
     seasons: Mapped[list["Season"]] = relationship(back_populates="farm")

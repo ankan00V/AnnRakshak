@@ -834,13 +834,69 @@ def test_a_field_nobody_closes_stops_at_the_end_of_its_season(client):
 
     f = client.get("/api/farms/1").json()
     end = kb_for_tests().season_ends("rice")
-    assert f["status"] == "growing", "nothing was closed; this is the untouched case"
     assert f["das"] == end, f"days ran past the season to {f['das']}"
     assert f["season_over"] is True
+    assert f["status"] == "dormant", "nothing was pressed; the field had to settle itself"
+
+    # And the listing persists it, so a district's totals stop counting it.
+    client.get("/api/farms")
+    with SessionLocal() as db:
+        assert db.get(Farm, 1).status == "dormant"
 
     with SessionLocal() as db:
         out = services.run_risk(db, kb_for_tests(), db.get(Farm, 1))
     assert out["issued"] == [] and out["why"] == "season is over"
+
+
+def test_a_crop_that_is_still_standing_keeps_its_warnings(client):
+    """The danger in stopping a clock automatically. A season end read off a
+    crop calendar is a generalisation, and a field that genuinely runs past it
+    must not have its disease warnings switched off on the strength of one —
+    that would trade a wrong number for a missed outbreak. The farmer says the
+    crop is still there, and the field goes back to work."""
+    kb = kb_for_tests()
+    with SessionLocal() as db:
+        farm = db.get(Farm, 1)
+        farm.sowing_date = date.today() - timedelta(days=kb.season_ends("rice") + 5)
+        farm.date_basis = "sown"
+        db.commit()
+    assert client.get("/api/farms/1").json()["season_over"] is True
+
+    f = client.post("/api/farms/1/standing").json()
+    assert f["status"] == "growing" and f["season_over"] is False
+    with SessionLocal() as db:
+        out = services.run_risk(db, kb, db.get(Farm, 1))
+    assert out.get("why") != "season is over", "a standing crop was left unscored"
+
+    # Held open, not for ever: it asks again a month later.
+    later = date.today() + timedelta(days=services.STILL_STANDING_DAYS + 1)
+    with SessionLocal() as db:
+        assert services.farm_view(kb, db.get(Farm, 1), "en", today=later)["season_over"] is True
+
+
+def test_sowing_again_after_a_field_went_quiet_keeps_one_row(client):
+    """The clone problem, from the state a farmer actually arrives in: they
+    stopped opening the app, the field went dormant on its own, and months
+    later they sow it again. Still one row, and the season that lapsed is
+    recorded as ending at its season end rather than on the day of the new
+    sowing."""
+    kb = kb_for_tests()
+    before = len(client.get("/api/farms").json())
+    with SessionLocal() as db:
+        farm = db.get(Farm, 1)
+        farm.sowing_date = date.today() - timedelta(days=300)
+        farm.date_basis = "sown"
+        db.commit()
+        end = services.season_end_on(kb, farm)
+    client.get("/api/farms")  # the listing settles it
+
+    r = client.post("/api/farms/1/sow", json={"crop": "rice", "sowing_date": date.today().isoformat()})
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "growing" and r.json()["das"] == 0
+    assert len(client.get("/api/farms").json()) == before, "the field was cloned"
+    with SessionLocal() as db:
+        seasons = db.get(Farm, 1).seasons
+        assert [s.harvested_on for s in seasons] == [end], "the lapsed season got the wrong end date"
 
 
 def test_a_season_end_is_well_past_the_usual_harvest(client):

@@ -22,7 +22,11 @@ export interface Farm {
   lang: Lang
   is_demo: boolean
   /** 'growing' or 'fallow'. The row is the field; the crop on it is a season. */
-  status?: 'growing' | 'fallow'
+  /** 'dormant': past its season end with nobody having said what happened. */
+  status?: 'growing' | 'dormant' | 'fallow'
+  /** The day this field's season is taken to be over. */
+  season_end_on?: string
+  season_check_on?: string | null
   harvested_on?: string | null
   /** Past the last stage the crop calendar knows: time to close the season. */
   season_over?: boolean

@@ -147,7 +147,11 @@ def list_farms(request: Request, lang: Lang = "en", db: Session = Depends(get_db
     q = select(Farm).order_by(Farm.id)
     if ids is not None:
         q = q.where(Farm.id.in_(ids))
-    farms = db.scalars(q).all()
+    farms = list(db.scalars(q).all())
+    # Any field that has run past its crop's season goes quiet here, on the
+    # way out. It is the farmer's own list, so this is the read that is
+    # guaranteed to happen, and it means the settling needs no scheduler.
+    services.settle_seasons(db, kb, farms)
     # What is standing against each field, so the picker can answer its own
     # question rather than listing names. One query for the whole list.
     flags = services.farm_flags(db, kb, [f.id for f in farms], lang)
@@ -411,6 +415,20 @@ def remove_farm(farm_id: int, request: Request, db: Session = Depends(get_db)):
     field's whole history with it, which is why the app asks twice."""
     services.delete_farm(db, _own_farm(db, farm_id, request, destructive=True))
     return Response(status_code=204)
+
+
+@router.post("/farms/{farm_id}/standing")
+def standing(farm_id: int, request: Request, db: Session = Depends(get_db),
+             kb: KB = Depends(get_kb), lang: Lang = "en"):
+    """The crop is still in the field, past the day its calendar expected.
+
+    A season end read off a crop calendar is a generalisation, and a field that
+    really is still standing must not have its warnings switched off on the
+    strength of one. This holds it open, and asks again in a month rather than
+    for ever."""
+    farm = _own_farm(db, farm_id, request)
+    services.still_standing(db, kb, farm)
+    return services.farm_view(kb, farm, lang)
 
 
 @router.post("/farms/{farm_id}/risk/run")

@@ -47,9 +47,14 @@ function Row({ farm, crops, onChange }: { farm: Farm; crops: CropInfo[] | null; 
   const [crop, setCrop] = useState(farm.crop)
   const [sown, setSown] = useState(() => new Date().toISOString().slice(0, 10))
   const fallow = farm.status === 'fallow'
-  // Past its crop's season and still open: the clock has already stopped, so
-  // the row asks for the one thing only the farmer knows — the date.
+  // Past its crop's season with nobody having said what happened. The field
+  // has already stopped counting on its own; what it wants is the answer only
+  // the farmer has — the crop came off (and when), or it is still standing.
   const over = !fallow && farm.season_over === true
+  // Default the harvest date to the season end rather than today: a field
+  // that went quiet months ago did not come off this morning.
+  const [cameOff, setCameOff] = useState(
+    () => farm.season_end_on ?? new Date().toISOString().slice(0, 10))
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true)
@@ -101,6 +106,14 @@ function Row({ farm, crops, onChange }: { farm: Farm; crops: CropInfo[] | null; 
             {fallow ? <Sprout className="w-3.5 h-3.5" /> : <Wheat className="w-3.5 h-3.5" />}
             {fallow ? t('profileFieldOn') : t('profileFieldOff')}
           </button>
+          {over && (
+            <button disabled={busy} onClick={() => run(() => api.stillStanding(farm.id))}
+              className="min-h-[36px] px-3.5 rounded-full border border-leaf-deep/30 text-leaf-deep
+                         text-[13px] font-medium flex items-center gap-1.5 hover:bg-leaf/10 disabled:opacity-60">
+              <Sprout className="w-3.5 h-3.5" />
+              {t('profileStillStanding')}
+            </button>
+          )}
           {removable && <button onClick={() => setMode('remove')} aria-label={t('profileFieldRemove')}
             className="min-h-[36px] px-3 rounded-full text-[13px] text-soil-dark/45 hover:text-ember hover:bg-ember/[0.07]
                        flex items-center gap-1.5 transition-colors">
@@ -111,11 +124,23 @@ function Row({ farm, crops, onChange }: { farm: Farm; crops: CropInfo[] | null; 
       )}
 
       {/* Closing the season: the crop is off, so the days stop here. */}
-      {mode === 'off' && (
+      {mode === 'off' && (over ? (
+        <div className="mt-2.5 ml-[14px] rounded-xl bg-ochre/[0.07] p-3">
+          <p className="text-[12px] leading-relaxed text-soil-dark/75">{t('seasonOverNote')}</p>
+          <label className="mt-2.5 block text-[11px] text-soil-dark/60 sm:max-w-[16rem]">
+            {t('profileCameOffOn')}
+            <input type="date" className={FIELD} value={cameOff}
+              max={new Date().toISOString().slice(0, 10)} min={farm.sowing_date}
+              onChange={(e) => setCameOff(e.target.value)} />
+          </label>
+          <Buttons busy={busy} onCancel={() => setMode(null)} label={t('seasonConfirm')} tone="ochre"
+            onYes={() => run(() => api.harvest(farm.id, { harvested_on: cameOff }))} />
+        </div>
+      ) : (
         <Confirm busy={busy} onCancel={() => setMode(null)} tone="ochre"
-          note={farm.season_over ? t('seasonOverNote') : t('seasonGrowingNote')}
+          note={t('seasonGrowingNote')}
           label={t('seasonConfirm')} onYes={() => run(() => api.harvest(farm.id, {}))} />
-      )}
+      ))}
 
       {/* The next season, on this same row rather than a new one. */}
       {mode === 'on' && (

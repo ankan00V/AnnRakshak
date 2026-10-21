@@ -155,6 +155,7 @@ export const api = {
     req<Farm>(`/api/farms/${farmId}/harvest`, json(body)),
   sow: (farmId: number, body: { crop: string; sowing_date: string; date_basis?: 'sown' | 'transplanted'; variety?: string }) =>
     req<Farm>(`/api/farms/${farmId}/sow`, json(body)),
+  stillStanding: (farmId: number) => req<Farm>(`/api/farms/${farmId}/standing`, { method: 'POST' }),
   deleteFarm: (farmId: number) => req<void>(`/api/farms/${farmId}`, { method: 'DELETE' }),
   setFarmLang: (farmId: number, lang: Lang) =>
     req<Farm>(`/api/farms/${farmId}`, { ...json({ lang }), method: 'PATCH' }),
