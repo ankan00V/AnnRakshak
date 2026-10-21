@@ -96,29 +96,27 @@ def marker(i: int) -> str:
     return f"XX{i}XX"
 
 
-DASH = "\u2014"
-"""Stands in the name list for a spaced em-dash, which is protected like a
-placeholder rather than repaired afterwards.
+DASH = re.compile(r"\s*\u2014\s*")
+"""The em-dash goes to the translator as a comma.
 
-Repairing afterwards does not work: the translators flatten " — " to a hyphen
-welded between two words, and so do compound words, so there is no way to tell
-"বেগুনি-দাগযুক্ত" (purple-stained, correct) from "না-অতিরিক্ত" (a lost dash)
-by looking at the output. A first attempt guessed, and turned the compound into
-an em-dash while leaving the real one glued. A marker cannot guess: it comes
-back where the translator put it, or it does not come back and the line stays
-in English."""
+It is an English typographic device; Bengali, Tamil and the rest break a
+clause with a comma or a danda. Three ways of carrying the dash itself were
+tried and all of them lost: left alone it comes back as a hyphen welded
+between two words ("মাঠ থাকে-কেবল"); repaired afterwards it cannot be told
+from a real compound, and the repair turned "বেগুনি-দাগযুক্ত" (purple-stained)
+into a dash while leaving the glued one; sent as a marker it survives four
+times in five, and lands mid-clause when it does — "সংক্রামিত গাছগুলিকে —
+দাঁড়িয়ে রাখবেন না", the dash between the verb and its object.
+
+A comma has none of those failures. The clause breaks where it should, in
+punctuation the script actually uses."""
 
 
 def protect(text: str) -> tuple[str, list[str]]:
     names = PLACEHOLDER.findall(text)
-    out = text
+    out = DASH.sub(", ", text)
     for i, n in enumerate(names):
         out = out.replace("{" + n + "}", marker(i), 1)
-    # The dash itself, not the spaces around it, so the translator still sees
-    # two separate words with something between them.
-    for _ in range(text.count(DASH)):
-        names.append(DASH)
-        out = out.replace(DASH, marker(len(names) - 1), 1)
     return out, names
 
 
@@ -134,15 +132,6 @@ def restore(text: str, names: list[str]) -> str | None:
     text = re.sub(r"X\s*X\s*(\d+)\s*X\s*X", r"XX\1XX", text)
     for i, n in enumerate(names):
         hits = text.count(marker(i)) + text.count(f"<{i}>")
-        # A placeholder is data: lose it and the sentence is wrong, so the
-        # line goes back in English. A dash is punctuation, and these scripts
-        # mostly do not use one — losing it costs a pause, and refusing the
-        # whole translation over it costs the farmer the sentence. Thirty to
-        # fifty strings a language came down to exactly that choice.
-        if n == DASH:
-            text = text.replace(marker(i), DASH, 1).replace(f"<{i}>", DASH, 1)
-            text = text.replace(marker(i), "").replace(f"<{i}>", "")
-            continue
         if hits != 1:
             return None
         text = text.replace(marker(i), "{" + n + "}").replace(f"<{i}>", "{" + n + "}")
@@ -163,11 +152,7 @@ def kept_order(out: str, count: int) -> bool:
     kilometres away": every marker present, every count correct, and the
     number is a crop. Where a placeholder is bound to a unit, order is the one
     cheap signal that the pairing survived."""
-    seen = [int(m.group(1) or m.group(2)) for m in re.finditer(r"XX(\d+)XX|<(\d+)>", out)]
-    # Only the placeholders are checked. A dash marker rides at the end of the
-    # list and may legitimately go missing, so counting it here would refuse
-    # the line for the one thing we are willing to lose.
-    order = [i for i in seen if i < count]
+    order = [int(m.group(1) or m.group(2)) for m in re.finditer(r"XX(\d+)XX|<(\d+)>", out)]
     return order == sorted(order) and len(order) == count
 
 
@@ -181,8 +166,7 @@ def machine_translate(text: str, lang: str) -> str | None:
         out = voice.translate(safe, "en", lang)
     except Exception:  # noqa: BLE001  one failed string must not stop the batch
         return None
-    holes = sum(1 for n in names if n != DASH)
-    if holes > 1 and UNIT_BOUND.search(text) and not kept_order(out, holes):
+    if len(names) > 1 and UNIT_BOUND.search(text) and not kept_order(out, len(names)):
         return None  # shuffled: better in English than with the wrong number
     out = tidy(text, out)
     return restore(out, names) if names else out

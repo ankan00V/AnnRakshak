@@ -549,26 +549,24 @@ def test_a_marker_a_translator_will_carry():
     assert restore("ਨੂੰ XX1XX", names) is None                         # one lost
 
 
-def test_a_dash_is_punctuation_and_a_placeholder_is_data():
-    """Both travel as markers, and they are not worth the same.
+def test_an_em_dash_reaches_the_translator_as_a_comma():
+    """Three ways of carrying the dash itself were tried and all lost.
 
-    The translators flatten " — " into a hyphen welded between two words — and
-    so do compound words, so an output cannot be read afterwards to tell
-    "বেগুনি-দাগযুক্ত" (purple-stained, right) from a lost dash. A first attempt
-    guessed and turned the compound into an em-dash while leaving the real one
-    glued. Sending the dash as a marker cannot guess. But refusing a whole
-    sentence over a missing dash cost thirty to fifty strings a language, so a
-    lost dash is forgiven and a lost placeholder is not."""
+    Left alone it came back welded between two words ("মাঠ থাকে-কেবল"), 236
+    strings deep. Repaired afterwards it could not be told from a real
+    compound, and the repair turned "বেগুনি-দাগযুক্ত" (purple-stained) into a
+    dash while leaving the glued one. Sent as a marker it survived four times
+    in five and landed mid-clause when it did — between a verb and its object.
+
+    A comma has none of those failures, and is the punctuation these scripts
+    break a clause with anyway."""
     from app.i18n import protect, restore
 
     safe, names = protect("The field stays — only {crop} ends.")
-    assert safe == "The field stays XX1XX only XX0XX ends.", safe
-    assert names == ["crop", "\u2014"]
-
-    assert restore("মাঠ XX1XX কেবল XX0XX", names) == "মাঠ — কেবল {crop}"
-    assert restore("মাঠ কেবল XX0XX", names) == "মাঠ কেবল {crop}", "a lost dash is forgiven"
-    assert restore("মাঠ XX1XX কেবল", names) is None, "a lost placeholder is not"
-    # A hyphen the translator wrote itself is left alone.
+    assert safe == "The field stays, only XX0XX ends." and names == ["crop"]
+    assert protect("About {mm} mm of rain—much washes off.")[0] == "About XX0XX mm of rain, much washes off."
+    assert restore("মাঠ থাকে, কেবল XX0XX শেষ", ["crop"]) == "মাঠ থাকে, কেবল {crop} শেষ"
+    # A hyphen the translator wrote itself is nobody's business but its own.
     assert restore("বেগুনি-দাগযুক্ত XX0XX", ["crop"]) == "বেগুনি-দাগযুক্ত {crop}"
 
 

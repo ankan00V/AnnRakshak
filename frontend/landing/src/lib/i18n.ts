@@ -325,7 +325,7 @@ const en = {
   profileFieldsSub: 'Turn a field off after you harvest it. Turn it on again when you sow. One field, however many seasons.',
   profileFieldOff: 'Turn off',
   profileSeasonOver: 'Season over — tell us when the crop came off',
-  profileStillStanding: 'Still standing',
+  profileStillStanding: 'Still growing',
   profileCameOffOn: 'The day it came off',
   profileFieldOn: 'Sow again',
   profileFieldRemove: 'Remove',

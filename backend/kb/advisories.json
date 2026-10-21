@@ -816,7 +816,7 @@
   },
   "what_to_avoid": [
    {
-    "en": "Do not spray late in the season when the crop is already drying — it will not pay back.",
+    "en": "Do not spray late in the season when the crop is already drying — it will not be worth the cost.",
     "hi": "फसल सूखने लगी हो तो देर से छिड़काव न करें — लागत नहीं निकलेगी।",
     "mr": "पीक वाळू लागल्यावर उशिरा फवारणी करू नका — खर्च वसूल होणार नाही."
    }
@@ -3000,7 +3000,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Get the soil tested and put on the recommended muriate of potash at sowing next season. For the standing crop, spray 1% potassium nitrate (10 g per litre of water) twice, a week apart, in the evening.",
+     "en": "Get the soil tested and apply the recommended muriate of potash at sowing next season. For a crop already in the field, spray 1% potassium nitrate (10 g per litre of water) twice, a week apart, in the evening.",
      "hi": "मिट्टी की जाँच कराएँ और अगले मौसम बुवाई के समय सिफ़ारिश के अनुसार म्यूरेट ऑफ़ पोटाश डालें। खड़ी फसल पर शाम के समय 1% पोटैशियम नाइट्रेट (10 ग्राम प्रति लीटर पानी) एक-एक हफ़्ते के अंतर से दो बार छिड़कें।",
      "mr": "माती परीक्षण करून घ्या आणि पुढील हंगामात पेरणीच्या वेळी शिफारशीनुसार म्युरेट ऑफ पोटॅश द्या. उभ्या पिकावर संध्याकाळी 1% पोटॅशियम नायट्रेट (10 ग्रॅम प्रति लिटर पाणी) आठवड्याच्या अंतराने दोनदा फवारा."
     }
