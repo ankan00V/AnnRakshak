@@ -247,6 +247,7 @@
   "Do not add extra nitrogen — a lush, over-fertilised crop feeds hispa.": "ਵਾਧੂ ਨਾਈਟ੍ਰੋਜਨ ਨਾ ਪਾਓ, ਇੱਕ ਰਸੀਲੀ, ਜ਼ਿਆਦਾ ਉਪਜਾਊ ਫਸਲ ਹਿਸਪਾ ਨੂੰ ਭੋਜਨ ਦਿੰਦੀ ਹੈ।",
   "Do not add more nitrogen to 'green it up' — extra nitrogen makes streak worse.": "'ਗ੍ਰੀਨ ਇਟ ਅਪ' ਵਿੱਚ ਵਧੇਰੇ ਨਾਈਟ੍ਰੋਜਨ ਨਾ ਪਾਓ, ਵਾਧੂ ਨਾਈਟ੍ਰੋਜਨ ਸਟ੍ਰੀਕ ਨੂੰ ਬਦਤਰ ਬਣਾ ਦਿੰਦਾ ਹੈ।",
   "Do not add more nitrogen — a dense, lush canopy spreads sheath blight.": "ਵਧੇਰੇ ਨਾਈਟ੍ਰੋਜਨ ਨਾ ਪਾਓ, ਇੱਕ ਸੰਘਣੀ, ਹਰੇ ਰੰਗ ਦੀ ਛਤਰੀ ਫੈਲਾਉਂਦੀ ਹੈ।",
+  "Do not add more nitrogen — dense, lush growth spreads sheath blight.": "ਵਧੇਰੇ ਨਾਈਟ੍ਰੋਜਨ ਨਾ ਪਾਓ, ਸੰਘਣੀ, ਹਰੇ-ਭਰੇ ਵਾਧੇ ਨਾਲ ਮ੍ਯਾਨ ਦਾ ਰੋਗ ਫੈਲਦਾ ਹੈ।",
   "Do not add nitrogen while hoppers are present.": "ਜਦੋਂ ਹੌਪਰ ਮੌਜੂਦ ਹੋਣ ਤਾਂ ਨਾਈਟ੍ਰੋਜਨ ਨਾ ਮਿਲਾਓ।",
   "Do not apply more nitrogen until the blight stops spreading.": "ਜਦੋਂ ਤੱਕ ਬਲਾਇਟ ਫੈਲਣਾ ਬੰਦ ਨਹੀਂ ਹੋ ਜਾਂਦਾ, ਉਦੋਂ ਤੱਕ ਜ਼ਿਆਦਾ ਨਾਈਟ੍ਰੋਜਨ ਨਾ ਲਗਾਓ।",
   "Do not extend the crop with late irrigation after the last picking — it feeds the next generation.": "ਆਖਰੀ ਚੁਆਈ ਤੋਂ ਬਾਅਦ ਦੇਰ ਨਾਲ ਸਿੰਚਾਈ ਨਾਲ ਫਸਲ ਦਾ ਵਿਸਤਾਰ ਨਾ ਕਰੋ, ਇਹ ਅਗਲੀ ਪੀਡ਼੍ਹੀ ਨੂੰ ਭੋਜਨ ਦਿੰਦਾ ਹੈ।",
@@ -306,6 +307,7 @@
   "Do not spray synthetic pyrethroids before 90 days — they trigger whitefly outbreaks.": "90 ਦਿਨਾਂ ਤੋਂ ਪਹਿਲਾਂ ਸਿੰਥੈਟਿਕ ਪਾਈਰੇਥਰੋਇਡਜ਼ ਦਾ ਛਿਡ਼ਕਾਅ ਨਾ ਕਰੋ, ਉਹ ਚਿੱਟੀ ਮੱਖੀ ਦੇ ਪ੍ਰਕੋਪ ਨੂੰ ਵਧਾਉਂਦੇ ਹਨ।",
   "Do not spray this": "ਇਸ ਦਾ ਛਿਡ਼ਕਾਅ ਨਾ ਕਰੋ",
   "Do not spray while the canopy is wet with dew — the fungus spreads in leaf wetness.": "ਜਦੋਂ ਛਤਰੀ ਤ੍ਰੇਲ ਨਾਲ ਗਿੱਲੀ ਹੋਵੇ ਤਾਂ ਛਿਡ਼ਕਾਅ ਨਾ ਕਰੋ, ਉੱਲੀਮਾਰ ਪੱਤੇ ਗਿੱਲੇਪਣ ਵਿੱਚ ਫੈਲਦੀ ਹੈ।",
+  "Do not spray while the leaves are wet with dew — the fungus spreads in leaf wetness.": "ਜਦੋਂ ਪੱਤੇ ਤ੍ਰੇਲ ਨਾਲ ਗਿੱਲੇ ਹੁੰਦੇ ਹਨ ਤਾਂ ਛਿਡ਼ਕਾਅ ਨਾ ਕਰੋ, ਉੱਲੀਮਾਰ ਪੱਤੇ ਗਿੱਲੇਪਣ ਵਿੱਚ ਫੈਲਦੀ ਹੈ।",
   "Do not store cobs or grain damp, or in heaps on the ground.": "ਕੋਬ ਜਾਂ ਅਨਾਜ ਨੂੰ ਗਿੱਲਾ ਜਾਂ ਜ਼ਮੀਨ ਉੱਤੇ ਢੇਰਾਂ ਵਿੱਚ ਨਾ ਰੱਖੋ।",
   "Do not top-dress urea now — extra nitrogen feeds blast.": "ਹੁਣ ਯੂਰੀਆ ਦੇ ਉੱਪਰਲੇ ਕੱਪਡ਼ੇ ਨਾ ਪਹਿਨੋ, ਵਾਧੂ ਨਾਈਟ੍ਰੋਜਨ ਬਲਾਸਟ ਫੀਡ ਕਰਦਾ ਹੈ।",
   "Do not use a sprayer that has applied a weedicide on cotton until it is washed three times with clean water — what is left in it is enough to do this.": "ਇੱਕ ਸਪਰੇਅਰ ਦੀ ਵਰਤੋਂ ਨਾ ਕਰੋ ਜਿਸ ਨੇ ਕਪਾਹ ਉੱਤੇ ਜੰਗਲੀ ਬੂਟੀ ਲਗਾਈ ਹੈ ਜਦੋਂ ਤੱਕ ਇਸ ਨੂੰ ਤਿੰਨ ਵਾਰ ਸਾਫ਼ ਪਾਣੀ ਨਾਲ ਨਹੀਂ ਧੋਤਾ ਜਾਂਦਾ, ਇਸ ਵਿੱਚ ਜੋ ਬਚਿਆ ਹੈ ਉਹ ਅਜਿਹਾ ਕਰਨ ਲਈ ਕਾਫ਼ੀ ਹੈ।",
@@ -323,6 +325,7 @@
   "Don't spray or apply fertiliser in the afternoon heat": "ਦੁਪਹਿਰ ਦੀ ਗਰਮੀ ਵਿੱਚ ਛਿਡ਼ਕਾਅ ਜਾਂ ਖਾਦ ਨਾ ਲਗਾਓ",
   "Downy mildew": "ਡਾਊਨੀ ਫਫੂੰਦੀ",
   "Downy mildew (crazy top)": "ਡਾਊਨੀ ਫ਼ਫ਼ੂੰਦੀ (ਕ੍ਰੇਜ਼ੀ ਟਾਪ)",
+  "Drain standing water for a few days and remove weeds so air can move between the plants.": "ਕੁਝ ਦਿਨਾਂ ਲਈ ਖਡ਼੍ਹੇ ਪਾਣੀ ਦੀ ਨਿਕਾਸੀ ਕਰੋ ਅਤੇ ਜੰਗਲੀ ਬੂਟੀ ਨੂੰ ਹਟਾਓ ਤਾਂ ਜੋ ਹਵਾ ਪੌਦਿਆਂ ਦੇ ਵਿਚਕਾਰ ਘੁੰਮ ਸਕੇ।",
   "Drain standing water for a few days and remove weeds so air moves through the canopy.": "ਕੁਝ ਦਿਨਾਂ ਲਈ ਖਡ਼੍ਹੇ ਪਾਣੀ ਦੀ ਨਿਕਾਸੀ ਕਰੋ ਅਤੇ ਜੰਗਲੀ ਬੂਟੀ ਨੂੰ ਹਟਾਓ ਤਾਂ ਜੋ ਹਵਾ ਛਤਰੀ ਵਿੱਚੋਂ ਲੰਘ ਸਕੇ।",
   "Drain the field for 3–4 days and open alleys every 2 metres so light reaches the base.": "3-4 ਦਿਨਾਂ ਲਈ ਖੇਤ ਦੀ ਨਿਕਾਸੀ ਕਰੋ ਅਤੇ ਹਰ 2 ਮੀਟਰ ਉੱਤੇ ਗਲੀਆਂ ਖੋਲ੍ਹੋ ਤਾਂ ਜੋ ਰੋਸ਼ਨੀ ਅਧਾਰ ਤੱਕ ਪਹੁੰਚ ਸਕੇ।",
   "Drain the field for 3–4 days, then re-irrigate; hold back the next nitrogen dose.": "3-4 ਦਿਨਾਂ ਲਈ ਖੇਤ ਦੀ ਨਿਕਾਸੀ ਕਰੋ, ਫਿਰ ਦੁਬਾਰਾ ਸਿੰਚਾਈ ਕਰੋ; ਅਗਲੀ ਨਾਈਟ੍ਰੋਜਨ ਖੁਰਾਕ ਨੂੰ ਰੋਕ ਦਿਓ।",
@@ -363,6 +366,8 @@
   "Frost risk {day}: {tmin}°C, clear and calm": "ਠੰਡ ਦਾ ਖ਼ਤਰਾ {day}: {tmin} °C, ਸਾਫ਼ ਅਤੇ ਸ਼ਾਂਤ",
   "Fungus that infects fall armyworm larvae. Talc formulation sprayed into the whorl three times: 20, 30 and 40 days after sowing.": "ਫੰਗਸ ਜੋ ਫੌਜ ਦੇ ਕੀਡ਼ੇ ਦੇ ਲਾਰਵਾ ਨੂੰ ਸੰਕਰਮਿਤ ਕਰਦਾ ਹੈ। ਟੈਲਕ ਫਾਰਮੂਲੇਸ਼ਨ ਨੂੰ ਤਿੰਨ ਵਾਰ ਵਰਲ ਵਿੱਚ ਛਿਡ਼ਕਾਅ ਕੀਤਾ ਜਾਂਦਾ ਹੈ: ਬੀਜਾਈ ਦੇ 20,30 ਅਤੇ 40 ਦਿਨਾਂ ਬਾਅਦ।",
   "GPS": "ਜੀ. ਪੀ. ਐੱਸ",
+  "Gather and destroy the spotted lower leaves; give balanced fertilizer with enough potash; keep good spacing for air.": "ਧੱਬੇਦਾਰ ਹੇਠਲੇ ਪੱਤਿਆਂ ਨੂੰ ਇਕੱਠਾ ਕਰੋ ਅਤੇ ਨਸ਼ਟ ਕਰੋ; ਕਾਫ਼ੀ ਪੋਟਾਸ਼ ਦੇ ਨਾਲ ਸੰਤੁਲਿਤ ਖਾਦ ਦਿਓ; ਹਵਾ ਲਈ ਚੰਗੀ ਦੂਰੀ ਰੱਖੋ।",
+  "Gather the infected grains into a bag by hand and bury the bag, so the spores do not scatter.": "ਸੰਕਰਮਿਤ ਅਨਾਜ ਨੂੰ ਹੱਥ ਨਾਲ ਇੱਕ ਥੈਲੇ ਵਿੱਚ ਇਕੱਠਾ ਕਰੋ ਅਤੇ ਥੈਲੇ ਨੂੰ ਦਫ਼ਨਾਓ, ਤਾਂ ਜੋ ਬੀਜਾਣੂ ਖਿੰਡੇ ਨਾ ਜਾਣ।",
   "Get the soil tested and put on the recommended muriate of potash at sowing next season. For the standing crop, spray 1% potassium nitrate (10 g per litre of water) twice, a week apart, in the evening.": "ਮਿੱਟੀ ਦੀ ਜਾਂਚ ਕਰਵਾਓ ਅਤੇ ਅਗਲੇ ਸੀਜ਼ਨ ਵਿੱਚ ਬੀਜਾਈ ਵੇਲੇ ਪੋਟਾਸ਼ ਦੇ ਸਿਫਾਰਸ਼ ਕੀਤੇ ਮਿਊਰੀਏਟ ਨੂੰ ਪਾਓ। ਖਡ਼੍ਹੀ ਫਸਲ ਲਈ, 1 ਪ੍ਰਤੀਸ਼ਤ ਪੋਟਾਸ਼ੀਅਮ ਨਾਈਟ੍ਰੇਟ (10 ਗ੍ਰਾਮ ਪ੍ਰਤੀ ਲੀਟਰ ਪਾਣੀ) ਦਾ ਸਪਰੇਅ ਦੋ ਵਾਰ, ਇੱਕ ਹਫ਼ਤੇ ਦੇ ਅੰਤਰ ਨਾਲ, ਸ਼ਾਮ ਨੂੰ ਕਰੋ।",
   "Get the soil tested. Next season, mix the recommended muriate of potash into the soil as a basal dose. For a crop already in the field, spray 1% potassium nitrate (10 g per litre of water) twice, a week apart, in the evening.": "ਮਿੱਟੀ ਦੀ ਜਾਂਚ ਕਰਵਾਓ। ਅਗਲੇ ਸੀਜ਼ਨ ਵਿੱਚ, ਪੋਟਾਸ਼ ਦੇ ਸਿਫਾਰਸ਼ ਕੀਤੇ ਮਿਊਰੀਏਟ ਨੂੰ ਮਿੱਟੀ ਵਿੱਚ ਇੱਕ ਮੂਲ ਖੁਰਾਕ ਦੇ ਰੂਪ ਵਿੱਚ ਮਿਲਾਓ। ਪਹਿਲਾਂ ਤੋਂ ਹੀ ਖੇਤ ਵਿੱਚ ਪਈ ਫਸਲ ਲਈ, 1 ਪ੍ਰਤੀਸ਼ਤ ਪੋਟਾਸ਼ੀਅਮ ਨਾਈਟ੍ਰੇਟ (10 ਗ੍ਰਾਮ ਪ੍ਰਤੀ ਲੀਟਰ ਪਾਣੀ) ਦਾ ਸਪਰੇਅ ਦੋ ਵਾਰ, ਇੱਕ ਹਫ਼ਤੇ ਦੇ ਅੰਤਰ ਨਾਲ, ਸ਼ਾਮ ਨੂੰ ਕਰੋ।",
   "Girdle beetle": "ਗਰਡਲ ਬੀਟਲ",
@@ -626,6 +631,7 @@
   "Panicle initiation": "ਪੈਨਿਕਲ ਦੀ ਸ਼ੁਰੂਆਤ",
   "Panicles that stay upright with empty, discoloured grains; grain bases turn light brown while the leaves stay green.": "ਪੈਨਿਕਲ ਜੋ ਖਾਲੀ, ਰੰਗੀਨ ਅਨਾਜ ਦੇ ਨਾਲ ਸਿੱਧੇ ਰਹਿੰਦੇ ਹਨ; ਅਨਾਜ ਦੇ ਅਧਾਰ ਹਲਕੇ ਭੂਰੇ ਹੋ ਜਾਂਦੇ ਹਨ ਜਦੋਂ ਕਿ ਪੱਤੇ ਹਰੇ ਰਹਿੰਦੇ ਹਨ।",
   "Part the canopy and check stem sheaths just above the water line in the densest part of the field.": "ਛਤਰੀ ਨੂੰ ਵੰਡੋ ਅਤੇ ਖੇਤ ਦੇ ਸਭ ਤੋਂ ਸੰਘਣੇ ਹਿੱਸੇ ਵਿੱਚ ਪਾਣੀ ਦੀ ਲਾਈਨ ਦੇ ਬਿਲਕੁਲ ਉੱਪਰ ਸਟੈਮ ਸ਼ੀਟ ਦੀ ਜਾਂਚ ਕਰੋ।",
+  "Part the leaves and check the stem sheaths just above the water line in the densest part of the field.": "ਪੱਤਿਆਂ ਨੂੰ ਵੰਡੋ ਅਤੇ ਖੇਤ ਦੇ ਸਭ ਤੋਂ ਸੰਘਣੇ ਹਿੱਸੇ ਵਿੱਚ ਪਾਣੀ ਦੀ ਰੇਖਾ ਦੇ ਬਿਲਕੁਲ ਉੱਪਰ ਸਟੈਮ ਮ੍ਯਾਨ ਦੀ ਜਾਂਚ ਕਰੋ।",
   "Part the plants in the densest area and check stem sheaths just above the water for grey-green patches.": "ਪੌਦਿਆਂ ਨੂੰ ਸੰਘਣੇ ਖੇਤਰ ਵਿੱਚ ਵੰਡੋ ਅਤੇ ਸਲੇਟੀ-ਹਰੇ ਧੱਬੇ ਲਈ ਪਾਣੀ ਦੇ ਬਿਲਕੁਲ ਉੱਪਰ ਸਟੈਮ ਸ਼ੀਟ ਦੀ ਜਾਂਚ ਕਰੋ।",
   "Peel back the husk of 10 cobs and look for mould at the tip or around insect holes.": "10 ਕੋਬਜ਼ ਦੀ ਭੁੱਕੀ ਨੂੰ ਪਿੱਛੇ ਛੱਡੋ ਅਤੇ ਨੋਕ 'ਤੇ ਜਾਂ ਕੀਡ਼ੇ ਦੇ ਛੇਕ ਦੇ ਆਲੇ ਦੁਆਲੇ ਉੱਲੀ ਦੀ ਭਾਲ ਕਰੋ।",
   "Peel back the husk on 10 cobs and look for mould at the tip.": "ਭੁੱਕੀ ਨੂੰ 10 ਕੋਬਾਂ ਉੱਤੇ ਛਿੱਲ ਦਿਓ ਅਤੇ ਨੋਕ ਉੱਤੇ ਉੱਲੀ ਦੀ ਭਾਲ ਕਰੋ।",
@@ -689,6 +695,7 @@
   "Right now it is {t} degrees with {rh} percent humidity{txt}.": "ਇਸ ਵੇਲੇ ਇਹ {rh} ਪ੍ਰਤੀਸ਼ਤ ਨਮੀ {txt} ਦੇ ਨਾਲ {t} ਡਿਗਰੀ ਹੈ।",
   "Right now {temp}°C, humidity {rh}%, {prob}% chance of rain in the next 3 hours.": "ਇਸ ਵੇਲੇ {temp} °C, ਨਮੀ {rh}%, ਅਗਲੇ 3 ਘੰਟਿਆਂ ਵਿੱਚ ਮੀਂਹ ਦੀ {prob}% ਸੰਭਾਵਨਾ ਹੈ।",
   "Rosette flowers (petals webbed shut); pink larvae inside green bolls; stained, damaged lint.": "ਰੋਜ਼ੇਟ ਫੁੱਲ (ਪੰਖਡ਼ੀਆਂ ਵੈੱਬਡ ਬੰਦ); ਹਰੇ ਬੋਲ ਦੇ ਅੰਦਰ ਗੁਲਾਬੀ ਲਾਰਵਾ; ਰੰਗੇ ਹੋਏ, ਨੁਕਸਾਨੇ ਹੋਏ ਲਿੰਟ।",
+  "Rotate with a cereal, keep row spacing wide enough for air to move between the plants, and bury the stubble after harvest.": "ਅਨਾਜ ਨਾਲ ਘੁੰਮਾਓ, ਕਤਾਰ ਦੀ ਦੂਰੀ ਇੰਨੀ ਚੌਡ਼ੀ ਰੱਖੋ ਕਿ ਹਵਾ ਪੌਦਿਆਂ ਦੇ ਵਿਚਕਾਰ ਘੁੰਮ ਸਕੇ, ਅਤੇ ਵਾਢੀ ਤੋਂ ਬਾਅਦ ਪਰਾਲੀ ਨੂੰ ਦਫ਼ਨਾ ਦਿਓ।",
   "Rotate with a cereal, keep row spacing wide enough for air to move through the canopy, and bury the stubble after harvest.": "ਅਨਾਜ ਨਾਲ ਘੁੰਮਾਓ, ਕਤਾਰ ਦੀ ਦੂਰੀ ਇੰਨੀ ਚੌਡ਼ੀ ਰੱਖੋ ਕਿ ਹਵਾ ਛੱਤਰੀ ਵਿੱਚੋਂ ਲੰਘ ਸਕੇ, ਅਤੇ ਵਾਢੀ ਤੋਂ ਬਾਅਦ ਪਰਾਲੀ ਨੂੰ ਦਫ਼ਨਾ ਦਿਓ।",
   "Rotate with a cereal; bury crop residue after harvest; keep recommended spacing.": "ਅਨਾਜ ਨਾਲ ਘੁੰਮਾਓ; ਵਾਢੀ ਤੋਂ ਬਾਅਦ ਫਸਲ ਦੀ ਰਹਿੰਦ-ਖੂੰਹਦ ਨੂੰ ਦਫ਼ਨਾਓ; ਸਿਫਾਰਸ਼ ਕੀਤੀ ਗਈ ਦੂਰੀ ਬਣਾਈ ਰੱਖੋ।",
   "Rotate with emamectin; do not repeat the same ingredient.": "ਐਮੇਕਟਿਨ ਨਾਲ ਘੁੰਮਾਓ; ਉਸੇ ਸਮੱਗਰੀ ਨੂੰ ਨਾ ਦੁਹਰਾਓ।",
@@ -739,7 +746,7 @@
   "Split the remaining nitrogen into smaller doses; keep water standing in the field rather than letting it dry and re-wet.": "ਬਾਕੀ ਨਾਈਟ੍ਰੋਜਨ ਨੂੰ ਛੋਟੀਆਂ ਖੁਰਾਕਾਂ ਵਿੱਚ ਵੰਡੋ; ਪਾਣੀ ਨੂੰ ਸੁੱਕਣ ਅਤੇ ਦੁਬਾਰਾ ਗਿੱਲਾ ਕਰਨ ਦੀ ਬਜਾਏ ਖੇਤ ਵਿੱਚ ਖਡ਼੍ਹਾ ਰੱਖੋ।",
   "Spray Metarhizium anisopliae at 5 g per litre, or neem (azadirachtin 1500 ppm) at 5 ml per litre, into the whorl.": "ਵਰਲ ਵਿੱਚ 5 ਗ੍ਰਾਮ ਪ੍ਰਤੀ ਲੀਟਰ, ਜਾਂ ਨਿੰਮ (ਅਜ਼ਾਦਿਰਾਕਟਿਨ 1500 ਪੀਪੀਐਮ) 5 ਮਿਲੀ ਪ੍ਰਤੀ ਲੀਟਰ'ਤੇ ਸਪਰੇਅ ਕਰੋ।",
   "Spray Pseudomonas fluorescens 1% WP at 10 g per litre at first symptoms.": "ਪਹਿਲੇ ਲੱਛਣਾਂ ਉੱਤੇ 10 ਗ੍ਰਾਮ ਪ੍ਰਤੀ ਲੀਟਰ ਉੱਤੇ ਸੂਡੋਮੋਨਾਸ ਫਲੋਰੋਸੈਂਸ 1 ਪ੍ਰਤੀਸ਼ਤ ਡਬਲਯੂ. ਪੀ. ਦਾ ਛਿਡ਼ਕਾਅ ਕਰੋ।",
-  "Spray Pseudomonas fluorescens 1% WP at 10 g per litre to slow the spread.": "ਫੈਲਾਅ ਨੂੰ ਹੌਲੀ ਕਰਨ ਲਈ 10 ਗ੍ਰਾਮ ਪ੍ਰਤੀ ਲੀਟਰ'ਤੇ 1 ਪ੍ਰਤੀਸ਼ਤ ਡਬਲਯੂ. ਪੀ. ਫਲੋਰੋਸੈਂਸ ਦਾ ਛਿਡ਼ਕਾਅ ਕਰੋ।",
+  "Spray Pseudomonas fluorescens 1% WP at 10 g per litre to slow the spread.": "ਫੈਲਾਅ ਨੂੰ ਹੌਲੀ ਕਰਨ ਲਈ 10 ਗ੍ਰਾਮ ਪ੍ਰਤੀ ਲੀਟਰ 'ਤੇ ਸੂਡੋਮੋਨਾਸ ਫਲੋਰੋਸੈਂਸ 1 ਪ੍ਰਤੀਸ਼ਤ ਡਬਲਯੂ. ਪੀ. ਦਾ ਛਿੜਕਾਅ ਕਰੋ।",
   "Spray Pseudomonas fluorescens at 5 g per litre at the first spots.": "ਪਹਿਲੇ ਸਥਾਨਾਂ ਉੱਤੇ 5 ਗ੍ਰਾਮ ਪ੍ਰਤੀ ਲੀਟਰ ਉੱਤੇ ਸੂਡੋਮੋਨਾਸ ਫਲੋਰੋਸੈਂਸ ਦਾ ਛਿਡ਼ਕਾਅ ਕਰੋ।",
   "Spray Pseudomonas fluorescens at 5 g per litre when the first spots appear.": "ਜਦੋਂ ਪਹਿਲੇ ਧੱਬੇ ਦਿਖਾਈ ਦਿੰਦੇ ਹਨ ਤਾਂ 5 ਗ੍ਰਾਮ ਪ੍ਰਤੀ ਲੀਟਰ 'ਤੇ ਸੂਡੋਮੋਨਾਸ ਫਲੋਰੋਸੈਂਸ ਦਾ ਛਿਡ਼ਕਾਅ ਕਰੋ।",
   "Spray Trichoderma harzianum at 5 g per litre at first lesions.": "ਪਹਿਲੇ ਜਖਮਾਂ'ਤੇ 5 ਗ੍ਰਾਮ ਪ੍ਰਤੀ ਲੀਟਰ'ਤੇ ਟ੍ਰਾਈਕੋਡਰ੍ਮਾ ਹਰਜ਼ੀਅਨਮ ਦਾ ਛਿਡ਼ਕਾਅ ਕਰੋ।",
@@ -844,6 +851,7 @@
   "Turn over lower leaves and look with a hand lens for raised tan pustules.": "ਹੇਠਲੇ ਪੱਤਿਆਂ ਨੂੰ ਮੋਡ਼ੋ ਅਤੇ ਹੱਥ ਦੇ ਲੈਂਜ਼ ਨਾਲ ਉੱਚੇ ਟੈਨ ਪੁਸਟੂਲਜ਼ ਲਈ ਦੇਖੋ।",
   "Turn over lower leaves and look with a hand lens for raised tan rust spots.": "ਹੇਠਲੇ ਪੱਤਿਆਂ ਨੂੰ ਮੋਡ਼ੋ ਅਤੇ ਉੱਚੇ ਹੋਏ ਟੈਨ ਜੰਗਾਲ ਦੇ ਚਟਾਕ ਲਈ ਹੱਥ ਦੇ ਲੈਂਜ਼ ਨਾਲ ਦੇਖੋ।",
   "Turn over lower leaves of 10 plants and look for raised tan pustules.": "10 ਪੌਦਿਆਂ ਦੇ ਹੇਠਲੇ ਪੱਤਿਆਂ ਨੂੰ ਮੋਡ਼ੋ ਅਤੇ ਉੱਚੇ ਟੈਨ ਪੁਸਟੂਲਸ ਦੀ ਭਾਲ ਕਰੋ।",
+  "Turn over one leaf from the top of 20 plants and count adults. Threshold: 8–10 adults per leaf.": "20 ਪੌਦਿਆਂ ਦੇ ਸਿਖਰ ਤੋਂ ਇੱਕ ਪੱਤਾ ਮੋਡ਼ੋ ਅਤੇ ਬਾਲਗਾਂ ਦੀ ਗਿਣਤੀ ਕਰੋ। ਥ੍ਰੈਸ਼ਹੋਲਡ: ਪ੍ਰਤੀ ਪੱਤਾ 8 ਤੋਂ 10 ਬਾਲਗ।",
   "Turn over one upper leaf on 20 plants and count whiteflies; act above 8–10 per leaf.": "ਇੱਕ ਉਪਰਲੇ ਪੱਤੇ ਨੂੰ 20 ਪੌਦਿਆਂ ਉੱਤੇ ਮੋਡ਼ੋ ਅਤੇ ਚਿੱਟੀਆਂ ਮੱਖੀਆਂ ਦੀ ਗਿਣਤੀ ਕਰੋ; ਪ੍ਰਤੀ ਪੱਤਾ 8-10 ਤੋਂ ਉੱਪਰ ਕੰਮ ਕਰੋ।",
   "Turn over one upper-canopy leaf on 20 plants and count adults. Threshold: 8–10 adults per leaf.": "20 ਪੌਦਿਆਂ ਉੱਤੇ ਇੱਕ ਉੱਪਰਲੀ ਛਤਰੀ ਵਾਲਾ ਪੱਤਾ ਘੁਮਾਓ ਅਤੇ ਬਾਲਗਾਂ ਦੀ ਗਿਣਤੀ ਕਰੋ। ਸੀਮਾ: 8-10 ਬਾਲਗ ਪ੍ਰਤੀ ਪੱਤਾ।",
   "Turn over the lower leaves of 10 plants and count the ones carrying ringed brown spots bigger than a rice grain.": "10 ਪੌਦਿਆਂ ਦੇ ਹੇਠਲੇ ਪੱਤਿਆਂ ਨੂੰ ਮੋਡ਼ੋ ਅਤੇ ਚੌਲਾਂ ਦੇ ਦਾਣੇ ਨਾਲੋਂ ਵੱਡੇ ਭੂਰੇ ਧੱਬੇ ਵਾਲੇ ਪੱਤਿਆਂ ਦੀ ਗਿਣਤੀ ਕਰੋ।",
@@ -1138,6 +1146,7 @@
   "No objection found in our records for this crop and problem. Follow the printed label for dose.",
   "Our records do not list this product against {target}. It may not work and wastes money.",
   "Our records do not list this product for {crop}. Do not use it here without an officer's advice.",
+  "Spray Pseudomonas fluorescens 1% WP at 10 g per litre to slow the spread.",
   "There is no confirmed problem on this field yet, so there is nothing to spray for. Get a diagnosis first.",
   "This is a weed killer (herbicide). It does nothing against pests or diseases and can damage your crop.",
   "This is {cls}. Your problem is {problem_kind}. Do not spray it for this.",
@@ -1148,5 +1157,8 @@
   "a weed killer (herbicide)",
   "an insect pest",
   "an insecticide (for insects)"
- ]
+ ],
+ "reviewed_by": {
+  "Spray Pseudomonas fluorescens 1% WP at 10 g per litre to slow the spread.": "native speaker"
+ }
 }

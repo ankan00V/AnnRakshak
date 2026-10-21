@@ -255,13 +255,13 @@
  },
  "rice_sheath_blight": {
   "what_to_check": {
-   "en": "Part the canopy and check stem sheaths just above the water line in the densest part of the field.",
+   "en": "Part the leaves and check the stem sheaths just above the water line in the densest part of the field.",
    "hi": "घने हिस्से में पौधों को हटाकर पानी की सतह के ठीक ऊपर तने के आवरण देखें।",
    "mr": "दाट भागात रोपे बाजूला करून पाण्याच्या पातळीच्या थोडे वर खोडाचे आवरण तपासा."
   },
   "what_to_avoid": [
    {
-    "en": "Do not add more nitrogen — a dense, lush canopy spreads sheath blight.",
+    "en": "Do not add more nitrogen — dense, lush growth spreads sheath blight.",
     "hi": "और नाइट्रोजन न दें — घनी फसल में शीथ ब्लाइट फैलता है।",
     "mr": "अधिक नत्र देऊ नका — दाट, हिरवीगार वाढ रोग पसरवते."
    }
@@ -270,7 +270,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Drain standing water for a few days and remove weeds so air moves through the canopy.",
+     "en": "Drain standing water for a few days and remove weeds so air can move between the plants.",
      "hi": "कुछ दिन खड़ा पानी निकालें और खरपतवार हटाएँ ताकि हवा आर-पार जाए।",
      "mr": "काही दिवस साचलेले पाणी काढा व तण काढा, जेणेकरून हवा खेळती राहील."
     }
@@ -350,7 +350,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Pick and bury smut balls carefully in a bag so spores do not scatter.",
+     "en": "Gather the infected grains into a bag by hand and bury the bag, so the spores do not scatter.",
      "hi": "कंड की गेंदें थैली में सावधानी से तोड़कर गाड़ दें ताकि बीजाणु न फैलें।",
      "mr": "काजळीचे गोळे पिशवीत काळजीपूर्वक तोडून पुरा, बीजाणू पसरू देऊ नका."
     }
@@ -1176,7 +1176,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Pick and destroy the flowers webbed shut every week; terminate the crop by December and graze or shred the stalks."
+     "en": "Gather and destroy the flowers webbed shut every week; terminate the crop by December and graze or shred the stalks."
     }
    },
    {
@@ -1297,7 +1297,7 @@
  },
  "cotton_whitefly": {
   "what_to_check": {
-   "en": "Turn over one upper-canopy leaf on 20 plants and count adults. Threshold: 8–10 adults per leaf.",
+   "en": "Turn over one leaf from the top of 20 plants and count adults. Threshold: 8–10 adults per leaf.",
    "hi": "20 पौधों पर ऊपर की एक पत्ती पलटकर वयस्क गिनें। सीमा: प्रति पत्ती 8–10 वयस्क।",
    "mr": "20 झाडांवर वरचे एक पान उलटून प्रौढ माशा मोजा. मर्यादा: प्रति पान 8–10 प्रौढ."
   },
@@ -1317,7 +1317,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Put up yellow sticky traps (10 per acre) at canopy height; remove weed hosts around the field."
+     "en": "Put up yellow sticky traps (10 per acre) at the height of the crop; remove weed hosts around the field."
     }
    },
    {
@@ -1604,7 +1604,7 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if pustules reach the upper canopy at pod filling."
+   "en": "Call an expert if raised rust spots reach the top leaves at pod filling."
   },
   "citations": [
    {
@@ -2085,7 +2085,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Pick and destroy the spotted lower leaves; give balanced fertilizer with enough potash; keep good spacing for air.",
+     "en": "Gather and destroy the spotted lower leaves; give balanced fertilizer with enough potash; keep good spacing for air.",
      "hi": "धब्बेदार निचली पत्तियाँ तोड़कर नष्ट करें; पर्याप्त पोटाश के साथ संतुलित खाद दें; हवा के लिए उचित दूरी रखें।",
      "mr": "ठिपके असलेली खालची पाने तोडून नष्ट करा; पुरेशा पोटॅशसह संतुलित खत द्या; हवेसाठी योग्य अंतर ठेवा."
     }
@@ -2728,7 +2728,7 @@
   },
   "what_to_avoid": [
    {
-    "en": "Do not spray while the canopy is wet with dew — the fungus spreads in leaf wetness.",
+    "en": "Do not spray while the leaves are wet with dew — the fungus spreads in leaf wetness.",
     "hi": "ओस से भीगी फसल पर छिड़काव न करें — पत्ती की नमी में फफूँद फैलती है।",
     "mr": "दवाने ओली असलेली फसल असताना फवारणी करू नका — पानावरील ओलाव्यात बुरशी पसरते."
    },
@@ -2742,7 +2742,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Rotate with a cereal, keep row spacing wide enough for air to move through the canopy, and bury the stubble after harvest.",
+     "en": "Rotate with a cereal, keep row spacing wide enough for air to move between the plants, and bury the stubble after harvest.",
      "hi": "अनाज फसल से फसल-चक्र करें, कतारों की दूरी इतनी रखें कि फसल में हवा चले, और कटाई के बाद अवशेष दबा दें।",
      "mr": "तृणधान्याची फेरपालट करा, ओळींतील अंतर हवा खेळण्याइतके ठेवा आणि काढणीनंतर धसकटे गाडा."
     }
