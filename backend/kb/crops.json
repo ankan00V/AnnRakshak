@@ -1,5 +1,5 @@
 {
-  "_note": "Growth stages by days after sowing. Windows are typical for medium-duration kharif varieties in Maharashtra; a farm's stage is derived on read from its sowing date, never stored. Rice is the one transplanted crop here: its stages are counted from the nursery sowing date, so a farm that gave its transplanting date instead (farm.date_basis == 'transplanted') has nursery_days added back before the stage is read. Asking which date it is costs one tap at sign-up and is worth it: the two are three weeks apart, which is a whole stage, and every risk rule and spray window is keyed to the stage. nursery_days is 21 for medium-duration kharif rice in Maharashtra (ICAR guidance 21-25 days). It is regional, not universal, so nursery_days_by_state overrides it where we have been shown otherwise: 319 paddy plots in the SICKLE dataset (Cauvery delta, both sowing and transplanting dates recorded) put the nursery at a median of 31 days, quartiles 31/31/33, and that holds across all five of its seasons even though season length swings from 111 days to 158 — samba there is transplanted with older seedlings. A state not listed gets the 21-day default. Their whole seasons ran 104 to 190 days, which the maturity window here (from day 126) sits inside. season_ends_das is the day a standing crop is taken to be finished when nobody has said so: the days after sowing stop there, the risk engine stops scoring it, and the field asks to be closed. The last stage's own upper bound is an open sentinel (400) and was never a season end. Season ends, and why each is set past the usual harvest — rice 160: medium-duration kharif paddy is cut about 125-150 days from nursery sowing; 160 leaves room for a late variety; maize 140: grain maize is harvested about 110-130 DAS; 140 leaves room for a late crop; cotton 240: pickings run from boll opening into the cold weather, commonly to 210-240 DAS; soybean 130: harvested about 95-120 DAS; 130 leaves room for a late crop.",
+  "_note": "Growth stages by days after sowing. Windows are typical for medium-duration kharif varieties in Maharashtra; a farm's stage is derived on read from its sowing date, never stored. Rice is the one transplanted crop here: its stages are counted from the nursery sowing date, so a farm that gave its transplanting date instead (farm.date_basis == 'transplanted') has nursery_days added back before the stage is read. Asking which date it is costs one tap at sign-up and is worth it: the two are three weeks apart, which is a whole stage, and every risk rule and spray window is keyed to the stage. nursery_days is 21 for medium-duration kharif rice in Maharashtra (ICAR guidance 21-25 days). It is regional, not universal, so nursery_days_by_state overrides it where we have been shown otherwise: 319 paddy plots in the SICKLE dataset (Cauvery delta, both sowing and transplanting dates recorded) put the nursery at a median of 31 days, quartiles 31/31/33, and that holds across all five of its seasons even though season length swings from 111 days to 158 — samba there is transplanted with older seedlings. A state not listed gets the 21-day default. Their whole seasons ran 104 to 190 days, which the maturity window here (from day 126) sits inside. season_ends_das is the day a standing crop is taken to be finished when nobody has said so: the days after sowing stop there, the risk engine stops scoring it, and the field asks to be closed. The last stage's own upper bound is an open sentinel (400) and was never a season end. Season ends, and why each is set past the usual harvest — rice 160: medium-duration kharif paddy is cut about 125-150 days from nursery sowing; 160 leaves room for a late variety; maize 140: grain maize is harvested about 110-130 DAS; 140 leaves room for a late crop; cotton 240: pickings run from boll opening into the cold weather, commonly to 210-240 DAS; soybean 130: harvested about 95-120 DAS; 130 leaves room for a late crop. gdd_base, gdd_to_harvest and gdd_cap drive the harvest prediction: a crop matures on accumulated warmth, not on a number of days, which is why the same variety is cut weeks apart in a cold year and a hot one. Degree days are summed from the sowing date the stages are counted from, by the modified method (daily mean capped at gdd_cap, floored at gdd_base). Targets are typical of the medium-duration kharif varieties these calendars describe; the prediction is clamped to the last stage's start and season_ends_das, and a farmer's own answer overrides it.",
   "rice": {
     "names": {
       "en": "Rice (paddy)",
@@ -86,7 +86,10 @@
       "Tamil Nadu": 31,
       "Puducherry": 31
     },
-    "season_ends_das": 160
+    "season_ends_das": 160,
+    "gdd_base": 10.0,
+    "gdd_to_harvest": 2200,
+    "gdd_cap": 35.0
   },
   "maize": {
     "names": {
@@ -96,6 +99,9 @@
     },
     "photo_diagnosis": true,
     "season_ends_das": 140,
+    "gdd_base": 10.0,
+    "gdd_to_harvest": 1650,
+    "gdd_cap": 35.0,
     "stages": [
       {
         "key": "seedling",
@@ -179,6 +185,9 @@
     },
     "photo_diagnosis": true,
     "season_ends_das": 240,
+    "gdd_base": 15.5,
+    "gdd_to_harvest": 1800,
+    "gdd_cap": 35.0,
     "stages": [
       {
         "key": "emergence",
@@ -262,6 +271,9 @@
     },
     "photo_diagnosis": true,
     "season_ends_das": 130,
+    "gdd_base": 10.0,
+    "gdd_to_harvest": 1500,
+    "gdd_cap": 35.0,
     "stages": [
       {
         "key": "emergence",

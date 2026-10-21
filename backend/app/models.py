@@ -228,6 +228,12 @@ class Farm(Base):
     still standing, which puts it back to 'growing' for a while."""
     harvested_on: Mapped[date | None] = mapped_column(Date)
     """When the standing crop was taken off. None until a farmer says."""
+    harvest_seen_on: Mapped[date | None] = mapped_column(Date)
+    """The day the satellite watched this field's canopy collapse.
+
+    Stronger than any prediction — it is an observation, not an estimate — so
+    it is kept rather than recomputed, and every read agrees with the sweep
+    that saw it. Still not a harvest record: only the farmer can say that."""
     season_check_on: Mapped[date | None] = mapped_column(Date)
     """The day the farmer last said the crop was still standing.
 

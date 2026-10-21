@@ -34,6 +34,7 @@ from app.config import (
 )
 from app.engine import advisory as advisory_engine
 from app.engine import assign, doubt, gate, prior, risk, vision
+from app.engine import phenology
 from app.engine.weather import WeatherUnavailable, fetch_month_rain, fetch_window, merge_rain, merge_sensor
 from app.kb import KB, tr, trl
 from app.models import (
@@ -168,22 +169,58 @@ def msg(code: str, lang: str) -> str:
 STILL_STANDING_DAYS = 30
 
 
-def season_end_on(kb: KB, farm: Farm) -> date:
-    """The day this field's season is taken to be over.
+def expected_harvest(kb: KB, farm: Farm, today: date | None = None,
+                     *, allow_fetch: bool = False) -> phenology.Harvest:
+    """When this field's crop is expected off — predicted, not assumed.
 
-    Authored per crop in the knowledge base and set well past the usual
-    harvest, so a late or staggered picking is never cut off early. A farmer
-    who has said the crop is still standing holds it open from that day.
-
-    The check this replaced read the last stage's upper das bound, which is an
-    open sentinel of 400 days: a field was flagged only after more than a year,
-    and counted upward the whole time.
+    A crop matures on accumulated warmth rather than on a number of days, so
+    this is read from the heat that has actually fallen on this field. The flat
+    per-crop duration is the fallback for a field with no weather yet, not the
+    answer.
     """
-    sown = kb.sown_on(farm.crop, farm.sowing_date, farm.date_basis, farm.state)
-    end = sown + timedelta(days=kb.season_ends(farm.crop))
+    return phenology.predict(kb, farm, today=today, allow_fetch=allow_fetch)
+
+
+def season_end_on(kb: KB, farm: Farm, today: date | None = None) -> date:
+    """The day this field is taken to have gone quiet.
+
+    The predicted harvest plus a grace, so a wet week or a late contractor does
+    not make the app give up on a standing crop. A farmer who has said the crop
+    is still there holds it open from the day they said so.
+
+    What this replaced read the last stage's upper das bound, which is an open
+    sentinel of 400 days: a field was flagged only after more than a year, and
+    counted upward the whole time.
+    """
+    end = expected_harvest(kb, farm, today).on + timedelta(days=phenology.HARVEST_GRACE_DAYS)
     if farm.season_check_on:
         return max(end, farm.season_check_on + timedelta(days=STILL_STANDING_DAYS))
     return end
+
+
+def note_canopy_collapse(db: Session, kb: KB, farm: Farm) -> date | None:
+    """Record the day the satellite watched this field's canopy go.
+
+    A ripening crop lets its NDVI down gently; a cut one falls off a cliff.
+    That is the closest thing the app has to watching the harvest happen, and
+    it is worth more than any degree-day sum — so it is stored, not guessed at
+    again on every read. It still is not a harvest record: nobody has said the
+    crop came off, only that the field stopped being green.
+    """
+    from app.engine import satellite  # noqa: PLC0415  optional, and it reaches the network
+
+    if farm.harvest_seen_on or not farm.agro_polygon_id or not satellite.configured():
+        return farm.harvest_seen_on
+    try:
+        series = satellite.ndvi_series(farm.agro_polygon_id)
+    except satellite.SatelliteUnavailable:
+        return None
+    sown = kb.sown_on(farm.crop, farm.sowing_date, farm.date_basis, farm.state)
+    seen = phenology._senesced([{"on": r["on"], "mean": r.get("mean")} for r in series], sown)
+    if seen:
+        farm.harvest_seen_on = seen
+        db.commit()
+    return seen
 
 
 def settle_season(db: Session, kb: KB, farm: Farm, today: date | None = None) -> bool:
@@ -201,7 +238,7 @@ def settle_season(db: Session, kb: KB, farm: Farm, today: date | None = None) ->
     field moves to 'dormant' and asks. Idempotent, and cheap enough to run on
     every read of a farmer's own list.
     """
-    if farm.status != "growing" or (today or date.today()) <= season_end_on(kb, farm):
+    if farm.status != "growing" or (today or date.today()) <= season_end_on(kb, farm, today):
         return False
     farm.status = "dormant"
     return True
@@ -235,17 +272,21 @@ def farm_view(kb: KB, farm: Farm, lang: str, today: date | None = None) -> dict:
     # dormant one at its season end. Without that, a rice plot sown in June
     # gains a day every morning for ever, and by spring the app calls it 260
     # days old and reads a maturing stage off bare ground.
-    end = season_end_on(kb, farm)
+    end = season_end_on(kb, farm, today)
     # Derived, not just read off the row. settle_season persists this the next
     # time a write-capable path runs, but a field is past its season the day it
     # is past its season — not the day something happens to notice. Reading it
     # only from the stored status is how a single farm's own screen went on
     # saying 380 days while the list said 160.
+    harvest = expected_harvest(kb, farm, today)
     over = farm.status == "dormant" or (
         farm.status == "growing" and (today or date.today()) > end)
     status = "dormant" if over else farm.status
+    # A dormant field's age is frozen at the harvest we predicted, not at the
+    # grace deadline that followed it: the grace is how long we waited before
+    # giving up on an answer, not three more weeks of growing.
     asof = (farm.harvested_on if status == "fallow" and farm.harvested_on
-            else end if status == "dormant" else today)
+            else harvest.on if status == "dormant" else today)
     stage, das = kb.stage_of(farm, asof)
     return {
         "id": farm.id,
@@ -275,6 +316,10 @@ def farm_view(kb: KB, farm: Farm, lang: str, today: date | None = None) -> dict:
         # they know — whether the crop came off, and when.
         "season_over": over,
         "season_end_on": end.isoformat(),
+        # What the field is predicted to do, and how much that prediction is
+        # worth: read from this field's own weather where there is any, and
+        # from the crop's typical duration where there is not.
+        "expected_harvest": harvest.to_json(),
         "season_check_on": farm.season_check_on.isoformat() if farm.season_check_on else None,
         "seasons": db_seasons_count(farm),
     }
@@ -308,7 +353,7 @@ def close_season(db: Session, farm: Farm, *, on: date | None = None, note: str |
     db.add(Season(farm_id=farm.id, crop=farm.crop, variety=farm.variety, sowing_date=farm.sowing_date,
                   date_basis=farm.date_basis, harvested_on=on, note=(note or "").strip()[:200] or None))
     farm.status, farm.harvested_on = "fallow", on
-    farm.season_check_on = None
+    farm.season_check_on = farm.harvest_seen_on = None
     # An open problem belongs to the season that has just ended.
     for p in db.scalars(select(Problem).where(Problem.farm_id == farm.id, Problem.status == "open")).all():
         p.status = "closed"
@@ -330,12 +375,12 @@ def sow_again(db: Session, kb: KB, farm: Farm, *, crop: str, sowing_date: date,
     if farm.status != "fallow":
         # A field that went dormant is closed at the season end it stopped at,
         # not at today: that is the honest date for the crop that was on it.
-        assumed = season_end_on(kb, farm) if farm.status == "dormant" else date.today()
+        assumed = expected_harvest(kb, farm).on if farm.status == "dormant" else date.today()
         close_season(db, farm, on=min(assumed, sowing_date, date.today()))
     farm.crop, farm.variety = crop, (variety or None)
     farm.sowing_date, farm.date_basis = sowing_date, date_basis
     farm.status, farm.harvested_on = "growing", None
-    farm.season_check_on = None
+    farm.season_check_on = farm.harvest_seen_on = None
     db.commit()
     return {"status": farm.status, "crop": farm.crop, "sowing_date": farm.sowing_date.isoformat()}
 
@@ -1304,6 +1349,15 @@ def run_risk(db: Session, kb: KB, farm: Farm, today: date | None = None, window=
         return {"issued": [], "spread_alerts": 0, "scores": [], "why": why}
     if window is ...:
         window = weather_for(db, farm)
+        # The one place already allowed to go to the network for this field, so
+        # the one place that warms the season's temperatures. Every read after
+        # this serves the harvest prediction from that cache; a field nobody has
+        # swept yet answers from the crop calendar rather than slowly.
+        try:
+            expected_harvest(kb, farm, today, allow_fetch=True)
+            note_canopy_collapse(db, kb, farm)
+        except Exception:  # noqa: BLE001 - a prediction is never worth a failed sweep
+            pass
     scores = risk_scores(db, kb, farm, today, window, satellite=satellite)
     issued = []
     # The cap is per farm per DAY, so alerts from an earlier run today count.

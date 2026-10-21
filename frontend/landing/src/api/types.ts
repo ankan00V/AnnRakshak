@@ -27,6 +27,16 @@ export interface Farm {
   /** The day this field's season is taken to be over. */
   season_end_on?: string
   season_check_on?: string | null
+  /** When the crop is expected off, and how much that prediction is worth.
+   *  'observed' the satellite saw the canopy go; 'thermal' computed from this
+   *  field's own temperatures; 'calendar' the crop's typical duration. */
+  expected_harvest?: {
+    on: string
+    basis: 'observed' | 'thermal' | 'calendar'
+    confidence: 'high' | 'medium' | 'low'
+    gdd: number | null
+    gdd_target: number | null
+  }
   harvested_on?: string | null
   /** Past the last stage the crop calendar knows: time to close the season. */
   season_over?: boolean

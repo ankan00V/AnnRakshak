@@ -12,6 +12,7 @@ from sqlalchemy import func, select
 
 from app import cache, geo, services
 from app.db import Base, SessionLocal, engine
+from app.engine import phenology
 from app.engine.weather import Day, Window
 from app.main import app
 from app.models import Alert, Case, Farm, OfficerAction, Problem, Season
@@ -857,7 +858,8 @@ def test_a_crop_that_is_still_standing_keeps_its_warnings(client):
     kb = kb_for_tests()
     with SessionLocal() as db:
         farm = db.get(Farm, 1)
-        farm.sowing_date = date.today() - timedelta(days=kb.season_ends("rice") + 5)
+        farm.sowing_date = date.today() - timedelta(
+            days=kb.season_ends("rice") + phenology.HARVEST_GRACE_DAYS + 5)
         farm.date_basis = "sown"
         db.commit()
     assert client.get("/api/farms/1").json()["season_over"] is True
@@ -887,7 +889,9 @@ def test_sowing_again_after_a_field_went_quiet_keeps_one_row(client):
         farm.sowing_date = date.today() - timedelta(days=300)
         farm.date_basis = "sown"
         db.commit()
-        end = services.season_end_on(kb, farm)
+        # The lapsed season is recorded as ending at the harvest we predicted,
+        # not at the grace deadline that followed it.
+        end = services.expected_harvest(kb, farm).on
     client.get("/api/farms")  # the listing settles it
 
     r = client.post("/api/farms/1/sow", json={"crop": "rice", "sowing_date": date.today().isoformat()})

@@ -61,7 +61,7 @@ ADDED_COLUMNS = {
              "irrigation": "VARCHAR(20)", "location_source": "VARCHAR(10)", "state": "VARCHAR(60)", "taluka": "VARCHAR(80)",
              "date_basis": "VARCHAR(12) DEFAULT 'sown'",
              "status": "VARCHAR(10) DEFAULT 'growing'", "harvested_on": "DATE",
-             "season_check_on": "DATE"},
+             "season_check_on": "DATE", "harvest_seen_on": "DATE"},
     "alert": {"notified_at": "DATETIME", "emailed_at": "DATETIME",
               "advisory_id": "INTEGER REFERENCES officer_advisory(id)"},
     "case": {"assigned_to": "INTEGER REFERENCES app_user(id)", "assigned_at": "DATETIME",
