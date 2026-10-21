@@ -22,7 +22,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Split the remaining nitrogen into smaller doses; keep the field flooded rather than letting it dry and re-wet.",
+     "en": "Split the remaining nitrogen into smaller doses; keep the field filled with water at all times rather than letting it dry and re-wet.",
      "hi": "बची नाइट्रोजन छोटी किस्तों में दें; खेत में पानी लगातार भरा रखें।",
      "mr": "उरलेले नत्र लहान हप्त्यांत द्या; शेतात पाणी सतत साचलेले ठेवा."
     }
@@ -30,7 +30,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Remove and destroy grassy weeds on bunds — they carry the fungus. Use resistant varieties next season.",
+     "en": "Remove and destroy grass and weeds along the field edges — they carry the fungus. Use resistant varieties next season.",
      "hi": "मेड़ों की घास निकालकर नष्ट करें — इनमें फफूँद रहती है। अगले मौसम में रोगरोधी किस्म लें।",
      "mr": "बांधावरील गवत काढून नष्ट करा — त्यात बुरशी राहते. पुढील हंगामात रोगप्रतिकारक वाण घ्या."
     }
@@ -115,7 +115,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Apply the recommended potash and correct zinc deficiency; avoid water stress.",
+     "en": "Give the crop the recommended potash and correct zinc deficiency; do not let the crop go short of water.",
      "hi": "सिफारिश के अनुसार पोटाश दें और जिंक की कमी दूर करें; पानी की कमी न होने दें।",
      "mr": "शिफारशीप्रमाणे पालाश द्या व जस्ताची कमतरता भरून काढा; पाण्याचा ताण टाळा."
     }
@@ -123,7 +123,7 @@
    {
     "tier": "biological",
     "action": {
-     "en": "Next season, treat seed with Trichoderma viride at 4 g per kg or Pseudomonas fluorescens at 10 g per kg.",
+     "en": "Next season, coat the seed with Trichoderma viride at 4 g per kg or Pseudomonas fluorescens at 10 g per kg.",
      "hi": "अगले मौसम में बीज को ट्राइकोडर्मा विरिडी 4 ग्राम प्रति किलो या स्यूडोमोनास 10 ग्राम प्रति किलो से उपचारित करें।",
      "mr": "पुढील हंगामात बियाण्यास ट्रायकोडर्मा व्हिरिडी 4 ग्रॅम प्रति किलो किंवा स्युडोमोनास 10 ग्रॅम प्रति किलो लावा."
     }
@@ -181,7 +181,7 @@
   },
   "what_to_avoid": [
    {
-    "en": "Do not apply more nitrogen until the blight stops spreading.",
+    "en": "Do not give any more nitrogen until the blight stops spreading.",
     "hi": "झुलसा फैलना रुकने तक और नाइट्रोजन न डालें।",
     "mr": "करपा पसरणे थांबेपर्यंत अधिक नत्र देऊ नका."
    },
@@ -278,7 +278,7 @@
    {
     "tier": "biological",
     "action": {
-     "en": "Apply Pseudomonas fluorescens or Trichoderma to soil and spray at 10 g per litre.",
+     "en": "Mix Pseudomonas fluorescens or Trichoderma into the soil, and spray at 10 g per litre.",
      "hi": "स्यूडोमोनास या ट्राइकोडर्मा मिट्टी में दें और 10 ग्राम प्रति लीटर छिड़कें।",
      "mr": "स्युडोमोनास किंवा ट्रायकोडर्मा जमिनीत द्या व 10 ग्रॅम प्रति लिटर फवारा."
     }
@@ -900,7 +900,7 @@
    {
     "tier": "biological",
     "action": {
-     "en": "Apply Pseudomonas fluorescens or Trichoderma to soil at sowing next season.",
+     "en": "Mix Pseudomonas fluorescens or Trichoderma into the soil at sowing next season.",
      "hi": "अगले मौसम में बुवाई के समय स्यूडोमोनास या ट्राइकोडर्मा मिट्टी में दें।",
      "mr": "पुढील हंगामात पेरणीवेळी स्युडोमोनास किंवा ट्रायकोडर्मा जमिनीत द्या."
     }
@@ -954,7 +954,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Pull out and destroy infected plants as soon as you see them; next season, treat seed with metalaxyl.",
+     "en": "Pull out and destroy infected plants as soon as you see them; next season, coat the seed with metalaxyl.",
      "hi": "रोगी पौधे दिखते ही उखाड़कर नष्ट करें; अगले मौसम में बीज का मेटालेक्सिल से उपचार करें।",
      "mr": "रोगट रोपे दिसताच उपटून नष्ट करा; पुढील हंगामात बियाण्यास मेटॅलॅक्सिल लावा."
     }
@@ -1308,7 +1308,7 @@
     "mr": "पायरेथ्रॉइड किंवा वारंवार निओनिकोटिनॉइड फवारू नका — पांढरी माशी वाढते."
    },
    {
-    "en": "Do not over-apply nitrogen.",
+    "en": "Do not give too much nitrogen.",
     "hi": "ज़्यादा नाइट्रोजन न दें।",
     "mr": "जास्त नत्र देऊ नका."
    }
@@ -1631,7 +1631,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Hand-pick larvae from rolled leaf tips; keep bunds free of grassy weeds where they breed.",
+     "en": "Hand-pick larvae from rolled leaf tips; keep the field edges clear of grass and weeds where they breed.",
      "hi": "मुड़ी नोकों से इल्लियाँ हाथ से चुनें; मेड़ों पर घास न रहने दें जहाँ ये पनपती हैं।",
      "mr": "गुंडाळलेल्या टोकांतून अळ्या हाताने वेचा; बांधावर गवत ठेवू नका जिथे त्या वाढतात."
     }
@@ -1804,7 +1804,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Avoid excess nitrogen and water stress; keep the field free of grassy weeds.",
+     "en": "Avoid excess nitrogen, and do not let the crop go short of water; keep the field clear of grass and weeds.",
      "hi": "ज़्यादा नाइट्रोजन और पानी की कमी से बचें; खेत को घास से मुक्त रखें।",
      "mr": "जास्त नत्र व पाण्याचा ताण टाळा; शेत गवतमुक्त ठेवा."
     }
@@ -2302,7 +2302,7 @@
    {
     "tier": "biological",
     "action": {
-     "en": "Treat seed with Trichoderma viride at 5 g per kg before sowing.",
+     "en": "Coat the seed with Trichoderma viride at 5 g per kg before sowing.",
      "hi": "बुवाई से पहले बीज को ट्राइकोडर्मा विरिडी 5 ग्राम प्रति किलो से उपचारित करें।",
      "mr": "पेरणीपूर्वी बियाण्यास ट्रायकोडर्मा व्हिरिडी 5 ग्रॅम प्रति किलो प्रक्रिया करा."
     }
@@ -2467,7 +2467,7 @@
  },
  "rice_hispa": {
   "what_to_check": {
-   "en": "Walk the field edge first — hispa comes in from grassy bunds. Count scraped leaves on 10 hills and look for the small blue-black beetle with spines.",
+   "en": "Walk the field edge first — hispa comes in from the grass along the field edges. Count scraped leaves on 10 hills and look for the small blue-black beetle with spines.",
    "hi": "पहले खेत की मेड़ देखें — हिस्पा घास वाली मेड़ों से आता है। 10 झुंडों में खुरची हुई पत्तियाँ गिनें और काँटेदार नीली-काली छोटी भृंग देखें।",
    "mr": "आधी बांध तपासा — हिस्पा गवताळ बांधावरून येतो. 10 चुडांमधील खरवडलेली पाने मोजा आणि काटेरी निळसर-काळा लहान भुंगा शोधा."
   },
@@ -2478,7 +2478,7 @@
     "mr": "जादा नत्र देऊ नका — भरपूर खत दिलेले हिरवेगार पीक हिस्पाला वाढवते."
    },
    {
-    "en": "Do not leave grassy weeds on the bunds; they carry the beetle between seasons.",
+    "en": "Do not leave grass and weeds along the field edges; they carry the beetle between seasons.",
     "hi": "मेड़ों पर घास-फूस न छोड़ें; उन्हीं में भृंग मौसम-दर-मौसम बचती है।",
     "mr": "बांधावर गवत ठेवू नका; त्यातच भुंगा हंगामभर टिकतो."
    }
@@ -2487,7 +2487,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Clip and bury the leaf tips carrying eggs, and keep the bunds free of grassy weeds. Close spacing helps the crop carry the damage.",
+     "en": "Clip and bury the leaf tips carrying eggs, and keep the field edges clear of grass and weeds. Close spacing helps the crop carry the damage.",
      "hi": "अंडों वाली पत्तियों के सिरे काटकर मिट्टी में दबाएँ और मेड़ों की घास साफ़ रखें। पास-पास रोपाई नुकसान सहने में मदद करती है।",
      "mr": "अंडी असलेली पानांची टोके कापून मातीत गाडा आणि बांध गवतमुक्त ठेवा. दाट लागवड नुकसान सहन करण्यास मदत करते."
     }
@@ -2562,7 +2562,7 @@
    {
     "tier": "biological",
     "action": {
-     "en": "Next season, treat seed with Pseudomonas fluorescens at 10 g per kg and soak-dry before sowing.",
+     "en": "Next season, coat the seed with Pseudomonas fluorescens at 10 g per kg and soak-dry before sowing.",
      "hi": "अगले मौसम में बीज को स्यूडोमोनास फ्लोरेसेंस 10 ग्राम प्रति किलो से उपचारित करें और बोने से पहले सुखा लें।",
      "mr": "पुढील हंगामात बियाण्यास स्युडोमोनास फ्लुरोसेन्स 10 ग्रॅम प्रति किलो लावा आणि पेरणीपूर्वी वाळवा."
     }
@@ -2629,7 +2629,7 @@
    {
     "tier": "biological",
     "action": {
-     "en": "Next season, treat seed with Pseudomonas fluorescens at 10 g per kg; there is no proven spray once panicles are hit.",
+     "en": "Next season, coat the seed with Pseudomonas fluorescens at 10 g per kg; there is no proven spray once panicles are hit.",
      "hi": "अगले मौसम में बीज को स्यूडोमोनास फ्लोरेसेंस 10 ग्राम प्रति किलो से उपचारित करें; बाली पर रोग आने के बाद कोई प्रमाणित छिड़काव नहीं है।",
      "mr": "पुढील हंगामात बियाण्यास स्युडोमोनास फ्लुरोसेन्स 10 ग्रॅम प्रति किलो लावा; लोंबीवर रोग आल्यानंतर सिद्ध झालेली फवारणी नाही."
     }
@@ -2683,7 +2683,7 @@
    {
     "tier": "biological",
     "action": {
-     "en": "Next season, treat seed with Trichoderma viride at 4 g per kg and raise the nursery on a well-drained bed.",
+     "en": "Next season, coat the seed with Trichoderma viride at 4 g per kg and raise the nursery on a well-drained bed.",
      "hi": "अगले मौसम में बीज को ट्राइकोडर्मा विरिडी 4 ग्राम प्रति किलो से उपचारित करें और नर्सरी अच्छी निकासी वाली क्यारी पर लगाएँ।",
      "mr": "पुढील हंगामात बियाण्यास ट्रायकोडर्मा व्हिरिडी 4 ग्रॅम प्रति किलो लावा आणि रोपवाटिका उत्तम निचरा असलेल्या वाफ्यावर करा."
     }
