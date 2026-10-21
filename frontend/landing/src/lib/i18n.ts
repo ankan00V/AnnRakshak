@@ -302,7 +302,7 @@ const en = {
   expertTrigger: 'Call an expert if',
   sources: 'Sources',
   seasonTitle: 'This season',
-  seasonGrowingNote: 'When you harvest the crop, tell us here. The field stays — only the season ends.',
+  seasonGrowingNote: 'When you harvest the crop, tell us here. The field stays. Only the season ends.',
   seasonOverNote: 'This crop is past the last stage its calendar knows. If it has been harvested, say so: the warnings stop and the days stop counting.',
   seasonHarvested: 'The crop is off the field',
   seasonConfirm: 'Yes, harvested',

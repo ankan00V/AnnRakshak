@@ -549,6 +549,29 @@ def test_a_marker_a_translator_will_carry():
     assert restore("ਨੂੰ XX1XX", names) is None                         # one lost
 
 
+def test_a_dash_is_punctuation_and_a_placeholder_is_data():
+    """Both travel as markers, and they are not worth the same.
+
+    The translators flatten " — " into a hyphen welded between two words — and
+    so do compound words, so an output cannot be read afterwards to tell
+    "বেগুনি-দাগযুক্ত" (purple-stained, right) from a lost dash. A first attempt
+    guessed and turned the compound into an em-dash while leaving the real one
+    glued. Sending the dash as a marker cannot guess. But refusing a whole
+    sentence over a missing dash cost thirty to fifty strings a language, so a
+    lost dash is forgiven and a lost placeholder is not."""
+    from app.i18n import protect, restore
+
+    safe, names = protect("The field stays — only {crop} ends.")
+    assert safe == "The field stays XX1XX only XX0XX ends.", safe
+    assert names == ["crop", "\u2014"]
+
+    assert restore("মাঠ XX1XX কেবল XX0XX", names) == "মাঠ — কেবল {crop}"
+    assert restore("মাঠ কেবল XX0XX", names) == "মাঠ কেবল {crop}", "a lost dash is forgiven"
+    assert restore("মাঠ XX1XX কেবল", names) is None, "a lost placeholder is not"
+    # A hyphen the translator wrote itself is left alone.
+    assert restore("বেগুনি-দাগযুক্ত XX0XX", ["crop"]) == "বেগুনি-দাগযুক্ত {crop}"
+
+
 def test_a_number_may_not_change_places_with_another_one():
     """Word order is the translator's business — Gujarati puts the verb last —
     but "{name} on a {crop} farm {km} km from you" pins each placeholder to the

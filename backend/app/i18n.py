@@ -96,11 +96,29 @@ def marker(i: int) -> str:
     return f"XX{i}XX"
 
 
+DASH = "\u2014"
+"""Stands in the name list for a spaced em-dash, which is protected like a
+placeholder rather than repaired afterwards.
+
+Repairing afterwards does not work: the translators flatten " — " to a hyphen
+welded between two words, and so do compound words, so there is no way to tell
+"বেগুনি-দাগযুক্ত" (purple-stained, correct) from "না-অতিরিক্ত" (a lost dash)
+by looking at the output. A first attempt guessed, and turned the compound into
+an em-dash while leaving the real one glued. A marker cannot guess: it comes
+back where the translator put it, or it does not come back and the line stays
+in English."""
+
+
 def protect(text: str) -> tuple[str, list[str]]:
     names = PLACEHOLDER.findall(text)
     out = text
     for i, n in enumerate(names):
         out = out.replace("{" + n + "}", marker(i), 1)
+    # The dash itself, not the spaces around it, so the translator still sees
+    # two separate words with something between them.
+    for _ in range(text.count(DASH)):
+        names.append(DASH)
+        out = out.replace(DASH, marker(len(names) - 1), 1)
     return out, names
 
 
@@ -116,10 +134,19 @@ def restore(text: str, names: list[str]) -> str | None:
     text = re.sub(r"X\s*X\s*(\d+)\s*X\s*X", r"XX\1XX", text)
     for i, n in enumerate(names):
         hits = text.count(marker(i)) + text.count(f"<{i}>")
+        # A placeholder is data: lose it and the sentence is wrong, so the
+        # line goes back in English. A dash is punctuation, and these scripts
+        # mostly do not use one — losing it costs a pause, and refusing the
+        # whole translation over it costs the farmer the sentence. Thirty to
+        # fifty strings a language came down to exactly that choice.
+        if n == DASH:
+            text = text.replace(marker(i), DASH, 1).replace(f"<{i}>", DASH, 1)
+            text = text.replace(marker(i), "").replace(f"<{i}>", "")
+            continue
         if hits != 1:
             return None
         text = text.replace(marker(i), "{" + n + "}").replace(f"<{i}>", "{" + n + "}")
-    return text
+    return re.sub(r"\s{2,}", " ", text).strip()
 
 
 UNIT_BOUND = re.compile(r"\{[^{}]*\}\s*(?:km|mm|cm|kg|ml|°C|%|acres?|ha)\b")
@@ -136,7 +163,11 @@ def kept_order(out: str, count: int) -> bool:
     kilometres away": every marker present, every count correct, and the
     number is a crop. Where a placeholder is bound to a unit, order is the one
     cheap signal that the pairing survived."""
-    order = [int(m.group(1) or m.group(2)) for m in re.finditer(r"XX(\d+)XX|<(\d+)>", out)]
+    seen = [int(m.group(1) or m.group(2)) for m in re.finditer(r"XX(\d+)XX|<(\d+)>", out)]
+    # Only the placeholders are checked. A dash marker rides at the end of the
+    # list and may legitimately go missing, so counting it here would refuse
+    # the line for the one thing we are willing to lose.
+    order = [i for i in seen if i < count]
     return order == sorted(order) and len(order) == count
 
 
@@ -150,7 +181,8 @@ def machine_translate(text: str, lang: str) -> str | None:
         out = voice.translate(safe, "en", lang)
     except Exception:  # noqa: BLE001  one failed string must not stop the batch
         return None
-    if len(names) > 1 and UNIT_BOUND.search(text) and not kept_order(out, len(names)):
+    holes = sum(1 for n in names if n != DASH)
+    if holes > 1 and UNIT_BOUND.search(text) and not kept_order(out, holes):
         return None  # shuffled: better in English than with the wrong number
     out = tidy(text, out)
     return restore(out, names) if names else out
