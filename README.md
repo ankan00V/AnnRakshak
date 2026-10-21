@@ -2,13 +2,15 @@
 
 **Early detection and management of crop diseases and pest infestations.**
 
-<video src="frontend/landing/public/brand/annrakshak-complete-final-2.mp4" autoplay loop muted playsinline controls></video>
-
 A farmer photographs a sick plant or gets a "go look here" alert. AnnRakshak
 either gives safe, cited advice in Marathi/Hindi, asks one field question when
 it is torn between two diseases, or sends the case to a KVK expert — it never
 guesses. Every expert verdict updates the farmer, warns nearby farms, and feeds
 the officials' surveillance dashboard.
+
+## 🌾 AnnRakshak — Project Demo
+
+https://github.com/user-attachments/assets/58cca41c-1418-460b-a6ab-f4ede10069d0
 
 ## What's built — mapped to the problem statement
 
