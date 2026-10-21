@@ -2,6 +2,7 @@ import { Globe, Mail } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import BrandMark from '../ui/BrandMark'
 import Reveal from '../ui/Reveal'
+import FootageBackdrop from '../ui/FootageBackdrop'
 import { useAuth } from '../auth/AuthContext'
 import { homeOf } from '../auth/helpers'
 import { useFarmer } from '../farmer/FarmerContext'
@@ -18,8 +19,22 @@ export default function FinalCta() {
   const { me, logout } = useAuth()
   const { t } = useFarmer()
   return (
-    <section id="cta" className="w-full bg-leaf-deep text-cream">
-      <div className="max-w-6xl mx-auto px-6 md:px-12 pt-20 md:pt-28">
+    <section id="cta" className="relative w-full bg-leaf-deep text-cream">
+      {/* The closing block asks whether you are ready to protect your harvest.
+          Behind it, a harvest. */}
+      <FootageBackdrop
+        src="/footage/harvest.mp4"
+        poster="/footage/harvest-poster.webp"
+        objectClass="object-[center_72%]"
+        scrim={<>
+          {/* A phone crops a landscape frame hard, so the combine lands right
+              behind the headline rather than off in the field. Narrow screens
+              get a heavier tint to keep the type first. */}
+          <div className="absolute inset-0 bg-leaf-deep/65 md:bg-leaf-deep/45" />
+          <div className="absolute inset-0 bg-cta-scrim" />
+        </>}
+      />
+      <div className="relative max-w-6xl mx-auto px-6 md:px-12 pt-20 md:pt-28">
         <Reveal>
           <div className="grid gap-y-7 gap-x-8 sm:grid-cols-2 lg:grid-cols-4 border-y border-cream/15 py-8">
             {SOURCES.map(({ name, line }) => (
@@ -32,7 +47,7 @@ export default function FinalCta() {
         </Reveal>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 md:px-12 pt-16 md:pt-20 pb-10 text-center">
+      <div className="relative max-w-4xl mx-auto px-6 md:px-12 pt-16 md:pt-20 pb-10 text-center">
         <h2 className="font-instrument-serif text-[2rem] sm:text-4xl md:text-5xl leading-[1.05] text-balance">
           {t('landReady')}
         </h2>
@@ -79,9 +94,6 @@ export default function FinalCta() {
         <footer id="contact" className="mt-16 md:mt-24 border-t border-cream/10 pt-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <span className="flex items-center gap-2 font-semibold tracking-tight"><BrandMark size={28} />AnnRakshak</span>
-            <p className="text-xs font-light text-cream/75 order-last sm:order-none">
-              Smart India Hackathon 2026 · PS 26131 · Govt. of Maharashtra
-            </p>
             <div className="flex items-center gap-4">
               <a
                 href="mailto:team@annrakshak.in"

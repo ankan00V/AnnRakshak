@@ -19,8 +19,9 @@ export default function Inputs() {
           <h2 className="font-semibold flex items-center gap-2"><Package className="w-4 h-4 text-leaf" /> Inputs to stock</h2>
           <p className="text-xs text-soil-dark/60 mt-0.5">
             From what is building this week: how many farms, how many acres, and the ICAR inputs for it.
-            Quantities are a starting point for the office, not a bill, and the input column is a sourced
-            ICAR catalogue — where it is empty, nothing is listed for that problem yet.
+            Quantities are a starting point for the office, not a bill. The named products come from the
+            ICAR technology repository, which covers some problems and not others; for the rest the column
+            carries the biological step from that problem&rsquo;s own advice ladder.
           </p>
         </div>
         <a href="/api/officials/indent?fmt=csv" download
@@ -57,11 +58,17 @@ export default function Inputs() {
                     <td className="py-3 pr-3 text-xs text-soil-dark/70">{r.districts.join(', ')}</td>
                     <td className="py-3">
                       {/* A dash here would read as "nothing to stock", which for
-                          rice blast is not what it means. The catalogue is a
-                          sourced ICAR list and it does not cover every problem
-                          yet; say which it is. */}
+                          rice blast is not what it means. Where the ICAR
+                          catalogue is silent, the problem's own advice ladder
+                          already says what the biological step is — and that
+                          is what the office would be buying. */}
                       {r.suggested.length === 0 ? (
-                        <span className="text-xs text-soil-dark/50">No ICAR bio-input catalogued yet</span>
+                        r.biological ? (
+                          <div className="text-xs">
+                            <span className="text-soil-dark/50">Biological step · not in the ICAR catalogue</span>
+                            <p className="mt-0.5 text-soil-dark/80">{r.biological}</p>
+                          </div>
+                        ) : <span className="text-xs text-soil-dark/50">Nothing to stock for this one</span>
                       ) : (
                         <ul className="space-y-1.5">
                           {r.suggested.map((s) => (

@@ -95,6 +95,8 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     if (res.status === 401 && !path.startsWith('/api/auth/')) window.dispatchEvent(new Event(UNAUTHORIZED))
     throw new ApiError(res.status, detail, field)
   }
+  // 204 has no body to parse; a delete answers with one.
+  if (res.status === 204) return undefined as T
   return res.json() as Promise<T>
 }
 
@@ -153,6 +155,8 @@ export const api = {
     req<Farm>(`/api/farms/${farmId}/harvest`, json(body)),
   sow: (farmId: number, body: { crop: string; sowing_date: string; date_basis?: 'sown' | 'transplanted'; variety?: string }) =>
     req<Farm>(`/api/farms/${farmId}/sow`, json(body)),
+  stillStanding: (farmId: number) => req<Farm>(`/api/farms/${farmId}/standing`, { method: 'POST' }),
+  deleteFarm: (farmId: number) => req<void>(`/api/farms/${farmId}`, { method: 'DELETE' }),
   setFarmLang: (farmId: number, lang: Lang) =>
     req<Farm>(`/api/farms/${farmId}`, { ...json({ lang }), method: 'PATCH' }),
   setFarmLocation: (farmId: number, lat: number, lon: number, confirmFar = false) =>

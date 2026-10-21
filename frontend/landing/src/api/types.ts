@@ -22,7 +22,11 @@ export interface Farm {
   lang: Lang
   is_demo: boolean
   /** 'growing' or 'fallow'. The row is the field; the crop on it is a season. */
-  status?: 'growing' | 'fallow'
+  /** 'dormant': past its season end with nobody having said what happened. */
+  status?: 'growing' | 'dormant' | 'fallow'
+  /** The day this field's season is taken to be over. */
+  season_end_on?: string
+  season_check_on?: string | null
   harvested_on?: string | null
   /** Past the last stage the crop calendar knows: time to close the season. */
   season_over?: boolean
@@ -236,6 +240,10 @@ export interface IndentRow {
   high: number
   inputs: { id: string; short: string; institute?: string | null }[]
   suggested: { input: string; institute?: string | null; quantity: string; order_by: string | null }[]
+  /** The advice ladder's biological step, when no ICAR product is catalogued
+   *  for this problem. Not always a thing to buy — brown planthopper's is
+   *  "protect the spiders already in the field" — so the screen labels it. */
+  biological: string | null
 }
 
 /** Darpan's answer: lines built from the district's own rows, and the screens

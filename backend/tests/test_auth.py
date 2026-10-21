@@ -1143,3 +1143,61 @@ def test_spent_codes_and_finished_sessions_are_forgotten(client, mail):
         assert auth_mod.forget_spent_codes_and_dead_sessions(db) == {"codes_forgotten": 0,
                                                                     "sessions_forgotten": 0}
         assert (db.query(OtpChallenge).count(), db.query(UserSession).count()) == before
+
+
+def test_a_field_added_from_the_demo_stays_on_the_demo_side(client):
+    """Everything an officer sees is split on Farm.is_demo — the queue, the
+    hotspots, the summary, the indent. A farm created while signed in as the
+    demo farmer took the column's default, which is False, so a judge pressing
+    "Add another field" put a made-up farm into a real district office's
+    workload."""
+    assert client.post("/api/auth/demo", json={"role": "farmer"}).status_code == 200
+    r = client.post("/api/farms", json={"farmer_name": "Judge Test", "crop": "rice",
+                                        "sowing_date": SOWN, "district": "Bhandara",
+                                        "lat": 21.17, "lon": 79.65, "area_acres": 1, "lang": "en"})
+    assert r.status_code == 201, r.text
+    with SessionLocal() as db:
+        farm = db.get(Farm, r.json()["id"])
+        assert farm.is_demo is True, "a demo account's farm is a demo farm"
+
+
+def test_a_real_farmers_field_is_a_real_one(client, mail):
+    """The other half of the same rule: a farmer who signed up adds fields that
+    an officer is meant to see."""
+    farmer_signup(client, mail)
+    r = client.post("/api/farms", json={"farmer_name": "Ramesh Patil", "crop": "cotton",
+                                        "sowing_date": SOWN, "district": "Yavatmal",
+                                        "lat": 20.39, "lon": 78.12, "area_acres": 3, "lang": "mr"})
+    assert r.status_code == 201, r.text
+    with SessionLocal() as db:
+        assert db.get(Farm, r.json()["id"]).is_demo is False
+
+def test_the_demo_farmer_can_work_the_fields_it_is_shown(client):
+    """Listing and writing are one rule read from two directions. They had
+    drifted: the demo account was shown four fields and told "farm not found"
+    on every one, so harvest, sow and remove all failed for the one account a
+    judge actually presses buttons in."""
+    client.post("/api/auth/demo", json={"role": "farmer"})
+    shown = client.get("/api/farms").json()
+    assert shown, "the demo farmer was shown nothing"
+    for farm in shown:
+        r = client.post(f"/api/farms/{farm['id']}/harvest", json={})
+        assert r.status_code == 200, f"field {farm['id']} was listed but not writable: {r.text}"
+
+
+def test_the_demo_farmer_cannot_delete_the_shared_demo_fields(client):
+    """Everyone who presses "try the demo" is handed the same four fields.
+    Harvesting one is reversible — the next visitor sows it again — but a
+    delete takes it away from every visitor after them, and from a judge, with
+    nothing in the app to put it back. A field they added themselves is theirs
+    to remove."""
+    client.post("/api/auth/demo", json={"role": "farmer"})
+    shared = client.get("/api/farms").json()[0]
+    assert client.delete(f"/api/farms/{shared['id']}").status_code == 404
+    assert any(f["id"] == shared["id"] for f in client.get("/api/farms").json()), "a shared field was taken"
+
+    mine = client.post("/api/farms", json={
+        "farmer_name": "Mine", "crop": "maize", "sowing_date": "2026-08-01",
+        "district": "Bhandara", "lat": 21.17, "lon": 79.65, "area_acres": 1.0,
+    }).json()
+    assert client.delete(f"/api/farms/{mine['id']}").status_code == 204

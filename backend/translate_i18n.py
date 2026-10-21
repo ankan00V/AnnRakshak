@@ -13,6 +13,21 @@ Only missing strings are sent, so a re-run after a KB edit costs only the new
 text. Placeholders ({crop}, {mm} ...) are protected and checked; a string whose
 placeholders don't survive is left out (it shows in English). Pesticide verdicts
 (app.engine.labelcheck) are never machine translated.
+
+Two checks, both learned the hard way (app/i18n.py):
+
+  * the marker is XX0XX, not <0>. Angle brackets read as punctuation and the
+    models delete them or flatten them to a bare 0 — "near <0>°C, frost can
+    form" came back as "near 0°C", which is a frost warning with the wrong
+    number in it.
+  * a sentence that stands a placeholder next to a unit must come back with
+    the markers in the order they went out. Reordering is usually the
+    translator doing its job, but here it strands the pairing: "{crop}
+    kilometres away", "{water} litres" where the dose should be. Five such
+    sentences shuffle in every phrasing we have tried, in both engines, so in
+    the seven machine languages they stay English on purpose. A farmer reading
+    an English dose is a farmer who can still ask; a farmer reading the wrong
+    one is not.
 """
 
 from __future__ import annotations
@@ -27,7 +42,8 @@ from datetime import date
 from pathlib import Path
 
 from app.config import KB_DIR, SARVAM_TRANSLATE_MODEL
-from app.i18n import MACHINE, MEMORY_DIR, protect, restore, tidy, translate_many
+from app.i18n import (MACHINE, MEMORY_DIR, UNIT_BOUND, kept_order, protect, restore, tidy,
+                      translate_many)
 
 INDICTRANS2 = "ai4bharat/indictrans2-en-indic-dist-200M"
 IT2_CODES = {"bn": "ben_Beng", "ta": "tam_Taml", "te": "tel_Telu", "kn": "kan_Knda", "ml": "mal_Mlym",
@@ -72,6 +88,10 @@ class IndicTrans2:
             for src, (_, names), text in zip(chunk, safe, self.ip.postprocess_batch(dec, lang=tgt)):
                 if not re.search(r"[A-Za-z]", src):
                     done[src] = src
+                    continue
+                # Same bar as the API path: a sentence that pins a placeholder
+                # to a unit must come back with them still paired.
+                if len(names) > 1 and UNIT_BOUND.search(src) and not kept_order(text, len(names)):
                     continue
                 text = tidy(src, text)
                 text = restore(text, names) if names else text

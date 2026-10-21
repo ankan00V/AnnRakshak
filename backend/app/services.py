@@ -16,7 +16,7 @@ from datetime import UTC, date, datetime, timedelta
 from functools import lru_cache
 
 from PIL import Image
-from sqlalchemy import func, or_, select
+from sqlalchemy import delete as sql_delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.i18n import month_name as i18n_month
@@ -42,15 +42,20 @@ from app.models import (
     Case,
     Confirmation,
     Diagnosis,
+    EmailLog,
     ExpertProfile,
     Farm,
     FollowUp,
     LabelPrior,
+    LiveScan,
+    Notice,
     Observation,
     OfficerAction,
     Problem,
+    PushSubscription,
     Season,
     SensorReading,
+    SprayLog,
     TrapReading,
     User,
 )
@@ -157,8 +162,91 @@ def msg(code: str, lang: str) -> str:
 # --------------------------------------------------------------------------
 
 
+#: How long "the crop is still standing" holds a field open before it asks
+#: again. Long enough not to nag, short enough that a field cannot be held
+#: open for ever by one tap.
+STILL_STANDING_DAYS = 30
+
+
+def season_end_on(kb: KB, farm: Farm) -> date:
+    """The day this field's season is taken to be over.
+
+    Authored per crop in the knowledge base and set well past the usual
+    harvest, so a late or staggered picking is never cut off early. A farmer
+    who has said the crop is still standing holds it open from that day.
+
+    The check this replaced read the last stage's upper das bound, which is an
+    open sentinel of 400 days: a field was flagged only after more than a year,
+    and counted upward the whole time.
+    """
+    sown = kb.sown_on(farm.crop, farm.sowing_date, farm.date_basis, farm.state)
+    end = sown + timedelta(days=kb.season_ends(farm.crop))
+    if farm.season_check_on:
+        return max(end, farm.season_check_on + timedelta(days=STILL_STANDING_DAYS))
+    return end
+
+
+def settle_season(db: Session, kb: KB, farm: Farm, today: date | None = None) -> bool:
+    """Let a field that is past its season go quiet, without anyone asking.
+
+    This is the half a button could never fix. The ordinary case is a farmer
+    who simply stops opening the app once the crop is off, and for that farmer
+    every one of these states used to go on as if the crop were still there:
+    the days climbing, the stage reading off a calendar that ran out, the risk
+    engine scoring blast on bare ground, the field counted in a district's
+    growing total.
+
+    It is deliberately not a harvest. Nobody has said the crop came off, so
+    nothing is written into the field's history and no date is invented; the
+    field moves to 'dormant' and asks. Idempotent, and cheap enough to run on
+    every read of a farmer's own list.
+    """
+    if farm.status != "growing" or (today or date.today()) <= season_end_on(kb, farm):
+        return False
+    farm.status = "dormant"
+    return True
+
+
+def settle_seasons(db: Session, kb: KB, farms: list[Farm], today: date | None = None) -> int:
+    """settle_season over a list, committing once if anything moved."""
+    moved = sum(settle_season(db, kb, f, today) for f in farms)
+    if moved:
+        db.commit()
+    return moved
+
+
+def still_standing(db: Session, kb: KB, farm: Farm, on: date | None = None) -> dict:
+    """The farmer says the crop is still in the field.
+
+    A season end read off a crop calendar is a generalisation. Some fields
+    really do run past it, and for those this is the difference between a
+    stopped clock and a disease warning that never arrives. The field goes back
+    to growing and asks again in a month rather than staying open for ever.
+    """
+    farm.season_check_on = on or date.today()
+    farm.status = "growing"
+    db.commit()
+    return {"status": farm.status, "season_check_on": farm.season_check_on.isoformat()}
+
+
 def farm_view(kb: KB, farm: Farm, lang: str, today: date | None = None) -> dict:
-    stage, das = kb.stage_of(farm, today)
+    # The clock stops at whichever end this field has reached, and neither
+    # needs anyone's permission: a harvested field stops at its harvest, a
+    # dormant one at its season end. Without that, a rice plot sown in June
+    # gains a day every morning for ever, and by spring the app calls it 260
+    # days old and reads a maturing stage off bare ground.
+    end = season_end_on(kb, farm)
+    # Derived, not just read off the row. settle_season persists this the next
+    # time a write-capable path runs, but a field is past its season the day it
+    # is past its season — not the day something happens to notice. Reading it
+    # only from the stored status is how a single farm's own screen went on
+    # saying 380 days while the list said 160.
+    over = farm.status == "dormant" or (
+        farm.status == "growing" and (today or date.today()) > end)
+    status = "dormant" if over else farm.status
+    asof = (farm.harvested_on if status == "fallow" and farm.harvested_on
+            else end if status == "dormant" else today)
+    stage, das = kb.stage_of(farm, asof)
     return {
         "id": farm.id,
         "farmer_name": farm.farmer_name,
@@ -180,13 +268,14 @@ def farm_view(kb: KB, farm: Farm, lang: str, today: date | None = None) -> dict:
         "das": das,
         "lang": farm.lang,
         "is_demo": farm.is_demo,
-        "status": farm.status,
+        "status": status,
         "harvested_on": farm.harvested_on.isoformat() if farm.harvested_on else None,
-        # Past the last stage the crop calendar knows, the days after sowing go
-        # on counting and mean nothing. Saying so is how a farmer is asked to
-        # close the season instead of being left with a field that is 300 days
-        # old and still "maturing".
-        "season_over": farm.status == "growing" and das > kb.crops[farm.crop]["stages"][-1]["das"][1],
+        # Past its crop's season and waiting on the farmer. The field has
+        # already stopped counting; what it wants now is the one thing only
+        # they know — whether the crop came off, and when.
+        "season_over": over,
+        "season_end_on": end.isoformat(),
+        "season_check_on": farm.season_check_on.isoformat() if farm.season_check_on else None,
         "seasons": db_seasons_count(farm),
     }
 
@@ -219,6 +308,7 @@ def close_season(db: Session, farm: Farm, *, on: date | None = None, note: str |
     db.add(Season(farm_id=farm.id, crop=farm.crop, variety=farm.variety, sowing_date=farm.sowing_date,
                   date_basis=farm.date_basis, harvested_on=on, note=(note or "").strip()[:200] or None))
     farm.status, farm.harvested_on = "fallow", on
+    farm.season_check_on = None
     # An open problem belongs to the season that has just ended.
     for p in db.scalars(select(Problem).where(Problem.farm_id == farm.id, Problem.status == "open")).all():
         p.status = "closed"
@@ -237,13 +327,52 @@ def sow_again(db: Session, kb: KB, farm: Farm, *, crop: str, sowing_date: date,
         raise ValueError(f"unknown crop {crop}")
     if sowing_date > date.today():
         raise ValueError("sowing date is in the future")
-    if farm.status == "growing":
-        close_season(db, farm, on=min(date.today(), sowing_date))
+    if farm.status != "fallow":
+        # A field that went dormant is closed at the season end it stopped at,
+        # not at today: that is the honest date for the crop that was on it.
+        assumed = season_end_on(kb, farm) if farm.status == "dormant" else date.today()
+        close_season(db, farm, on=min(assumed, sowing_date, date.today()))
     farm.crop, farm.variety = crop, (variety or None)
     farm.sowing_date, farm.date_basis = sowing_date, date_basis
     farm.status, farm.harvested_on = "growing", None
+    farm.season_check_on = None
     db.commit()
     return {"status": farm.status, "crop": farm.crop, "sowing_date": farm.sowing_date.isoformat()}
+
+
+def delete_farm(db: Session, farm: Farm) -> None:
+    """Remove a field and everything that hangs off it.
+
+    This is the escape hatch for the mess the season switch exists to prevent:
+    a farmer who registered the same plot again every June, and now has four
+    copies of one field. Closing a season keeps the row; this takes it away.
+
+    It is a real delete, in one transaction and in dependency order, because a
+    farm that is merely hidden still turns up in a district sweep and still
+    counts in an officer's totals. An expert case open on this field goes with
+    it — the farmer has withdrawn the field, so there is nothing left to
+    confirm.
+    """
+    pids = list(db.scalars(select(Problem.id).where(Problem.farm_id == farm.id)))
+    cids = list(db.scalars(select(Case.id).where(Case.problem_id.in_(pids)))) if pids else []
+
+    # Confirmations point at both a case and a problem, so they go first.
+    if cids:
+        db.execute(sql_delete(Confirmation).where(Confirmation.case_id.in_(cids)))
+    if pids:
+        db.execute(sql_delete(Confirmation).where(Confirmation.problem_id.in_(pids)))
+    # Alerts carry a case id, so they clear before the cases do.
+    db.execute(sql_delete(Alert).where(Alert.farm_id == farm.id))
+    if pids:
+        for model in (Diagnosis, Observation, Advisory, FollowUp):
+            db.execute(sql_delete(model).where(model.problem_id.in_(pids)))
+        db.execute(sql_delete(Case).where(Case.problem_id.in_(pids)))
+    db.execute(sql_delete(Problem).where(Problem.farm_id == farm.id))
+    for model in (Season, TrapReading, SensorReading, LiveScan, Notice,
+                  PushSubscription, SprayLog, EmailLog):
+        db.execute(sql_delete(model).where(model.farm_id == farm.id))
+    db.delete(farm)
+    db.commit()
 
 
 def alert_view(kb: KB, a: Alert, lang: str) -> dict:
@@ -1166,9 +1295,13 @@ def risk_scores(db: Session, kb: KB, farm: Farm, today: date, window,
 def run_risk(db: Session, kb: KB, farm: Farm, today: date | None = None, window=...,
              satellite: dict | None = None) -> dict:
     today = today or date.today()
-    # Nothing is standing on a fallow field, so nothing can be at risk on it.
+    # A field that is past its season goes quiet here too, rather than being
+    # scored for ever. Warning a farmer about blast on a plot cut two months
+    # ago is the "without proper prediction" half of the same bug.
+    settle_season(db, kb, farm, today)
     if farm.status != "growing":
-        return {"issued": [], "spread_alerts": 0, "scores": [], "why": "field is fallow"}
+        why = "field is fallow" if farm.status == "fallow" else "season is over"
+        return {"issued": [], "spread_alerts": 0, "scores": [], "why": why}
     if window is ...:
         window = weather_for(db, farm)
     scores = risk_scores(db, kb, farm, today, window, satellite=satellite)

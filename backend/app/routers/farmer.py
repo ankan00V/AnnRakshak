@@ -6,7 +6,7 @@ import logging
 from datetime import date
 from typing import Literal
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -34,12 +34,15 @@ def _farm(db: Session, farm_id: int) -> Farm:
     return farm
 
 
-def _own_farm(db: Session, farm_id: int, request: Request) -> Farm:
+def _own_farm(db: Session, farm_id: int, request: Request, *, destructive: bool = False) -> Farm:
     """A farm the signed-in farmer may change. An officer may read a field
-    (auth.can_open_farm) but may not sow or harvest on somebody's land."""
+    (auth.can_open_farm) but may not sow or harvest on somebody's land.
+
+    `destructive` asks for the stricter half of the rule: the shared demo
+    fields may be worked, but only a field of one's own may be deleted."""
     farm = _farm(db, farm_id)
     me = auth.signed_in(request, db) if config.AUTH_ENFORCE else None
-    if config.AUTH_ENFORCE and not (me and me.role == "farmer" and farm.user_id == me.id):
+    if not auth.may_change_farm(me, farm, destructive=destructive):
         raise HTTPException(404, "farm not found")
     return farm
 
@@ -144,7 +147,11 @@ def list_farms(request: Request, lang: Lang = "en", db: Session = Depends(get_db
     q = select(Farm).order_by(Farm.id)
     if ids is not None:
         q = q.where(Farm.id.in_(ids))
-    farms = db.scalars(q).all()
+    farms = list(db.scalars(q).all())
+    # Any field that has run past its crop's season goes quiet here, on the
+    # way out. It is the farmer's own list, so this is the read that is
+    # guaranteed to happen, and it means the settling needs no scheduler.
+    services.settle_seasons(db, kb, farms)
     # What is standing against each field, so the picker can answer its own
     # question rather than listing names. One query for the whole list.
     flags = services.farm_flags(db, kb, [f.id for f in farms], lang)
@@ -163,6 +170,11 @@ def create_farm(body: FarmIn, request: Request, db: Session = Depends(get_db), k
     if user is not None:  # the account's contact details reach this field's alerts too
         farm.phone = farm.phone or user.phone
         farm.email = user.email
+        # Everything an officer sees is split on this flag — the queue, the
+        # hotspots, the summary, the indent. A field added from the shared
+        # demo account took the column's default and landed on the real side,
+        # which put a made-up farm into a district office's actual workload.
+        farm.is_demo = user.is_demo
     db.add(farm)
     db.commit()
     return services.farm_view(kb, farm, body.lang)
@@ -391,6 +403,31 @@ def sow(farm_id: int, body: SowIn, request: Request, db: Session = Depends(get_d
                            date_basis=body.date_basis, variety=body.variety)
     except ValueError as e:
         raise HTTPException(422, str(e)) from e
+    return services.farm_view(kb, farm, lang)
+
+
+@router.delete("/farms/{farm_id}", status_code=204)
+def remove_farm(farm_id: int, request: Request, db: Session = Depends(get_db)):
+    """Take a field off the farmer's list for good.
+
+    A farmer who did not know about sowing again may have registered the same
+    plot once per season; this is how those copies go away. It takes the
+    field's whole history with it, which is why the app asks twice."""
+    services.delete_farm(db, _own_farm(db, farm_id, request, destructive=True))
+    return Response(status_code=204)
+
+
+@router.post("/farms/{farm_id}/standing")
+def standing(farm_id: int, request: Request, db: Session = Depends(get_db),
+             kb: KB = Depends(get_kb), lang: Lang = "en"):
+    """The crop is still in the field, past the day its calendar expected.
+
+    A season end read off a crop calendar is a generalisation, and a field that
+    really is still standing must not have its warnings switched off on the
+    strength of one. This holds it open, and asks again in a month rather than
+    for ever."""
+    farm = _own_farm(db, farm_id, request)
+    services.still_standing(db, kb, farm)
     return services.farm_view(kb, farm, lang)
 
 

@@ -297,6 +297,31 @@ def farm_ids_for(db: Session, user: User | None) -> list[int] | None:
     return list(db.scalars(q).all())
 
 
+def may_change_farm(user: User | None, farm: Farm, *, destructive: bool = False) -> bool:
+    """Whether this user may sow, harvest or remove this field.
+
+    It lives beside farm_ids_for because the two are one rule read from two
+    directions, and they had drifted: a demo farmer was shown every demo farm
+    and then told "farm not found" on each one, because listing allowed the
+    shared demo fields and writing did not. An officer may read a field; nobody
+    but the holder sows or harvests on somebody's land.
+
+    `destructive` is the line between the two kinds of change. Every visitor
+    who presses "try the demo" is handed the same four demo fields, so pressing
+    harvest on one is a thing they may do and undo — the next visitor finds it
+    fallow and sows it again. Deleting one takes it away from every visitor
+    after them, and from a judge, with nothing in the app to put it back. That
+    needs a field of their own, which a demo visitor who adds one has.
+    """
+    if not config.AUTH_ENFORCE:
+        return True
+    if user is None or user.role != "farmer":
+        return False
+    if farm.user_id == user.id:
+        return True
+    return bool(user.is_demo and farm.is_demo and not destructive)
+
+
 def _farm_of(db: Session, name: str, value: str) -> Farm | None:
     try:
         key = int(value)

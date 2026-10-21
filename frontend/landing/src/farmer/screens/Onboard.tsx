@@ -85,7 +85,9 @@ export default function Onboard() {
       <div className="pt-2 lg:col-span-8 lg:col-start-1 lg:row-start-1">
         <Sprout className="w-8 h-8 text-leaf" />
         <h1 className="mt-2 font-instrument-serif text-3xl lg:text-[40px] leading-tight">{t('welcome')}</h1>
-        <p className="mt-1 text-sm text-soil-dark/60 lg:text-[15px]">{t('welcomeSub')}</p>
+        <p className="mt-1 text-sm text-soil-dark/60 lg:text-[15px]">
+          {me?.is_demo ? t('welcomeSubDemo') : t('welcomeSub')}
+        </p>
       </div>
 
       {/* The language belongs on this screen — it is the first thing a farmer
@@ -162,7 +164,12 @@ export default function Onboard() {
                 </button>
               </li>
             ))}
-            {!adding && (
+            {/* The demo account is shared and its four fields are the demo.
+                Offering to add one there promises something it cannot keep:
+                whatever a visitor registers stays on the account for the next
+                one, and it is not their field anyway. Signing up is where a
+                real field goes. */}
+            {!adding && !(me?.is_demo && (farms.data?.length ?? 0) > 0) && (
               <li className="lg:h-full">
                 <button
                   onClick={() => setAdding(true)}

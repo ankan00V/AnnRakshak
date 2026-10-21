@@ -310,3 +310,47 @@ def test_an_advisory_is_written_in_every_language_the_app_speaks(client):
         # The officer's own note is prefixed by a line of ours; it must be
         # translated too, not left in English in front of Tamil text.
         assert "Officer's note" not in view["reason"][lang], f"{lang} kept the English note label"
+
+
+def test_a_problem_the_icar_catalogue_misses_still_says_what_to_stock(client):
+    """The repository is a curated list and it reaches ten of our forty-eight
+    problems, so most rows of the indent were blank — which reads as "nothing
+    to stock" rather than "nothing catalogued". The advice ladder already
+    carries the biological step, authored and translated and already going to
+    farmers; where the catalogue is silent that is what the office is buying."""
+    officer = _officer()
+    with SessionLocal() as db:
+        kb = get_kb()
+        for target, crop in (("rice_blast", "rice"), ("rice_leaf_folder", "rice")):
+            office.issue(db, kb, target=target, crop=crop, districts=[], kind="advisory",
+                         level="high", note=None, officer=officer, demo=True)
+        rows = {r["target"]: r for r in office.indent(db, kb, demo=True)}
+
+        blast = rows["rice_blast"]
+        assert not blast["suggested"], "no ICAR product is catalogued for blast"
+        assert "Pseudomonas" in blast["biological"], blast["biological"]
+
+        # A problem the repository does cover keeps its catalogued entry and
+        # does not also carry the ladder line.
+        folder = rows["rice_leaf_folder"]
+        assert folder["suggested"] and folder["biological"] is None
+
+        # The file an office attaches to an indent carries it too.
+        assert "Pseudomonas" in office.indent_csv(list(rows.values()))
+
+        # And it follows the officer's language, like everything else here.
+        mr = {r["target"]: r for r in office.indent(db, kb, demo=True, lang="mr")}
+        assert mr["rice_blast"]["biological"] != blast["biological"]
+
+
+def test_a_problem_with_nothing_to_stock_says_nothing_rather_than_guessing(client):
+    """Herbicide damage is a disorder: there is no bio-input for it and the
+    column should stay empty rather than reach for the nearest sentence."""
+    officer = _officer()
+    with SessionLocal() as db:
+        kb = get_kb()
+        office.issue(db, kb, target="cotton_herbicide_damage", crop="cotton", districts=[],
+                     kind="advisory", level="high", note=None, officer=officer, demo=True)
+        row = next(r for r in office.indent(db, kb, demo=True)
+                   if r["target"] == "cotton_herbicide_damage")
+        assert not row["suggested"] and row["biological"] is None

@@ -378,6 +378,19 @@ LEAD_DAYS = 45
 ordering six weeks late, which is why the outlook is a procurement screen."""
 
 
+def _biological_step(kb: KB, target: str, lang: str) -> str | None:
+    """The biological rung of this problem's advice ladder, in `lang`.
+
+    Not every one of them is a thing to buy — brown planthopper's is "protect
+    the spiders and mirid bugs already in the field" — so the screen labels it
+    as the biological step rather than as stock, and the officer reads which
+    it is."""
+    for rung in (kb.advisories.get(target, {}).get("ladder") or []):
+        if rung.get("tier") == "biological":
+            return tr(rung["action"], lang)
+    return None
+
+
 def indent(db: Session, kb: KB, *, demo: bool, days: int = 7, lang: str = "en") -> list[dict]:
     """One row per problem building: how many farms, in which districts, and the
     ICAR inputs to stock for it."""
@@ -403,11 +416,19 @@ def indent(db: Session, kb: KB, *, demo: bool, days: int = 7, lang: str = "en") 
     for g in groups.values():
         inputs = [kb.tech_view(x, lang) for x in kb.technologies_for(target=g["target"])
                   if x["type"] in ("biocontrol", "variety", "monitoring")]
+        # The ICAR repository is a curated list and it reaches ten of our
+        # forty-eight problems, so most rows had nothing in the column an
+        # officer indents from — which reads as "nothing to stock" rather than
+        # "nothing catalogued". The advice ladder already carries the
+        # biological step for each problem, authored and translated and
+        # already going to farmers; where the repository is silent, that is
+        # what the office would be buying.
+        bio = None if inputs else _biological_step(kb, g["target"], lang)
         out.append({
             "target": g["target"], "name": g["name"], "crop": g["crop"],
             "farms": len(g["farm_ids"]), "acres": round(g["acres"], 1),
             "districts": sorted(g["districts"]), "high": g["high"],
-            "inputs": inputs,
+            "inputs": inputs, "biological": bio,
             # Tricho-cards are quoted per acre; the rest is a count of farms to
             # supply. Both are a starting quantity for the office, not a bill.
             "suggested": [{"input": i["short"], "institute": _institute_name(i),
@@ -437,8 +458,10 @@ def indent_csv(rows: list[dict]) -> str:
                 "Input", "Institute", "Suggested quantity", "Order by"])
     for r in rows:
         if not r["suggested"]:
+            # No catalogued product: carry the biological step across, so the
+            # file an office attaches to an indent says what it is buying for.
             w.writerow([r["name"], r["crop"], r["farms"], r["acres"], "; ".join(r["districts"]),
-                        r["high"], "", "", "", ""])
+                        r["high"], r.get("biological") or "", "", "", ""])
         for s in r["suggested"]:
             w.writerow([r["name"], r["crop"], r["farms"], r["acres"], "; ".join(r["districts"]),
                         r["high"], s["input"], s.get("institute") or "", s["quantity"],

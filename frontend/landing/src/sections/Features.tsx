@@ -1,5 +1,6 @@
-import { Ban, Bug, Map, UserCheck } from 'lucide-react'
+import { Ban, Bug, ListOrdered, Map, UserCheck, Volume2 } from 'lucide-react'
 import Reveal from '../ui/Reveal'
+import { LANGS } from '../lib/i18n'
 
 const GRADCAM = [
   { src: '/shots/gradcam-blast.webp', alt: 'Heat map over a rice panicle, concentrated on the blackened neck node — rice neck blast', caption: 'rice neck blast' },
@@ -14,7 +15,8 @@ const LADDER = [
   { step: 'Chemical', line: 'Last. Dosed for your plot, with the label rule quoted and an officer to confirm it.' },
 ]
 
-const LANGUAGES = ['मराठी', 'हिन्दी', 'English', 'বাংলা', 'ગુજરાતી', 'ಕನ್ನಡ', 'മലയാളം', 'ਪੰਜਾਬੀ', 'தமிழ்', 'తెలుగు', 'ଓଡ଼ିଆ']
+const LANGUAGES = LANGS.filter((l) => l.ready)
+const COUNT = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven'][LANGUAGES.length] ?? String(LANGUAGES.length)
 
 const ALSO = [
   { icon: Bug, title: 'Traps and field sensors', line: 'Pheromone-trap counts read against ICAR-CICR action levels. A farm’s own sensor overrides the district forecast.' },
@@ -34,38 +36,59 @@ export default function Features() {
   return (
     <section id="features" className="w-full bg-cream text-soil-dark">
       <div className="max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-28">
-        <Reveal className="max-w-3xl">
-          <h2 className="font-instrument-serif text-[2rem] sm:text-5xl md:text-[3.5rem] leading-[1.05] text-balance">
+        {/* The sentence wants to be read as one line, and above 1152px it can
+            be: the column stops growing there, so 1056px is all the room this
+            heading will ever get and 44px is what fits it. Narrower than that
+            it keeps the larger size and wraps. */}
+        <Reveal className="max-w-3xl min-[1152px]:max-w-none">
+          <h2 className="font-instrument-serif text-[2rem] sm:text-5xl md:text-[3.5rem] min-[1152px]:text-[2.75rem]
+                         leading-[1.05] text-balance min-[1152px]:text-pretty">
             Built for how farmers actually work — and honest when it isn’t sure.
           </h2>
         </Reveal>
 
-        <div className="mt-12 md:mt-16 grid gap-5 lg:grid-cols-6">
-          {/* Explainability, shown rather than claimed. */}
-          <Reveal className="lg:col-span-4 h-full">
-            <Tile className="h-full">
-              <h3 className="font-instrument-serif text-2xl md:text-3xl">Where the model looked</h3>
-              <p className="mt-2 max-w-xl text-sm font-light leading-relaxed text-soil-dark/70 text-pretty">
+        {/* The heat maps are the most convincing thing the product owns, and
+            they were three thumbnails in a tile that was two thirds empty.
+            They get the full width, and the three cards below get one heading
+            style between them so they read as a set rather than as whatever
+            each one happened to be. */}
+        <Reveal className="mt-12 md:mt-16">
+          <Tile>
+            <div className="md:flex md:items-end md:justify-between md:gap-10">
+              <h3 className="font-instrument-serif text-2xl md:text-3xl shrink-0">Where the model looked</h3>
+              <p className="mt-2 md:mt-0 max-w-xl text-sm font-light leading-relaxed text-soil-dark/70 text-pretty">
                 Every diagnosis carries its own Grad-CAM. If the heat sits on the soil instead of
                 the lesion, the farmer and the KVK expert can both see it and say so.
               </p>
-              <div className="mt-6 grid grid-cols-3 gap-3">
-                {GRADCAM.map(({ src, alt, caption }) => (
-                  <figure key={src}>
-                    <img src={src} alt={alt} loading="lazy" width={440} height={440}
-                      className="w-full aspect-square object-cover rounded-2xl bg-soil-dark/5" />
-                    <figcaption className="mt-2 text-[11px] text-soil-dark/70">{caption}</figcaption>
-                  </figure>
-                ))}
-              </div>
-            </Tile>
-          </Reveal>
+            </div>
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              {GRADCAM.map(({ src, alt, caption }) => (
+                <figure key={src} className="relative overflow-hidden rounded-2xl bg-soil-dark/5">
+                  <img src={src} alt={alt} loading="lazy" width={440} height={440}
+                    className="w-full aspect-square object-cover" />
+                  {/* The name belongs on the picture: a caption underneath at
+                      eleven pixels was a footnote to the thing being shown. */}
+                  <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-soil-dark/85 to-transparent
+                                         px-3 pt-8 pb-2.5 text-[13px] font-medium text-cream">
+                    {caption}
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+            <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-soil-dark/55">
+              <span aria-hidden className="h-2 w-16 rounded-full bg-[linear-gradient(90deg,#3b4cc0,#5ec9c0,#f7f056,#e8762c,#b40426)]" />
+              cool: ignored · hot: what decided the answer
+            </p>
+          </Tile>
+        </Reveal>
 
+        <div className="mt-5 grid gap-5 lg:grid-cols-3 lg:items-stretch">
           {/* The ladder, as rungs. */}
-          <Reveal className="lg:col-span-2 h-full" delay={80}>
+          <Reveal className="h-full" delay={40}>
             <Tile className="h-full">
-              <Ban className="w-5 h-5 text-ember" />
-              <h3 className="mt-4 text-lg font-medium">Chemical last, veto first</h3>
+              <h3 className="flex items-start gap-2.5 text-lg font-medium lg:min-h-[3.5rem]">
+                <ListOrdered className="w-4 h-4 mt-1 text-leaf shrink-0" /> Chemical last, veto first
+              </h3>
               <ol className="mt-5 space-y-4">
                 {LADDER.map(({ step, line }, i) => (
                   <li key={step} className="relative pl-7">
@@ -84,37 +107,42 @@ export default function Features() {
           </Reveal>
 
           {/* The spray check, as the farmer sees it. */}
-          <Reveal className="lg:col-span-3 h-full" delay={40}>
-            <Tile className="h-full">
-              <h3 className="text-lg font-medium">It can refuse a bottle. It can never bless one.</h3>
-              <div className="mt-5 space-y-3">
-                <div className="rounded-2xl border border-ember/25 bg-ember/[0.06] p-4">
-                  <p className="text-sm font-medium text-ember">Glyphosate 41% SL — do not spray</p>
-                  <p className="mt-1 text-xs font-light leading-relaxed text-soil-dark/70">
-                    A weed killer, against a leaf disease. It will not touch the fungus and it will
-                    burn the crop.
-                  </p>
-                </div>
-                <p className="text-xs font-light leading-relaxed text-soil-dark/75">
-                  The check has no vocabulary for “safe”. It vetoes the wrong class, the wrong crop
-                  and anything off-label; the printed label still decides the dose.
+          <Reveal className="h-full" delay={80}>
+            <Tile className="h-full flex flex-col">
+              <h3 className="flex items-start gap-2.5 text-lg font-medium lg:min-h-[3.5rem]">
+                <Ban className="w-4 h-4 mt-1 text-ember shrink-0" /> It can refuse a bottle, never bless one
+              </h3>
+              <div className="mt-5 rounded-2xl border border-ember/25 bg-ember/[0.06] p-4">
+                <p className="text-sm font-medium text-ember">Glyphosate 41% SL — do not spray</p>
+                <p className="mt-1 text-xs font-light leading-relaxed text-soil-dark/70">
+                  A weed killer, against a leaf disease. It will not touch the fungus and it will
+                  burn the crop.
                 </p>
               </div>
+              <p className="mt-auto pt-4 text-xs font-light leading-relaxed text-soil-dark/75">
+                The check has no vocabulary for “safe”. It vetoes the wrong class, the wrong crop
+                and anything off-label; the printed label still decides the dose.
+              </p>
             </Tile>
           </Reveal>
 
           {/* Languages, in their own scripts. */}
-          <Reveal className="lg:col-span-3 h-full" delay={120}>
+          <Reveal className="h-full" delay={120}>
             <Tile className="h-full flex flex-col">
-              <h3 className="text-lg font-medium">Eleven languages, read out loud</h3>
+              <h3 className="flex items-start gap-2.5 text-lg font-medium lg:min-h-[3.5rem]">
+                <Volume2 className="w-4 h-4 mt-1 text-leaf shrink-0" /> {COUNT} languages, read out loud
+              </h3>
               <p className="mt-2 text-sm font-light leading-relaxed text-soil-dark/70 text-pretty">
                 Every advisory, alert and question in the farmer’s own language — spoken through
                 Bhashini, so a farmer who does not read still gets the whole answer.
               </p>
-              <ul className="mt-auto pt-6 flex flex-wrap gap-2">
+              {/* The scripts themselves are the argument, so they are set at
+                  reading size rather than as small grey pills. */}
+              <ul className="mt-auto pt-6 flex flex-wrap gap-x-2 gap-y-1.5">
                 {LANGUAGES.map((l) => (
-                  <li key={l} className="rounded-full bg-leaf-deep/[0.07] px-3 py-1.5 text-sm text-leaf-deep">
-                    {l}
+                  <li key={l.code} lang={l.code} title={l.english}
+                    className="rounded-full bg-leaf-deep/[0.07] px-3 py-1 text-[15px] leading-7 text-leaf-deep">
+                    {l.label}
                   </li>
                 ))}
               </ul>

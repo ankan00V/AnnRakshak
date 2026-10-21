@@ -533,6 +533,62 @@ def test_translation_repairs_what_bhashini_breaks():
     assert restore("মাঠঃ <0 একর", ["area"]) == "মাঠঃ {area} একর"
 
 
+def test_a_marker_a_translator_will_carry():
+    """`<0>` reads as punctuation and the models delete it or flatten it to a
+    bare `0` — "near <0>°C, frost can form" came back as "near 0°C", a frost
+    warning with the wrong number in it. A run of capitals is a word, and words
+    come back. Both shapes still restore, because the memory holds eight
+    thousand strings translated under the old one."""
+    from app.i18n import protect, restore
+
+    safe, names = protect("Yes, your {crop} needs about {etc} mm")
+    assert safe == "Yes, your XX0XX needs about XX1XX mm" and names == ["crop", "etc"]
+    assert restore("XX0XX ਨੂੰ XX1XX ਮਿ.ਮੀ.", names) == "{crop} ਨੂੰ {etc} ਮਿ.ਮੀ."
+    assert restore("XX 0 XX ਨੂੰ XX1XX", names) == "{crop} ਨੂੰ {etc}"   # spaced out
+    assert restore("<0> ਨੂੰ <1>", names) == "{crop} ਨੂੰ {etc}"         # the old shape
+    assert restore("ਨੂੰ XX1XX", names) is None                         # one lost
+
+
+def test_an_em_dash_reaches_the_translator_as_a_comma():
+    """Three ways of carrying the dash itself were tried and all lost.
+
+    Left alone it came back welded between two words ("মাঠ থাকে-কেবল"), 236
+    strings deep. Repaired afterwards it could not be told from a real
+    compound, and the repair turned "বেগুনি-দাগযুক্ত" (purple-stained) into a
+    dash while leaving the glued one. Sent as a marker it survived four times
+    in five and landed mid-clause when it did — between a verb and its object.
+
+    A comma has none of those failures, and is the punctuation these scripts
+    break a clause with anyway."""
+    from app.i18n import protect, restore
+
+    safe, names = protect("The field stays — only {crop} ends.")
+    assert safe == "The field stays, only XX0XX ends." and names == ["crop"]
+    assert protect("About {mm} mm of rain—much washes off.")[0] == "About XX0XX mm of rain, much washes off."
+    assert restore("মাঠ থাকে, কেবল XX0XX শেষ", ["crop"]) == "মাঠ থাকে, কেবল {crop} শেষ"
+    # A hyphen the translator wrote itself is nobody's business but its own.
+    assert restore("বেগুনি-দাগযুক্ত XX0XX", ["crop"]) == "বেগুনি-দাগযুক্ত {crop}"
+
+
+def test_a_number_may_not_change_places_with_another_one():
+    """Word order is the translator's business — Gujarati puts the verb last —
+    but "{name} on a {crop} farm {km} km from you" pins each placeholder to the
+    words beside it. Both engines moved one without the other and produced
+    "{crop} kilometres away": every marker present, every count right, and the
+    number is a crop. Twenty-four shipped translations read like that, a spray
+    dose among them."""
+    from app.i18n import UNIT_BOUND, kept_order
+
+    dose = "For your {area} acre field: about {qty} {unit} in {water} litres of water."
+    assert UNIT_BOUND.search(dose), "a placeholder standing next to a unit"
+    assert not UNIT_BOUND.search("I can judge {crop} but not {other}")
+
+    assert kept_order("XX0XX ಕ್ಕೆ XX1XX XX2XX ಇನ್ XX3XX", 4)
+    assert not kept_order("XX1XX કિલોમીટર દૂર XX2XX ફાર્મ XX0XX", 3)   # the Gujarati shuffle
+    assert kept_order("<0> a <1> b <2>", 3)                            # the old shape counts too
+    assert not kept_order("XX0XX a XX2XX", 3)                          # one went missing
+
+
 # --------------------------------------------------------------------------
 # Which date the farmer gave us
 # --------------------------------------------------------------------------
