@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Camera, ClipboardCheck, Loader2, ShieldCheck, Sparkles, Video } from 'lucide-react'
+import { Camera, ClipboardCheck, Loader2, ShieldCheck, Sparkles, Video, Wheat } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api } from '../../api/client'
+import ReportSheet from '../components/ReportSheet'
 import type { CropInfo, Home as HomeData } from '../../api/types'
 import { useAsync, useWide } from '../../lib/hooks'
 import { EYEBROW, MAIN, ROW, SIDE, SPLIT } from '../layout'
@@ -137,6 +138,30 @@ export default function Home() {
   )
   const location = <LocationAsk farm={d.farm} onUpdated={(farm) => home.setData({ ...d, farm })} />
 
+  // A harvested field gets its own screen rather than the working one with
+  // the contents removed. The crop is off: there is nothing to do today, and
+  // a screen that still looks like a working one invites the farmer to look
+  // for something that is not there. One statement, one way forward.
+  if (d.farm.status === 'fallow') {
+    return (
+      <div className="max-w-2xl mx-auto space-y-5">
+        <Card className="p-5 md:p-7 bg-soil-dark text-cream border-0">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-ochre/20 px-2.5 py-1 text-[11px] font-semibold text-ochre">
+            <Wheat className="w-3.5 h-3.5" /> {t('seasonRestingShort')}
+          </span>
+          <h1 className="mt-3 font-instrument-serif text-3xl leading-tight">{t('harvestedTitle')}</h1>
+          <p className="mt-2 text-sm font-light leading-relaxed text-cream/75 text-pretty">
+            {t('harvestedBody').replace('{on}', d.farm.harvested_on ?? '')}
+          </p>
+        </Card>
+        {season}
+        <Link to="/app/history" className="block text-center text-sm font-medium text-leaf-deep">
+          {t('harvestedHistory')} →
+        </Link>
+      </div>
+    )
+  }
+
   // Desktop: a hero row (the field | the weather now), then the same 8 | 4
   // split as every other tab screen — what to do today on the left, the
   // forecast and recent problems beside it. Below lg: the phone order below.
@@ -246,10 +271,15 @@ function FollowUp({ id, name, onDone, row = false }: { id: number; name: string 
   const { t, lang } = useFarmer()
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
-  const send = async (r: 'improved' | 'no_change' | 'got_worse') => {
+  // "It got worse" goes to a district officer, so it asks for a photo and the
+  // farmer's own words first rather than sending an empty case.
+  const [reporting, setReporting] = useState(false)
+  const send = async (r: 'improved' | 'no_change' | 'got_worse',
+                      evidence?: { photo: Blob | null; note: string }) => {
     setBusy(r)
     try {
-      const out = await api.followup(id, r, lang)
+      const out = await api.followup(id, r, lang, evidence)
+      setReporting(false)
       if (out.message) {
         setMsg(out.message)
         setTimeout(onDone, 2500)
@@ -258,6 +288,8 @@ function FollowUp({ id, name, onDone, row = false }: { id: number; name: string 
       setBusy(null)
     }
   }
+  const choose = (r: 'improved' | 'no_change' | 'got_worse') =>
+    r === 'got_worse' ? setReporting(true) : void send(r)
   const choices = ([['improved', t('improved'), 'bg-leaf text-cream'], ['no_change', t('noChange'), 'bg-white border border-soil-dark/20'], ['got_worse', t('gotWorse'), 'bg-ember text-cream']] as const)
   if (row) {
     return (
@@ -268,10 +300,16 @@ function FollowUp({ id, name, onDone, row = false }: { id: number; name: string 
         ) : (
           <div className="grid grid-cols-3 gap-2 w-[22rem] shrink-0">
             {choices.map(([r, label, cls]) => (
-              <button key={r} onClick={() => send(r)} disabled={busy !== null} className={`min-h-[40px] rounded-xl text-sm font-medium ${cls}`}>
+              <button key={r} onClick={() => choose(r)} disabled={busy !== null} className={`min-h-[40px] rounded-xl text-sm font-medium ${cls}`}>
                 {busy === r ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : label}
               </button>
             ))}
+          </div>
+        )}
+        {reporting && (
+          <div className="basis-full">
+            <ReportSheet busy={busy !== null} onCancel={() => setReporting(false)}
+              onSend={(ev) => void send('got_worse', ev)} />
           </div>
         )}
       </div>
@@ -286,11 +324,15 @@ function FollowUp({ id, name, onDone, row = false }: { id: number; name: string 
       ) : (
         <div className="mt-3 grid grid-cols-3 gap-2">
           {choices.map(([r, label, cls]) => (
-            <button key={r} onClick={() => send(r)} disabled={busy !== null} className={`min-h-[44px] rounded-xl text-sm font-medium ${cls}`}>
+            <button key={r} onClick={() => choose(r)} disabled={busy !== null} className={`min-h-[44px] rounded-xl text-sm font-medium ${cls}`}>
               {busy === r ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : label}
             </button>
           ))}
         </div>
+      )}
+      {reporting && !msg && (
+        <ReportSheet busy={busy !== null} onCancel={() => setReporting(false)}
+          onSend={(ev) => void send('got_worse', ev)} />
       )}
     </Card>
   )

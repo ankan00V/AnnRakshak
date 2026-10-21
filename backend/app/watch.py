@@ -113,7 +113,8 @@ def farm_cycle(db: Session, kb: KB, farm: Farm, now: datetime, fetch=agroweather
     if bundle and farm.email:
         if notify.email_alerts(db, kb, farm, bundle, now):
             out["alert_emails"] += 1
-        if now.hour >= DIGEST_HOUR and farm.email_pref != "off" and notify.email_digest(db, kb, farm, bundle, now):
+        if (now.hour >= DIGEST_HOUR and notify.email_pref_for(db, farm) != "off"
+                and notify.email_digest(db, kb, farm, bundle, now)):
             out["digests"] += 1
     db.commit()
     return out

@@ -350,15 +350,30 @@ def close_season(db: Session, farm: Farm, *, on: date | None = None, note: str |
     farmer sows again, and the risk engine leaves a fallow field alone rather
     than warning about a crop that is not there."""
     on = on or date.today()
-    db.add(Season(farm_id=farm.id, crop=farm.crop, variety=farm.variety, sowing_date=farm.sowing_date,
-                  date_basis=farm.date_basis, harvested_on=on, note=(note or "").strip()[:200] or None))
+    ending = farm.season_no
+    db.add(Season(farm_id=farm.id, season_no=ending, crop=farm.crop, variety=farm.variety,
+                  sowing_date=farm.sowing_date, date_basis=farm.date_basis, harvested_on=on,
+                  note=(note or "").strip()[:200] or None))
     farm.status, farm.harvested_on = "fallow", on
     farm.season_check_on = farm.harvest_seen_on = None
-    # An open problem belongs to the season that has just ended.
-    for p in db.scalars(select(Problem).where(Problem.farm_id == farm.id, Problem.status == "open")).all():
+
+    # An open problem belongs to the season that has just ended, and a
+    # follow-up is a question about a crop that is no longer in the ground.
+    problems = db.scalars(select(Problem).where(
+        Problem.farm_id == farm.id, Problem.season_no == ending, Problem.status == "open")).all()
+    for p in problems:
         p.status = "closed"
+    if problems:
+        db.execute(sql_delete(FollowUp).where(
+            FollowUp.problem_id.in_([p.id for p in problems]), FollowUp.response.is_(None)))
+
+    # The field moves on to the next season here rather than when it is sown
+    # again, so the moment the crop is off, this season's warnings, problems
+    # and advisories stop being anybody's business. They are kept — they are
+    # the field's history — they are simply no longer live.
+    farm.season_no = ending + 1
     db.commit()
-    return {"status": farm.status, "harvested_on": on.isoformat()}
+    return {"status": farm.status, "harvested_on": on.isoformat(), "season_no": farm.season_no}
 
 
 def sow_again(db: Session, kb: KB, farm: Farm, *, crop: str, sowing_date: date,
@@ -383,6 +398,39 @@ def sow_again(db: Session, kb: KB, farm: Farm, *, crop: str, sowing_date: date,
     farm.season_check_on = farm.harvest_seen_on = None
     db.commit()
     return {"status": farm.status, "crop": farm.crop, "sowing_date": farm.sowing_date.isoformat()}
+
+
+PLACE_FIELDS = ("state", "district", "taluka", "village")
+
+
+def propagate_place(db: Session, user: User, before: dict, after: dict) -> int:
+    """Carry a corrected address down to the fields that were sitting on it.
+
+    A farm row keeps its own village and district — they drive the weather, the
+    rainfall normals and which officer the case reaches — so correcting the
+    profile changed one row and left every screen showing the old spelling.
+    That is the bug: the farmer pressed save, saw nothing change, and had no
+    way to tell the app it was wrong.
+
+    A field that was carrying the old answer, or carrying nothing, follows the
+    correction. A field the farmer deliberately placed somewhere else keeps its
+    own, because a farmer with land in two villages means both.
+    """
+    changed = {f: after[f] for f in PLACE_FIELDS if after.get(f) and after.get(f) != before.get(f)}
+    if not changed:
+        return 0
+    moved = 0
+    for farm in db.scalars(select(Farm).where(Farm.user_id == user.id)):
+        touched = False
+        for field, value in changed.items():
+            current = getattr(farm, field, None)
+            if current in (None, "", before.get(field)):
+                setattr(farm, field, value)
+                touched = True
+        moved += touched
+    if moved:
+        db.commit()
+    return moved
 
 
 def delete_farm(db: Session, farm: Farm) -> None:
@@ -1034,7 +1082,8 @@ def _problem_view(db: Session, kb: KB, problem: Problem, lang: str, last_diag, a
     }
 
 
-def respond_followup(db: Session, kb: KB, fu: FollowUp, response: str, lang: str) -> dict:
+def respond_followup(db: Session, kb: KB, fu: FollowUp, response: str, lang: str,
+                     *, image_bytes: bytes | None = None, note: str | None = None) -> dict:
     fu.response = response
     fu.responded_at = datetime.now(UTC)
     problem = db.get(Problem, fu.problem_id)
@@ -1043,6 +1092,7 @@ def respond_followup(db: Session, kb: KB, fu: FollowUp, response: str, lang: str
         problem.status, problem.resolved_at = "resolved", datetime.now(UTC)
     elif response == "got_worse":
         problem.severity = "high"
+        attach_report(db, problem, image_bytes=image_bytes, note=note, reason="FOLLOWUP_WORSE")
         case = escalate(db, problem, "FOLLOWUP_WORSE")
         out |= {"case": case_brief(db, case), "message": msg("FOLLOWUP_WORSE", lang)}
     else:
@@ -1064,15 +1114,17 @@ def case_bundle(db: Session, kb: KB, case: Case, lang: str = "en") -> dict:
     last = diags[-1] if diags else None
     obs = problem.observations
     traps = db.scalars(
-        select(TrapReading).where(TrapReading.farm_id == farm.id).order_by(TrapReading.recorded_on.desc())
+        select(TrapReading).where(TrapReading.farm_id == farm.id, TrapReading.season_no == farm.season_no)
+        .order_by(TrapReading.recorded_on.desc())
     ).all()[:10]
     alerts = db.scalars(
-        select(Alert).where(Alert.farm_id == farm.id).order_by(Alert.issued_on.desc())
+        select(Alert).where(Alert.farm_id == farm.id, Alert.season_no == farm.season_no)
+        .order_by(Alert.issued_on.desc())
     ).all()[:10]
     fus = db.scalars(select(FollowUp).where(FollowUp.problem_id == problem.id)).all()
     history = db.scalars(
         select(Confirmation).join(Problem, Confirmation.problem_id == Problem.id)
-        .where(Problem.farm_id == farm.id, Problem.id != problem.id)
+        .where(Problem.farm_id == farm.id, Problem.season_no == farm.season_no, Problem.id != problem.id)
     ).all()
     return {
         "case": case_brief(db, case) | {"created_at": case.created_at.isoformat() if case.created_at else None},
@@ -1090,6 +1142,12 @@ def case_bundle(db: Session, kb: KB, case: Case, lang: str = "en") -> dict:
         },
         "doubt_doctor": [
             {"question": o.question, "answer": o.answer, "cue_id": o.cue_id} for o in obs if o.kind == "doubt_doctor"
+        ],
+        # What the farmer said in their own words. Stored before this but never
+        # shown, which is half of why an escalated alert reached the office
+        # with nothing an officer could read.
+        "farmer_report": [
+            {"question": o.question, "answer": o.answer} for o in obs if o.kind == "field_note"
         ],
         "followups": [{"due_on": f.due_on.isoformat(), "response": f.response} for f in fus],
         "trap_readings": [
@@ -1275,7 +1333,8 @@ def weather_for(db: Session, farm: Farm):
     window = merge_rain(window, observed)
     since = date.today() - timedelta(days=14)
     readings = db.scalars(
-        select(SensorReading).where(SensorReading.farm_id == farm.id, SensorReading.on >= since)
+        select(SensorReading).where(SensorReading.farm_id == farm.id,
+                                    SensorReading.season_no == farm.season_no, SensorReading.on >= since)
     ).all()
     if readings:
         window = merge_sensor(window, [
@@ -1303,7 +1362,8 @@ def risk_scores(db: Session, kb: KB, farm: Farm, today: date, window,
     has one (the watcher does); it only ever raises a level that already fired."""
     stage, das = kb.stage_for(farm.crop, farm.sowing_date, today)
     history = set(db.scalars(
-        select(Problem.target).where(Problem.farm_id == farm.id, Problem.target.is_not(None))
+        select(Problem.target).where(Problem.farm_id == farm.id,
+                                     Problem.season_no == farm.season_no, Problem.target.is_not(None))
     ).all())
 
     scores: list[risk.Score] = []
@@ -1476,7 +1536,9 @@ def weather_summary(window) -> dict | None:
     today = date.today()
     return {
         "source": window.source,
-        "fetched_at": window.fetched_at.isoformat(),
+        # A window assembled from a sensor or a fixture may carry no fetch
+        # time; the home screen is not worth a crash over a timestamp.
+        "fetched_at": window.fetched_at.isoformat() if window.fetched_at else None,
         "days": [
             {"on": d.on.isoformat(), "rh_max": d.rh_max, "t_min": d.t_min, "t_max": d.t_max,
              "rain_mm": d.rain_mm, "forecast": d.on > today, "from_sensor": d.from_sensor}
@@ -1485,7 +1547,38 @@ def weather_summary(window) -> dict | None:
     }
 
 
-def record_alert_outcome(db: Session, kb: KB, alert: Alert, outcome: str, lang: str) -> dict:
+def attach_report(db: Session, problem: Problem, *, image_bytes: bytes | None,
+                  note: str | None, reason: str) -> None:
+    """What the farmer actually saw, attached to the problem they are escalating.
+
+    An escalation used to arrive at the district office carrying nothing: no
+    photograph, no sentence, a case the officer had to open blind and a frame
+    where a picture should be. The farmer is the only person who has stood in
+    that field, so what they can give is the whole of the evidence — a photo
+    where they can take one, and their own words either way.
+
+    When there is no photo the case says so in as many words, because "no
+    photograph was taken" is information and a blank frame is not.
+    """
+    if image_bytes:
+        db.add(Diagnosis(
+            problem_id=problem.id, image_path=save_upload(image_bytes), topk=[],
+            gate_outcome="escalate", gate_reason=reason, confidence=0.0,
+            model_version="none", is_stub=False,
+        ))
+    db.add(Observation(
+        problem_id=problem.id, kind="field_note", cue_id=None,
+        question=FARMER_REPORT_Q,
+        answer=(note or "").strip()[:500] or (
+            "The farmer reported this without a photograph." if not image_bytes else "—"),
+    ))
+
+
+FARMER_REPORT_Q = "What the farmer reported"
+
+
+def record_alert_outcome(db: Session, kb: KB, alert: Alert, outcome: str, lang: str,
+                         *, image_bytes: bytes | None = None, note: str | None = None) -> dict:
     alert.outcome, alert.outcome_at = outcome, datetime.now(UTC)
     out: dict = {"alert_id": alert.id, "outcome": outcome}
     t = kb.targets[alert.target]
@@ -1496,6 +1589,7 @@ def record_alert_outcome(db: Session, kb: KB, alert: Alert, outcome: str, lang: 
         db.flush()
         db.add(Observation(problem_id=problem.id, kind="field_note", cue_id=None,
                            question=f"Alert {alert.target}: inspection tasks", answer="yes"))
+        attach_report(db, problem, image_bytes=image_bytes, note=note, reason="INSPECTION_FOUND")
         case = escalate(db, problem, "INSPECTION_FOUND")
         out |= {"case": case_brief(db, case), "problem_id": problem.id, "message": msg("INSPECTION_FOUND", lang)}
     db.commit()

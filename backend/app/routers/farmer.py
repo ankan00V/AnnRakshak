@@ -238,15 +238,20 @@ def get_farm(farm_id: int, lang: Lang = "en", db: Session = Depends(get_db), kb:
 def home(farm_id: int, lang: Lang = "en", db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
     farm = _farm(db, farm_id)
     window = services.weather_for(db, farm)
+    # This season only. Everything below is what the crop in the ground needs
+    # today; last season's warnings and questions are history, not business.
     alerts = db.scalars(
-        select(Alert).where(Alert.farm_id == farm.id).order_by(Alert.issued_on.desc(), Alert.id.desc())
+        select(Alert).where(Alert.farm_id == farm.id, Alert.season_no == farm.season_no)
+        .order_by(Alert.issued_on.desc(), Alert.id.desc())
     ).all()
     problems = db.scalars(
-        select(Problem).where(Problem.farm_id == farm.id).order_by(Problem.id.desc())
+        select(Problem).where(Problem.farm_id == farm.id, Problem.season_no == farm.season_no)
+        .order_by(Problem.id.desc())
     ).all()[:8]
     due = db.scalars(
         select(FollowUp).join(Problem, FollowUp.problem_id == Problem.id)
-        .where(Problem.farm_id == farm.id, FollowUp.response.is_(None), FollowUp.due_on <= date.today())
+        .where(Problem.farm_id == farm.id, Problem.season_no == farm.season_no,
+               FollowUp.response.is_(None), FollowUp.due_on <= date.today())
     ).all()
     # Each follow-up card names the problem it asks about; the problem may be
     # older than the eight listed below, so it is looked up on its own.
@@ -329,20 +334,36 @@ def problem_result(problem_id: int, lang: Lang = "en", db: Session = Depends(get
 
 
 @router.post("/followups/{followup_id}")
-def followup(followup_id: int, body: FollowUpIn, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+async def followup(
+    followup_id: int,
+    response: Literal["improved", "no_change", "got_worse"] = Form(...),
+    lang: Lang = Form("en"),
+    note: str | None = Form(None),
+    image: UploadFile | None = File(None),
+    db: Session = Depends(get_db),
+    kb: KB = Depends(get_kb),
+):
+    """How the crop is doing since the last advice.
+
+    "It got worse" sends this to a human, so it carries what the farmer can
+    give: a photograph where they can take one, and their own words either
+    way. Without them the office opened a case with an empty frame and a line
+    of generated text, which is not something anyone can act on."""
     fu = db.get(FollowUp, followup_id)
     if fu is None:
         raise HTTPException(404, "follow-up not found")
     if fu.response is not None:
         raise HTTPException(409, "follow-up already answered")
-    return services.respond_followup(db, kb, fu, body.response, body.lang)
+    data = await _read_capped(image) if image is not None else None
+    return services.respond_followup(db, kb, fu, response, lang, image_bytes=data, note=note)
 
 
 @router.get("/farms/{farm_id}/alerts")
 def alerts(farm_id: int, lang: Lang = "en", db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
     farm = _farm(db, farm_id)
     rows = db.scalars(
-        select(Alert).where(Alert.farm_id == farm.id).order_by(Alert.issued_on.desc(), Alert.id.desc())
+        select(Alert).where(Alert.farm_id == farm.id, Alert.season_no == farm.season_no)
+        .order_by(Alert.issued_on.desc(), Alert.id.desc())
     ).all()
     return [services.alert_view(kb, a, lang) for a in rows]
 
@@ -353,11 +374,25 @@ class AlertOutcomeIn(BaseModel):
 
 
 @router.post("/alerts/{alert_id}/outcome")
-def alert_outcome(alert_id: int, body: AlertOutcomeIn, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+async def alert_outcome(
+    alert_id: int,
+    outcome: Literal["nothing_found", "found", "snoozed"] = Form(...),
+    lang: Lang = Form("en"),
+    note: str | None = Form(None),
+    image: UploadFile | None = File(None),
+    db: Session = Depends(get_db),
+    kb: KB = Depends(get_kb),
+):
+    """What the farmer found when they walked the field.
+
+    "I found it" on an inspection-tier pest goes straight to an officer, so it
+    takes the farmer's photograph and their words with it rather than arriving
+    as an empty case."""
     alert = db.get(Alert, alert_id)
     if alert is None:
         raise HTTPException(404, "alert not found")
-    return services.record_alert_outcome(db, kb, alert, body.outcome, body.lang)
+    data = await _read_capped(image) if image is not None else None
+    return services.record_alert_outcome(db, kb, alert, outcome, lang, image_bytes=data, note=note)
 
 
 class HarvestIn(BaseModel):
@@ -458,8 +493,10 @@ def add_trap(farm_id: int, body: TrapIn, db: Session = Depends(get_db), kb: KB =
 
 @router.get("/farms/{farm_id}/traps")
 def list_traps(farm_id: int, db: Session = Depends(get_db)):
+    farm = _farm(db, farm_id)
     rows = db.scalars(
-        select(TrapReading).where(TrapReading.farm_id == farm_id).order_by(TrapReading.recorded_on.desc())
+        select(TrapReading).where(TrapReading.farm_id == farm.id, TrapReading.season_no == farm.season_no)
+        .order_by(TrapReading.recorded_on.desc())
     ).all()
     return [{"id": r.id, "target": r.target, "trap_type": r.trap_type, "count": r.count, "traps": r.traps,
              "nights": r.nights, "recorded_on": r.recorded_on.isoformat(),
@@ -532,7 +569,8 @@ def _label_target(db: Session, farm: Farm, problem_id: int | None) -> str | None
         target = problem.target
     else:
         latest = db.scalar(select(Problem).where(
-            Problem.farm_id == farm.id, Problem.status == "open", Problem.target.is_not(None)
+            Problem.farm_id == farm.id, Problem.season_no == farm.season_no,
+            Problem.status == "open", Problem.target.is_not(None)
         ).order_by(Problem.id.desc()))
         target = latest.target if latest else None
     return None if target and target.endswith("_healthy") else target

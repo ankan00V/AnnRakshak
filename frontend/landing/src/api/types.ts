@@ -517,6 +517,8 @@ export interface CaseBundle {
   heatmaps: (Heatmap | null)[]
   model: { version: string | null; is_stub: boolean | null; gate_reason: string; hypotheses: TargetView[] }
   doubt_doctor: { question: string; answer: string; cue_id: string }[]
+  /** What the farmer wrote when they escalated this, in their own words. */
+  farmer_report: { question: string; answer: string }[]
   followups: { due_on: string; response: string | null }[]
   trap_readings: {
     target: string
@@ -919,6 +921,8 @@ export interface Me {
   email: string | null
   lang: Lang
   is_demo: boolean
+  /** One email switch for every field this person owns. */
+  email_pref?: EmailPref
   /** When the account was made: a new farmer is offered the app tour. */
   created_at?: string | null
   farm_ids?: number[]
