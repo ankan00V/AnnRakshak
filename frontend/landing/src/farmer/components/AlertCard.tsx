@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Bug, CalendarClock, CheckCircle2, CloudRain, Eye, Loader2, Radar, Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../api/client'
+import ReportSheet from './ReportSheet'
 import type { AlertView } from '../../api/types'
 import { ListenButton, Pill } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
@@ -31,10 +32,19 @@ export default function AlertCard({ alert, onDone }: { alert: AlertView; onDone:
   const style = LEVEL_STYLE[alert.level]
   const answered = alert.outcome === 'nothing_found' || alert.outcome === 'found'
 
-  const answer = async (outcome: 'nothing_found' | 'found' | 'snoozed') => {
+  // A pest the camera cannot name goes straight to an officer when the farmer
+  // says they found it, so it asks for a photo and a sentence first. The
+  // photo-diagnosable ones already go to the camera, which asks by itself.
+  const [reporting, setReporting] = useState(false)
+  const choose = (outcome: 'nothing_found' | 'found' | 'snoozed') =>
+    outcome === 'found' && !alert.can_photo ? setReporting(true) : void answer(outcome)
+
+  const answer = async (outcome: 'nothing_found' | 'found' | 'snoozed',
+                        evidence?: { photo: Blob | null; note: string }) => {
     setBusy(outcome)
     try {
-      const r = await api.alertOutcome(alert.id, outcome, lang)
+      const r = await api.alertOutcome(alert.id, outcome, lang, evidence)
+      setReporting(false)
       if (outcome === 'found' && alert.can_photo) {
         navigate('/app/scan')
         return
@@ -105,7 +115,7 @@ export default function AlertCard({ alert, onDone }: { alert: AlertView; onDone:
             ] as const).map(([o, label, cls]) => (
               <button
                 key={o}
-                onClick={() => answer(o)}
+                onClick={() => choose(o)}
                 disabled={busy !== null}
                 className={`min-h-[44px] rounded-xl border text-xs font-medium leading-tight px-1.5 flex items-center justify-center ${cls} disabled:opacity-60`}
               >
@@ -113,6 +123,10 @@ export default function AlertCard({ alert, onDone }: { alert: AlertView; onDone:
               </button>
             ))}
           </div>
+        )}
+        {reporting && (
+          <ReportSheet busy={busy !== null} onCancel={() => setReporting(false)}
+            onSend={(ev) => void answer('found', ev)} />
         )}
       </div>
     </article>

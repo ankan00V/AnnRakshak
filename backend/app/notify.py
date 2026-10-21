@@ -38,7 +38,7 @@ from app.config import (
 )
 from app.engine import agromet, risk
 from app.kb import KB, tr, trl
-from app.models import Alert, EmailLog, Farm, Notice, Problem, PushSubscription, SprayLog
+from app.models import Alert, EmailLog, Farm, Notice, Problem, PushSubscription, SprayLog, User
 
 LEVEL_LABEL = {
     "high": {"en": "High risk", "hi": "अधिक जोखिम", "mr": "जास्त धोका"},
@@ -288,11 +288,28 @@ def _log(db: Session, farm: Farm, kind: str, key: str, subject: str, status: str
     return row
 
 
+def email_pref_for(db: Session, farm: Farm) -> str:
+    """Whether email may go to this field's farmer, asked once.
+
+    The preference belongs to the person, not the plot. It used to sit on each
+    farm, so a farmer with four fields had four switches and turning one off
+    left the other three still writing to them — which is how somebody who had
+    said no went on receiving mail. The field's own setting is only a fallback
+    for rows with no account behind them.
+    """
+    if farm.user_id:
+        user = db.get(User, farm.user_id)
+        if user is not None and user.email_pref:
+            return user.email_pref
+    return farm.email_pref or "warnings"
+
+
 def email_alerts(db: Session, kb: KB, farm: Farm, bundle: dict, now: datetime) -> str | None:
     """One email with every warning (and new high-risk alert) not yet emailed."""
-    if not farm.email or farm.email_pref not in ("warnings", "all"):
+    pref = email_pref_for(db, farm)
+    if not farm.email or pref not in ("warnings", "all"):
         return None
-    levels = ("warning", "advice") if farm.email_pref == "all" else ("warning",)
+    levels = ("warning", "advice") if pref == "all" else ("warning",)
     notices = db.scalars(select(Notice).where(
         Notice.farm_id == farm.id, Notice.emailed_at.is_(None), Notice.valid_until > now,
         Notice.severity.in_(levels), Notice.created_at >= datetime.combine(now.date(), datetime.min.time()),
@@ -323,7 +340,7 @@ def email_alerts(db: Session, kb: KB, farm: Farm, bundle: dict, now: datetime) -
 
 
 def email_digest(db: Session, kb: KB, farm: Farm, bundle: dict, now: datetime, *, manual: bool = False) -> str | None:
-    if not farm.email or (farm.email_pref == "off" and not manual):
+    if not farm.email or (email_pref_for(db, farm) == "off" and not manual):
         return None
     key = f"digest:{now.date()}" if not manual else f"digest-manual:{now:%Y%m%d%H%M%S}"
     if not manual and db.scalar(select(EmailLog.id).where(EmailLog.farm_id == farm.id, EmailLog.dedupe_key == key)):

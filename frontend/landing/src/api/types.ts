@@ -27,6 +27,16 @@ export interface Farm {
   /** The day this field's season is taken to be over. */
   season_end_on?: string
   season_check_on?: string | null
+  /** When the crop is expected off, and how much that prediction is worth.
+   *  'observed' the satellite saw the canopy go; 'thermal' computed from this
+   *  field's own temperatures; 'calendar' the crop's typical duration. */
+  expected_harvest?: {
+    on: string
+    basis: 'observed' | 'thermal' | 'calendar'
+    confidence: 'high' | 'medium' | 'low'
+    gdd: number | null
+    gdd_target: number | null
+  }
   harvested_on?: string | null
   /** Past the last stage the crop calendar knows: time to close the season. */
   season_over?: boolean
@@ -507,6 +517,8 @@ export interface CaseBundle {
   heatmaps: (Heatmap | null)[]
   model: { version: string | null; is_stub: boolean | null; gate_reason: string; hypotheses: TargetView[] }
   doubt_doctor: { question: string; answer: string; cue_id: string }[]
+  /** What the farmer wrote when they escalated this, in their own words. */
+  farmer_report: { question: string; answer: string }[]
   followups: { due_on: string; response: string | null }[]
   trap_readings: {
     target: string
@@ -909,6 +921,8 @@ export interface Me {
   email: string | null
   lang: Lang
   is_demo: boolean
+  /** One email switch for every field this person owns. */
+  email_pref?: EmailPref
   /** When the account was made: a new farmer is offered the app tour. */
   created_at?: string | null
   farm_ids?: number[]

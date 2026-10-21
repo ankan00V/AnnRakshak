@@ -116,6 +116,23 @@ export default function Profile() {
               })} />
           </ProfileCard>
 
+          {/* One switch, not one per field. A farmer who says "stop emailing
+              me" should have to say it once. */}
+          <ProfileCard title={t('profileEmails')} sub={t('profileEmailsSub')}>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {(['off', 'warnings', 'all'] as const).map((pref) => {
+                const on = (me?.email_pref ?? 'warnings') === pref
+                return (
+                  <button key={pref} onClick={() => save({ email_pref: pref })}
+                    className={`min-h-[46px] rounded-xl border px-3 text-sm font-medium transition-colors ${
+                      on ? 'border-leaf-deep bg-leaf/10 text-leaf-deep' : 'border-soil-dark/15 bg-white'}`}>
+                    {t(pref === 'off' ? 'emailOff' : pref === 'warnings' ? 'emailWarnings' : 'emailAll')}
+                  </button>
+                )
+              })}
+            </div>
+          </ProfileCard>
+
           <ProfileCard title={t('profileFields')} sub={t('profileFieldsSub')}>
             <FieldManager farms={list} crops={crops.data} onChange={farms.reload} />
           </ProfileCard>

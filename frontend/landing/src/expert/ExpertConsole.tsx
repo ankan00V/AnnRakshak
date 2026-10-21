@@ -347,7 +347,12 @@ function CaseDetail({ b, onBack, onResolved }: { b: CaseBundle; onBack: () => vo
               )}
             </>
           ) : (
-            <div className="aspect-[4/3] rounded-xl bg-cream flex items-center justify-center text-sm text-soil-dark/50">No photo — raised from a field alert</div>
+            <div className="aspect-[4/3] rounded-xl bg-cream flex flex-col items-center justify-center gap-1 px-6 text-center">
+              <p className="text-sm font-medium text-soil-dark/60">No photograph</p>
+              <p className="text-[12px] leading-relaxed text-soil-dark/45">
+                The farmer reported this without one. Their words are beside this panel.
+              </p>
+            </div>
           )}
         </Card>
 
@@ -377,6 +382,17 @@ function CaseDetail({ b, onBack, onResolved }: { b: CaseBundle; onBack: () => vo
             )}
             <p className="mt-2 text-[11px] text-soil-dark/40">{b.model.version}</p>
           </Card>
+
+          {b.farmer_report.length > 0 && (
+            <Card className="p-4 border-ember/30 bg-ember/[0.03]">
+              <h2 className="text-sm font-semibold flex items-center gap-1.5">
+                <HelpCircle className="w-4 h-4 text-ember" /> What the farmer reported
+              </h2>
+              {b.farmer_report.map((r, i) => (
+                <p key={i} className="mt-2 text-sm leading-relaxed">{r.answer}</p>
+              ))}
+            </Card>
+          )}
 
           {b.doubt_doctor.length > 0 && (
             <Card className="p-4">

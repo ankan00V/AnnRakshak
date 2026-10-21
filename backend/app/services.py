@@ -34,6 +34,7 @@ from app.config import (
 )
 from app.engine import advisory as advisory_engine
 from app.engine import assign, doubt, gate, prior, risk, vision
+from app.engine import phenology
 from app.engine.weather import WeatherUnavailable, fetch_month_rain, fetch_window, merge_rain, merge_sensor
 from app.kb import KB, tr, trl
 from app.models import (
@@ -168,22 +169,58 @@ def msg(code: str, lang: str) -> str:
 STILL_STANDING_DAYS = 30
 
 
-def season_end_on(kb: KB, farm: Farm) -> date:
-    """The day this field's season is taken to be over.
+def expected_harvest(kb: KB, farm: Farm, today: date | None = None,
+                     *, allow_fetch: bool = False) -> phenology.Harvest:
+    """When this field's crop is expected off — predicted, not assumed.
 
-    Authored per crop in the knowledge base and set well past the usual
-    harvest, so a late or staggered picking is never cut off early. A farmer
-    who has said the crop is still standing holds it open from that day.
-
-    The check this replaced read the last stage's upper das bound, which is an
-    open sentinel of 400 days: a field was flagged only after more than a year,
-    and counted upward the whole time.
+    A crop matures on accumulated warmth rather than on a number of days, so
+    this is read from the heat that has actually fallen on this field. The flat
+    per-crop duration is the fallback for a field with no weather yet, not the
+    answer.
     """
-    sown = kb.sown_on(farm.crop, farm.sowing_date, farm.date_basis, farm.state)
-    end = sown + timedelta(days=kb.season_ends(farm.crop))
+    return phenology.predict(kb, farm, today=today, allow_fetch=allow_fetch)
+
+
+def season_end_on(kb: KB, farm: Farm, today: date | None = None) -> date:
+    """The day this field is taken to have gone quiet.
+
+    The predicted harvest plus a grace, so a wet week or a late contractor does
+    not make the app give up on a standing crop. A farmer who has said the crop
+    is still there holds it open from the day they said so.
+
+    What this replaced read the last stage's upper das bound, which is an open
+    sentinel of 400 days: a field was flagged only after more than a year, and
+    counted upward the whole time.
+    """
+    end = expected_harvest(kb, farm, today).on + timedelta(days=phenology.HARVEST_GRACE_DAYS)
     if farm.season_check_on:
         return max(end, farm.season_check_on + timedelta(days=STILL_STANDING_DAYS))
     return end
+
+
+def note_canopy_collapse(db: Session, kb: KB, farm: Farm) -> date | None:
+    """Record the day the satellite watched this field's canopy go.
+
+    A ripening crop lets its NDVI down gently; a cut one falls off a cliff.
+    That is the closest thing the app has to watching the harvest happen, and
+    it is worth more than any degree-day sum — so it is stored, not guessed at
+    again on every read. It still is not a harvest record: nobody has said the
+    crop came off, only that the field stopped being green.
+    """
+    from app.engine import satellite  # noqa: PLC0415  optional, and it reaches the network
+
+    if farm.harvest_seen_on or not farm.agro_polygon_id or not satellite.configured():
+        return farm.harvest_seen_on
+    try:
+        series = satellite.ndvi_series(farm.agro_polygon_id)
+    except satellite.SatelliteUnavailable:
+        return None
+    sown = kb.sown_on(farm.crop, farm.sowing_date, farm.date_basis, farm.state)
+    seen = phenology._senesced([{"on": r["on"], "mean": r.get("mean")} for r in series], sown)
+    if seen:
+        farm.harvest_seen_on = seen
+        db.commit()
+    return seen
 
 
 def settle_season(db: Session, kb: KB, farm: Farm, today: date | None = None) -> bool:
@@ -201,7 +238,7 @@ def settle_season(db: Session, kb: KB, farm: Farm, today: date | None = None) ->
     field moves to 'dormant' and asks. Idempotent, and cheap enough to run on
     every read of a farmer's own list.
     """
-    if farm.status != "growing" or (today or date.today()) <= season_end_on(kb, farm):
+    if farm.status != "growing" or (today or date.today()) <= season_end_on(kb, farm, today):
         return False
     farm.status = "dormant"
     return True
@@ -235,17 +272,21 @@ def farm_view(kb: KB, farm: Farm, lang: str, today: date | None = None) -> dict:
     # dormant one at its season end. Without that, a rice plot sown in June
     # gains a day every morning for ever, and by spring the app calls it 260
     # days old and reads a maturing stage off bare ground.
-    end = season_end_on(kb, farm)
+    end = season_end_on(kb, farm, today)
     # Derived, not just read off the row. settle_season persists this the next
     # time a write-capable path runs, but a field is past its season the day it
     # is past its season — not the day something happens to notice. Reading it
     # only from the stored status is how a single farm's own screen went on
     # saying 380 days while the list said 160.
+    harvest = expected_harvest(kb, farm, today)
     over = farm.status == "dormant" or (
         farm.status == "growing" and (today or date.today()) > end)
     status = "dormant" if over else farm.status
+    # A dormant field's age is frozen at the harvest we predicted, not at the
+    # grace deadline that followed it: the grace is how long we waited before
+    # giving up on an answer, not three more weeks of growing.
     asof = (farm.harvested_on if status == "fallow" and farm.harvested_on
-            else end if status == "dormant" else today)
+            else harvest.on if status == "dormant" else today)
     stage, das = kb.stage_of(farm, asof)
     return {
         "id": farm.id,
@@ -275,6 +316,10 @@ def farm_view(kb: KB, farm: Farm, lang: str, today: date | None = None) -> dict:
         # they know — whether the crop came off, and when.
         "season_over": over,
         "season_end_on": end.isoformat(),
+        # What the field is predicted to do, and how much that prediction is
+        # worth: read from this field's own weather where there is any, and
+        # from the crop's typical duration where there is not.
+        "expected_harvest": harvest.to_json(),
         "season_check_on": farm.season_check_on.isoformat() if farm.season_check_on else None,
         "seasons": db_seasons_count(farm),
     }
@@ -305,15 +350,30 @@ def close_season(db: Session, farm: Farm, *, on: date | None = None, note: str |
     farmer sows again, and the risk engine leaves a fallow field alone rather
     than warning about a crop that is not there."""
     on = on or date.today()
-    db.add(Season(farm_id=farm.id, crop=farm.crop, variety=farm.variety, sowing_date=farm.sowing_date,
-                  date_basis=farm.date_basis, harvested_on=on, note=(note or "").strip()[:200] or None))
+    ending = farm.season_no
+    db.add(Season(farm_id=farm.id, season_no=ending, crop=farm.crop, variety=farm.variety,
+                  sowing_date=farm.sowing_date, date_basis=farm.date_basis, harvested_on=on,
+                  note=(note or "").strip()[:200] or None))
     farm.status, farm.harvested_on = "fallow", on
-    farm.season_check_on = None
-    # An open problem belongs to the season that has just ended.
-    for p in db.scalars(select(Problem).where(Problem.farm_id == farm.id, Problem.status == "open")).all():
+    farm.season_check_on = farm.harvest_seen_on = None
+
+    # An open problem belongs to the season that has just ended, and a
+    # follow-up is a question about a crop that is no longer in the ground.
+    problems = db.scalars(select(Problem).where(
+        Problem.farm_id == farm.id, Problem.season_no == ending, Problem.status == "open")).all()
+    for p in problems:
         p.status = "closed"
+    if problems:
+        db.execute(sql_delete(FollowUp).where(
+            FollowUp.problem_id.in_([p.id for p in problems]), FollowUp.response.is_(None)))
+
+    # The field moves on to the next season here rather than when it is sown
+    # again, so the moment the crop is off, this season's warnings, problems
+    # and advisories stop being anybody's business. They are kept — they are
+    # the field's history — they are simply no longer live.
+    farm.season_no = ending + 1
     db.commit()
-    return {"status": farm.status, "harvested_on": on.isoformat()}
+    return {"status": farm.status, "harvested_on": on.isoformat(), "season_no": farm.season_no}
 
 
 def sow_again(db: Session, kb: KB, farm: Farm, *, crop: str, sowing_date: date,
@@ -330,14 +390,47 @@ def sow_again(db: Session, kb: KB, farm: Farm, *, crop: str, sowing_date: date,
     if farm.status != "fallow":
         # A field that went dormant is closed at the season end it stopped at,
         # not at today: that is the honest date for the crop that was on it.
-        assumed = season_end_on(kb, farm) if farm.status == "dormant" else date.today()
+        assumed = expected_harvest(kb, farm).on if farm.status == "dormant" else date.today()
         close_season(db, farm, on=min(assumed, sowing_date, date.today()))
     farm.crop, farm.variety = crop, (variety or None)
     farm.sowing_date, farm.date_basis = sowing_date, date_basis
     farm.status, farm.harvested_on = "growing", None
-    farm.season_check_on = None
+    farm.season_check_on = farm.harvest_seen_on = None
     db.commit()
     return {"status": farm.status, "crop": farm.crop, "sowing_date": farm.sowing_date.isoformat()}
+
+
+PLACE_FIELDS = ("state", "district", "taluka", "village")
+
+
+def propagate_place(db: Session, user: User, before: dict, after: dict) -> int:
+    """Carry a corrected address down to the fields that were sitting on it.
+
+    A farm row keeps its own village and district — they drive the weather, the
+    rainfall normals and which officer the case reaches — so correcting the
+    profile changed one row and left every screen showing the old spelling.
+    That is the bug: the farmer pressed save, saw nothing change, and had no
+    way to tell the app it was wrong.
+
+    A field that was carrying the old answer, or carrying nothing, follows the
+    correction. A field the farmer deliberately placed somewhere else keeps its
+    own, because a farmer with land in two villages means both.
+    """
+    changed = {f: after[f] for f in PLACE_FIELDS if after.get(f) and after.get(f) != before.get(f)}
+    if not changed:
+        return 0
+    moved = 0
+    for farm in db.scalars(select(Farm).where(Farm.user_id == user.id)):
+        touched = False
+        for field, value in changed.items():
+            current = getattr(farm, field, None)
+            if current in (None, "", before.get(field)):
+                setattr(farm, field, value)
+                touched = True
+        moved += touched
+    if moved:
+        db.commit()
+    return moved
 
 
 def delete_farm(db: Session, farm: Farm) -> None:
@@ -989,7 +1082,8 @@ def _problem_view(db: Session, kb: KB, problem: Problem, lang: str, last_diag, a
     }
 
 
-def respond_followup(db: Session, kb: KB, fu: FollowUp, response: str, lang: str) -> dict:
+def respond_followup(db: Session, kb: KB, fu: FollowUp, response: str, lang: str,
+                     *, image_bytes: bytes | None = None, note: str | None = None) -> dict:
     fu.response = response
     fu.responded_at = datetime.now(UTC)
     problem = db.get(Problem, fu.problem_id)
@@ -998,6 +1092,7 @@ def respond_followup(db: Session, kb: KB, fu: FollowUp, response: str, lang: str
         problem.status, problem.resolved_at = "resolved", datetime.now(UTC)
     elif response == "got_worse":
         problem.severity = "high"
+        attach_report(db, problem, image_bytes=image_bytes, note=note, reason="FOLLOWUP_WORSE")
         case = escalate(db, problem, "FOLLOWUP_WORSE")
         out |= {"case": case_brief(db, case), "message": msg("FOLLOWUP_WORSE", lang)}
     else:
@@ -1019,15 +1114,17 @@ def case_bundle(db: Session, kb: KB, case: Case, lang: str = "en") -> dict:
     last = diags[-1] if diags else None
     obs = problem.observations
     traps = db.scalars(
-        select(TrapReading).where(TrapReading.farm_id == farm.id).order_by(TrapReading.recorded_on.desc())
+        select(TrapReading).where(TrapReading.farm_id == farm.id, TrapReading.season_no == farm.season_no)
+        .order_by(TrapReading.recorded_on.desc())
     ).all()[:10]
     alerts = db.scalars(
-        select(Alert).where(Alert.farm_id == farm.id).order_by(Alert.issued_on.desc())
+        select(Alert).where(Alert.farm_id == farm.id, Alert.season_no == farm.season_no)
+        .order_by(Alert.issued_on.desc())
     ).all()[:10]
     fus = db.scalars(select(FollowUp).where(FollowUp.problem_id == problem.id)).all()
     history = db.scalars(
         select(Confirmation).join(Problem, Confirmation.problem_id == Problem.id)
-        .where(Problem.farm_id == farm.id, Problem.id != problem.id)
+        .where(Problem.farm_id == farm.id, Problem.season_no == farm.season_no, Problem.id != problem.id)
     ).all()
     return {
         "case": case_brief(db, case) | {"created_at": case.created_at.isoformat() if case.created_at else None},
@@ -1045,6 +1142,12 @@ def case_bundle(db: Session, kb: KB, case: Case, lang: str = "en") -> dict:
         },
         "doubt_doctor": [
             {"question": o.question, "answer": o.answer, "cue_id": o.cue_id} for o in obs if o.kind == "doubt_doctor"
+        ],
+        # What the farmer said in their own words. Stored before this but never
+        # shown, which is half of why an escalated alert reached the office
+        # with nothing an officer could read.
+        "farmer_report": [
+            {"question": o.question, "answer": o.answer} for o in obs if o.kind == "field_note"
         ],
         "followups": [{"due_on": f.due_on.isoformat(), "response": f.response} for f in fus],
         "trap_readings": [
@@ -1230,7 +1333,8 @@ def weather_for(db: Session, farm: Farm):
     window = merge_rain(window, observed)
     since = date.today() - timedelta(days=14)
     readings = db.scalars(
-        select(SensorReading).where(SensorReading.farm_id == farm.id, SensorReading.on >= since)
+        select(SensorReading).where(SensorReading.farm_id == farm.id,
+                                    SensorReading.season_no == farm.season_no, SensorReading.on >= since)
     ).all()
     if readings:
         window = merge_sensor(window, [
@@ -1258,7 +1362,8 @@ def risk_scores(db: Session, kb: KB, farm: Farm, today: date, window,
     has one (the watcher does); it only ever raises a level that already fired."""
     stage, das = kb.stage_for(farm.crop, farm.sowing_date, today)
     history = set(db.scalars(
-        select(Problem.target).where(Problem.farm_id == farm.id, Problem.target.is_not(None))
+        select(Problem.target).where(Problem.farm_id == farm.id,
+                                     Problem.season_no == farm.season_no, Problem.target.is_not(None))
     ).all())
 
     scores: list[risk.Score] = []
@@ -1304,6 +1409,15 @@ def run_risk(db: Session, kb: KB, farm: Farm, today: date | None = None, window=
         return {"issued": [], "spread_alerts": 0, "scores": [], "why": why}
     if window is ...:
         window = weather_for(db, farm)
+        # The one place already allowed to go to the network for this field, so
+        # the one place that warms the season's temperatures. Every read after
+        # this serves the harvest prediction from that cache; a field nobody has
+        # swept yet answers from the crop calendar rather than slowly.
+        try:
+            expected_harvest(kb, farm, today, allow_fetch=True)
+            note_canopy_collapse(db, kb, farm)
+        except Exception:  # noqa: BLE001 - a prediction is never worth a failed sweep
+            pass
     scores = risk_scores(db, kb, farm, today, window, satellite=satellite)
     issued = []
     # The cap is per farm per DAY, so alerts from an earlier run today count.
@@ -1422,7 +1536,9 @@ def weather_summary(window) -> dict | None:
     today = date.today()
     return {
         "source": window.source,
-        "fetched_at": window.fetched_at.isoformat(),
+        # A window assembled from a sensor or a fixture may carry no fetch
+        # time; the home screen is not worth a crash over a timestamp.
+        "fetched_at": window.fetched_at.isoformat() if window.fetched_at else None,
         "days": [
             {"on": d.on.isoformat(), "rh_max": d.rh_max, "t_min": d.t_min, "t_max": d.t_max,
              "rain_mm": d.rain_mm, "forecast": d.on > today, "from_sensor": d.from_sensor}
@@ -1431,7 +1547,38 @@ def weather_summary(window) -> dict | None:
     }
 
 
-def record_alert_outcome(db: Session, kb: KB, alert: Alert, outcome: str, lang: str) -> dict:
+def attach_report(db: Session, problem: Problem, *, image_bytes: bytes | None,
+                  note: str | None, reason: str) -> None:
+    """What the farmer actually saw, attached to the problem they are escalating.
+
+    An escalation used to arrive at the district office carrying nothing: no
+    photograph, no sentence, a case the officer had to open blind and a frame
+    where a picture should be. The farmer is the only person who has stood in
+    that field, so what they can give is the whole of the evidence — a photo
+    where they can take one, and their own words either way.
+
+    When there is no photo the case says so in as many words, because "no
+    photograph was taken" is information and a blank frame is not.
+    """
+    if image_bytes:
+        db.add(Diagnosis(
+            problem_id=problem.id, image_path=save_upload(image_bytes), topk=[],
+            gate_outcome="escalate", gate_reason=reason, confidence=0.0,
+            model_version="none", is_stub=False,
+        ))
+    db.add(Observation(
+        problem_id=problem.id, kind="field_note", cue_id=None,
+        question=FARMER_REPORT_Q,
+        answer=(note or "").strip()[:500] or (
+            "The farmer reported this without a photograph." if not image_bytes else "—"),
+    ))
+
+
+FARMER_REPORT_Q = "What the farmer reported"
+
+
+def record_alert_outcome(db: Session, kb: KB, alert: Alert, outcome: str, lang: str,
+                         *, image_bytes: bytes | None = None, note: str | None = None) -> dict:
     alert.outcome, alert.outcome_at = outcome, datetime.now(UTC)
     out: dict = {"alert_id": alert.id, "outcome": outcome}
     t = kb.targets[alert.target]
@@ -1442,6 +1589,7 @@ def record_alert_outcome(db: Session, kb: KB, alert: Alert, outcome: str, lang: 
         db.flush()
         db.add(Observation(problem_id=problem.id, kind="field_note", cue_id=None,
                            question=f"Alert {alert.target}: inspection tasks", answer="yes"))
+        attach_report(db, problem, image_bytes=image_bytes, note=note, reason="INSPECTION_FOUND")
         case = escalate(db, problem, "INSPECTION_FOUND")
         out |= {"case": case_brief(db, case), "problem_id": problem.id, "message": msg("INSPECTION_FOUND", lang)}
     db.commit()

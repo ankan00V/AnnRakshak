@@ -34,7 +34,7 @@ from app.engine import agromet, agroweather, satellite
 from app.kb import KB, get_kb, tr
 from app.limits import limit as rate_limit
 from app.mailer import valid_address
-from app.models import Farm, Notice, PushSubscription, SprayLog
+from app.models import Farm, Notice, PushSubscription, SprayLog, User
 
 router = APIRouter(prefix="/api", tags=["weather"], dependencies=[Depends(auth.require())])
 
@@ -365,7 +365,13 @@ def _unsubscribe(token: str, db: Session) -> str:
     farm = db.scalar(select(Farm).where(Farm.email_token == token)) if token and len(token) >= 16 else None
     if farm is None:
         return "This link has expired or was already used. You can change emails in the app under Alerts."
+    # One link, every field. The person clicking it is saying they do not want
+    # mail, not that they do not want mail about one plot.
     farm.email_pref = "off"
+    if farm.user_id:
+        user = db.get(User, farm.user_id)
+        if user is not None:
+            user.email_pref = "off"
     db.commit()
     return ("You will not get AnnRakshak emails any more. / आपको अब AnnRakshak ईमेल नहीं मिलेंगे। / "
             "तुम्हाला आता AnnRakshak ईमेल येणार नाहीत.")

@@ -317,7 +317,7 @@
         "mr": "पिकाची हिरवाई घटली: {before} → {after}"
       },
       "text": {
-        "en": "Satellite images ({source}) show your field's greenness index (NDVI) fell from {before} on {d1} to {after} on {d2}. Pests, disease, water stress or lodging often show up like this before you notice them.",
+        "en": "Satellite images ({source}) show your field's greenness index (NDVI) fell from {before} on {d1} to {after} on {d2}. Pests, disease, a crop short of water, or lodging often show up like this before you notice them.",
         "hi": "उपग्रह चित्रों ({source}) के अनुसार आपके खेत का हरियाली सूचकांक (NDVI) {d1} को {before} से घटकर {d2} को {after} हो गया। कीट, रोग, पानी की कमी या फसल गिरना अक्सर पहले ऐसे ही दिखता है।",
         "mr": "उपग्रह प्रतिमांनुसार ({source}) तुमच्या शेताचा हिरवाई निर्देशांक (NDVI) {d1} रोजी {before} वरून {d2} रोजी {after} पर्यंत घटला. कीड, रोग, पाण्याचा ताण किंवा पीक लोळणे अनेकदा आधी असेच दिसते."
       },

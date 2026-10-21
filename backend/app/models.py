@@ -25,7 +25,8 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import event
+from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
 from app.db import Base
 
@@ -65,6 +66,13 @@ class User(Base):
     is_demo: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime)
+    email_pref: Mapped[str | None] = mapped_column(String(10))
+    """Whether this person wants email at all: 'off', 'warnings' or 'all'.
+
+    It lives on the account and not on the field because a farmer who says
+    "stop emailing me" means it, and a per-field switch means saying it once
+    per field and still hearing from the other three. Null is a farmer who has
+    never been asked, and falls back to whatever their fields were set to."""
 
     __table_args__ = (CheckConstraint("role IN ('farmer', 'expert')", name="ck_user_role"),)
 
@@ -228,6 +236,21 @@ class Farm(Base):
     still standing, which puts it back to 'growing' for a while."""
     harvested_on: Mapped[date | None] = mapped_column(Date)
     """When the standing crop was taken off. None until a farmer says."""
+    season_no: Mapped[int] = mapped_column(default=1, index=True)
+    """Which season this field is on, counting from one.
+
+    A season is a scope, not a date range, because every farmer-facing read is
+    a query and a query cannot filter on a feeling. Alerts, problems, trap
+    counts and advisories all carry the number of the season they belong to,
+    so closing one and sowing again leaves the new crop genuinely clean instead
+    of wearing the last one's warnings. The rows stay — they are the field's
+    history — they simply stop being this season's business."""
+    harvest_seen_on: Mapped[date | None] = mapped_column(Date)
+    """The day the satellite watched this field's canopy collapse.
+
+    Stronger than any prediction — it is an observation, not an estimate — so
+    it is kept rather than recomputed, and every read agrees with the sweep
+    that saw it. Still not a harvest record: only the farmer can say that."""
     season_check_on: Mapped[date | None] = mapped_column(Date)
     """The day the farmer last said the crop was still standing.
 
@@ -253,6 +276,7 @@ class Season(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     farm_id: Mapped[int] = mapped_column(ForeignKey("farm.id"), index=True)
+    season_no: Mapped[int] = mapped_column(default=1)
     crop: Mapped[str] = mapped_column(String(20))
     variety: Mapped[str | None] = mapped_column(String(80))
     sowing_date: Mapped[date] = mapped_column(Date)
@@ -272,6 +296,7 @@ class Problem(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     farm_id: Mapped[int] = mapped_column(ForeignKey("farm.id"), index=True)
+    season_no: Mapped[int] = mapped_column(default=1, index=True)
     target: Mapped[str | None] = mapped_column(String(60))
     """Current best label. Null while nobody — model or human — has settled it."""
     status: Mapped[str] = mapped_column(String(20), default="open")
@@ -441,6 +466,7 @@ class Alert(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     farm_id: Mapped[int] = mapped_column(ForeignKey("farm.id"), index=True)
+    season_no: Mapped[int] = mapped_column(default=1, index=True)
     target: Mapped[str] = mapped_column(String(60), index=True)
     trigger: Mapped[str] = mapped_column(String(40))
     level: Mapped[str] = mapped_column(String(10))
@@ -483,6 +509,7 @@ class TrapReading(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     farm_id: Mapped[int] = mapped_column(ForeignKey("farm.id"))
+    season_no: Mapped[int] = mapped_column(default=1, index=True)
     target: Mapped[str] = mapped_column(String(60))
     trap_type: Mapped[str] = mapped_column(String(20))
     count: Mapped[int] = mapped_column(Integer)
@@ -505,6 +532,7 @@ class SensorReading(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     farm_id: Mapped[int] = mapped_column(ForeignKey("farm.id"))
+    season_no: Mapped[int] = mapped_column(default=1, index=True)
     on: Mapped[date] = mapped_column(Date)
     rh_max: Mapped[float | None] = mapped_column(Float)
     t_min: Mapped[float | None] = mapped_column(Float)
@@ -535,6 +563,7 @@ class LiveScan(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     farm_id: Mapped[int] = mapped_column(ForeignKey("farm.id"))
+    season_no: Mapped[int] = mapped_column(default=1, index=True)
     started_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     lat: Mapped[float | None] = mapped_column(Float)
     lon: Mapped[float | None] = mapped_column(Float)
@@ -559,6 +588,7 @@ class Notice(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     farm_id: Mapped[int] = mapped_column(ForeignKey("farm.id"))
+    season_no: Mapped[int] = mapped_column(default=1, index=True)
     rule: Mapped[str] = mapped_column(String(40))
     severity: Mapped[str] = mapped_column(String(10))
     category: Mapped[str] = mapped_column(String(20))
@@ -598,6 +628,7 @@ class SprayLog(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     farm_id: Mapped[int] = mapped_column(ForeignKey("farm.id"))
+    season_no: Mapped[int] = mapped_column(default=1, index=True)
     product: Mapped[str | None] = mapped_column(String(120))
     sprayed_at: Mapped[datetime] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
@@ -637,3 +668,29 @@ class SatRain(Base):
     mm_h: Mapped[float] = mapped_column(Float)
 
     __table_args__ = (UniqueConstraint("dataset", "lat", "lon", "slot", name="uq_sat_rain"),)
+
+
+# --------------------------------------------------------------------------
+# The season boundary
+# --------------------------------------------------------------------------
+
+#: Everything that belongs to one crop cycle rather than to the field itself.
+SEASON_SCOPED = (Alert, Problem, TrapReading, SensorReading, LiveScan, SprayLog, Notice)
+
+
+@event.listens_for(Session, "before_flush")
+def _stamp_season(session: Session, flush_context, instances) -> None:
+    """Give every new season-scoped row the season its field is on.
+
+    Deliberately here and not at the eleven places these rows are created. A
+    rule that has to be remembered eleven times is a rule that gets forgotten
+    the twelfth, and a forgotten one does not fail loudly — it quietly leaks
+    last season's warnings into a farmer's new crop, which is the bug this
+    whole scope exists to kill. Anything added later is stamped too, without
+    its author having to know this exists.
+    """
+    for obj in session.new:
+        if isinstance(obj, SEASON_SCOPED) and getattr(obj, "season_no", None) in (None, 0):
+            farm = session.get(Farm, obj.farm_id) if obj.farm_id else None
+            if farm is not None:
+                obj.season_no = farm.season_no

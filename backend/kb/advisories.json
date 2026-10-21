@@ -22,7 +22,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Split the remaining nitrogen into smaller doses; keep the field flooded rather than letting it dry and re-wet.",
+     "en": "Split the remaining nitrogen into smaller doses; keep the field filled with water at all times rather than letting it dry and re-wet.",
      "hi": "बची नाइट्रोजन छोटी किस्तों में दें; खेत में पानी लगातार भरा रखें।",
      "mr": "उरलेले नत्र लहान हप्त्यांत द्या; शेतात पाणी सतत साचलेले ठेवा."
     }
@@ -30,7 +30,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Remove and destroy grassy weeds on bunds — they carry the fungus. Use resistant varieties next season.",
+     "en": "Remove and destroy grass and weeds along the field edges — they carry the fungus. Use resistant varieties next season.",
      "hi": "मेड़ों की घास निकालकर नष्ट करें — इनमें फफूँद रहती है। अगले मौसम में रोगरोधी किस्म लें।",
      "mr": "बांधावरील गवत काढून नष्ट करा — त्यात बुरशी राहते. पुढील हंगामात रोगप्रतिकारक वाण घ्या."
     }
@@ -115,7 +115,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Apply the recommended potash and correct zinc deficiency; avoid water stress.",
+     "en": "Give the crop the recommended potash and correct zinc deficiency; do not let the crop go short of water.",
      "hi": "सिफारिश के अनुसार पोटाश दें और जिंक की कमी दूर करें; पानी की कमी न होने दें।",
      "mr": "शिफारशीप्रमाणे पालाश द्या व जस्ताची कमतरता भरून काढा; पाण्याचा ताण टाळा."
     }
@@ -123,7 +123,7 @@
    {
     "tier": "biological",
     "action": {
-     "en": "Next season, treat seed with Trichoderma viride at 4 g per kg or Pseudomonas fluorescens at 10 g per kg.",
+     "en": "Next season, coat the seed with Trichoderma viride at 4 g per kg or Pseudomonas fluorescens at 10 g per kg.",
      "hi": "अगले मौसम में बीज को ट्राइकोडर्मा विरिडी 4 ग्राम प्रति किलो या स्यूडोमोनास 10 ग्राम प्रति किलो से उपचारित करें।",
      "mr": "पुढील हंगामात बियाण्यास ट्रायकोडर्मा व्हिरिडी 4 ग्रॅम प्रति किलो किंवा स्युडोमोनास 10 ग्रॅम प्रति किलो लावा."
     }
@@ -181,7 +181,7 @@
   },
   "what_to_avoid": [
    {
-    "en": "Do not apply more nitrogen until the blight stops spreading.",
+    "en": "Do not give any more nitrogen until the blight stops spreading.",
     "hi": "झुलसा फैलना रुकने तक और नाइट्रोजन न डालें।",
     "mr": "करपा पसरणे थांबेपर्यंत अधिक नत्र देऊ नका."
    },
@@ -255,13 +255,13 @@
  },
  "rice_sheath_blight": {
   "what_to_check": {
-   "en": "Part the canopy and check stem sheaths just above the water line in the densest part of the field.",
+   "en": "Part the leaves and check the stem sheaths just above the water line in the densest part of the field.",
    "hi": "घने हिस्से में पौधों को हटाकर पानी की सतह के ठीक ऊपर तने के आवरण देखें।",
    "mr": "दाट भागात रोपे बाजूला करून पाण्याच्या पातळीच्या थोडे वर खोडाचे आवरण तपासा."
   },
   "what_to_avoid": [
    {
-    "en": "Do not add more nitrogen — a dense, lush canopy spreads sheath blight.",
+    "en": "Do not add more nitrogen — dense, lush growth spreads sheath blight.",
     "hi": "और नाइट्रोजन न दें — घनी फसल में शीथ ब्लाइट फैलता है।",
     "mr": "अधिक नत्र देऊ नका — दाट, हिरवीगार वाढ रोग पसरवते."
    }
@@ -270,7 +270,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Drain standing water for a few days and remove weeds so air moves through the canopy.",
+     "en": "Drain standing water for a few days and remove weeds so air can move between the plants.",
      "hi": "कुछ दिन खड़ा पानी निकालें और खरपतवार हटाएँ ताकि हवा आर-पार जाए।",
      "mr": "काही दिवस साचलेले पाणी काढा व तण काढा, जेणेकरून हवा खेळती राहील."
     }
@@ -278,7 +278,7 @@
    {
     "tier": "biological",
     "action": {
-     "en": "Apply Pseudomonas fluorescens or Trichoderma to soil and spray at 10 g per litre.",
+     "en": "Mix Pseudomonas fluorescens or Trichoderma into the soil, and spray at 10 g per litre.",
      "hi": "स्यूडोमोनास या ट्राइकोडर्मा मिट्टी में दें और 10 ग्राम प्रति लीटर छिड़कें।",
      "mr": "स्युडोमोनास किंवा ट्रायकोडर्मा जमिनीत द्या व 10 ग्रॅम प्रति लिटर फवारा."
     }
@@ -350,7 +350,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Pick and bury smut balls carefully in a bag so spores do not scatter.",
+     "en": "Gather the infected grains into a bag by hand and bury the bag, so the spores do not scatter.",
      "hi": "कंड की गेंदें थैली में सावधानी से तोड़कर गाड़ दें ताकि बीजाणु न फैलें।",
      "mr": "काजळीचे गोळे पिशवीत काळजीपूर्वक तोडून पुरा, बीजाणू पसरू देऊ नका."
     }
@@ -532,7 +532,7 @@
   },
   "what_to_avoid": [
    {
-    "en": "Do not spray for white ears that are already visible — the larva has left; protect the next flush instead.",
+    "en": "Do not spray for white panicles that are already visible — the larva has left; protect the next flush instead.",
     "hi": "जो सफेद बालियाँ दिख चुकी हैं उन पर छिड़काव न करें — इल्ली निकल चुकी है।",
     "mr": "आधीच दिसणाऱ्या पांढऱ्या लोंब्यांसाठी फवारणी करू नका — अळी निघून गेलेली असते."
    }
@@ -577,7 +577,7 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if dead hearts exceed 10% or white ears appear across the field.",
+   "en": "Call an expert if dead hearts exceed 10% or white empty panicles appear across the field.",
    "hi": "मृत गोभ 10% से ज़्यादा हों या पूरे खेत में सफेद बालियाँ दिखें तो विशेषज्ञ को बुलाएँ।",
    "mr": "मेलेले गाभे 10% पेक्षा जास्त किंवा सगळीकडे पांढऱ्या लोंब्या दिसल्यास तज्ज्ञांना बोलवा."
   },
@@ -650,7 +650,7 @@
     "water_l_per_acre": 200,
     "verified": false,
     "timing": {
-     "en": "Alternative; acts on nymphs.",
+     "en": "Alternative; acts on the young hoppers.",
      "hi": "विकल्प; शिशुओं पर असर करता है।",
      "mr": "पर्याय; पिल्लांवर परिणाम करते."
     }
@@ -676,7 +676,7 @@
  },
  "maize_turcicum_leaf_blight": {
   "what_to_check": {
-   "en": "Check the lower leaves of 10 plants for long grey-green lesions; note if they reach the ear leaf.",
+   "en": "Check the lower leaves of 10 plants for long grey-green lesions; note if they reach the leaf beside the cob.",
    "hi": "10 पौधों की निचली पत्तियों पर लंबे धूसर-हरे धब्बे देखें; भुट्टे वाली पत्ती तक पहुँचे क्या।",
    "mr": "10 झाडांच्या खालच्या पानांवर लांब राखाडी-हिरवे चट्टे पाहा; कणसाच्या पानापर्यंत पोहोचले का ते नोंदवा."
   },
@@ -732,7 +732,7 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if lesions reach the ear leaf before grain filling.",
+   "en": "Call an expert if lesions reach the leaf beside the cob before grain filling.",
    "hi": "दाना भरने से पहले धब्बे भुट्टे वाली पत्ती तक पहुँचें तो विशेषज्ञ को बुलाएँ।",
    "mr": "दाणे भरण्यापूर्वी चट्टे कणसाच्या पानापर्यंत पोहोचले तर तज्ज्ञांना बोलवा."
   },
@@ -838,7 +838,7 @@
     "water_l_per_acre": 200,
     "verified": false,
     "timing": {
-     "en": "When pustules appear on the upper leaves before tasseling.",
+     "en": "When raised rust spots appear on the upper leaves before the top flower opens.",
      "hi": "नर मंजरी से पहले ऊपरी पत्तियों पर दाने दिखें तब।",
      "mr": "तुरा येण्यापूर्वी वरच्या पानांवर फोड दिसल्यास."
     }
@@ -858,7 +858,7 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if pustules cover the ear leaf.",
+   "en": "Call an expert if raised rust spots cover the leaf beside the cob.",
    "hi": "भुट्टे वाली पत्ती दानों से ढक जाए तो विशेषज्ञ को बुलाएँ।",
    "mr": "कणसाचे पान फोडांनी भरले तर तज्ज्ञांना बोलवा."
   },
@@ -900,7 +900,7 @@
    {
     "tier": "biological",
     "action": {
-     "en": "Apply Pseudomonas fluorescens or Trichoderma to soil at sowing next season.",
+     "en": "Mix Pseudomonas fluorescens or Trichoderma into the soil at sowing next season.",
      "hi": "अगले मौसम में बुवाई के समय स्यूडोमोनास या ट्राइकोडर्मा मिट्टी में दें।",
      "mr": "पुढील हंगामात पेरणीवेळी स्युडोमोनास किंवा ट्रायकोडर्मा जमिनीत द्या."
     }
@@ -920,7 +920,7 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if bands reach the ear or the ear husk rots.",
+   "en": "Call an expert if the bands reach the cob or the cover around it rots.",
    "hi": "पट्टियाँ भुट्टे तक पहुँचें या भुट्टे का छिलका सड़े तो विशेषज्ञ को बुलाएँ।",
    "mr": "पट्टे कणसापर्यंत पोहोचले किंवा कणसाचे आवरण कुजले तर तज्ज्ञांना बोलवा."
   },
@@ -954,7 +954,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Pull out and destroy infected plants as soon as you see them; next season, treat seed with metalaxyl.",
+     "en": "Pull out and destroy infected plants as soon as you see them; next season, coat the seed with metalaxyl.",
      "hi": "रोगी पौधे दिखते ही उखाड़कर नष्ट करें; अगले मौसम में बीज का मेटालेक्सिल से उपचार करें।",
      "mr": "रोगट रोपे दिसताच उपटून नष्ट करा; पुढील हंगामात बियाण्यास मेटॅलॅक्सिल लावा."
     }
@@ -1176,7 +1176,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Pick and destroy rosette flowers every week; terminate the crop by December and graze or shred the stalks."
+     "en": "Gather and destroy the flowers webbed shut every week; terminate the crop by December and graze or shred the stalks."
     }
    },
    {
@@ -1297,7 +1297,7 @@
  },
  "cotton_whitefly": {
   "what_to_check": {
-   "en": "Turn over one upper-canopy leaf on 20 plants and count adults. Threshold: 8–10 adults per leaf.",
+   "en": "Turn over one leaf from the top of 20 plants and count adults. Threshold: 8–10 adults per leaf.",
    "hi": "20 पौधों पर ऊपर की एक पत्ती पलटकर वयस्क गिनें। सीमा: प्रति पत्ती 8–10 वयस्क।",
    "mr": "20 झाडांवर वरचे एक पान उलटून प्रौढ माशा मोजा. मर्यादा: प्रति पान 8–10 प्रौढ."
   },
@@ -1308,7 +1308,7 @@
     "mr": "पायरेथ्रॉइड किंवा वारंवार निओनिकोटिनॉइड फवारू नका — पांढरी माशी वाढते."
    },
    {
-    "en": "Do not over-apply nitrogen.",
+    "en": "Do not give too much nitrogen.",
     "hi": "ज़्यादा नाइट्रोजन न दें।",
     "mr": "जास्त नत्र देऊ नका."
    }
@@ -1317,7 +1317,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Put up yellow sticky traps (10 per acre) at canopy height; remove weed hosts around the field."
+     "en": "Put up yellow sticky traps (10 per acre) at the height of the crop; remove weed hosts around the field."
     }
    },
    {
@@ -1334,7 +1334,7 @@
     "water_l_per_acre": 200,
     "verified": false,
     "timing": {
-     "en": "Only after the threshold is crossed; acts on eggs and nymphs."
+     "en": "Only after the threshold is crossed; acts on eggs and young hoppers."
     }
    },
    {
@@ -1362,7 +1362,7 @@
  },
  "cotton_jassid": {
   "what_to_check": {
-   "en": "Count nymphs under 3 leaves (top, middle, bottom) on 20 plants. Threshold: 2 nymphs per leaf, or yellowing leaf edges.",
+   "en": "Count young hoppers under 3 crop leaves (top, middle, bottom) on 20 plants. Threshold: 2 per leaf, or yellowing leaf edges.",
    "hi": "20 पौधों पर 3 पत्तियों (ऊपर, बीच, नीचे) के नीचे शिशु गिनें। सीमा: प्रति पत्ती 2 शिशु, या पीले किनारे।",
    "mr": "20 झाडांवर 3 पानांखाली (वर, मध्य, खाली) पिल्ले मोजा. मर्यादा: प्रति पान 2 पिल्ले, किंवा पिवळ्या कडा."
   },
@@ -1562,7 +1562,7 @@
  },
  "soybean_rust": {
   "what_to_check": {
-   "en": "Turn over lower leaves and look with a hand lens for raised tan pustules.",
+   "en": "Turn over lower leaves and look with a hand lens for raised tan rust spots.",
    "hi": "निचली पत्तियाँ पलटकर लेंस से उभरे भूरे दाने देखें।",
    "mr": "खालची पाने उलटून भिंगाने उंचावलेले तपकिरी फोड पाहा."
   },
@@ -1604,7 +1604,7 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if pustules reach the upper canopy at pod filling."
+   "en": "Call an expert if raised rust spots reach the top leaves at pod filling."
   },
   "citations": [
    {
@@ -1631,7 +1631,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Hand-pick larvae from rolled leaf tips; keep bunds free of grassy weeds where they breed.",
+     "en": "Hand-pick larvae from rolled leaf tips; keep the field edges clear of grass and weeds where they breed.",
      "hi": "मुड़ी नोकों से इल्लियाँ हाथ से चुनें; मेड़ों पर घास न रहने दें जहाँ ये पनपती हैं।",
      "mr": "गुंडाळलेल्या टोकांतून अळ्या हाताने वेचा; बांधावर गवत ठेवू नका जिथे त्या वाढतात."
     }
@@ -1671,7 +1671,7 @@
   },
   "what_to_avoid": [
    {
-    "en": "Do not spray for white ears that are already visible — the larva has left; protect the next flush instead.",
+    "en": "Do not spray for white panicles that are already visible — the larva has left; protect the next flush instead.",
     "hi": "जो सफेद बालियाँ दिख चुकी हैं उन पर छिड़काव न करें — इल्ली निकल चुकी है।",
     "mr": "आधीच दिसणाऱ्या पांढऱ्या लोंब्यांसाठी फवारणी करू नका — अळी निघून गेलेली असते."
    }
@@ -1716,7 +1716,7 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if dead hearts exceed 10% or white ears appear across the field.",
+   "en": "Call an expert if dead hearts exceed 10% or white empty panicles appear across the field.",
    "hi": "मृत गोभ 10% से ज़्यादा हों या पूरे खेत में सफेद बालियाँ दिखें तो विशेषज्ञ को बुलाएँ।",
    "mr": "मेलेले गाभे 10% पेक्षा जास्त किंवा सगळीकडे पांढऱ्या लोंब्या दिसल्यास तज्ज्ञांना बोलवा."
   },
@@ -1789,7 +1789,7 @@
  },
  "maize_aphid": {
   "what_to_check": {
-   "en": "Check tassels and the upper whorl of 20 plants and count plants with large aphid colonies.",
+   "en": "Check the top flower and the upper whorl of 20 plants and count plants with large aphid colonies.",
    "hi": "20 पौधों की नर मंजरी और ऊपरी गोभ देखें और बड़े माहू झुंड वाले पौधे गिनें।",
    "mr": "20 झाडांचे तुरे व वरचा पोंगा तपासा व मोठ्या माव्याच्या वसाहती असलेली झाडे मोजा."
   },
@@ -1804,7 +1804,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Avoid excess nitrogen and water stress; keep the field free of grassy weeds.",
+     "en": "Avoid excess nitrogen, and do not let the crop go short of water; keep the field clear of grass and weeds.",
      "hi": "ज़्यादा नाइट्रोजन और पानी की कमी से बचें; खेत को घास से मुक्त रखें।",
      "mr": "जास्त नत्र व पाण्याचा ताण टाळा; शेत गवतमुक्त ठेवा."
     }
@@ -1825,14 +1825,14 @@
     "water_l_per_acre": 200,
     "verified": false,
     "timing": {
-     "en": "Only if colonies cover tassels on more than 1 in 5 plants before pollen shed.",
+     "en": "Only if colonies cover the top flower on more than 1 in 5 plants before pollen is shed.",
      "hi": "केवल तब जब परागण से पहले 5 में से 1 से ज़्यादा पौधों की नर मंजरी झुंडों से ढकी हो।",
      "mr": "फक्त परागीभवनापूर्वी 5 पैकी 1 पेक्षा जास्त झाडांचे तुरे वसाहतींनी झाकलेले असल्यास."
     }
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if tassels are blackened with sooty mould and pollen shed fails.",
+   "en": "Call an expert if the top flower is blackened with sooty mould and no pollen is shed.",
    "hi": "नर मंजरी काली फफूँद से ढक जाए और पराग न झड़े तो विशेषज्ञ को बुलाएँ।",
    "mr": "तुरे काळ्या बुरशीने झाकले व परागकण पडत नसतील तर तज्ज्ञांना बोलवा."
   },
@@ -2085,7 +2085,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Pick and destroy the spotted lower leaves; give balanced fertilizer with enough potash; keep good spacing for air.",
+     "en": "Gather and destroy the spotted lower leaves; give balanced fertilizer with enough potash; keep good spacing for air.",
      "hi": "धब्बेदार निचली पत्तियाँ तोड़कर नष्ट करें; पर्याप्त पोटाश के साथ संतुलित खाद दें; हवा के लिए उचित दूरी रखें।",
      "mr": "ठिपके असलेली खालची पाने तोडून नष्ट करा; पुरेशा पोटॅशसह संतुलित खत द्या; हवेसाठी योग्य अंतर ठेवा."
     }
@@ -2302,7 +2302,7 @@
    {
     "tier": "biological",
     "action": {
-     "en": "Treat seed with Trichoderma viride at 5 g per kg before sowing.",
+     "en": "Coat the seed with Trichoderma viride at 5 g per kg before sowing.",
      "hi": "बुवाई से पहले बीज को ट्राइकोडर्मा विरिडी 5 ग्राम प्रति किलो से उपचारित करें।",
      "mr": "पेरणीपूर्वी बियाण्यास ट्रायकोडर्मा व्हिरिडी 5 ग्रॅम प्रति किलो प्रक्रिया करा."
     }
@@ -2377,7 +2377,7 @@
     "water_l_per_acre": 200,
     "verified": false,
     "timing": {
-     "en": "When spots reach the leaves just below the ear before tasseling.",
+     "en": "When spots reach the leaves just below the cob before the top flower opens.",
      "hi": "नर मंजरी से पहले धब्बे भुट्टे के नीचे की पत्तियों तक पहुँचें तब।",
      "mr": "तुरा येण्यापूर्वी ठिपके कणसाखालच्या पानांपर्यंत पोहोचल्यावर."
     }
@@ -2397,7 +2397,7 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if spots reach the ear leaf before grain filling.",
+   "en": "Call an expert if spots reach the leaf beside the cob before grain filling.",
    "hi": "दाना भरने से पहले धब्बे भुट्टे वाली पत्ती तक पहुँचें तो विशेषज्ञ को बुलाएँ।",
    "mr": "दाणे भरण्यापूर्वी ठिपके कणसाच्या पानापर्यंत पोहोचले तर तज्ज्ञांना बोलवा."
   },
@@ -2467,7 +2467,7 @@
  },
  "rice_hispa": {
   "what_to_check": {
-   "en": "Walk the field edge first — hispa comes in from grassy bunds. Count scraped leaves on 10 hills and look for the small blue-black beetle with spines.",
+   "en": "Walk the field edge first — hispa comes in from the grass along the field edges. Count scraped leaves on 10 hills and look for the small blue-black beetle with spines.",
    "hi": "पहले खेत की मेड़ देखें — हिस्पा घास वाली मेड़ों से आता है। 10 झुंडों में खुरची हुई पत्तियाँ गिनें और काँटेदार नीली-काली छोटी भृंग देखें।",
    "mr": "आधी बांध तपासा — हिस्पा गवताळ बांधावरून येतो. 10 चुडांमधील खरवडलेली पाने मोजा आणि काटेरी निळसर-काळा लहान भुंगा शोधा."
   },
@@ -2478,7 +2478,7 @@
     "mr": "जादा नत्र देऊ नका — भरपूर खत दिलेले हिरवेगार पीक हिस्पाला वाढवते."
    },
    {
-    "en": "Do not leave grassy weeds on the bunds; they carry the beetle between seasons.",
+    "en": "Do not leave grass and weeds along the field edges; they carry the beetle between seasons.",
     "hi": "मेड़ों पर घास-फूस न छोड़ें; उन्हीं में भृंग मौसम-दर-मौसम बचती है।",
     "mr": "बांधावर गवत ठेवू नका; त्यातच भुंगा हंगामभर टिकतो."
    }
@@ -2487,7 +2487,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Clip and bury the leaf tips carrying eggs, and keep the bunds free of grassy weeds. Close spacing helps the crop carry the damage.",
+     "en": "Clip and bury the leaf tips carrying eggs, and keep the field edges clear of grass and weeds. Close spacing helps the crop carry the damage.",
      "hi": "अंडों वाली पत्तियों के सिरे काटकर मिट्टी में दबाएँ और मेड़ों की घास साफ़ रखें। पास-पास रोपाई नुकसान सहने में मदद करती है।",
      "mr": "अंडी असलेली पानांची टोके कापून मातीत गाडा आणि बांध गवतमुक्त ठेवा. दाट लागवड नुकसान सहन करण्यास मदत करते."
     }
@@ -2562,7 +2562,7 @@
    {
     "tier": "biological",
     "action": {
-     "en": "Next season, treat seed with Pseudomonas fluorescens at 10 g per kg and soak-dry before sowing.",
+     "en": "Next season, coat the seed with Pseudomonas fluorescens at 10 g per kg and soak-dry before sowing.",
      "hi": "अगले मौसम में बीज को स्यूडोमोनास फ्लोरेसेंस 10 ग्राम प्रति किलो से उपचारित करें और बोने से पहले सुखा लें।",
      "mr": "पुढील हंगामात बियाण्यास स्युडोमोनास फ्लुरोसेन्स 10 ग्रॅम प्रति किलो लावा आणि पेरणीपूर्वी वाळवा."
     }
@@ -2629,7 +2629,7 @@
    {
     "tier": "biological",
     "action": {
-     "en": "Next season, treat seed with Pseudomonas fluorescens at 10 g per kg; there is no proven spray once panicles are hit.",
+     "en": "Next season, coat the seed with Pseudomonas fluorescens at 10 g per kg; there is no proven spray once panicles are hit.",
      "hi": "अगले मौसम में बीज को स्यूडोमोनास फ्लोरेसेंस 10 ग्राम प्रति किलो से उपचारित करें; बाली पर रोग आने के बाद कोई प्रमाणित छिड़काव नहीं है।",
      "mr": "पुढील हंगामात बियाण्यास स्युडोमोनास फ्लुरोसेन्स 10 ग्रॅम प्रति किलो लावा; लोंबीवर रोग आल्यानंतर सिद्ध झालेली फवारणी नाही."
     }
@@ -2683,7 +2683,7 @@
    {
     "tier": "biological",
     "action": {
-     "en": "Next season, treat seed with Trichoderma viride at 4 g per kg and raise the nursery on a well-drained bed.",
+     "en": "Next season, coat the seed with Trichoderma viride at 4 g per kg and raise the nursery on a well-drained bed.",
      "hi": "अगले मौसम में बीज को ट्राइकोडर्मा विरिडी 4 ग्राम प्रति किलो से उपचारित करें और नर्सरी अच्छी निकासी वाली क्यारी पर लगाएँ।",
      "mr": "पुढील हंगामात बियाण्यास ट्रायकोडर्मा व्हिरिडी 4 ग्रॅम प्रति किलो लावा आणि रोपवाटिका उत्तम निचरा असलेल्या वाफ्यावर करा."
     }
@@ -2728,7 +2728,7 @@
   },
   "what_to_avoid": [
    {
-    "en": "Do not spray while the canopy is wet with dew — the fungus spreads in leaf wetness.",
+    "en": "Do not spray while the leaves are wet with dew — the fungus spreads in leaf wetness.",
     "hi": "ओस से भीगी फसल पर छिड़काव न करें — पत्ती की नमी में फफूँद फैलती है।",
     "mr": "दवाने ओली असलेली फसल असताना फवारणी करू नका — पानावरील ओलाव्यात बुरशी पसरते."
    },
@@ -2742,7 +2742,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Rotate with a cereal, keep row spacing wide enough for air to move through the canopy, and bury the stubble after harvest.",
+     "en": "Rotate with a cereal, keep row spacing wide enough for air to move between the plants, and bury the stubble after harvest.",
      "hi": "अनाज फसल से फसल-चक्र करें, कतारों की दूरी इतनी रखें कि फसल में हवा चले, और कटाई के बाद अवशेष दबा दें।",
      "mr": "तृणधान्याची फेरपालट करा, ओळींतील अंतर हवा खेळण्याइतके ठेवा आणि काढणीनंतर धसकटे गाडा."
     }
@@ -3000,7 +3000,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Get the soil tested and apply the recommended muriate of potash at sowing next season. For a crop already in the field, spray 1% potassium nitrate (10 g per litre of water) twice, a week apart, in the evening.",
+     "en": "Get the soil tested. Next season, mix the recommended muriate of potash into the soil as a basal dose. For a crop already in the field, spray 1% potassium nitrate (10 g per litre of water) twice, a week apart, in the evening.",
      "hi": "मिट्टी की जाँच कराएँ और अगले मौसम बुवाई के समय सिफ़ारिश के अनुसार म्यूरेट ऑफ़ पोटाश डालें। खड़ी फसल पर शाम के समय 1% पोटैशियम नाइट्रेट (10 ग्राम प्रति लीटर पानी) एक-एक हफ़्ते के अंतर से दो बार छिड़कें।",
      "mr": "माती परीक्षण करून घ्या आणि पुढील हंगामात पेरणीच्या वेळी शिफारशीनुसार म्युरेट ऑफ पोटॅश द्या. उभ्या पिकावर संध्याकाळी 1% पोटॅशियम नायट्रेट (10 ग्रॅम प्रति लिटर पाणी) आठवड्याच्या अंतराने दोनदा फवारा."
     }
