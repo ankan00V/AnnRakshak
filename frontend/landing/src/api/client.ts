@@ -106,6 +106,15 @@ const json = (body: unknown): RequestInit => ({
   body: JSON.stringify(body),
 })
 
+/** A multipart body for the endpoints that take the farmer's evidence.
+ *  Empty fields are left out rather than sent as "undefined". */
+function form(fields: Record<string, string | undefined>, photo?: Blob | null): FormData {
+  const fd = new FormData()
+  for (const [k, v] of Object.entries(fields)) if (v) fd.append(k, v)
+  if (photo) fd.append('image', photo, 'report.jpg')
+  return fd
+}
+
 export const api = {
   saveProfile: (body: Record<string, unknown>) =>
     req<Me>('/api/auth/me/profile', { ...json(body), method: 'PATCH' }),
@@ -181,14 +190,19 @@ export const api = {
     req<DiagnoseResult>(`/api/problems/${problemId}/result?lang=${lang}`),
   liveSummary: (farmId: number, scanId: number, lang: Lang) =>
     req<LiveSummary>(`/api/farms/${farmId}/live/${scanId}?lang=${lang}`),
-  followup: (id: number, response: 'improved' | 'no_change' | 'got_worse', lang: Lang) =>
-    req<{ case?: CaseListItem; message?: string }>(`/api/followups/${id}`, json({ response, lang })),
+  // Multipart, because "it got worse" carries the farmer's photograph and
+  // their own words to the officer. Without them the case arrived empty.
+  followup: (id: number, response: 'improved' | 'no_change' | 'got_worse', lang: Lang,
+             evidence?: { photo?: Blob | null; note?: string }) =>
+    req<{ case?: CaseListItem; message?: string }>(`/api/followups/${id}`,
+      { method: 'POST', body: form({ response, lang, note: evidence?.note }, evidence?.photo) }),
 
   alerts: (farmId: number, lang: Lang) => req<AlertView[]>(`/api/farms/${farmId}/alerts?lang=${lang}`),
-  alertOutcome: (id: number, outcome: 'nothing_found' | 'found' | 'snoozed', lang: Lang) =>
+  alertOutcome: (id: number, outcome: 'nothing_found' | 'found' | 'snoozed', lang: Lang,
+                 evidence?: { photo?: Blob | null; note?: string }) =>
     req<{ case?: CaseListItem; message?: string; problem_id?: number }>(
       `/api/alerts/${id}/outcome`,
-      json({ outcome, lang }),
+      { method: 'POST', body: form({ outcome, lang, note: evidence?.note }, evidence?.photo) },
     ),
   runRisk: (farmId: number) => req<{ issued: number[] }>(`/api/farms/${farmId}/risk/run`, { method: 'POST' }),
 

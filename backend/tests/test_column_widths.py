@@ -151,6 +151,18 @@ def test_a_checkpoint_the_database_could_not_record_is_refused_at_load():
         _check_storable("fine-model-1", {"a": long_label})
 
 
+def test_a_farmers_own_words_fit_the_column_that_keeps_them():
+    """`observation.answer` began as a Doubt Doctor answer — yes, no, unsure —
+    and was VARCHAR(10) for exactly that. It then started carrying the note a
+    farmer types when they report a problem, which `attach_report` truncates
+    to 500, and the column still refused at 10. SQLite stored it; Postgres
+    raised, and CI caught it. Writer and column are one number now."""
+    from app.models import FIELD_NOTE_LEN
+    from app.services import FIELD_NOTE_LEN as TRUNCATES_TO
+
+    assert TRUNCATES_TO == FIELD_NOTE_LEN == width("observation", "answer")
+
+
 def test_a_satellite_providers_polygon_id_is_bounded_by_its_column():
     """The other id this app stores on someone else's say-so. Theirs are
     24-character ObjectIds, but the response is not a contract."""

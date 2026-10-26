@@ -100,7 +100,11 @@ def summary(request: Request, lang: str = "en", db: Session = Depends(get_db), k
         "includes_demo_data": demo,
         "model": vision.model_status(),
         "totals": {
-            "farms": len(farms),
+            # Fields with a crop in the ground. A harvested one is still the
+            # farmer's field, but it is not something a district is watching
+            # this week, and counting it made the number mean nothing.
+            "farms": sum(f.status == "growing" for f in farms),
+            "farms_registered": len(farms),
             "diagnoses": len(diags),
             "open_cases": sum(c.status == "open" for c in cases),
             "resolved_cases": sum(c.status == "resolved" for c in cases),
@@ -151,7 +155,12 @@ def hotspots(request: Request, days: int = 45, lang: str = "en",
     points = []
     for p in db.scalars(select(Problem).options(joinedload(Problem.farm))
                         .join(Farm, Farm.id == Problem.farm_id)
-                        .where(Problem.opened_at >= since, Farm.is_demo.is_(demo))).all():
+                        .where(Problem.opened_at >= since, Farm.is_demo.is_(demo),
+                               # A hotspot is where the disease is now. A problem
+                               # from a season that has since been closed is history,
+                               # and sending scouts to it wastes the scarcest thing
+                               # the district has.
+                               Problem.season_no == Farm.season_no)).all():
         f = p.farm
         if p.id in confs:
             status, target = "confirmed", confs[p.id].final_label
@@ -183,6 +192,11 @@ def hotspots(request: Request, days: int = 45, lang: str = "en",
          "trigger": a.trigger}
         for a in db.scalars(select(Alert).join(Farm, Farm.id == Alert.farm_id)
                             .where(Alert.outcome.is_(None), Farm.is_demo.is_(demo),
+                                   # This season, and a crop still in the ground: an
+                                   # officer must not be sent to a field that was cut
+                                   # last week.
+                                   Alert.season_no == Farm.season_no,
+                                   Farm.status == "growing",
                                    Alert.issued_on >= date.today() - timedelta(days=7))).all()
     ]
     return {"points": points, "active_alerts": alerts, "radius_km": services.SPREAD_RADIUS_KM}
@@ -238,7 +252,11 @@ def risk_outlook(request: Request, lang: str = "en",
     farms = {f.id: f for f in db.scalars(select(Farm).where(Farm.is_demo.is_(demo))).all()}
     groups: dict[str, dict] = {}
     for a in db.scalars(select(Alert).join(Farm, Farm.id == Alert.farm_id)
-                        .where(Alert.issued_on >= since, Farm.is_demo.is_(demo))).all():
+                        .where(Alert.issued_on >= since, Farm.is_demo.is_(demo),
+                               # What is standing in the district this week, not what
+                               # was standing before the harvest.
+                               Alert.season_no == Farm.season_no,
+                               Farm.status == "growing")).all():
         g = groups.setdefault(a.target, {
             "target": a.target, "name": tr(kb.targets[a.target]["names"], lang),
             "crop": kb.targets[a.target]["crop"], "farms": set(), "districts": set(),

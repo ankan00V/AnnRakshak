@@ -1201,3 +1201,57 @@ def test_the_demo_farmer_cannot_delete_the_shared_demo_fields(client):
         "district": "Bhandara", "lat": 21.17, "lon": 79.65, "area_acres": 1.0,
     }).json()
     assert client.delete(f"/api/farms/{mine['id']}").status_code == 204
+
+
+def test_correcting_your_village_corrects_the_fields_that_inherited_it(client):
+    """The report: edit the place on the profile, press save, and every screen
+    still shows the old one. The profile row changed and the fields did not —
+    and a field carries its own village, which is what the app displays.
+
+    A field that was sitting on the profile's answer follows the correction. A
+    field the farmer deliberately put somewhere else is left alone, because a
+    farmer with land in two villages means both."""
+    client.post("/api/auth/demo", json={"role": "farmer"})
+    me = client.get("/api/auth/me").json()
+    def add(village):
+        return client.post("/api/farms", json={
+            "farmer_name": "Demo farmer", "crop": "rice", "sowing_date": date.today().isoformat(),
+            "district": me["profile"]["district"], "village": village,
+            "lat": 21.17, "lon": 79.65, "area_acres": 1.0,
+        }).json()["id"]
+
+    inherited_id = add(me["profile"]["village"])
+    elsewhere_id = add("Far Village")
+
+    r = client.patch("/api/auth/me/profile", json={"village": "Naya Gaon"})
+    assert r.status_code == 200, r.text
+    assert r.json()["profile"]["village"] == "Naya Gaon"
+
+    after = {f["id"]: f["village"] for f in client.get("/api/farms").json()}
+    assert after[inherited_id] == "Naya Gaon", "a field kept the village the farmer just corrected"
+    assert after[elsewhere_id] == "Far Village", "a field in another village was overwritten"
+
+
+def test_a_village_correction_does_not_cross_a_district(client):
+    """A farmer holding land in two districts corrects the spelling of their
+    own village. A plot two districts away has nothing to do with it, even
+    though its village was never filled in — a village only means anything
+    inside its district."""
+    client.post("/api/auth/demo", json={"role": "farmer"})
+    me = client.get("/api/auth/me").json()
+    home_district = me["profile"]["district"]
+
+    def add(district, village=None):
+        return client.post("/api/farms", json={
+            "farmer_name": "Demo farmer", "crop": "rice", "sowing_date": date.today().isoformat(),
+            "district": district, "village": village,
+            "lat": 21.17, "lon": 79.65, "area_acres": 1.0,
+        }).json()["id"]
+
+    here, away = add(home_district), add("Yavatmal")
+
+    client.patch("/api/auth/me/profile", json={"village": "Naya Gaon"})
+
+    after = {f["id"]: f["village"] for f in client.get("/api/farms").json()}
+    assert after[here] == "Naya Gaon", "the field in the farmer's own village did not follow"
+    assert after[away] is None, "a field two districts away was given the wrong village"

@@ -398,7 +398,7 @@ def _designation_name(designation: str | None) -> str | None:
 
 def _me(db: Session, user: User) -> dict:
     out = {"id": user.id, "role": user.role, "name": user.name, "phone": user.phone, "email": user.email,
-           "lang": user.lang, "is_demo": user.is_demo,
+           "lang": user.lang, "is_demo": user.is_demo, "email_pref": user.email_pref or "warnings",
            "created_at": user.created_at.isoformat() if user.created_at else None}
     if user.role == "farmer":
         p = db.get(FarmerProfile, user.id)
@@ -610,6 +610,10 @@ class ProfileIn(BaseModel):
     # code proves it, and that belongs to the sign-in screen.
     name: str | None = Field(default=None, min_length=2, max_length=120)
     lang: str | None = None
+    email_pref: Literal["off", "warnings", "all"] | None = None
+    """One switch for every field this person owns. Deliberately on the
+    account: a per-field setting means saying "stop emailing me" once per
+    field and still hearing from the rest."""
 
     # A farmer: where they are, and how much land they work
     state: str | None = Field(default=None, max_length=60)
@@ -653,11 +657,18 @@ def update_profile(body: ProfileIn, request: Request, db: Session = Depends(get_
         if sent["lang"] not in LANGS:
             raise HTTPException(422, _say("pick_lists", user.lang, items=sent["lang"]))
         user.lang = sent["lang"]
+    if sent.get("email_pref"):
+        # One switch for every field they own, which is the only way a farmer
+        # who says "stop" gets to say it once.
+        user.email_pref = sent["email_pref"]
 
     if user.role == "farmer":
         p = db.get(FarmerProfile, user.id)
         if p is None:
             raise HTTPException(404, "no profile")
+        # What the fields were inheriting before this edit, so a correction can
+        # follow through to them instead of changing one row nobody looks at.
+        before = {f: getattr(p, f, None) for f in services.PLACE_FIELDS}
         if sent.get("district") or sent.get("state"):
             state, district = geo.match_district(sent.get("state") or p.state,
                                                  sent.get("district") or p.district)
@@ -667,6 +678,8 @@ def update_profile(body: ProfileIn, request: Request, db: Session = Depends(get_
                 setattr(p, f, (sent[f] or "").strip() or None)
         if "total_land_acres" in sent:
             p.total_land_acres = sent["total_land_acres"]
+        db.flush()
+        services.propagate_place(db, user, before, {f: getattr(p, f, None) for f in services.PLACE_FIELDS})
     else:
         p = db.get(ExpertProfile, user.id)
         if p is None:

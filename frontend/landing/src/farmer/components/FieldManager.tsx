@@ -4,6 +4,7 @@ import { api } from '../../api/client'
 import type { CropInfo, Farm } from '../../api/types'
 import { useAuth } from '../../auth/AuthContext'
 import { useFarmer } from '../FarmerContext'
+import { bcp47 } from '../../lib/i18n'
 import { ErrorBox } from '../../ui/kit'
 
 /** Every field the farmer holds, with the two controls that keep the list
@@ -35,7 +36,7 @@ export default function FieldManager({ farms, crops, onChange }: {
 type Mode = null | 'off' | 'on' | 'remove'
 
 function Row({ farm, crops, onChange }: { farm: Farm; crops: CropInfo[] | null; onChange: () => void }) {
-  const { t } = useFarmer()
+  const { t, lang } = useFarmer()
   const { me } = useAuth()
   // The shared demo fields are handed to every visitor who tries the app.
   // Working one is reversible; removing it would take the demo away from the
@@ -85,6 +86,12 @@ function Row({ farm, crops, onChange }: { farm: Farm; crops: CropInfo[] | null; 
             {fallow ? t('seasonRestingShort')
               : over ? t('profileSeasonOver')
               : `${farm.das} ${t('daysOld')} · ${farm.stage_name}`}
+            {/* The prediction, where there is a real one to show. A farmer who
+                can see the date is a farmer who can tell us it is wrong. */}
+            {!fallow && !over && farm.expected_harvest && farm.expected_harvest.basis !== 'calendar'
+              && ` · ${t('profileReadyAround').replace('{on}',
+                   new Date(farm.expected_harvest.on).toLocaleDateString(bcp47(lang),
+                     { day: 'numeric', month: 'short' }))}`}
             {!!farm.seasons && ` · ${t('seasonCount').replace('{n}', String(farm.seasons))}`}
           </p>
         </div>

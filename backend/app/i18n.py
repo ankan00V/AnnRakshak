@@ -112,11 +112,27 @@ A comma has none of those failures. The clause breaks where it should, in
 punctuation the script actually uses."""
 
 
+BRAND = "AnnRakshak"
+"""The app's name is a word to a translator, and it translated it.
+
+"AnnRakshak only warns you about wrong sprays" came back from Bengali as
+"the inspector only warns you"; elsewhere "the undercover". Where it was not
+translated it was transliterated, differently in every language and sometimes
+differently in the same one — অন্নরক্ষক, அன்னரக்ஷக், అన్న రక్షక్ as two words,
+and in Malayalam അൻ രക്ഷക്, which is the English "Ann" and not the anna it is
+named for. The authored Hindi and Marathi settled this long ago: all forty-two
+of their strings keep the name in Latin inside the sentence. So it travels as
+a marker and comes back spelled the way the people who named it spell it."""
+
+
 def protect(text: str) -> tuple[str, list[str]]:
     names = PLACEHOLDER.findall(text)
     out = DASH.sub(", ", text)
     for i, n in enumerate(names):
         out = out.replace("{" + n + "}", marker(i), 1)
+    for _ in range(out.count(BRAND)):
+        names.append(BRAND)
+        out = out.replace(BRAND, marker(len(names) - 1), 1)
     return out, names
 
 
@@ -134,7 +150,8 @@ def restore(text: str, names: list[str]) -> str | None:
         hits = text.count(marker(i)) + text.count(f"<{i}>")
         if hits != 1:
             return None
-        text = text.replace(marker(i), "{" + n + "}").replace(f"<{i}>", "{" + n + "}")
+        back = BRAND if n == BRAND else "{" + n + "}"
+        text = text.replace(marker(i), back).replace(f"<{i}>", back)
     return re.sub(r"\s{2,}", " ", text).strip()
 
 
@@ -152,8 +169,27 @@ def kept_order(out: str, count: int) -> bool:
     kilometres away": every marker present, every count correct, and the
     number is a crop. Where a placeholder is bound to a unit, order is the one
     cheap signal that the pairing survived."""
-    order = [int(m.group(1) or m.group(2)) for m in re.finditer(r"XX(\d+)XX|<(\d+)>", out)]
+    seen = [int(m.group(1) or m.group(2)) for m in re.finditer(r"XX(\d+)XX|<(\d+)>", out)]
+    order = [i for i in seen if i < count]   # brand markers ride after the placeholders
     return order == sorted(order) and len(order) == count
+
+
+SPELLING = {
+    "bn": {"\u09ae\u09b0\u09b8\u09c1\u09ae": "\u09ae\u09b0\u09b6\u09c1\u09ae"},  # season: both are correct, pick one
+}
+"""One spelling per word, where a language has more than one correct one.
+
+The translator wrote "season" two ways and both reached the same screen: the
+title said \u09ae\u09b0\u09b6\u09c1\u09ae and the line under it \u09ae\u09b0\u09b8\u09c1\u09ae. Neither is wrong, which
+is why nothing flagged it; a farmer reading one screen should still see one
+word. The majority form wins, and the map is here rather than hidden in a
+regex so a native reviewer can overrule it."""
+
+
+def house_spelling(out: str, lang: str) -> str:
+    for variant, preferred in SPELLING.get(lang, {}).items():
+        out = out.replace(variant, preferred)
+    return out
 
 
 def machine_translate(text: str, lang: str) -> str | None:
@@ -166,9 +202,10 @@ def machine_translate(text: str, lang: str) -> str | None:
         out = voice.translate(safe, "en", lang)
     except Exception:  # noqa: BLE001  one failed string must not stop the batch
         return None
-    if len(names) > 1 and UNIT_BOUND.search(text) and not kept_order(out, len(names)):
+    holes = sum(1 for n in names if n != BRAND)
+    if holes > 1 and UNIT_BOUND.search(text) and not kept_order(out, holes):
         return None  # shuffled: better in English than with the wrong number
-    out = tidy(text, out)
+    out = house_spelling(tidy(text, out), lang)
     return restore(out, names) if names else out
 
 

@@ -59,7 +59,7 @@ REASONS = {
         "mr": " हे यापूर्वीही तुमच्या शेतात आढळले होते.",
     },
     "sensor": {
-        "en": " (includes readings from your field sensor)",
+        "en": " (includes readings from the sensor in your field)",
         "hi": " (आपके खेत के सेंसर की रीडिंग सहित)",
         "mr": " (तुमच्या शेतातील सेन्सरच्या नोंदींसह)",
     },

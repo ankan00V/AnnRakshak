@@ -12,6 +12,7 @@ from sqlalchemy import func, select
 
 from app import cache, geo, services
 from app.db import Base, SessionLocal, engine
+from app.engine import phenology
 from app.engine.weather import Day, Window
 from app.main import app
 from app.models import Alert, Case, Farm, OfficerAction, Problem, Season
@@ -409,7 +410,11 @@ def test_alert_without_tasks_is_refused_by_the_database(client):
 
 def test_followup_got_worse_escalates(client):
     r = diagnose(client, 1, "clear")
-    out = client.post(f"/api/followups/{r['followup']['id']}", json={"response": "got_worse"}).json()
+    # The farmer says it got worse, and sends what they saw with it: this is
+    # the evidence the district office used to receive none of.
+    out = client.post(f"/api/followups/{r['followup']['id']}",
+                      data={"response": "got_worse", "note": "Spots have spread to the top leaves."},
+                      files={"image": ("worse.jpg", _leaf_jpeg(), "image/jpeg")}).json()
     assert out["case"]["reason"] == "FOLLOWUP_WORSE"
 
 
@@ -857,7 +862,8 @@ def test_a_crop_that_is_still_standing_keeps_its_warnings(client):
     kb = kb_for_tests()
     with SessionLocal() as db:
         farm = db.get(Farm, 1)
-        farm.sowing_date = date.today() - timedelta(days=kb.season_ends("rice") + 5)
+        farm.sowing_date = date.today() - timedelta(
+            days=kb.season_ends("rice") + phenology.HARVEST_GRACE_DAYS + 5)
         farm.date_basis = "sown"
         db.commit()
     assert client.get("/api/farms/1").json()["season_over"] is True
@@ -887,7 +893,9 @@ def test_sowing_again_after_a_field_went_quiet_keeps_one_row(client):
         farm.sowing_date = date.today() - timedelta(days=300)
         farm.date_basis = "sown"
         db.commit()
-        end = services.season_end_on(kb, farm)
+        # The lapsed season is recorded as ending at the harvest we predicted,
+        # not at the grace deadline that followed it.
+        end = services.expected_harvest(kb, farm).on
     client.get("/api/farms")  # the listing settles it
 
     r = client.post("/api/farms/1/sow", json={"crop": "rice", "sowing_date": date.today().isoformat()})
@@ -897,6 +905,137 @@ def test_sowing_again_after_a_field_went_quiet_keeps_one_row(client):
     with SessionLocal() as db:
         seasons = db.get(Farm, 1).seasons
         assert [s.harvested_on for s in seasons] == [end], "the lapsed season got the wrong end date"
+
+
+def test_an_escalated_alert_reaches_the_officer_with_evidence(client):
+    """The report: a farmer says the crop got worse, and the district office
+    opens a case with a blank frame and one line of generated text. Nobody can
+    act on that. The farmer is the only person who has stood in the field, so
+    what they send is the whole of the evidence."""
+    r = client.post("/api/farms/1/diagnose", files={"image": ("x.jpg", _leaf_jpeg(), "image/jpeg")},
+                    data={"demo_scenario": "clear"}).json()
+    fid = r["followup"]["id"]
+    out = client.post(f"/api/followups/{fid}",
+                      data={"response": "got_worse", "note": "Spots have spread to the top leaves."},
+                      files={"image": ("worse.jpg", _leaf_jpeg(), "image/jpeg")}).json()
+
+    with SessionLocal() as db:
+        bundle = services.case_bundle(db, kb_for_tests(), db.get(Case, out["case"]["id"]))
+
+    assert len(bundle["photos"]) >= 2, "the photo the farmer sent with the escalation is missing"
+    assert any("spread to the top leaves" in o["answer"] for o in bundle["farmer_report"]), \
+        "the officer cannot read what the farmer actually said"
+
+
+def test_an_escalation_without_a_photo_says_so(client):
+    """A farmer who cannot photograph it still gets to report it — and the
+    case says there is no photograph rather than showing an empty frame."""
+    r = client.post("/api/farms/1/diagnose", files={"image": ("x.jpg", _leaf_jpeg(), "image/jpeg")},
+                    data={"demo_scenario": "clear"}).json()
+    out = client.post(f"/api/followups/{r['followup']['id']}", data={"response": "got_worse"}).json()
+
+    with SessionLocal() as db:
+        bundle = services.case_bundle(db, kb_for_tests(), db.get(Case, out["case"]["id"]))
+    assert any("without a photograph" in o["answer"] for o in bundle["farmer_report"])
+    assert bundle["photos"] == [] or len(bundle["photos"]) == 1
+
+
+def test_a_new_season_does_not_inherit_the_last_one(client):
+    """The report that forced this: harvest a field, sow it again, and the
+    same old alerts, the same old problems and the same unanswered follow-ups
+    were all still sitting there. The field had not started a new season — it
+    had been closed and reopened wearing the last crop's clothes.
+
+    Nothing is deleted. It stops being this season's business."""
+    from app.models import Alert, FollowUp, Problem, TrapReading
+
+    with SessionLocal() as db:
+        farm = db.get(Farm, 1)
+        assert farm.season_no == 1
+        problem = Problem(farm_id=farm.id, status="open", target="rice_blast")
+        db.add(problem)
+        db.flush()
+        db.add_all([
+            Alert(farm_id=farm.id, target="rice_blast", trigger="weather", level="high",
+                  issued_on=date.today(), reason={}, tasks={"en": ["Walk the field and look at ten plants."]}),
+            FollowUp(problem_id=problem.id, due_on=date.today()),
+            TrapReading(farm_id=farm.id, target="rice_stem_borer", trap_type="pheromone",
+                        count=9, recorded_on=date.today()),
+        ])
+        db.commit()
+        # The stamp is automatic: nothing above mentioned a season.
+        assert db.get(Alert, 1).season_no == 1
+
+    live = client.get("/api/farms/1/home").json()
+    assert live["alerts"] and live["problems"] and live["followups_due"], "the fixture did not take"
+
+    client.post("/api/farms/1/harvest", json={})
+
+    closed = client.get("/api/farms/1/home").json()
+    assert closed["alerts"] == [], "a harvested field was still warning about its old crop"
+    assert closed["problems"] == [], "last season's problems were still live"
+    assert closed["followups_due"] == [], "a question was still being asked about a crop that is gone"
+    assert client.get("/api/farms/1/alerts").json() == []
+
+    client.post("/api/farms/1/sow", json={"crop": "rice", "sowing_date": date.today().isoformat()})
+
+    fresh = client.get("/api/farms/1/home").json()
+    assert fresh["farm"]["status"] == "growing" and fresh["farm"]["das"] == 0
+    assert fresh["alerts"] == [] and fresh["problems"] == [] and fresh["followups_due"] == []
+    assert client.get("/api/farms/1/alerts").json() == []
+    assert client.get("/api/farms/1/traps").json() == []
+
+    # Kept, not destroyed: the field's history is the point of the field.
+    with SessionLocal() as db:
+        assert db.get(Farm, 1).season_no == 2
+        assert db.scalars(select(Alert).where(Alert.farm_id == 1)).all(), "history was deleted"
+        assert [s.season_no for s in db.get(Farm, 1).seasons] == [1]
+        assert db.scalars(select(FollowUp)).all() == [], "an unanswerable follow-up was left pending"
+
+
+def test_a_harvested_field_leaves_the_officers_work(client):
+    """The officer side of the same bug. A district's live screens — the
+    hotspot map, the alerts still waiting on a farmer, the week's outlook, the
+    count of fields being watched — were all reading every row a farm had ever
+    had. So a field cut last week went on pulling scouts to it, and the case
+    it raised sat in somebody's queue being routed and chased for a plant
+    nobody can go and look at.
+
+    The history stays. It stops being this week's work."""
+    from app.models import Alert
+
+    with SessionLocal() as db:
+        # The officer dashboard shows a demo officer the demo side of the data.
+        db.get(Farm, 1).is_demo = True
+        db.add(Alert(farm_id=1, target="rice_blast", trigger="weather", level="high",
+                     reason={"en": "humid week"}, tasks={"en": ["Walk the field"]},
+                     issued_on=date.today()))
+        db.commit()
+    client.post("/api/farms/1/diagnose", files={"image": ("x.jpg", _leaf_jpeg(), "image/jpeg")},
+                data={"demo_scenario": "unsure"})          # opens a case for an officer
+    client.post("/api/auth/demo", json={"role": "expert"})
+
+    before = client.get("/api/officials/summary").json()["totals"]
+    hot = client.get("/api/officials/hotspots").json()
+    assert before["farms"] >= 1 and hot["active_alerts"], "fixture: nothing live to lose"
+    open_before = before["open_cases"]
+
+    client.post("/api/auth/demo", json={"role": "farmer"})
+    client.post("/api/farms/1/harvest", json={})
+    client.post("/api/auth/demo", json={"role": "expert"})
+
+    after = client.get("/api/officials/summary").json()["totals"]
+    hot = client.get("/api/officials/hotspots").json()
+    assert after["farms"] == before["farms"] - 1, "a harvested field was still counted as watched"
+    assert after["farms_registered"] == before["farms_registered"], "the field itself was lost"
+    assert all(a["district"] != "Bhandara" or a["target"] != "rice_blast"
+               for a in hot["active_alerts"]), "a cut field was still calling for an inspection"
+    assert not any(p["status"] == "awaiting_expert" and p.get("farm_id") == 1
+                   for p in hot["points"]), "a closed season still showed as a hotspot"
+    assert after["open_cases"] < open_before, "an officer kept a case for a field with no crop"
+
+    # The record is kept: this is history, not a deletion.
+    assert after["diagnoses"] == before["diagnoses"]
 
 
 def test_a_season_end_is_well_past_the_usual_harvest(client):
