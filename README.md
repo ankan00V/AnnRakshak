@@ -1,7 +1,6 @@
 # AnnRakshak
 
 **Early detection and management of crop diseases and pest infestations.**
-Smart India Hackathon 2026 · PS 26131 · Government of Maharashtra.
 
 *Anna*, the harvest. *Rakshak*, its protector.
 
@@ -33,6 +32,10 @@ An officer's post decides what they may do: a taluka or district Agriculture
 Officer and a KVK scientist supervise — they route a backlog, move another
 desk's cases and verify a new colleague. Everyone else advises. The screens
 offer only what the signed-in desk can actually do.
+
+## 🌾 AnnRakshak — Project Demo
+
+https://github.com/user-attachments/assets/58cca41c-1418-460b-a6ab-f4ede10069d0
 
 ## What's built — mapped to the problem statement
 
