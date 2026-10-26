@@ -350,7 +350,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Gather the infected grains into a bag by hand and bury the bag, so the spores do not scatter.",
+     "en": "Gather the infected grains into a bag by hand and bury the bag in a pit, so the spores do not scatter.",
      "hi": "कंड की गेंदें थैली में सावधानी से तोड़कर गाड़ दें ताकि बीजाणु न फैलें।",
      "mr": "काजळीचे गोळे पिशवीत काळजीपूर्वक तोडून पुरा, बीजाणू पसरू देऊ नका."
     }
@@ -402,7 +402,7 @@
  },
  "rice_tungro": {
   "what_to_check": {
-   "en": "Look for patches of stunted yellow-orange plants and green leafhoppers on the leaves.",
+   "en": "Look for patches of stunted yellow-orange plants and green hoppers on the leaves.",
    "hi": "बौने पीले-नारंगी पौधों के टुकड़े और पत्तियों पर हरे फुदके देखें।",
    "mr": "खुज्या पिवळ्या-नारिंगी रोपांचे पट्टे आणि पानांवर हिरवे तुडतुडे पाहा."
   },
@@ -417,7 +417,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Pull out and bury infected plants early; plant resistant varieties and keep a fallow gap between crops.",
+     "en": "Pull out infected plants early and bury them in a pit; sow resistant varieties, and leave the field empty for a while between crops.",
      "hi": "संक्रमित पौधे जल्दी उखाड़कर गाड़ दें; रोगरोधी किस्म और फसलों के बीच खाली अंतर रखें।",
      "mr": "बाधित रोपे लवकर उपटून पुरा; प्रतिकारक वाण लावा व पिकांमध्ये खंड ठेवा."
     }
@@ -425,7 +425,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Use a light trap at night to monitor the green leafhopper vector.",
+     "en": "Use a lamp trap at night to watch for the small green insects that spread it.",
      "hi": "हरे फुदके पर नज़र रखने के लिए रात में प्रकाश प्रपंच लगाएँ।",
      "mr": "हिरव्या तुडतुड्यांवर लक्ष ठेवण्यासाठी रात्री प्रकाश सापळा लावा."
     }
@@ -438,7 +438,7 @@
     "water_l_per_acre": 200,
     "verified": false,
     "timing": {
-     "en": "Only against the leafhopper vector, and only if leafhoppers are present in numbers.",
+     "en": "Only against the small green insects that spread it, and only if there are many of them.",
      "hi": "केवल फुदके के विरुद्ध, और तभी जब फुदके ज़्यादा हों।",
      "mr": "फक्त तुडतुड्यांविरुद्ध, आणि तुडतुडे जास्त असल्यासच."
     }
@@ -479,7 +479,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Avoid excess nitrogen; pass a rope over the crop to dislodge larvae from folds.",
+     "en": "Avoid excess nitrogen; drag a rope across the crop to shake the larvae out of the folds.",
      "hi": "ज़्यादा नाइट्रोजन से बचें; पत्तियों से इल्ली गिराने के लिए फसल पर रस्सी फिराएँ।",
      "mr": "जास्त नत्र टाळा; गुंडाळीतून अळ्या पाडण्यासाठी पिकावरून दोरी फिरवा."
     }
@@ -1426,7 +1426,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Pull out and bury infected plants early; put up yellow sticky traps; grow YMV-resistant varieties next season."
+     "en": "Pull out infected plants early and bury them in a pit; put up yellow sticky traps; grow YMV-resistant varieties next season."
     }
    },
    {
@@ -1437,7 +1437,7 @@
     "water_l_per_acre": 200,
     "verified": false,
     "timing": {
-     "en": "Against the whitefly vector only, when whiteflies are seen."
+     "en": "Against the whiteflies that spread it only, when whiteflies are seen."
     }
    }
   ],
@@ -1688,7 +1688,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Use a light trap at night to monitor moth flights; pheromone lures for the yellow stem borer do not attract this species.",
+     "en": "Use a lamp trap at night to watch for moths flying; pheromone lures for the yellow stem borer do not attract this species.",
      "hi": "पतंगों पर नज़र रखने के लिए रात में प्रकाश प्रपंच लगाएँ; पीले तना छेदक का फेरोमोन इस प्रजाति को नहीं खींचता।",
      "mr": "पतंगांवर लक्ष ठेवण्यासाठी रात्री प्रकाश सापळा लावा; पिवळ्या खोडकिड्याचा कामगंध या प्रजातीला आकर्षित करत नाही."
     }
@@ -2232,7 +2232,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Grow a resistant variety; rotate with a cereal next season; bury or remove crop residue after harvest.",
+     "en": "Grow a resistant variety; rotate with a cereal next season; plough the crop residue into the soil, or take it out of the field, after harvest.",
      "hi": "रोगरोधी किस्म लें; अगले मौसम अनाज फसल से फसल-चक्र करें; कटाई के बाद अवशेष दबाएँ या हटाएँ।",
      "mr": "प्रतिकारक वाण घ्या; पुढील हंगामात तृणधान्याची फेरपालट करा; काढणीनंतर अवशेष गाडा किंवा काढा."
     }
@@ -2294,7 +2294,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Rotate with a cereal; bury crop residue after harvest; keep recommended spacing.",
+     "en": "Rotate with a cereal; plough the crop residue into the soil after harvest; keep recommended spacing.",
      "hi": "अनाज फसल से फसल-चक्र करें; कटाई के बाद अवशेष दबाएँ; सिफ़ारिशी दूरी रखें।",
      "mr": "तृणधान्याची फेरपालट करा; काढणीनंतर अवशेष गाडा; शिफारशीत अंतर ठेवा."
     }
@@ -2487,7 +2487,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Clip and bury the leaf tips carrying eggs, and keep the field edges clear of grass and weeds. Close spacing helps the crop carry the damage.",
+     "en": "Clip the leaf tips carrying eggs and bury them in a pit, and keep the field edges clear of grass and weeds. Close spacing helps the crop carry the damage.",
      "hi": "अंडों वाली पत्तियों के सिरे काटकर मिट्टी में दबाएँ और मेड़ों की घास साफ़ रखें। पास-पास रोपाई नुकसान सहने में मदद करती है।",
      "mr": "अंडी असलेली पानांची टोके कापून मातीत गाडा आणि बांध गवतमुक्त ठेवा. दाट लागवड नुकसान सहन करण्यास मदत करते."
     }
@@ -2675,7 +2675,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Drain the low spots and level the field so water does not stand; pull out and bury the tufted plants.",
+     "en": "Drain the low spots and level the field so water does not stand; pull out the tufted plants and bury them in a pit.",
      "hi": "गड्ढों का पानी निकालें और खेत समतल करें ताकि पानी न ठहरे; गुच्छे वाले पौधे उखाड़कर दबा दें।",
      "mr": "सखल भागातील पाणी काढा व शेत सपाट करा जेणेकरून पाणी साचणार नाही; झुबका आलेली रोपे उपटून गाडा."
     }
@@ -2742,7 +2742,7 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Rotate with a cereal, keep row spacing wide enough for air to move between the plants, and bury the stubble after harvest.",
+     "en": "Rotate with a cereal, keep row spacing wide enough for air to move between the plants, and plough the stubble into the soil after harvest.",
      "hi": "अनाज फसल से फसल-चक्र करें, कतारों की दूरी इतनी रखें कि फसल में हवा चले, और कटाई के बाद अवशेष दबा दें।",
      "mr": "तृणधान्याची फेरपालट करा, ओळींतील अंतर हवा खेळण्याइतके ठेवा आणि काढणीनंतर धसकटे गाडा."
     }

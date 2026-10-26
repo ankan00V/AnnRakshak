@@ -110,7 +110,7 @@
   "crop": "rice",
   "kind": "virus",
   "tier": "diagnosable",
-  "agent": "Rice tungro viruses, spread by green leafhopper",
+  "agent": "Rice tungro viruses, spread by green hopper",
   "eppo": {
    "code": "RTBV00",
    "name": "Rice tungro bacilliform virus"
