@@ -77,7 +77,9 @@ offer only what the signed-in desk can actually do.
 ## The model, measured
 
 Held-out ICAR test set (126 photos never seen in training, duplicates removed
-before splitting). Full report: `ml/reports/MODEL_REPORT.md`.
+before splitting). Full report: `ml/reports/MODEL_REPORT.md`, written by the training
+run — like every other `.md` outside this file it is kept on the machine that made
+it rather than committed, so the numbers below are the published record.
 
 | Method | Test accuracy | Macro-F1 |
 |---|---|---|
@@ -139,9 +141,11 @@ frontend/landing/   React 19 + Vite: landing (/), farmer PWA (/app),
                     district office and case queue (/officer)
 ml/                 train.py, tune_gate.py, live_eval.py, build_familiarity.py,
                     composite.py, reports/ (model report, live eval, confusion, Grad-CAM)
-data/               ingest_*.py per source, DATASETS.md, MANUAL_DOWNLOADS.md
-                    (raw data is gitignored)
-docs/               INTEGRATIONS.md, DEMO_SCRIPT.md, SEMESTER_REPORT.md
+data/               ingest_*.py per source (raw data, and the dataset write-ups
+                    themselves, are gitignored)
+docs/               not published: only READMEs are committed (.gitignore), so the
+                    integration notes, demo script and semester report stay on the
+                    machine that made them
 ```
 
 ## Run it
@@ -150,7 +154,7 @@ docs/               INTEGRATIONS.md, DEMO_SCRIPT.md, SEMESTER_REPORT.md
 python3.12 -m venv .venv
 .venv/bin/pip install -r ml/requirements.txt   # API + training/ingest deps (API alone: backend/requirements.txt)
 cp .env.example .env              # add SARVAM_API_KEY for voice
-.venv/bin/python data/ingest.py   # needs the datasets in data/raw — see data/DATASETS.md
+.venv/bin/python data/ingest.py   # needs the datasets in data/raw — see data/DATASETS.md (local)
 .venv/bin/python ml/train.py      # ~1 h on an M-series Mac (MPS); writes ml/artifacts/
 .venv/bin/python ml/sample_outcomes.py   # tags demo photos with the path the gate takes
 .venv/bin/python backend/seed.py --reset
@@ -241,7 +245,8 @@ folded in per crop (`data/ingest_*.py`); IMD rainfall (subdivision monthly
 ICAR technology repository (24 technologies, 7 institutes) linked to our pests;
 262,778 Kisan Call Centre plant-protection calls (2010–2025);
 live Open-Meteo weather; and INSAT-3DS Hydro-Estimator rainfall from MOSDAC.
-Provenance, hashes and caveats in `data/DATASETS.md`.
+Provenance, hashes and caveats are recorded per image in `data/DATASETS.md`, which
+stays with the data rather than in the repository.
 
 **Acknowledgement:** satellite rainfall data courtesy of MOSDAC (Meteorological
 & Oceanographic Satellite Data Archival Centre), Space Applications Centre,
