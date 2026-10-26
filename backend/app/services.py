@@ -38,6 +38,7 @@ from app.engine import phenology
 from app.engine.weather import WeatherUnavailable, fetch_month_rain, fetch_window, merge_rain, merge_sensor
 from app.kb import KB, tr, trl
 from app.models import (
+    FIELD_NOTE_LEN,
     Advisory,
     Alert,
     Case,
@@ -419,14 +420,22 @@ def propagate_place(db: Session, user: User, before: dict, after: dict) -> int:
     changed = {f: after[f] for f in PLACE_FIELDS if after.get(f) and after.get(f) != before.get(f)}
     if not changed:
         return 0
+    district = after.get("district")
     moved = 0
     for farm in db.scalars(select(Farm).where(Farm.user_id == user.id)):
         touched = False
         for field, value in changed.items():
             current = getattr(farm, field, None)
-            if current in (None, "", before.get(field)):
-                setattr(farm, field, value)
-                touched = True
+            if current not in (None, "", before.get(field)):
+                continue  # the farmer put this field somewhere of its own
+            # A village or a taluka only means anything inside its district. A
+            # farmer correcting the spelling of their own village must not
+            # stamp it onto a plot they hold two districts away, which is what
+            # a blanket "it was blank, fill it in" would do.
+            if field in ("village", "taluka") and district and farm.district != district:
+                continue
+            setattr(farm, field, value)
+            touched = True
         moved += touched
     if moved:
         db.commit()
@@ -1569,7 +1578,7 @@ def attach_report(db: Session, problem: Problem, *, image_bytes: bytes | None,
     db.add(Observation(
         problem_id=problem.id, kind="field_note", cue_id=None,
         question=FARMER_REPORT_Q,
-        answer=(note or "").strip()[:500] or (
+        answer=(note or "").strip()[:FIELD_NOTE_LEN] or (
             "The farmer reported this without a photograph." if not image_bytes else "—"),
     ))
 
