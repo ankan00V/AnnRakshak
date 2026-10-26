@@ -87,7 +87,16 @@ export function Pill({ children, tone = 'neutral', className = '' }: {
 }
 
 export function Card({ children, className = '', ...rest }: { children: ReactNode; className?: string } & Omit<HTMLAttributes<HTMLDivElement>, 'className' | 'children'>) {
-  return <div {...rest} className={`rounded-2xl bg-white border border-soil-dark/10 ${className}`}>{children}</div>
+  // Drop the default white when the caller names its own background. Two
+  // background utilities on one element is a fight decided by their order in
+  // the generated stylesheet, not by the order they are written here — and
+  // bg-white happens to win it. A dark card asked for with `bg-soil-dark`
+  // came out white, which on a card that also sets `text-cream` means a
+  // panel of invisible text.
+  const base = /(^|\s)bg-/.test(className)
+    ? 'rounded-2xl border border-soil-dark/10'
+    : 'rounded-2xl bg-white border border-soil-dark/10'
+  return <div {...rest} className={`${base} ${className}`}>{children}</div>
 }
 
 /** Reads text aloud with Sarvam Bulbul via the backend (key stays server-side).

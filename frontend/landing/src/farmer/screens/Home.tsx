@@ -145,14 +145,25 @@ export default function Home() {
   if (d.farm.status === 'fallow') {
     return (
       <div className="max-w-2xl mx-auto space-y-5">
-        <Card className="p-5 md:p-7 bg-soil-dark text-cream border-0">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-ochre/20 px-2.5 py-1 text-[11px] font-semibold text-ochre">
-            <Wheat className="w-3.5 h-3.5" /> {t('seasonRestingShort')}
-          </span>
-          <h1 className="mt-3 font-instrument-serif text-3xl leading-tight">{t('harvestedTitle')}</h1>
-          <p className="mt-2 text-sm font-light leading-relaxed text-cream/75 text-pretty">
-            {t('harvestedBody').replace('{on}', d.farm.harvested_on ?? '')}
-          </p>
+        <Card className="overflow-hidden p-0 bg-soil-dark text-cream border-0">
+          {/* A cut paddy field, straw still lying in windrows. The state this
+              screen is describing, for a farmer who reads little — the picture
+              says "harvested" before the sentence does. Illustration, not a
+              photograph of this particular plot. */}
+          <div className="relative h-[140px] md:h-[170px]">
+            <img src="/field/harvested.webp" alt="" width={1280} height={430} loading="lazy"
+              className="w-full h-full object-cover" />
+            <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-soil-dark via-soil-dark/45 to-soil-dark/10" />
+          </div>
+          <div className="relative -mt-8 p-5 md:p-7">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-ochre/20 px-2.5 py-1 text-[11px] font-semibold text-ochre">
+              <Wheat className="w-3.5 h-3.5" /> {t('seasonRestingShort')}
+            </span>
+            <h1 className="mt-3 font-instrument-serif text-3xl leading-tight">{t('harvestedTitle')}</h1>
+            <p className="mt-2 text-sm font-light leading-relaxed text-cream/75 text-pretty">
+              {t('harvestedBody').replace('{on}', d.farm.harvested_on ?? '')}
+            </p>
+          </div>
         </Card>
         {season}
         <Link to="/app/history" className="block text-center text-sm font-medium text-leaf-deep">
