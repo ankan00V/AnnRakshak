@@ -7,6 +7,7 @@ import type { CropInfo, Home as HomeData } from '../../api/types'
 import { useAsync, useWide } from '../../lib/hooks'
 import { EYEBROW, MAIN, ROW, SIDE, SPLIT } from '../layout'
 import SeasonSwitch from '../components/SeasonSwitch'
+import { fieldPhoto } from '../fieldPhoto'
 import { Card, ErrorBox, SectionTitle } from '../../ui/kit'
 import { HomeSkeleton } from '../components/Skeletons'
 import AlertCard from '../components/AlertCard'
@@ -151,7 +152,7 @@ export default function Home() {
               says "harvested" before the sentence does. Illustration, not a
               photograph of this particular plot. */}
           <div className="relative h-[140px] md:h-[170px]">
-            <img src="/field/harvested.webp" alt="" width={1280} height={430} loading="lazy"
+            <img src={fieldPhoto(d.farm) ?? ''} alt="" width={1280} height={430} loading="lazy"
               className="w-full h-full object-cover" />
             <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-soil-dark via-soil-dark/45 to-soil-dark/10" />
           </div>
@@ -247,8 +248,16 @@ function FarmCard({ data, crop }: { data: HomeData; crop?: CropInfo }) {
   const stages = crop?.stages ?? []
   const lastDas = stages.length ? stages[stages.length - 2]?.das[1] ?? 120 : 120
   const pct = Math.min(100, Math.max(0, (f.das / lastDas) * 100))
+  const photo = fieldPhoto(f)
   return (
     <Card data-tour="farm" className="p-4 lg:h-full lg:p-8 lg:flex lg:flex-col lg:justify-between lg:rounded-3xl">
+      {/* What is standing in this field. Only where we have a photograph of
+          that crop taken in a real field — a stand-in would say less than
+          nothing. */}
+      {photo && (
+        <img src={photo} alt="" width={1280} height={537} loading="lazy"
+          className="mb-4 lg:mb-6 w-full h-24 lg:h-36 object-cover rounded-xl" />
+      )}
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs text-soil-dark/50 lg:text-sm">{f.district} · {f.area_acres} {t('acres')}{f.variety ? ` · ${f.variety}` : ''}</p>
