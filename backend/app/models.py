@@ -49,6 +49,16 @@ ways to decline: the longest is already ANSWER_DID_NOT_DISCRIMINATE at 27, and
 gate_reason used to be 30. Two characters of headroom on a growing vocabulary
 is the same bet that MODEL_VERSION_LEN lost."""
 
+FIELD_NOTE_LEN = 500
+"""How much room a farmer's own words get.
+
+`observation.answer` began as a Doubt Doctor answer -- yes, no, unsure -- and
+was sized VARCHAR(10) for exactly that. It then started carrying the note a
+farmer types when they report a problem, which `services.attach_report`
+truncates to 500 and the column still refused at 10. SQLite stores it anyway;
+Postgres raises, which is how CI found it. The writer and the column are now
+sized by the same number, and test_column_widths keeps them that way."""
+
 
 class User(Base):
     """A person who signs in: a farmer or an expert (KVK scientist, agriculture
@@ -337,7 +347,7 @@ class Observation(Base):
     kind: Mapped[str] = mapped_column(String(20))
     cue_id: Mapped[str | None] = mapped_column(String(60))
     question: Mapped[str] = mapped_column(Text)
-    answer: Mapped[str] = mapped_column(String(10))
+    answer: Mapped[str] = mapped_column(String(FIELD_NOTE_LEN))
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 

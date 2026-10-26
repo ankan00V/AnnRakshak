@@ -110,6 +110,7 @@ WIDENED_COLUMNS = {
     "case": {"reason": 80},
     "farm": {"date_basis": 20},
     "alert": {"trigger": 40},
+    "observation": {"answer": 500},
 }
 
 
