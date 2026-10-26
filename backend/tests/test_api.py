@@ -993,6 +993,51 @@ def test_a_new_season_does_not_inherit_the_last_one(client):
         assert db.scalars(select(FollowUp)).all() == [], "an unanswerable follow-up was left pending"
 
 
+def test_a_harvested_field_leaves_the_officers_work(client):
+    """The officer side of the same bug. A district's live screens — the
+    hotspot map, the alerts still waiting on a farmer, the week's outlook, the
+    count of fields being watched — were all reading every row a farm had ever
+    had. So a field cut last week went on pulling scouts to it, and the case
+    it raised sat in somebody's queue being routed and chased for a plant
+    nobody can go and look at.
+
+    The history stays. It stops being this week's work."""
+    from app.models import Alert
+
+    with SessionLocal() as db:
+        # The officer dashboard shows a demo officer the demo side of the data.
+        db.get(Farm, 1).is_demo = True
+        db.add(Alert(farm_id=1, target="rice_blast", trigger="weather", level="high",
+                     reason={"en": "humid week"}, tasks={"en": ["Walk the field"]},
+                     issued_on=date.today()))
+        db.commit()
+    client.post("/api/farms/1/diagnose", files={"image": ("x.jpg", _leaf_jpeg(), "image/jpeg")},
+                data={"demo_scenario": "unsure"})          # opens a case for an officer
+    client.post("/api/auth/demo", json={"role": "expert"})
+
+    before = client.get("/api/officials/summary").json()["totals"]
+    hot = client.get("/api/officials/hotspots").json()
+    assert before["farms"] >= 1 and hot["active_alerts"], "fixture: nothing live to lose"
+    open_before = before["open_cases"]
+
+    client.post("/api/auth/demo", json={"role": "farmer"})
+    client.post("/api/farms/1/harvest", json={})
+    client.post("/api/auth/demo", json={"role": "expert"})
+
+    after = client.get("/api/officials/summary").json()["totals"]
+    hot = client.get("/api/officials/hotspots").json()
+    assert after["farms"] == before["farms"] - 1, "a harvested field was still counted as watched"
+    assert after["farms_registered"] == before["farms_registered"], "the field itself was lost"
+    assert all(a["district"] != "Bhandara" or a["target"] != "rice_blast"
+               for a in hot["active_alerts"]), "a cut field was still calling for an inspection"
+    assert not any(p["status"] == "awaiting_expert" and p.get("farm_id") == 1
+                   for p in hot["points"]), "a closed season still showed as a hotspot"
+    assert after["open_cases"] < open_before, "an officer kept a case for a field with no crop"
+
+    # The record is kept: this is history, not a deletion.
+    assert after["diagnoses"] == before["diagnoses"]
+
+
 def test_a_season_end_is_well_past_the_usual_harvest(client):
     """A standing crop must never be cut off early. Every crop's season end
     sits past the day its last stage begins, with room for a late or staggered

@@ -365,8 +365,16 @@ def close_season(db: Session, farm: Farm, *, on: date | None = None, note: str |
     for p in problems:
         p.status = "closed"
     if problems:
+        pids = [p.id for p in problems]
         db.execute(sql_delete(FollowUp).where(
-            FollowUp.problem_id.in_([p.id for p in problems]), FollowUp.response.is_(None)))
+            FollowUp.problem_id.in_(pids), FollowUp.response.is_(None)))
+        # And the officer's side of the same question. A case left open on a
+        # field whose crop is off sits in a district queue being counted,
+        # routed and chased, for a plant nobody can go and look at — the
+        # officer's time is the scarcest thing in this system.
+        now = datetime.now(UTC)
+        for case in db.scalars(select(Case).where(Case.problem_id.in_(pids), Case.status == "open")):
+            case.status, case.resolved_at = "resolved", now
 
     # The field moves on to the next season here rather than when it is sown
     # again, so the moment the crop is off, this season's warnings, problems

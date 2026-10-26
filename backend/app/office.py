@@ -98,8 +98,13 @@ def farms_matching(db: Session, *, crop: str, districts: list[str], demo: bool,
 
     if audience == "alerted":
         alerted = {fid for (fid,) in db.execute(
-            select(Alert.farm_id).where(Alert.target == target, Alert.outcome.is_(None),
-                                        Alert.issued_on >= date.today() - timedelta(days=14))
+            # Only fields still carrying this season's warning. An advisory
+            # addressed to "everyone I warned" must not reach a farmer whose
+            # crop came off before it was written.
+            select(Alert.farm_id).join(Farm, Farm.id == Alert.farm_id)
+            .where(Alert.target == target, Alert.outcome.is_(None),
+                   Alert.season_no == Farm.season_no, Farm.status == "growing",
+                   Alert.issued_on >= date.today() - timedelta(days=14))
         ).all()}
         return [f for f in farms if f.id in alerted]
 
