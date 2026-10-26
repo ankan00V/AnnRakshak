@@ -1172,35 +1172,49 @@ def test_a_real_farmers_field_is_a_real_one(client, mail):
     with SessionLocal() as db:
         assert db.get(Farm, r.json()["id"]).is_demo is False
 
-def test_the_demo_farmer_can_work_the_fields_it_is_shown(client):
-    """Listing and writing are one rule read from two directions. They had
-    drifted: the demo account was shown four fields and told "farm not found"
-    on every one, so harvest, sow and remove all failed for the one account a
-    judge actually presses buttons in."""
+def test_the_shared_demo_fields_are_nobodys_to_change(client):
+    """Every visitor who presses "try the demo" is handed the same four
+    fields. One of them harvesting a field, answering its warning, correcting
+    its address or pointing a camera at it edits what the next visitor — and a
+    judge — walks into. They are there to be read.
+
+    The refusal says which it is, so the app can offer a field of their own
+    rather than pretending the field does not exist."""
     client.post("/api/auth/demo", json={"role": "farmer"})
-    shown = client.get("/api/farms").json()
-    assert shown, "the demo farmer was shown nothing"
-    for farm in shown:
-        r = client.post(f"/api/farms/{farm['id']}/harvest", json={})
-        assert r.status_code == 200, f"field {farm['id']} was listed but not writable: {r.text}"
+    shared = client.get("/api/farms").json()
+    assert shared, "the demo farmer was shown nothing"
+    fid = shared[0]["id"]
+
+    writes = [
+        ("post", f"/api/farms/{fid}/harvest", {"json": {}}),
+        ("post", f"/api/farms/{fid}/sow", {"json": {"crop": "rice", "sowing_date": date.today().isoformat()}}),
+        ("post", f"/api/farms/{fid}/standing", {}),
+        ("delete", f"/api/farms/{fid}", {}),
+        ("post", f"/api/farms/{fid}/traps",
+         {"json": {"target": "rice_stem_borer", "trap_type": "pheromone", "count": 3}}),
+        ("post", f"/api/farms/{fid}/sensor", {"json": [{"on": date.today().isoformat(), "soil_ph": 6.5}]}),
+    ]
+    for method, path, kw in writes:
+        r = getattr(client, method)(path, **kw)
+        assert r.status_code == 403, f"{method} {path} changed a shared demo field ({r.status_code})"
+        assert r.json()["detail"]["code"] == "demo_read_only", path
+
+    # Reading it is the whole point, and still works.
+    assert client.get(f"/api/farms/{fid}").status_code == 200
+    assert client.get(f"/api/farms/{fid}/alerts").status_code == 200
 
 
-def test_the_demo_farmer_cannot_delete_the_shared_demo_fields(client):
-    """Everyone who presses "try the demo" is handed the same four fields.
-    Harvesting one is reversible — the next visitor sows it again — but a
-    delete takes it away from every visitor after them, and from a judge, with
-    nothing in the app to put it back. A field they added themselves is theirs
-    to remove."""
+def test_a_demo_visitor_may_work_a_field_of_their_own(client):
+    """The demo is read-only, not useless. A visitor who registers their own
+    field owns it, and that is where the app is tried for real."""
     client.post("/api/auth/demo", json={"role": "farmer"})
-    shared = client.get("/api/farms").json()[0]
-    assert client.delete(f"/api/farms/{shared['id']}").status_code == 404
-    assert any(f["id"] == shared["id"] for f in client.get("/api/farms").json()), "a shared field was taken"
-
     mine = client.post("/api/farms", json={
-        "farmer_name": "Mine", "crop": "maize", "sowing_date": "2026-08-01",
+        "farmer_name": "Demo farmer", "crop": "rice", "sowing_date": date.today().isoformat(),
         "district": "Bhandara", "lat": 21.17, "lon": 79.65, "area_acres": 1.0,
-    }).json()
-    assert client.delete(f"/api/farms/{mine['id']}").status_code == 204
+    }).json()["id"]
+
+    assert client.post(f"/api/farms/{mine}/harvest", json={}).status_code == 200
+    assert client.delete(f"/api/farms/{mine}").status_code == 204
 
 
 def test_correcting_your_village_corrects_the_fields_that_inherited_it(client):

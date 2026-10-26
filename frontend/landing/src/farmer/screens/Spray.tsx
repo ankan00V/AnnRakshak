@@ -5,12 +5,14 @@ import type { LabelVerdict } from '../../api/types'
 import { useAsync } from '../../lib/hooks'
 import { ErrorBox, ListenButton, VoiceButton } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
+import DemoNotice, { useReadOnlyFarm } from '../components/DemoNotice'
 import { MAIN, SIDE, SPLIT } from '../layout'
 
 const QUICK = ['Mancozeb', 'Copper oxychloride', 'Emamectin', 'Tricyclazole', 'Chlorantraniliprole', 'Glyphosate']
 
 export default function Spray() {
   const { farmId, lang, t } = useFarmer()
+  const readOnly = useReadOnlyFarm() !== null
   const [q, setQ] = useState('')
   const [busy, setBusy] = useState(false)
   const [v, setV] = useState<LabelVerdict | null>(null)
@@ -62,6 +64,15 @@ export default function Spray() {
   }
 
   const waiting = v?.tone === 'unknown' && note === 'loading'
+
+  if (readOnly) {
+    return (
+      <div className="space-y-4">
+        <h1 className="font-instrument-serif text-3xl">{t('sprayTitle')}</h1>
+        <DemoNotice />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-5">

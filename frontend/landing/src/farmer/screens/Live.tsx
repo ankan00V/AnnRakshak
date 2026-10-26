@@ -10,6 +10,7 @@ import { useAsync } from '../../lib/hooks'
 import { Speaker } from '../../lib/speaker'
 import { Card, ErrorBox, ListenButton, Pill } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
+import DemoNotice, { useReadOnlyFarm } from '../components/DemoNotice'
 
 type Phase = 'intro' | 'starting' | 'live' | 'finishing' | 'summary' | 'error'
 type Ask = { cue_id: string; question: string; candidates: TargetView[] }
@@ -34,6 +35,7 @@ function position(timeoutMs = 6000): Promise<GeolocationPosition | null> {
 
 export default function Live() {
   const { farmId, lang, t } = useFarmer()
+  const readOnly = useReadOnlyFarm() !== null
   const navigate = useNavigate()
   const home = useAsync(() => api.home(farmId!, lang), [farmId, lang], ['home', farmId!, lang].join(':'))
   const [phase, setPhase] = useState<Phase>('intro')
@@ -256,6 +258,15 @@ export default function Live() {
 
   if (phase === 'summary' && summary) {
     return <SummaryView s={summary} onAgain={() => { setSummary(null); setPhase('intro') }} onDone={() => navigate('/app')} />
+  }
+
+  if (readOnly) {
+    return (
+      <div className="space-y-4">
+        <h1 className="font-instrument-serif text-3xl">{t('liveTitle')}</h1>
+        <DemoNotice />
+      </div>
+    )
   }
 
   return (

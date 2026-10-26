@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Camera, CheckCircle2, ImagePlus, Loader2, ScanLine, Video, X } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../../api/client'
 import { useAsync, useWide } from '../../lib/hooks'
 import { ErrorBox, Pill } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
+import DemoNotice, { useReadOnlyFarm } from '../components/DemoNotice'
 import { MAIN, SIDE, SPLIT } from '../layout'
 
 /** Downscale on the phone before upload: field networks are slow and the model
@@ -35,6 +36,7 @@ const EXPECT_TINT = {
 
 export default function Scan() {
   const { farmId, lang, t, setResult } = useFarmer()
+  const demoFarm = useReadOnlyFarm()
   const navigate = useNavigate()
   const wide = useWide()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -50,8 +52,18 @@ export default function Scan() {
   const isStub = home.data?.model.is_stub ?? false
   // Sample photos are scaffolding for showing the app without a sick plant at
   // hand. A real farmer's own field is the subject, so they never appear there.
-  const samples = useAsync(() => (farm?.is_demo ? api.samples(farm.crop) : Promise.resolve([])),
-    [farm?.crop, farm?.is_demo])
+  // The crop comes from the gate as well as from Home: on a shared field the
+  // samples are the whole screen, and they must not wait on a second request.
+  const sampleCrop = demoFarm?.crop ?? (farm?.is_demo ? farm.crop : null)
+  const samples = useAsync(() => (sampleCrop ? api.samples(sampleCrop) : Promise.resolve([])),
+    [sampleCrop])
+  // A handful, one per problem, not the whole scoring set: these are here so
+  // somebody without a sick plant to hand can see what an answer looks like.
+  // All two hundred of them is a slow screen and a worse explanation.
+  const shown = useMemo(() => {
+    const seen = new Set<string>()
+    return (samples.data ?? []).filter((x) => !seen.has(x.true_class) && seen.add(x.true_class)).slice(0, 8)
+  }, [samples.data])
   const steps = t('scanningSteps').split('|')
 
   useEffect(() => () => {
@@ -187,11 +199,11 @@ export default function Scan() {
   )
   const samplesEl = (
     <>
-        {!busy && !preview && samples.data && samples.data.length > 0 && (
+        {!busy && !preview && shown.length > 0 && (
           <div>
             <p className="text-xs text-soil-dark/50 mb-2">{t('samplesTitle')}</p>
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 lg:grid lg:grid-cols-4 lg:gap-3 lg:overflow-visible">
-              {samples.data.map((s) => (
+              {shown.map((s) => (
                 <button key={s.url} onClick={async () => pick(await (await fetch(s.url)).blob())}
                   className="shrink-0 w-20 text-left lg:w-auto">
                   <span className="relative block">
@@ -214,6 +226,15 @@ export default function Scan() {
   // Desktop: the photo and its button on the left; the live call, notes and
   // test photos beside it, on the same 8 | 4 grid as the other tab screens.
   if (wide) {
+    if (demoFarm) {
+      return (
+        <div className="space-y-5">
+          {titleEl}
+          <DemoNotice title={t('demoScanTitle')} body={t('demoScanBody')} />
+          {samplesEl}
+        </div>
+      )
+    }
     return (
       <div className="space-y-6">
         {titleEl}
@@ -230,6 +251,16 @@ export default function Scan() {
             {samplesEl}
           </aside>
         </div>
+      </div>
+    )
+  }
+
+  if (demoFarm) {
+    return (
+      <div className="space-y-4">
+        {titleEl}
+        <DemoNotice title={t('demoScanTitle')} body={t('demoScanBody')} />
+        {samplesEl}
       </div>
     )
   }

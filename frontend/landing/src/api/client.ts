@@ -61,10 +61,14 @@ export class ApiError extends Error {
    *  multi-step form reopen the step that owns it instead of showing the
    *  complaint beside a field that is no longer on screen. */
   field?: string
-  constructor(status: number, message: string, field?: string) {
+  /** The server's own name for the refusal, where it gave one. `demo_read_only`
+   *  is the shared demo fields saying they are everybody's. */
+  code?: string
+  constructor(status: number, message: string, field?: string, code?: string) {
     super(message)
     this.status = status
     this.field = field
+    this.code = code
   }
 }
 
@@ -78,6 +82,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   if (!res.ok) {
     let detail = res.statusText
     let field: string | undefined
+    let code: string | undefined
     try {
       const body = await res.json()
       const d = body.detail
@@ -85,15 +90,19 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
       // that sentence plus the field at fault; read the sentence out of it
       // rather than printing the JSON at the person.
       if (typeof d === 'string') detail = d
-      else if (d && typeof d === 'object' && typeof d.message === 'string') {
+      else if (d && typeof d === 'object' && typeof d.code === 'string' && !d.message) {
+        code = d.code
+        detail = d.code
+      } else if (d && typeof d === 'object' && typeof d.message === 'string') {
         detail = d.message
         if (typeof d.field === 'string') field = d.field
+        if (typeof d.code === 'string') code = d.code
       } else if (d !== undefined) detail = JSON.stringify(d)
     } catch {
       /* non-JSON error body */
     }
     if (res.status === 401 && !path.startsWith('/api/auth/')) window.dispatchEvent(new Event(UNAUTHORIZED))
-    throw new ApiError(res.status, detail, field)
+    throw new ApiError(res.status, detail, field, code)
   }
   // 204 has no body to parse; a delete answers with one.
   if (res.status === 204) return undefined as T

@@ -73,6 +73,13 @@ async def live_ws(ws: WebSocket, farm_id: int):
             await ws.send_json({"type": "error", "code": "NOT_ALLOWED"})
             await ws.close(code=1008)
             return
+        # A live walk records a scan against the field it is pointed at, and
+        # the shared demo fields are everybody's. Reading one is fine; walking
+        # one with a camera writes to what the next visitor sees.
+        if auth.is_shared_demo(farm):
+            await ws.send_json({"type": "error", "code": "DEMO_READ_ONLY"})
+            await ws.close(code=1008)
+            return
         start = await ws.receive_json()
         if start.get("type") != "start":
             await ws.send_json({"type": "error", "code": "EXPECTED_START"})
