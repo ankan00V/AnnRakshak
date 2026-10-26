@@ -136,7 +136,10 @@ export default function AccountMenu({ logoutLabel = 'Log out', demoLabel = 'Demo
               )}
             </div>
           )}
-          <button onClick={() => { navigate('/', { replace: true }); void logout() }}
+          {/* No navigation here on purpose: RequireRole sees the session go
+              and sends them to the front page itself, which cannot race with
+              a redirect issued from this handler. */}
+          <button onClick={() => { void logout() }}
             className={`${extra ? 'mt-2' : 'mt-4'} w-full min-h-[42px] rounded-full border border-soil-dark/15 text-sm font-medium flex items-center justify-center gap-2 hover:bg-cream`}>
             <LogOut className="w-4 h-4" />
             {logoutLabel}

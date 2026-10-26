@@ -12,10 +12,18 @@ import { homeOf } from './helpers'
  *  dashboard are for experts. The server enforces the same rule on every
  *  call — this only keeps people out of screens that would fail. */
 export default function RequireRole({ role, children }: { role: Role; children: ReactNode }) {
-  const { me, loading } = useAuth()
+  const { me, loading, signedOut } = useAuth()
   const { pathname, search } = useLocation()
   if (loading) return <PageSkeleton />
-  if (!me) return <Navigate to={`/login?role=${role}&next=${encodeURIComponent(pathname + search)}`} replace />
+  // Pressing Log out and having a session run out both end up here with no
+  // account, and they want different doors. A farmer who logged out is done
+  // and goes to the front page; one whose session expired was trying to get
+  // somewhere, so the sign-in screen keeps it and returns them after.
+  if (!me) {
+    return signedOut
+      ? <Navigate to="/" replace />
+      : <Navigate to={`/login?role=${role}&next=${encodeURIComponent(pathname + search)}`} replace />
+  }
   if (me.role !== role) {
     return (
       <FarmerProvider>
