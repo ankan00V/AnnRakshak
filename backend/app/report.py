@@ -114,9 +114,6 @@ L = {
               "फोटोसुद्धा, फाइल म्हणून, फक्त ओळी म्हणून नाही."},
     "stamp_line": {"en": "Issued by AnnRakshak", "hi": "AnnRakshak द्वारा जारी",
                    "mr": "AnnRakshak कडून जारी"},
-    "ps": {"en": "Smart India Hackathon 2026 · PS 26131 · Government of Maharashtra",
-           "hi": "Smart India Hackathon 2026 · PS 26131 · महाराष्ट्र शासन",
-           "mr": "Smart India Hackathon 2026 · PS 26131 · महाराष्ट्र शासन"},
 }
 
 
@@ -379,11 +376,6 @@ def render(data: dict, lang: str = "en") -> bytes:
         _table(pdf, [_t("subject", lang), _t("kind", lang), _t("at", lang)], [4, 1, 1.4],
                [[str(e.get("subject") or ""), str(e.get("kind") or ""), _day(e.get("at"))]
                 for e in emails])
-
-    pdf.ln(4)
-    pdf.set_font(PRIMARY, "", 7)
-    pdf.set_text_color(*MUTED)
-    pdf.cell(0, 4, _t("ps", lang), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
     out = pdf.output()
     return bytes(out)

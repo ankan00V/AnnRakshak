@@ -28,7 +28,7 @@ from app.config import KB_DIR
 
 TIMEOUT_S = 8.0
 CACHE_DAYS = 30
-UA = "AnnRakshak/1.0 (Smart India Hackathon 2026 crop advisory; +https://github.com/annrakshak)"
+UA = "AnnRakshak/1.0 (crop advisory; +https://github.com/annrakshak)"
 REVERSE_URL = "https://api.bigdatacloud.net/data/reverse-geocode-client"
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/reverse"
 SEARCH_URL = "https://geocoding-api.open-meteo.com/v1/search"

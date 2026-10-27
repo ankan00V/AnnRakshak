@@ -1,7 +1,6 @@
 # AnnRakshak
 
 **Early detection and management of crop diseases and pest infestations.**
-Smart India Hackathon 2026 · PS 26131 · Government of Maharashtra.
 
 *Anna*, the harvest. *Rakshak*, its protector.
 

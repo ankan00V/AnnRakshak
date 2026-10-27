@@ -84,10 +84,15 @@ export default function Home() {
               <span className="block text-xs text-cream/70 mt-0.5">{t('takePhotoSub')}</span>
             </span>
           </span>
-          <span className="relative mt-3 flex items-center gap-1.5 text-[11px] text-cream/60">
-            <Sparkles className="w-3 h-3" />
-            {d.model.is_stub ? t('demoModel') : t('realModel')}
-          </span>
+          {/* Only the demo banner is worth a farmer's attention: it says the
+              answer is not a real diagnosis. Naming the model when it IS real
+              tells them nothing they can act on. */}
+          {d.model.is_stub && (
+            <span className="relative mt-3 flex items-center gap-1.5 text-[11px] text-cream/60">
+              <Sparkles className="w-3 h-3" />
+              {t('demoModel')}
+            </span>
+          )}
         </Link>
     </>
   )

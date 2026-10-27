@@ -117,13 +117,6 @@ export default function Weather() {
           )}
         </section>
   )
-  const sources = (
-        <p className="text-[11px] text-soil-dark/45 leading-relaxed">
-          {t('sources')}: {v.source.forecast}; {t('rainNow')}: {v.source.current}; ET₀: {v.source.et0}
-          {v.source.soil ? `; ${v.source.soil}` : ''}{v.sat_rain ? `; ${t('satRainTitle')}: ${v.sat_rain.source}` : ''}.
-        </p>
-  )
-
   // Desktop: conditions and the forecast on the left; what to do, the spraying
   // window and the satellite view beside them (the shared 8 | 4 grid).
   if (wide) {
@@ -144,7 +137,6 @@ export default function Weather() {
             <SatelliteCard />
           </aside>
         </div>
-        {sources}
       </div>
     )
   }
@@ -164,18 +156,18 @@ export default function Weather() {
       <SoilWater v={v} />
       <SatelliteCard />
 
-      {sources}
     </div>
   )
 }
 
-/** Rain ISRO's INSAT-3DS satellite measured at the field (MOSDAC). Shown only
- *  when there are images: never a placeholder number. */
+/** Rain measured over the field by satellite. Shown only when there are
+ *  images: never a placeholder number. Which satellite, and when it last
+ *  passed, is not something a farmer can do anything with — the millimetres
+ *  are. */
 function SatRainCard({ v }: { v: WeatherView }) {
-  const { t, lang } = useFarmer()
+  const { t } = useFarmer()
   const s = v.sat_rain
   if (!s) return null
-  const at = new Date(s.latest).toLocaleTimeString(bcp47(lang), { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' })
   return (
     <section className="rounded-2xl bg-sky-50 border border-sky-100 p-4 flex items-center gap-4">
       <span className="shrink-0 w-11 h-11 rounded-full bg-white border border-sky-200 flex items-center justify-center">
@@ -184,10 +176,6 @@ function SatRainCard({ v }: { v: WeatherView }) {
       <div className="flex-1 min-w-0">
         <p className="text-xs text-sky-900/70">{t('satRainTitle')}</p>
         <p className="text-xl font-semibold text-sky-950 leading-tight">{s.mm} mm</p>
-        <p className="text-[11px] text-sky-900/60">
-          {t('satRainSrc').replace('{t}', at)}
-          {s.coverage < 0.95 ? ` · ${t('satRainPartial').replace('{h}', String(s.hours))}` : ''}
-        </p>
       </div>
     </section>
   )
@@ -422,7 +410,7 @@ function SoilWater({ v }: { v: WeatherView }) {
             {/* Where the number came from decides how much a farmer should lean
                 on it: their own sensor, the card they were given, or a map. */}
             <p className="ml-auto text-right text-[11px] leading-tight text-soil-dark/50">
-              {t(`ph_${s.ph.how}`)}<br />{s.ph.source}
+              {t(`ph_${s.ph.how}`)}
             </p>
           </div>
         )}
@@ -515,7 +503,7 @@ function SatelliteCard() {
   const ys = (v: number) => H - 4 - v * (H - 8)
   return (
     <section>
-      <SectionTitle sub={d.source}>
+      <SectionTitle>
         <span className="flex items-center gap-2"><Satellite className="w-5 h-5 text-leaf" />{t('satTitle')}</span>
       </SectionTitle>
       <Card className="p-4 space-y-3">
@@ -532,7 +520,7 @@ function SatelliteCard() {
             {series.map((p, i) => <circle key={p.on} cx={xs(i)} cy={ys(p.mean)} r={2.5} className="fill-leaf-deep" />)}
           </svg>
         )}
-        <p className="text-xs text-soil-dark/60">{t('satLastClear').replace('{date}', date(d.latest.on)).replace('{source}', d.latest.source)}</p>
+        <p className="text-xs text-soil-dark/60">{t('satLastClear').replace('{date}', date(d.latest.on))}</p>
         {d.previous && d.change != null && (
           <p className={`text-sm font-medium ${d.drop ? 'text-ember' : 'text-soil-dark/70'}`}>
             {t('satChange').replace('{date}', date(d.previous.on)).replace('{v}', `${d.change > 0 ? '+' : ''}${d.change.toFixed(2)}`)}

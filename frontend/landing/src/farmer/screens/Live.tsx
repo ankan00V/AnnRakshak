@@ -489,7 +489,6 @@ function SummaryView({ s, onAgain, onDone }: { s: LiveSummary; onAgain: () => vo
             <>
               <p className="mt-1 text-2xl font-semibold">{Math.round(w.temp_c)}°C</p>
               <p className="text-xs text-soil-dark/70">{w.rh_pct}% · {w.text ?? ''}{w.rain_mm_1h ? ` · ${w.rain_mm_1h} mm` : ''}</p>
-              <p className="mt-1 text-[10px] text-soil-dark/40">{w.source}</p>
             </>
           ) : <p className="mt-1 text-sm text-soil-dark/50">—</p>}
         </Card>
@@ -499,7 +498,6 @@ function SummaryView({ s, onAgain, onDone }: { s: LiveSummary; onAgain: () => vo
             <>
               <p className="mt-1 text-sm"><span className="font-semibold">{c.forecast.rain_mm} mm</span> {t('liveRain')}</p>
               <p className="text-xs text-soil-dark/70">{c.forecast.t_min != null ? `${Math.round(c.forecast.t_min)}–${Math.round(c.forecast.t_max ?? 0)}°C` : ''} · RH ≤{c.forecast.rh_max ?? '—'}%</p>
-              <p className="mt-1 text-[10px] text-soil-dark/40">{c.forecast.source}</p>
             </>
           ) : <p className="mt-1 text-sm text-soil-dark/50">—</p>}
         </Card>
