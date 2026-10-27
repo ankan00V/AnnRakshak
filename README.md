@@ -185,8 +185,15 @@ it finds.
 
 Consent at sign-up is half a bargain. The account menu holds the other half:
 
-- **Download everything we hold** — one file: the account, the profile, every
-  field, every problem, every photograph, every alert and every email we sent.
+- **Download everything we hold** — a PDF report in the farmer's own language,
+  carrying the app's stamp: the account, the profile, every field, every
+  problem, every photograph, every alert and every email we sent. It is a
+  document rather than a data dump because the person who asked is the person
+  who has to be able to read it, and a farmer handed a `.json` file has been
+  answered without being told. Devanagari and the other six Indic scripts are
+  shaped with HarfBuzz and drawn from fonts that ship with the app, since a
+  container has none and the farmer's own language rendering as broken pieces
+  would be worse than English (`app/report.py`).
 - **Delete my account** — the person is erased. Name, phone, email, village,
   the fields' coordinates, the sessions, the push subscriptions, the record of
   our emails, and every photograph, as files on disk and not only rows.

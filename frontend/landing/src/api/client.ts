@@ -147,8 +147,9 @@ export const api = {
   demoLogin: (role: Role) => req<Me>('/api/auth/demo', json({ role })),
   logout: () => req<{ signed_out: boolean }>('/api/auth/logout', { method: 'POST' }),
 
-  /** Everything this account holds, as a file. A browser download, not a fetch:
-   *  the server names it and the phone saves it. */
+  /** Everything this account holds, as a PDF in the farmer's own language.
+   *  A browser download, not a fetch: the server renders it, names it and the
+   *  phone saves it. */
   myDataUrl: '/api/auth/me/data',
   eraseAccount: (confirm: string) =>
     req<{ erased: boolean; farms: number; problems: number; photographs: number }>(

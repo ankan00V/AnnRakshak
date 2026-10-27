@@ -769,10 +769,21 @@ def test_a_farmer_can_take_their_data_and_have_it_erased(client, mail):
                     data={"lang": "en", "demo_scenario": "clear"}).json()
     photo = (r.get("image_url") or "").removeprefix("/media/")
 
-    # Everything we hold, in their hands.
+    # Everything we hold, in their hands — as a document, not a dump. A farmer
+    # handed a .json file has been answered without being told.
     out = client.get("/api/auth/me/data")
-    assert out.status_code == 200 and "attachment" in out.headers["content-disposition"]
-    data = out.json()
+    assert out.status_code == 200
+    assert out.headers["content-type"] == "application/pdf"
+    assert "attachment" in out.headers["content-disposition"]
+    assert out.headers["content-disposition"].endswith('.pdf"')
+    assert out.content[:5] == b"%PDF-"
+
+    # The content the document is built from is still the whole record.
+    from app import erasure
+    from app.db import SessionLocal
+    from app.models import User as _User
+    with SessionLocal() as db:
+        data = erasure.export_account(db, db.get(_User, me["id"]))
     assert data["account"]["phone"] == "+919876543210"
     assert data["farms"][0]["crop"] == "rice" and data["profile"]["village"] == "Mohadi"
     assert data["photographs"] and data["photographs"][0]["file"] == photo
