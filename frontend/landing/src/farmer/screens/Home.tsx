@@ -5,7 +5,7 @@ import { api } from '../../api/client'
 import ReportSheet from '../components/ReportSheet'
 import type { CropInfo, Home as HomeData } from '../../api/types'
 import { useAsync, useWide } from '../../lib/hooks'
-import { EYEBROW, MAIN, ROW, SIDE, SPLIT } from '../layout'
+import { EYEBROW, MAIN, SIDE, SPLIT } from '../layout'
 import SeasonSwitch from '../components/SeasonSwitch'
 import { fieldPhoto } from '../fieldPhoto'
 import { Card, ErrorBox, SectionTitle } from '../../ui/kit'
@@ -152,7 +152,7 @@ export default function Home() {
               says "harvested" before the sentence does. Illustration, not a
               photograph of this particular plot. */}
           <div className="relative h-[140px] md:h-[170px]">
-            <img src={fieldPhoto(d.farm) ?? ''} alt="" width={1280} height={430} loading="lazy"
+            <img src={fieldPhoto(d.farm)?.src ?? ''} alt="" width={1280} height={430} loading="lazy"
               className="w-full h-full object-cover" />
             <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-soil-dark via-soil-dark/45 to-soil-dark/10" />
           </div>
@@ -180,7 +180,12 @@ export default function Home() {
   if (wide) {
     return (
       <div className="space-y-8">
-        <div className={ROW}>
+        {/* Each card its own height. Stretching them to match left the
+            weather pane with a hole in the middle the moment the field card
+            grew — written out rather than layering a second align-items on
+            ROW, because two of those on one element is decided by stylesheet
+            order, not by the order they are written. */}
+        <div className="lg:grid lg:grid-cols-12 lg:gap-8 lg:items-start lg:space-y-0">
           <div className="col-span-8"><FarmCard data={d} crop={crop} /></div>
           <div className="col-span-4"><WeatherNowCard /></div>
         </div>
@@ -250,13 +255,18 @@ function FarmCard({ data, crop }: { data: HomeData; crop?: CropInfo }) {
   const pct = Math.min(100, Math.max(0, (f.das / lastDas) * 100))
   const photo = fieldPhoto(f)
   return (
-    <Card data-tour="farm" className="p-4 lg:h-full lg:p-8 lg:flex lg:flex-col lg:justify-between lg:rounded-3xl">
+    <Card data-tour="farm" className="p-4 lg:p-8 lg:rounded-3xl">
       {/* What is standing in this field. Only where we have a photograph of
           that crop taken in a real field — a stand-in would say less than
           nothing. */}
       {photo && (
-        <img src={photo} alt="" width={1280} height={537} loading="lazy"
-          className="mb-4 lg:mb-6 w-full h-24 lg:h-36 object-cover rounded-xl" />
+        <figure className="mb-4 lg:mb-6">
+          <img src={photo.src} alt="" width={1280} height={537} loading="lazy"
+            className="w-full h-24 lg:h-32 object-cover rounded-xl" />
+          {photo.credit && (
+            <figcaption className="mt-1 text-[10px] text-soil-dark/35">{photo.credit}</figcaption>
+          )}
+        </figure>
       )}
       <div className="flex items-start justify-between gap-3">
         <div>
