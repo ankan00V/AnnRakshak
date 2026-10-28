@@ -5,22 +5,19 @@
  *  crop from a cut one without reading the sentence that says so. Every one is
  *  a real photograph of a real field.
  *
- *  Rice, maize and the bare field are ours. We had no photograph of a cotton
- *  or a soybean field, so those two are other people's, used under their
- *  licences — and where a licence asks for a credit, the credit is shown under
- *  the picture, because a line in a file nobody opens is not attribution.
- *  public/field/CREDITS.md has the full record.
+ *  Who took each one, and what we may do with it, is recorded in
+ *  public/field/CREDITS.md rather than printed under the picture: a farmer
+ *  deciding whether their crop looks like this has no use for a photographer's
+ *  name.
  */
 export interface FieldPhoto {
   src: string
-  /** Shown under the picture when the licence asks for it. Ours carry none. */
-  credit?: string
 }
 
 const STANDING: Record<string, FieldPhoto> = {
   rice: { src: '/field/rice.webp' },
   maize: { src: '/field/maize.webp' },
-  cotton: { src: '/field/cotton.webp', credit: 'Bhaskaranaidu · CC BY-SA 3.0 · cropped' },
+  cotton: { src: '/field/cotton.webp' },
   soybean: { src: '/field/soybean.webp' },
 }
 

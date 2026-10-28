@@ -270,9 +270,6 @@ function FarmCard({ data, crop }: { data: HomeData; crop?: CropInfo }) {
         <figure className="mb-4 lg:mb-6">
           <img src={photo.src} alt="" width={1280} height={537} loading="lazy"
             className="w-full h-24 lg:h-32 object-cover rounded-xl" />
-          {photo.credit && (
-            <figcaption className="mt-1 text-[10px] text-soil-dark/35">{photo.credit}</figcaption>
-          )}
         </figure>
       )}
       <div className="flex items-start justify-between gap-3">
