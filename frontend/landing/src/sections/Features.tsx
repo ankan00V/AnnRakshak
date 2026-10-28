@@ -1,5 +1,6 @@
 import { Ban, Bug, ListOrdered, Map, UserCheck, Volume2 } from 'lucide-react'
 import Reveal from '../ui/Reveal'
+import OnPhone from '../ui/OnPhone'
 import { LANGS } from '../lib/i18n'
 
 const GRADCAM = [
@@ -26,7 +27,7 @@ const ALSO = [
 
 function Tile({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-3xl border border-soil-dark/10 bg-white/80 p-6 md:p-8 ${className}`}>
+    <div className={`rounded-3xl border border-soil-dark/10 bg-white/80 p-5 sm:p-6 md:p-8 ${className}`}>
       {children}
     </div>
   )
@@ -86,14 +87,14 @@ export default function Features() {
           </Tile>
         </Reveal>
 
-        <div className="mt-5 grid gap-5 lg:grid-cols-3 lg:items-stretch">
+        <div className="mt-5 grid gap-4 sm:gap-5 lg:grid-cols-3 lg:items-stretch">
           {/* The ladder, as rungs. */}
           <Reveal className="h-full" delay={40}>
             <Tile className="h-full">
               <h3 className="flex items-start gap-2.5 text-lg font-medium lg:min-h-[3.5rem]">
                 <ListOrdered className="w-4 h-4 mt-1 text-leaf shrink-0" /> Chemical last, veto first
               </h3>
-              <ol className="mt-5 space-y-4">
+              <ol className="mt-4 space-y-3 sm:mt-5 sm:space-y-4">
                 {LADDER.map(({ step, line }, i) => (
                   <li key={step} className="relative pl-7">
                     <span aria-hidden className="absolute left-0 top-1 text-[11px] font-semibold tabular-nums text-ochre">
@@ -142,10 +143,10 @@ export default function Features() {
               </p>
               {/* The scripts themselves are the argument, so they are set at
                   reading size rather than as small grey pills. */}
-              <ul className="mt-auto pt-6 flex flex-wrap gap-x-2 gap-y-1.5">
+              <ul className="mt-auto pt-4 sm:pt-6 flex flex-wrap gap-x-1.5 gap-y-1 sm:gap-x-2 sm:gap-y-1.5">
                 {LANGUAGES.map((l) => (
                   <li key={l.code} lang={l.code} title={l.english}
-                    className="rounded-full bg-leaf-deep/[0.07] px-3 py-1 text-[15px] leading-7 text-leaf-deep">
+                    className="rounded-full bg-leaf-deep/[0.07] px-2.5 py-0.5 text-[13px] leading-6 text-leaf-deep sm:px-3 sm:py-1 sm:text-[15px] sm:leading-7">
                     {l.label}
                   </li>
                 ))}
@@ -154,8 +155,11 @@ export default function Features() {
           </Reveal>
         </div>
 
-        {/* The rest, as a ruled list rather than three more cards. */}
-        <div className="mt-8 sm:mt-10 md:mt-16 border-t border-soil-dark/15">
+        {/* The rest, as a ruled list rather than three more cards. Secondary
+            by its own framing, so on a phone it is a line you can open rather
+            than four hundred more pixels of scrolling past it. */}
+        <OnPhone label="Three more things it does" className="mt-8">
+        <div className="sm:mt-10 md:mt-16 border-t border-soil-dark/15">
           {ALSO.map(({ icon: Icon, title, line }, i) => (
             <Reveal key={title} delay={i * 70}>
               <div className="grid gap-2 md:grid-cols-12 md:gap-8 items-start border-b border-soil-dark/15 py-6">
@@ -170,6 +174,7 @@ export default function Features() {
             </Reveal>
           ))}
         </div>
+        </OnPhone>
       </div>
     </section>
   )

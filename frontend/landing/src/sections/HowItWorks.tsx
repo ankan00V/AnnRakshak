@@ -74,16 +74,19 @@ export default function HowItWorks() {
               ))}
             </div>
 
-            <dl className="mt-6 grid gap-5 sm:grid-cols-3">
+            {/* Three figures under the bar they describe. Stacked on a phone
+                they were three hundred pixels and read as a list of unrelated
+                numbers; in a row they read as the split the bar just showed. */}
+            <dl className="mt-5 grid grid-cols-3 gap-3 sm:mt-6 sm:gap-5">
               {GATE.map(({ pct, label, note, tone }) => (
                 <div key={label}>
-                  <dt className="flex items-center gap-2 text-sm font-medium">
-                    <span aria-hidden className={`w-2.5 h-2.5 rounded-full ${tone}`} />
+                  <dt className="flex items-start gap-1.5 text-[11px] font-medium leading-tight sm:items-center sm:gap-2 sm:text-sm">
+                    <span aria-hidden className={`mt-1 w-2 h-2 shrink-0 rounded-full sm:mt-0 sm:w-2.5 sm:h-2.5 ${tone}`} />
                     {label}
                   </dt>
-                  <dd className="mt-1 pl-[18px]">
-                    <span className="font-instrument-serif text-3xl tabular-nums">{pct}%</span>
-                    <span className="block text-xs text-cream/70">{note}</span>
+                  <dd className="mt-1 sm:pl-[18px]">
+                    <span className="font-instrument-serif text-2xl tabular-nums sm:text-3xl">{pct}%</span>
+                    <span className="block text-[10px] leading-tight text-cream/70 sm:text-xs">{note}</span>
                   </dd>
                 </div>
               ))}
