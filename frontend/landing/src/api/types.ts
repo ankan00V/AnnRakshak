@@ -21,8 +21,12 @@ export interface Farm {
   das: number
   lang: Lang
   is_demo: boolean
-  /** 'growing' or 'fallow'. The row is the field; the crop on it is a season. */
-  /** 'dormant': past its season end with nobody having said what happened. */
+  /** A shared showcase field: shown to every demo visitor, changed by none of
+   *  them. The app offers them a field of their own instead. */
+  read_only?: boolean
+  /** 'growing', 'dormant' or 'fallow'. The row is the field; the crop on it is
+   *  a season. 'dormant' is past its season end with nobody having said what
+   *  happened. */
   status?: 'growing' | 'dormant' | 'fallow'
   /** The day this field's season is taken to be over. */
   season_end_on?: string

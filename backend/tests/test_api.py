@@ -15,7 +15,7 @@ from app.db import Base, SessionLocal, engine
 from app.engine import phenology
 from app.engine.weather import Day, Window
 from app.main import app
-from app.models import Alert, Case, Farm, OfficerAction, Problem, Season
+from app.models import Alert, Case, Farm, OfficerAction, Problem, Season, User
 
 
 def _leaf_jpeg() -> bytes:
@@ -1004,9 +1004,15 @@ def test_a_harvested_field_leaves_the_officers_work(client):
     The history stays. It stops being this week's work."""
     from app.models import Alert
 
+    client.post("/api/auth/demo", json={"role": "farmer"})   # creates the demo farmer
     with SessionLocal() as db:
         # The officer dashboard shows a demo officer the demo side of the data.
-        db.get(Farm, 1).is_demo = True
+        # Owned, because a shared demo field is nobody's to harvest — this one
+        # belongs to the farmer doing the harvesting.
+        farm = db.get(Farm, 1)
+        farm.is_demo = True
+        farm.user_id = db.scalar(select(User.id).where(User.role == "farmer", User.is_demo.is_(True)))
+        assert farm.user_id, "fixture: no demo farmer to own the field"
         db.add(Alert(farm_id=1, target="rice_blast", trigger="weather", level="high",
                      reason={"en": "humid week"}, tasks={"en": ["Walk the field"]},
                      issued_on=date.today()))

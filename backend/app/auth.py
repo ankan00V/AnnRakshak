@@ -297,6 +297,16 @@ def farm_ids_for(db: Session, user: User | None) -> list[int] | None:
     return list(db.scalars(q).all())
 
 
+def is_shared_demo(farm: Farm) -> bool:
+    """A showcase field that belongs to nobody.
+
+    The seeded demo fields carry no owner, which is exactly what makes them
+    shared: every visitor is shown the same four. A field a demo visitor
+    registers themselves has their id on it and is theirs to work.
+    """
+    return bool(farm.is_demo and farm.user_id is None)
+
+
 def may_change_farm(user: User | None, farm: Farm, *, destructive: bool = False) -> bool:
     """Whether this user may sow, harvest or remove this field.
 
@@ -306,20 +316,23 @@ def may_change_farm(user: User | None, farm: Farm, *, destructive: bool = False)
     shared demo fields and writing did not. An officer may read a field; nobody
     but the holder sows or harvests on somebody's land.
 
-    `destructive` is the line between the two kinds of change. Every visitor
-    who presses "try the demo" is handed the same four demo fields, so pressing
-    harvest on one is a thing they may do and undo — the next visitor finds it
-    fallow and sows it again. Deleting one takes it away from every visitor
-    after them, and from a judge, with nothing in the app to put it back. That
-    needs a field of their own, which a demo visitor who adds one has.
+    The shared demo fields belong to nobody and change for nobody. Every
+    visitor who presses "try the demo" is handed the same four, so one of them
+    harvesting a field, answering its warning or correcting its address edits
+    what the next visitor — and a judge — walks into. They are there to be read.
+    A demo visitor who registers a field of their own owns that one and may do
+    anything with it; that is where the app is tried for real.
+
+    `destructive` marks the changes that cannot be undone, for the fields that
+    do have an owner.
     """
+    if is_shared_demo(farm):
+        return False
     if not config.AUTH_ENFORCE:
         return True
     if user is None or user.role != "farmer":
         return False
-    if farm.user_id == user.id:
-        return True
-    return bool(user.is_demo and farm.is_demo and not destructive)
+    return farm.user_id == user.id
 
 
 def _farm_of(db: Session, name: str, value: str) -> Farm | None:

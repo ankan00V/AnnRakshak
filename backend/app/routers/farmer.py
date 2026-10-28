@@ -43,8 +43,18 @@ def _own_farm(db: Session, farm_id: int, request: Request, *, destructive: bool 
     farm = _farm(db, farm_id)
     me = auth.signed_in(request, db) if config.AUTH_ENFORCE else None
     if not auth.may_change_farm(me, farm, destructive=destructive):
+        # A shared demo field says so, rather than pretending not to exist: the
+        # visitor can see it perfectly well, and the honest answer is that it
+        # is everybody's, so the app offers them one of their own instead.
+        if auth.is_shared_demo(farm):
+            raise HTTPException(403, {"code": "demo_read_only"})
         raise HTTPException(404, "farm not found")
     return farm
+
+
+def _writable_farm(db: Session, farm_id: int, request: Request) -> Farm:
+    """A farm this request may add to. Same rule as changing one."""
+    return _own_farm(db, farm_id, request)
 
 
 def _problem(db: Session, problem_id: int) -> Problem:
@@ -68,6 +78,25 @@ def crops(lang: Lang = "en", kb: KB = Depends(get_kb)):
 @router.get("/kb/targets")
 def targets(lang: Lang = "en", crop: str | None = None, kb: KB = Depends(get_kb)):
     return [kb.target_view(t, lang) for t, v in kb.targets.items() if crop is None or v["crop"] == crop]
+
+
+#: Where each mount's files actually live, so a sample can be checked before
+#: it is offered (app.main mounts these same directories).
+_SAMPLE_ROOTS = {
+    "/samples/": "icar_640",
+    "/samples-extra/": "extra_640",
+    "/samples-more/": "more_640",
+}
+
+
+def _sample_file(url: str):
+    """The file on disk behind a sample URL."""
+    from app.config import BACKEND_DIR  # noqa: PLC0415
+
+    for mount, folder in _SAMPLE_ROOTS.items():
+        if url.startswith(mount):
+            return BACKEND_DIR.parent / "data" / "processed" / folder / url[len(mount):]
+    return BACKEND_DIR / "nonexistent"
 
 
 @router.get("/samples")
@@ -107,6 +136,12 @@ def samples(request: Request, crop: str | None = None, per_class: int = 1,
         mount = next((m for d, m in (("/extra_640/", "/samples-extra/"), ("/more_640/", "/samples-more/"))
                       if d in path), None)
         url = mount + "/".join(path.split("/")[-3:]) if mount else "/samples/" + key
+        # The split is the model's record of what it was scored on; it is not a
+        # promise that every one of those files is on this machine. Offering a
+        # photograph we cannot serve puts broken frames on the one screen a
+        # visitor is shown to learn what the app does.
+        if not _sample_file(url).exists():
+            continue
         item = {"url": url, "true_class": cls, "source": path.split("/")[-3] if mount else "icar",
                 "expected": outcomes.get(key, {}).get("outcome")}
         if item["expected"] == "clarify" or (item["expected"] == "escalate" and n_escalate < 2):
@@ -274,13 +309,14 @@ def home(farm_id: int, lang: Lang = "en", db: Session = Depends(get_db), kb: KB 
 @router.post("/farms/{farm_id}/diagnose")
 async def diagnose(
     farm_id: int,
+    request: Request,
     image: UploadFile = File(...),
     lang: Lang = Form("en"),
     demo_scenario: str | None = Form(None),
     db: Session = Depends(get_db),
     kb: KB = Depends(get_kb),
 ):
-    farm = _farm(db, farm_id)
+    farm = _writable_farm(db, farm_id, request)
     limit(f"diagnose:{farm_id}", 30, 60)
     data = await _read_capped(image)
     if not data:
@@ -481,8 +517,9 @@ class TrapIn(BaseModel):
 
 
 @router.post("/farms/{farm_id}/traps", status_code=201)
-def add_trap(farm_id: int, body: TrapIn, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
-    farm = _farm(db, farm_id)
+def add_trap(farm_id: int, body: TrapIn, request: Request,
+             db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    farm = _writable_farm(db, farm_id, request)
     if body.target not in kb.targets or kb.targets[body.target]["crop"] != farm.crop:
         raise HTTPException(422, f"{body.target} is not a {farm.crop} pest")
     db.add(TrapReading(farm_id=farm.id, **body.model_dump(exclude={"recorded_on"}),
@@ -515,8 +552,9 @@ class SensorIn(BaseModel):
 
 
 @router.post("/farms/{farm_id}/sensor", status_code=201)
-def add_sensor(farm_id: int, readings: list[SensorIn], db: Session = Depends(get_db)):
-    farm = _farm(db, farm_id)
+def add_sensor(farm_id: int, readings: list[SensorIn], request: Request,
+               db: Session = Depends(get_db)):
+    farm = _writable_farm(db, farm_id, request)
     for r in readings:
         row = db.scalar(select(SensorReading).where(SensorReading.farm_id == farm.id, SensorReading.on == r.on))
         if row is None:
@@ -578,7 +616,7 @@ def _label_target(db: Session, farm: Farm, problem_id: int | None) -> str | None
 
 @router.post("/labelcheck")
 def label_check(body: LabelCheckIn, request: Request, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
-    farm = _farm(db, body.farm_id)
+    farm = _writable_farm(db, body.farm_id, request)
     auth.check_farm(auth.signed_in(request, db), farm)
     target = _label_target(db, farm, body.problem_id)
     out = labelcheck.check(kb, body.product, farm.crop, target, body.lang) | {"target": target}

@@ -32,7 +32,12 @@ function Frame() {
   const { me, loading } = useAuth()
   const [params] = useSearchParams()
   if (loading) return <PageSkeleton />
-  if (me) return <Navigate to={safeNext(params.get('next')) ?? homeOf(me.role)} replace />
+  // A signed-in person has no business on the sign-up forms — except the one
+  // trying out the shared demonstration account, who reached here by pressing
+  // "add your own field". Sending them back to the demo is the one answer that
+  // cannot be what they meant. Letting them look costs nothing: signing up
+  // replaces the session, and backing out leaves the demo as it was.
+  if (me && !me.is_demo) return <Navigate to={safeNext(params.get('next')) ?? homeOf(me.role)} replace />
   return (
     /* On a laptop the window is the frame: header, panel and form are laid
        out inside one screen and the form is the only thing that scrolls. The

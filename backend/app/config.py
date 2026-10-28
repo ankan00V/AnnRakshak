@@ -251,7 +251,7 @@ OTP_CHANNEL = "email"
 """Where one-time codes go. Both roles give a mobile number at sign-up, but
 there is no free SMS gateway yet, so every code is emailed (SMTP above)."""
 EXPERT_AUTO_VERIFY = _flag("ANNRAKSHAK_EXPERT_AUTO_VERIFY", not PROD)
-"""Hackathon builds verify experts at sign-up; production sets this off and the district office verifies."""
+"""Demo builds verify experts at sign-up; production sets this off and the district office verifies."""
 # --- Cloudflare Turnstile (the "are you a person" box on sign-in) ---------
 
 TURNSTILE_SITEKEY = os.environ.get("TURNSTILE_SITEKEY", "1x00000000000000000000AA")

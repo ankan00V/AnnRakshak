@@ -19,7 +19,7 @@ const GATE = [
 export default function HowItWorks() {
   return (
     <section id="how-it-works" className="w-full bg-leaf-deep text-cream">
-      <div className="max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-28">
+      <div className="max-w-6xl mx-auto px-6 md:px-12 py-12 sm:py-16 md:py-28">
         <Reveal className="max-w-3xl">
           <h2 className="font-instrument-serif text-[2rem] sm:text-5xl md:text-[3.5rem] leading-[1.05] text-balance">
             From an early warning to a treatment someone checked.
@@ -27,7 +27,7 @@ export default function HowItWorks() {
         </Reveal>
 
         {/* The rail: a numbered sequence, because the order is the point. */}
-        <ol className="mt-14 md:mt-20 grid gap-8 md:grid-cols-5 md:gap-5">
+        <ol className="mt-8 sm:mt-8 sm:mt-12 md:mt-20 grid gap-8 md:grid-cols-5 md:gap-5">
           {STEPS.map(({ icon: Icon, label, line }, i) => (
             <Reveal key={label} delay={i * 80}>
               <li className="relative flex md:flex-col items-start gap-5 md:gap-0 h-full">
@@ -50,7 +50,7 @@ export default function HowItWorks() {
         </ol>
 
         {/* The centrepiece: what the confidence gate actually did. */}
-        <Reveal className="mt-16 md:mt-24">
+        <Reveal className="mt-10 sm:mt-14 md:mt-24">
           <div className="rounded-3xl bg-cream/[0.06] ring-1 ring-cream/10 p-6 md:p-10">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -74,16 +74,19 @@ export default function HowItWorks() {
               ))}
             </div>
 
-            <dl className="mt-6 grid gap-5 sm:grid-cols-3">
+            {/* Three figures under the bar they describe. Stacked on a phone
+                they were three hundred pixels and read as a list of unrelated
+                numbers; in a row they read as the split the bar just showed. */}
+            <dl className="mt-5 grid grid-cols-3 gap-3 sm:mt-6 sm:gap-5">
               {GATE.map(({ pct, label, note, tone }) => (
                 <div key={label}>
-                  <dt className="flex items-center gap-2 text-sm font-medium">
-                    <span aria-hidden className={`w-2.5 h-2.5 rounded-full ${tone}`} />
+                  <dt className="flex items-start gap-1.5 text-[11px] font-medium leading-tight sm:items-center sm:gap-2 sm:text-sm">
+                    <span aria-hidden className={`mt-1 w-2 h-2 shrink-0 rounded-full sm:mt-0 sm:w-2.5 sm:h-2.5 ${tone}`} />
                     {label}
                   </dt>
-                  <dd className="mt-1 pl-[18px]">
-                    <span className="font-instrument-serif text-3xl tabular-nums">{pct}%</span>
-                    <span className="block text-xs text-cream/70">{note}</span>
+                  <dd className="mt-1 sm:pl-[18px]">
+                    <span className="font-instrument-serif text-2xl tabular-nums sm:text-3xl">{pct}%</span>
+                    <span className="block text-[10px] leading-tight text-cream/70 sm:text-xs">{note}</span>
                   </dd>
                 </div>
               ))}

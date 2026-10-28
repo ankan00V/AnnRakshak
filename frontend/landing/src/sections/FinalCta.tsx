@@ -34,7 +34,7 @@ export default function FinalCta() {
           <div className="absolute inset-0 bg-cta-scrim" />
         </>}
       />
-      <div className="relative max-w-6xl mx-auto px-6 md:px-12 pt-20 md:pt-28">
+      <div className="relative max-w-6xl mx-auto px-6 md:px-12 pt-12 sm:pt-16 md:pt-28">
         <Reveal>
           <div className="grid gap-y-7 gap-x-8 sm:grid-cols-2 lg:grid-cols-4 border-y border-cream/15 py-8">
             {SOURCES.map(({ name, line }) => (
@@ -47,7 +47,7 @@ export default function FinalCta() {
         </Reveal>
       </div>
 
-      <div className="relative max-w-4xl mx-auto px-6 md:px-12 pt-16 md:pt-20 pb-10 text-center">
+      <div className="relative max-w-4xl mx-auto px-6 md:px-12 pt-10 sm:pt-14 md:pt-20 pb-10 text-center">
         <h2 className="font-instrument-serif text-[2rem] sm:text-4xl md:text-5xl leading-[1.05] text-balance">
           {t('landReady')}
         </h2>
@@ -91,7 +91,7 @@ export default function FinalCta() {
           </>
         )}
 
-        <footer id="contact" className="mt-16 md:mt-24 border-t border-cream/10 pt-8">
+        <footer id="contact" className="mt-10 sm:mt-14 md:mt-24 border-t border-cream/10 pt-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <span className="flex items-center gap-2 font-semibold tracking-tight"><BrandMark size={28} />AnnRakshak</span>
             <div className="flex items-center gap-4">

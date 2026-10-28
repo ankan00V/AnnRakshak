@@ -53,6 +53,18 @@ def _farm(db: Session, farm_id: int) -> Farm:
         raise HTTPException(404, "farm not found")
     return farm
 
+def _writable_farm(db: Session, farm_id: int) -> Farm:
+    """A farm this request may write to.
+
+    The shared demo fields are everybody's, so nobody sets their email
+    address, logs a spray on them or subscribes a phone to their warnings —
+    the next visitor would inherit all of it."""
+    farm = _farm(db, farm_id)
+    if auth.is_shared_demo(farm):
+        raise HTTPException(403, {"code": "demo_read_only"})
+    return farm
+
+
 
 def _bundle(farm: Farm) -> dict:
     try:
@@ -200,7 +212,7 @@ def _push_host_allowed(endpoint: str) -> bool:
 
 @router.post("/farms/{farm_id}/push/subscribe", status_code=201)
 def subscribe(farm_id: int, body: SubscriptionIn, request: Request, db: Session = Depends(get_db)):
-    farm = _farm(db, farm_id)
+    farm = _writable_farm(db, farm_id)
     if not _push_host_allowed(body.endpoint):
         raise HTTPException(422, "that is not a push service this app sends to")
     s = db.scalar(select(PushSubscription).where(PushSubscription.endpoint == body.endpoint))
@@ -250,7 +262,7 @@ def unsubscribe(body: EndpointIn, request: Request, db: Session = Depends(get_db
 
 @router.post("/farms/{farm_id}/push/test")
 def push_test(farm_id: int, lang: str | None = None, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
-    farm = _farm(db, farm_id)
+    farm = _writable_farm(db, farm_id)
     rate_limit(f"push-test:{farm_id}", 10, 3600)
     lang = lang or farm.lang
     crop = tr(kb.crops[farm.crop]["names"], lang)
@@ -270,7 +282,7 @@ class SprayIn(BaseModel):
 
 @router.post("/farms/{farm_id}/sprays", status_code=201)
 def log_spray(farm_id: int, body: SprayIn, lang: str = "en", db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
-    farm = _farm(db, farm_id)
+    farm = _writable_farm(db, farm_id)
     rate_limit(f"spray:{farm_id}", 20, 3600)
     now = agroweather.now_ist()
     row = SprayLog(farm_id=farm.id, product=(body.product or "").strip() or None, sprayed_at=now)
@@ -311,7 +323,7 @@ def get_contact(farm_id: int, db: Session = Depends(get_db)):
 
 @router.put("/farms/{farm_id}/contact")
 def put_contact(farm_id: int, body: ContactIn, db: Session = Depends(get_db)):
-    farm = _farm(db, farm_id)
+    farm = _writable_farm(db, farm_id)
     email = (body.email or "").strip() or None
     if email and not valid_address(email):
         raise HTTPException(422, "that does not look like an email address")
@@ -327,7 +339,7 @@ def put_contact(farm_id: int, body: ContactIn, db: Session = Depends(get_db)):
 
 @router.post("/farms/{farm_id}/email/test")
 def email_test(farm_id: int, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
-    farm = _farm(db, farm_id)
+    farm = _writable_farm(db, farm_id)
     if not farm.email:
         raise HTTPException(409, "add an email address first")
     rate_limit(f"email-test:{farm_id}", 5, 3600)
@@ -344,7 +356,7 @@ def email_test(farm_id: int, db: Session = Depends(get_db), kb: KB = Depends(get
 
 @router.post("/farms/{farm_id}/email/summary")
 def email_summary(farm_id: int, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
-    farm = _farm(db, farm_id)
+    farm = _writable_farm(db, farm_id)
     if not farm.email:
         raise HTTPException(409, "add an email address first")
     rate_limit(f"email-summary:{farm_id}", 5, 3600)

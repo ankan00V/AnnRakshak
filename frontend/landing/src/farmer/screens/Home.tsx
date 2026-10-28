@@ -5,8 +5,9 @@ import { api } from '../../api/client'
 import ReportSheet from '../components/ReportSheet'
 import type { CropInfo, Home as HomeData } from '../../api/types'
 import { useAsync, useWide } from '../../lib/hooks'
-import { EYEBROW, MAIN, ROW, SIDE, SPLIT } from '../layout'
+import { EYEBROW, MAIN, SIDE, SPLIT } from '../layout'
 import SeasonSwitch from '../components/SeasonSwitch'
+import { fieldPhoto } from '../fieldPhoto'
 import { Card, ErrorBox, SectionTitle } from '../../ui/kit'
 import { HomeSkeleton } from '../components/Skeletons'
 import AlertCard from '../components/AlertCard'
@@ -83,10 +84,15 @@ export default function Home() {
               <span className="block text-xs text-cream/70 mt-0.5">{t('takePhotoSub')}</span>
             </span>
           </span>
-          <span className="relative mt-3 flex items-center gap-1.5 text-[11px] text-cream/60">
-            <Sparkles className="w-3 h-3" />
-            {d.model.is_stub ? t('demoModel') : t('realModel')}
-          </span>
+          {/* Only the demo banner is worth a farmer's attention: it says the
+              answer is not a real diagnosis. Naming the model when it IS real
+              tells them nothing they can act on. */}
+          {d.model.is_stub && (
+            <span className="relative mt-3 flex items-center gap-1.5 text-[11px] text-cream/60">
+              <Sparkles className="w-3 h-3" />
+              {t('demoModel')}
+            </span>
+          )}
         </Link>
     </>
   )
@@ -145,14 +151,25 @@ export default function Home() {
   if (d.farm.status === 'fallow') {
     return (
       <div className="max-w-2xl mx-auto space-y-5">
-        <Card className="p-5 md:p-7 bg-soil-dark text-cream border-0">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-ochre/20 px-2.5 py-1 text-[11px] font-semibold text-ochre">
-            <Wheat className="w-3.5 h-3.5" /> {t('seasonRestingShort')}
-          </span>
-          <h1 className="mt-3 font-instrument-serif text-3xl leading-tight">{t('harvestedTitle')}</h1>
-          <p className="mt-2 text-sm font-light leading-relaxed text-cream/75 text-pretty">
-            {t('harvestedBody').replace('{on}', d.farm.harvested_on ?? '')}
-          </p>
+        <Card className="overflow-hidden p-0 bg-soil-dark text-cream border-0">
+          {/* A cut paddy field, straw still lying in windrows. The state this
+              screen is describing, for a farmer who reads little — the picture
+              says "harvested" before the sentence does. Illustration, not a
+              photograph of this particular plot. */}
+          <div className="relative h-[140px] md:h-[170px]">
+            <img src={fieldPhoto(d.farm)?.src ?? ''} alt="" width={1280} height={430} loading="lazy"
+              className="w-full h-full object-cover" />
+            <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-soil-dark via-soil-dark/45 to-soil-dark/10" />
+          </div>
+          <div className="relative -mt-8 p-5 md:p-7">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-ochre/20 px-2.5 py-1 text-[11px] font-semibold text-ochre">
+              <Wheat className="w-3.5 h-3.5" /> {t('seasonRestingShort')}
+            </span>
+            <h1 className="mt-3 font-instrument-serif text-3xl leading-tight">{t('harvestedTitle')}</h1>
+            <p className="mt-2 text-sm font-light leading-relaxed text-cream/75 text-pretty">
+              {t('harvestedBody').replace('{on}', d.farm.harvested_on ?? '')}
+            </p>
+          </div>
         </Card>
         {season}
         <Link to="/app/history" className="block text-center text-sm font-medium text-leaf-deep">
@@ -168,13 +185,17 @@ export default function Home() {
   if (wide) {
     return (
       <div className="space-y-8">
-        <div className={ROW}>
-          <div className="col-span-8"><FarmCard data={d} crop={crop} /></div>
-          <div className="col-span-4"><WeatherNowCard /></div>
-        </div>
-        {location}
+        {/* One grid, not a row of two cards and then a second row. As two
+            rows, the right cell ended wherever the weather card ended and
+            the next row began below the field card, so a tall field card —
+            one with a photo — left a few hundred pixels of nothing under the
+            weather. Each column now flows on its own from the same top and
+            there is no cell left over to be empty. Stretching the two to one
+            height was tried before and only moved the hole inside the card. */}
         <div className={SPLIT}>
           <div className={`${MAIN} space-y-8`}>
+            <FarmCard data={d} crop={crop} />
+            {location}
             <div className="grid grid-cols-2 gap-6 [&>a]:h-full [&>a]:!p-6">{cta}</div>
             {due.length > 0 && (
               <section className="space-y-3">
@@ -193,7 +214,10 @@ export default function Home() {
             )}
             {todayChecks}
           </div>
+          {/* Both weather panes together: what it is doing now, then what it
+              has been doing. They were split either side of the field card. */}
           <aside className={`${SIDE} space-y-8`}>
+            <WeatherNowCard />
             <WeatherStrip weather={d.weather} rain={d.rain_context} />
             {season}
             {recentProblems}
@@ -236,8 +260,18 @@ function FarmCard({ data, crop }: { data: HomeData; crop?: CropInfo }) {
   const stages = crop?.stages ?? []
   const lastDas = stages.length ? stages[stages.length - 2]?.das[1] ?? 120 : 120
   const pct = Math.min(100, Math.max(0, (f.das / lastDas) * 100))
+  const photo = fieldPhoto(f)
   return (
-    <Card data-tour="farm" className="p-4 lg:h-full lg:p-8 lg:flex lg:flex-col lg:justify-between lg:rounded-3xl">
+    <Card data-tour="farm" className="p-4 lg:p-8 lg:rounded-3xl">
+      {/* What is standing in this field. Only where we have a photograph of
+          that crop taken in a real field — a stand-in would say less than
+          nothing. */}
+      {photo && (
+        <figure className="mb-4 lg:mb-6">
+          <img src={photo.src} alt="" width={1280} height={537} loading="lazy"
+            className="w-full h-24 lg:h-32 object-cover rounded-xl" />
+        </figure>
+      )}
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs text-soil-dark/50 lg:text-sm">{f.district} · {f.area_acres} {t('acres')}{f.variety ? ` · ${f.variety}` : ''}</p>

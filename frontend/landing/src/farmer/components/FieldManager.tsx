@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Loader2, Sprout, Trash2, Wheat } from 'lucide-react'
 import { api } from '../../api/client'
 import type { CropInfo, Farm } from '../../api/types'
-import { useAuth } from '../../auth/AuthContext'
 import { useFarmer } from '../FarmerContext'
 import { bcp47 } from '../../lib/i18n'
 import { ErrorBox } from '../../ui/kit'
@@ -37,11 +36,10 @@ type Mode = null | 'off' | 'on' | 'remove'
 
 function Row({ farm, crops, onChange }: { farm: Farm; crops: CropInfo[] | null; onChange: () => void }) {
   const { t, lang } = useFarmer()
-  const { me } = useAuth()
-  // The shared demo fields are handed to every visitor who tries the app.
-  // Working one is reversible; removing it would take the demo away from the
-  // next person, so the server refuses and the button does not pretend.
-  const removable = !(me?.is_demo && farm.is_demo)
+  // A shared demonstration field is handed to every visitor who tries the
+  // app, so none of them closes its season, sows it or takes it away — the
+  // next visitor would walk into the result. It is here to be read.
+  const readOnly = farm.read_only === true
   const [mode, setMode] = useState<Mode>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<Error | null>(null)
@@ -103,7 +101,13 @@ function Row({ farm, crops, onChange }: { farm: Farm; crops: CropInfo[] | null; 
 
       {error && <div className="mt-2.5"><ErrorBox error={error} /></div>}
 
-      {mode === null && (
+      {readOnly && (
+        <p className="mt-2 pl-[14px] text-[11px] leading-relaxed text-soil-dark/45">
+          {t('demoTitle')}
+        </p>
+      )}
+
+      {!readOnly && mode === null && (
         <div className="mt-2.5 pl-[14px] flex flex-wrap items-center gap-2">
           <button onClick={() => setMode(fallow ? 'on' : 'off')}
             className={`min-h-[36px] px-3.5 rounded-full text-[13px] font-medium flex items-center gap-1.5 transition-colors ${
@@ -121,7 +125,7 @@ function Row({ farm, crops, onChange }: { farm: Farm; crops: CropInfo[] | null; 
               {t('profileStillStanding')}
             </button>
           )}
-          {removable && <button onClick={() => setMode('remove')} aria-label={t('profileFieldRemove')}
+          {<button onClick={() => setMode('remove')} aria-label={t('profileFieldRemove')}
             className="min-h-[36px] px-3 rounded-full text-[13px] text-soil-dark/45 hover:text-ember hover:bg-ember/[0.07]
                        flex items-center gap-1.5 transition-colors">
             <Trash2 className="w-3.5 h-3.5" />

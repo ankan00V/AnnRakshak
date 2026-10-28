@@ -310,6 +310,10 @@ def farm_view(kb: KB, farm: Farm, lang: str, today: date | None = None) -> dict:
         "das": das,
         "lang": farm.lang,
         "is_demo": farm.is_demo,
+        # A showcase field with no owner: shown to every visitor, changed by
+        # none of them. The app offers them a field of their own instead of
+        # letting them edit what the next visitor walks into.
+        "read_only": bool(farm.is_demo and farm.user_id is None),
         "status": status,
         "harvested_on": farm.harvested_on.isoformat() if farm.harvested_on else None,
         # Past its crop's season and waiting on the farmer. The field has

@@ -16,3 +16,8 @@ python-dotenv==1.2.3
 psycopg[binary]==3.3.5
 # Web Push notifications (VAPID)
 pywebpush==2.5.0
+# The farmer's data report (app/report.py). fpdf2 draws the PDF; uharfbuzz
+# shapes Devanagari and the other Indic scripts, without which the farmer's
+# own language renders as detached pieces. Fonts ship in app/assets/fonts.
+fpdf2==2.8.5
+uharfbuzz==0.56.0

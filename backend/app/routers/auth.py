@@ -33,7 +33,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import auth, config, erasure, geo, mailer, services, turnstile
+from app import auth, config, erasure, geo, mailer, report, services, turnstile
 from app.db import SUPERVISOR_DESIGNATIONS, get_db
 from app.i18n import LANGS
 from app.kb import KB, get_kb, tr
@@ -725,18 +725,22 @@ def me(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/me/data")
 def my_data(request: Request, db: Session = Depends(get_db)):
-    """Everything this account holds, as a file the farmer can keep.
+    """Everything this account holds, as a document the farmer can keep.
 
     The Act calls it the right to access; a farmer calls it wanting to see
     what an app knows about them. Either way it is one tap in the account
-    menu, not a letter to an office."""
+    menu, not a letter to an office.
+
+    It is a PDF in their own language, with the app's stamp on it, because
+    the person who asked is the person who has to be able to read it — a
+    farmer handed a .json file has been answered without being told."""
     me = auth.signed_in(request, db)
     if me is None:
         raise HTTPException(401, "sign in first")
     data = erasure.export_account(db, me)
-    name = f"annrakshak-{me.id}-{date.today().isoformat()}.json"
-    return Response(content=json.dumps(data, ensure_ascii=False, indent=2),
-                    media_type="application/json",
+    name = f"annrakshak-{me.id}-{date.today().isoformat()}.pdf"
+    return Response(content=report.render(data, me.lang),
+                    media_type="application/pdf",
                     headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 

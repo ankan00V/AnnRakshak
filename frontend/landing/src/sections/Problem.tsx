@@ -26,7 +26,7 @@ const ROWS = [
 export default function Problem() {
   return (
     <section id="problem" className="w-full bg-cream text-soil-dark">
-      <div className="max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-28">
+      <div className="max-w-6xl mx-auto px-6 md:px-12 py-12 sm:py-16 md:py-28">
         <Reveal className="grid gap-8 lg:grid-cols-12 lg:gap-16 lg:items-end">
           <h2 className="lg:col-span-7 font-instrument-serif text-[2rem] sm:text-5xl md:text-[3.5rem] leading-[1.05] text-balance">
             By the time you can see it,
@@ -38,7 +38,7 @@ export default function Problem() {
           </p>
         </Reveal>
 
-        <div className="mt-14 md:mt-20 border-t border-soil-dark/15">
+        <div className="mt-8 sm:mt-8 sm:mt-12 md:mt-20 border-t border-soil-dark/15">
           {ROWS.map(({ figure, unit, line, source }, i) => (
             <Reveal key={figure} delay={i * 90}>
               <div className="group grid gap-3 md:grid-cols-12 md:gap-8 items-baseline border-b border-soil-dark/15 py-7 md:py-9 transition-colors duration-300 hover:bg-soil-dark/[0.03]">

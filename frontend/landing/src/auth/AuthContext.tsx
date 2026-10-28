@@ -13,6 +13,10 @@ interface AuthState {
    *  name or their districts follows without a reload. */
   update: (me: Me) => void
   logout: () => Promise<void>
+  /** True when the holder pressed Log out, as against a session that simply
+   *  ran out. The first should land on the front page; the second should go
+   *  to the sign-in screen holding the page they were trying to reach. */
+  signedOut: boolean
 }
 
 const Ctx = createContext<AuthState | null>(null)
@@ -39,6 +43,7 @@ function recalled(): Me | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<Me | null>(null)
   const [loading, setLoading] = useState(true)
+  const [signedOut, setSignedOut] = useState(false)
 
   useEffect(() => {
     api.me()
@@ -73,11 +78,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       /* private mode */
     }
+    setSignedOut(false)
     setMe(m)
   }, [])
 
   const logout = useCallback(async () => {
-    await api.logout().catch(() => undefined)
+    // Forget this browser first, then tell the server. The other way round,
+    // the screen keeps the farmer's name, their fields and the account menu
+    // until the request comes back — which on a weak signal is long enough to
+    // hand the phone over still signed in. Logging out is not a thing to make
+    // somebody wait for, and it must not depend on the network answering.
     clearCache()
     remember(null)
     try {
@@ -85,7 +95,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       /* private mode */
     }
+    setSignedOut(true)
     setMe(null)
+    await api.logout().catch(() => undefined)
   }, [])
 
   const update = useCallback((m: Me) => {
@@ -93,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     remember(m)
   }, [])
 
-  return <Ctx.Provider value={{ me, loading, signIn, update, logout }}>{children}</Ctx.Provider>
+  return <Ctx.Provider value={{ me, loading, signIn, update, logout, signedOut }}>{children}</Ctx.Provider>
 }
 
 export function useAuth() {

@@ -3,7 +3,8 @@
 #   backend    every guarantee the product rests on: the confidence gate, the
 #              AI-note guards, one farmer never reading another's data, the
 #              voice fallback, the closed-form heatmap (needs torch, CPU build)
-#   frontend   type-check, lint and a production build of every workspace app
+#   frontend   lint, the unit tests, a type-check and a production build of
+#              every workspace app
 #   hygiene    no secrets anywhere in history, and none of the files that must
 #              never be committed (.env, assistant and editor settings)
 #
@@ -82,7 +83,7 @@ jobs:
         run: python -m pytest -q
 
   frontend:
-    name: frontend build
+    name: frontend tests and build
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -98,6 +99,9 @@ jobs:
 
       - name: Lint
         run: npm run lint -w frontend/landing
+
+      - name: Unit tests
+        run: npm test -w frontend/landing
 
       - name: Type-check and build every app
         run: |

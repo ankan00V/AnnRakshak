@@ -10,6 +10,7 @@ import { useAsync } from '../../lib/hooks'
 import { Speaker } from '../../lib/speaker'
 import { Card, ErrorBox, ListenButton, Pill } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
+import DemoNotice, { useReadOnlyFarm } from '../components/DemoNotice'
 
 type Phase = 'intro' | 'starting' | 'live' | 'finishing' | 'summary' | 'error'
 type Ask = { cue_id: string; question: string; candidates: TargetView[] }
@@ -34,6 +35,7 @@ function position(timeoutMs = 6000): Promise<GeolocationPosition | null> {
 
 export default function Live() {
   const { farmId, lang, t } = useFarmer()
+  const readOnly = useReadOnlyFarm() !== null
   const navigate = useNavigate()
   const home = useAsync(() => api.home(farmId!, lang), [farmId, lang], ['home', farmId!, lang].join(':'))
   const [phase, setPhase] = useState<Phase>('intro')
@@ -258,6 +260,15 @@ export default function Live() {
     return <SummaryView s={summary} onAgain={() => { setSummary(null); setPhase('intro') }} onDone={() => navigate('/app')} />
   }
 
+  if (readOnly) {
+    return (
+      <div className="space-y-4">
+        <h1 className="font-instrument-serif text-3xl">{t('liveTitle')}</h1>
+        <DemoNotice />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
       {!live && (
@@ -478,7 +489,6 @@ function SummaryView({ s, onAgain, onDone }: { s: LiveSummary; onAgain: () => vo
             <>
               <p className="mt-1 text-2xl font-semibold">{Math.round(w.temp_c)}°C</p>
               <p className="text-xs text-soil-dark/70">{w.rh_pct}% · {w.text ?? ''}{w.rain_mm_1h ? ` · ${w.rain_mm_1h} mm` : ''}</p>
-              <p className="mt-1 text-[10px] text-soil-dark/40">{w.source}</p>
             </>
           ) : <p className="mt-1 text-sm text-soil-dark/50">—</p>}
         </Card>
@@ -488,7 +498,6 @@ function SummaryView({ s, onAgain, onDone }: { s: LiveSummary; onAgain: () => vo
             <>
               <p className="mt-1 text-sm"><span className="font-semibold">{c.forecast.rain_mm} mm</span> {t('liveRain')}</p>
               <p className="text-xs text-soil-dark/70">{c.forecast.t_min != null ? `${Math.round(c.forecast.t_min)}–${Math.round(c.forecast.t_max ?? 0)}°C` : ''} · RH ≤{c.forecast.rh_max ?? '—'}%</p>
-              <p className="mt-1 text-[10px] text-soil-dark/40">{c.forecast.source}</p>
             </>
           ) : <p className="mt-1 text-sm text-soil-dark/50">—</p>}
         </Card>

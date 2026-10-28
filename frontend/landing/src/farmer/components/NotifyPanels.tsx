@@ -6,6 +6,7 @@ import { useAsync } from '../../lib/hooks'
 import { disablePush, enablePush, pushState, type PushState } from '../../lib/push'
 import { Card, SectionTitle } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
+import DemoNotice, { useReadOnlyFarm } from './DemoNotice'
 import { Advisories } from '../screens/Weather'
 
 /** The weather notices issued to this farm, newest first; opening marks them read. */
@@ -46,6 +47,10 @@ const PREFS: EmailPref[] = ['warnings', 'all', 'digest', 'off']
 /** Phone notifications (Web Push) and email, per farm. */
 export function NotifySettings() {
   const { farmId, lang, t } = useFarmer()
+  // A shared demonstration field is everybody's, so nobody puts their address
+  // on its warnings — the next visitor would inherit it, and the mail would
+  // be about somebody else's crop.
+  const readOnly = useReadOnlyFarm() !== null
   const [push, setPush] = useState<PushState | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
@@ -83,6 +88,8 @@ export function NotifySettings() {
     setMsg(t('saved'))
   })
   const sent = (status: string) => setMsg(status === 'sent' ? t('emailSentLive') : t('emailSentOutbox'))
+
+  if (readOnly) return <DemoNotice />
 
   return (
     <Card className="p-4 space-y-4">

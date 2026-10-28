@@ -1,5 +1,6 @@
 import { CheckCircle2, ClipboardCheck, Volume2 } from 'lucide-react'
 import Reveal from '../ui/Reveal'
+import OnPhone from '../ui/OnPhone'
 import FootageBackdrop from '../ui/FootageBackdrop'
 
 const FARMER_POINTS = [
@@ -30,7 +31,7 @@ function Points({ points, dot }: { points: string[]; dot: string }) {
 /** The alert as it reaches a Bhandara farmer: her language, her weather, two things to check. */
 function AlertVignette() {
   return (
-    <div className="mt-9 rounded-[1.75rem] bg-cream/[0.06] ring-1 ring-cream/10 overflow-hidden">
+    <div className="mt-7 sm:mt-9 rounded-[1.75rem] bg-cream/[0.06] ring-1 ring-cream/10 overflow-hidden">
       {/* The field the alert is about, cropped to the part worth seeing: the
           combine and the man standing in the cut paddy beside it. The card
           overlaps it, so the band costs the column less than its own height
@@ -92,7 +93,7 @@ function HotspotVignette() {
   const advised = [{ cx: 128, cy: 40 }, { cx: 36, cy: 104 }, { cx: 208, cy: 128 }, { cx: 148, cy: 188 }]
 
   return (
-    <div className="mt-9 rounded-[1.75rem] bg-cream/[0.06] ring-1 ring-cream/10 p-3">
+    <div className="mt-7 sm:mt-9 rounded-[1.75rem] bg-cream/[0.06] ring-1 ring-cream/10 p-3">
       <div className="rounded-3xl bg-[#eef0ea] p-4">
         <svg viewBox="0 0 244 210" className="w-full h-auto" role="img"
           aria-label="District map: three expert-confirmed cases with 5 km spread rings, farms awaiting an expert, and AI-advised cases">
@@ -127,8 +128,8 @@ function HotspotVignette() {
 export default function Impact() {
   return (
     <section id="impact" className="w-full bg-soil-dark text-cream">
-      <div className="max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-28">
-        <div className="grid gap-14 md:gap-12 lg:grid-cols-2 lg:gap-16">
+      <div className="max-w-6xl mx-auto px-6 md:px-12 py-12 sm:py-16 md:py-28">
+        <div className="grid gap-10 sm:gap-12 md:gap-12 lg:grid-cols-2 lg:gap-16">
           <Reveal>
             <div className="lg:pr-6">
               <h2 className="font-instrument-serif text-[2rem] sm:text-4xl md:text-5xl">For farmers</h2>
@@ -136,7 +137,9 @@ export default function Impact() {
                 One screen, in her language, that says what to do today.
               </p>
               <Points points={FARMER_POINTS} dot="bg-ochre" />
-              <AlertVignette />
+              <OnPhone label="See the warning as it arrives" className="mt-7 sm:mt-0">
+                <AlertVignette />
+              </OnPhone>
             </div>
           </Reveal>
 
@@ -147,7 +150,9 @@ export default function Impact() {
                 The district, as it actually stands this week.
               </p>
               <Points points={OFFICIAL_POINTS} dot="bg-cream/60" />
-              <HotspotVignette />
+              <OnPhone label="See the district map" className="mt-7 sm:mt-0">
+                <HotspotVignette />
+              </OnPhone>
             </div>
           </Reveal>
         </div>
