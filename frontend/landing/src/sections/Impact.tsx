@@ -127,8 +127,8 @@ function HotspotVignette() {
 export default function Impact() {
   return (
     <section id="impact" className="w-full bg-soil-dark text-cream">
-      <div className="max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-28">
-        <div className="grid gap-14 md:gap-12 lg:grid-cols-2 lg:gap-16">
+      <div className="max-w-6xl mx-auto px-6 md:px-12 py-12 sm:py-16 md:py-28">
+        <div className="grid gap-10 sm:gap-12 md:gap-12 lg:grid-cols-2 lg:gap-16">
           <Reveal>
             <div className="lg:pr-6">
               <h2 className="font-instrument-serif text-[2rem] sm:text-4xl md:text-5xl">For farmers</h2>

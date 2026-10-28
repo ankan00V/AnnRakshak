@@ -35,7 +35,7 @@ function Tile({ children, className = '' }: { children: React.ReactNode; classNa
 export default function Features() {
   return (
     <section id="features" className="w-full bg-cream text-soil-dark">
-      <div className="max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-28">
+      <div className="max-w-6xl mx-auto px-6 md:px-12 py-12 sm:py-16 md:py-28">
         {/* The sentence wants to be read as one line, and above 1152px it can
             be: the column stops growing there, so 1056px is all the room this
             heading will ever get and 44px is what fits it. Narrower than that
@@ -52,7 +52,7 @@ export default function Features() {
             They get the full width, and the three cards below get one heading
             style between them so they read as a set rather than as whatever
             each one happened to be. */}
-        <Reveal className="mt-12 md:mt-16">
+        <Reveal className="mt-8 sm:mt-10 md:mt-16">
           <Tile>
             <div className="md:flex md:items-end md:justify-between md:gap-10">
               <h3 className="font-instrument-serif text-2xl md:text-3xl shrink-0">Where the model looked</h3>
@@ -61,7 +61,10 @@ export default function Features() {
                 the lesion, the farmer and the KVK expert can both see it and say so.
               </p>
             </div>
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            {/* Three across on a phone too. Stacked, these were nine hundred
+                pixels of the same argument made three times; side by side
+                they read as one row of evidence, which is what they are. */}
+            <div className="mt-5 grid grid-cols-3 gap-2 sm:mt-6 sm:gap-3">
               {GRADCAM.map(({ src, alt, caption }) => (
                 <figure key={src} className="relative overflow-hidden rounded-2xl bg-soil-dark/5">
                   <img src={src} alt={alt} loading="lazy" width={440} height={440}
@@ -69,7 +72,8 @@ export default function Features() {
                   {/* The name belongs on the picture: a caption underneath at
                       eleven pixels was a footnote to the thing being shown. */}
                   <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-soil-dark/85 to-transparent
-                                         px-3 pt-8 pb-2.5 text-[13px] font-medium text-cream">
+                                         px-1.5 pt-6 pb-1.5 text-[9px] leading-tight font-medium text-cream
+                                         sm:px-3 sm:pt-8 sm:pb-2.5 sm:text-[13px] sm:leading-normal">
                     {caption}
                   </figcaption>
                 </figure>
@@ -151,7 +155,7 @@ export default function Features() {
         </div>
 
         {/* The rest, as a ruled list rather than three more cards. */}
-        <div className="mt-12 md:mt-16 border-t border-soil-dark/15">
+        <div className="mt-8 sm:mt-10 md:mt-16 border-t border-soil-dark/15">
           {ALSO.map(({ icon: Icon, title, line }, i) => (
             <Reveal key={title} delay={i * 70}>
               <div className="grid gap-2 md:grid-cols-12 md:gap-8 items-start border-b border-soil-dark/15 py-6">
