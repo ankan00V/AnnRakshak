@@ -185,18 +185,17 @@ export default function Home() {
   if (wide) {
     return (
       <div className="space-y-8">
-        {/* Each card its own height. Stretching them to match left the
-            weather pane with a hole in the middle the moment the field card
-            grew — written out rather than layering a second align-items on
-            ROW, because two of those on one element is decided by stylesheet
-            order, not by the order they are written. */}
-        <div className="lg:grid lg:grid-cols-12 lg:gap-8 lg:items-start lg:space-y-0">
-          <div className="col-span-8"><FarmCard data={d} crop={crop} /></div>
-          <div className="col-span-4"><WeatherNowCard /></div>
-        </div>
-        {location}
+        {/* One grid, not a row of two cards and then a second row. As two
+            rows, the right cell ended wherever the weather card ended and
+            the next row began below the field card, so a tall field card —
+            one with a photo — left a few hundred pixels of nothing under the
+            weather. Each column now flows on its own from the same top and
+            there is no cell left over to be empty. Stretching the two to one
+            height was tried before and only moved the hole inside the card. */}
         <div className={SPLIT}>
           <div className={`${MAIN} space-y-8`}>
+            <FarmCard data={d} crop={crop} />
+            {location}
             <div className="grid grid-cols-2 gap-6 [&>a]:h-full [&>a]:!p-6">{cta}</div>
             {due.length > 0 && (
               <section className="space-y-3">
@@ -215,7 +214,10 @@ export default function Home() {
             )}
             {todayChecks}
           </div>
+          {/* Both weather panes together: what it is doing now, then what it
+              has been doing. They were split either side of the field card. */}
           <aside className={`${SIDE} space-y-8`}>
+            <WeatherNowCard />
             <WeatherStrip weather={d.weather} rain={d.rain_context} />
             {season}
             {recentProblems}
