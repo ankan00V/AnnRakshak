@@ -162,19 +162,36 @@ def _token_hash(token: str) -> str:
 
 
 def start_session(db: Session, user: User, response: Response, user_agent: str | None) -> None:
-    """A fresh session, lasting SESSION_HOURS. With SINGLE_SESSION the account's
-    other live sessions are revoked first: the browser signed in earlier gets a
-    401 on its next call and lands on the sign-in page."""
+    """A fresh session. With SINGLE_SESSION the account's other live sessions
+    are revoked first: the browser signed in earlier gets a 401 on its next
+    call and lands on the sign-in page.
+
+    A real account's session lasts SESSION_HOURS and is written as a cookie
+    with a lifetime, so a farmer who closes the app and comes back tomorrow
+    morning is still signed in — which is the whole point on a phone that gets
+    opened for two minutes at a time.
+
+    A demo is the opposite: somebody looking around, who should be gone when
+    they close the tab. That session's cookie is written with no lifetime at
+    all, which is what makes a browser drop it on close, and the row behind it
+    expires in minutes rather than a day so that a browser which restores tabs
+    and hands the cookie back still finds nothing behind it.
+    """
     if config.SINGLE_SESSION and not user.is_demo:
         for s in db.scalars(select(UserSession).where(UserSession.user_id == user.id,
                                                       UserSession.revoked_at.is_(None))).all():
             s.revoked_at = now()
     token = secrets.token_urlsafe(32)
+    lifetime = (timedelta(minutes=config.DEMO_SESSION_MINUTES) if user.is_demo
+                else timedelta(hours=config.SESSION_HOURS))
     db.add(UserSession(user_id=user.id, token_hash=_token_hash(token), created_at=now(),
-                       expires_at=now() + timedelta(hours=config.SESSION_HOURS), user_agent=(user_agent or "")[:200]))
+                       expires_at=now() + lifetime, user_agent=(user_agent or "")[:200]))
     user.last_login_at = now()
-    response.set_cookie(COOKIE, token, max_age=config.SESSION_HOURS * 3600, httponly=True, samesite="lax",
-                        secure=config.COOKIE_SECURE, path="/")
+    # No max_age for a demo: a cookie without one lives only as long as the
+    # browser session, which is exactly the rule being asked for here.
+    response.set_cookie(COOKIE, token, httponly=True, samesite="lax",
+                        secure=config.COOKIE_SECURE, path="/",
+                        **({} if user.is_demo else {"max_age": config.SESSION_HOURS * 3600}))
 
 
 def end_session(db: Session, token: str | None, response: Response) -> None:

@@ -1280,3 +1280,39 @@ def test_a_village_correction_does_not_cross_a_district(client):
     after = {f["id"]: f["village"] for f in client.get("/api/farms").json()}
     assert after[here] == "Naya Gaon", "the field in the farmer's own village did not follow"
     assert after[away] is None, "a field two districts away was given the wrong village"
+
+
+def test_a_demo_session_ends_with_the_browser(client):
+    """Close the tab, come back later, and the demo was still signed in —
+    because its cookie carried a lifetime like a real account's. A demo is
+    somebody looking around, not somebody with a crop in the ground.
+
+    Two halves: the cookie has no lifetime, which is what makes a browser drop
+    it on close, and the row behind it expires in minutes, so a browser that
+    restores tabs and hands the cookie back finds nothing there."""
+    r = client.post("/api/auth/demo", json={"role": "farmer"})
+    assert r.status_code == 200, r.text
+    cookie = r.headers["set-cookie"]
+    assert "Max-Age" not in cookie and "Expires" not in cookie, f"demo cookie outlives the browser: {cookie}"
+
+    with SessionLocal() as db:
+        s = db.scalars(select(UserSession).where(UserSession.revoked_at.is_(None))
+                       .order_by(UserSession.id.desc())).first()
+        life = s.expires_at - s.created_at
+        assert life <= timedelta(hours=2), f"demo session lives {life}"
+
+
+def test_a_real_account_stays_signed_in_for_the_day(client, mail):
+    """Unchanged, and deliberately so: a farmer opens the app for two minutes
+    at the edge of a field, closes it, and must not be asked to sign in again
+    the next morning. Only the demo loses that."""
+    r = farmer_signup(client, mail)
+    assert r.status_code == 201, r.text
+    cookie = r.headers["set-cookie"]
+    assert "Max-Age" in cookie or "Expires" in cookie, \
+        f"a real session stopped surviving a browser close: {cookie}"
+
+    with SessionLocal() as db:
+        s = db.scalars(select(UserSession).where(UserSession.revoked_at.is_(None))
+                       .order_by(UserSession.id.desc())).first()
+        assert s.expires_at - s.created_at >= timedelta(hours=23), "a real session got the demo's short life"

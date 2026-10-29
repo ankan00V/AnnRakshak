@@ -269,6 +269,12 @@ OTP_TTL_MINUTES = 5
 OTP_MAX_ATTEMPTS = 5
 OTP_RESEND_SECONDS = 30
 SESSION_HOURS = 24
+
+#: How long a demo session lives on the server. A demo is somebody looking
+#: around, not somebody with a crop in the ground: it should end when they
+#: close the tab, and the cookie is written so the browser drops it then. This
+#: is the backstop for the browsers that restore tabs and hand the cookie back.
+DEMO_SESSION_MINUTES = int(os.environ.get("ANNRAKSHAK_DEMO_SESSION_MINUTES") or 60)
 """A session ends 24 hours after sign-in, however active it was; then sign in again."""
 SINGLE_SESSION = True
 """Signing in ends the account's other sessions, so one account is open in one
