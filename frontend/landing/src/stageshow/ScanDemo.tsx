@@ -107,11 +107,11 @@ const script = async (a: Act<S>) => {
 export default function ScanDemo() {
   return (
     <Stage<S>
-      // Tall enough for the whole phone: a 330-wide iPhone stands 714, and a
-      // product shot cut off at the knee is not a product shot.
+      // Tall enough for the whole phone and no taller: a 306-wide iPhone
+      // stands 662, and dead air around it reads as a plate.
       width={430}
-      height={736}
-      compact={{ below: 440, width: 358, height: 672 }}
+      height={690}
+      compact={{ below: 440, width: 358, height: 640 }}
       initial={START}
       // The frame most people ever see — a thumbnail, reduced motion, a
       // screenshot in a deck — is the one carrying the answer.
@@ -121,10 +121,9 @@ export default function ScanDemo() {
       className="sd"
     >
       {(s, _rect, layout) => {
-        const width = layout === 'compact' ? 300 : 330
+        const width = layout === 'compact' ? 288 : 306
         return (
           <>
-            <div className="sd-wash" />
             <Phone
               width={width}
               dark

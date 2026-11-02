@@ -4,17 +4,6 @@
 
 .sd { --sd-leaf-deep: #1f3d2b; --sd-leaf: #3d6b4a; --sd-ochre: #c8862d; }
 
-/* A field of the brand's green behind the phone, lit from where the screen
-   is, so the eye starts there. The phone runs off the foot of the stage, so
-   there is no plate under it and no air on four sides. */
-.sd-wash {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(120% 90% at 50% 2%, rgba(61, 107, 74, 0.26), transparent 62%),
-    radial-gradient(90% 70% at 86% 92%, rgba(200, 134, 45, 0.14), transparent 60%);
-}
-
 .sd-phone { position: absolute; left: 50%; transform: translateX(-50%); top: 0; }
 
 /* The app's own area, and only that. Inside the phone's content box one pixel

@@ -37,22 +37,22 @@ export default function Hero() {
         <Navbar />
 
         <div className="flex-1 w-full max-w-7xl mx-auto px-6 lg:px-10 pb-10
-                        grid lg:grid-cols-[1.05fr_minmax(0,480px)] lg:items-center gap-8 lg:gap-12">
+                        grid lg:grid-cols-[1fr_minmax(0,430px)] lg:items-center gap-8 lg:gap-10">
           <div className="pt-6 lg:pt-0 text-center lg:text-left">
-            <h1 className="font-instrument-serif text-white text-3xl sm:text-4xl md:text-5xl lg:text-6xl
-                           leading-[1.08] max-w-xl mx-auto lg:mx-0">
+            <h1 className="font-instrument-serif text-white text-4xl sm:text-5xl md:text-6xl lg:text-6xl xl:text-7xl
+                           leading-[1.04] max-w-2xl mx-auto lg:mx-0">
               CROP <span className="italic font-instrument-serif">and</span> PEST
               <br />
               DETECTION <span className="italic font-instrument-serif">for</span> EVERY
               <br />
               FARMER
             </h1>
-            <p className="mt-4 md:mt-5 text-white/70 text-sm md:text-base font-light
-                          max-w-md mx-auto lg:mx-0 leading-relaxed">
+            <p className="mt-5 md:mt-6 text-white/70 text-base md:text-lg font-light
+                          max-w-lg mx-auto lg:mx-0 leading-relaxed">
               We help farmers catch crop disease and pest damage early and protect
               every harvest before it&apos;s too late.
             </p>
-            <div className="mt-6 flex flex-col sm:flex-row items-center lg:items-start
+            <div className="mt-7 md:mt-8 flex flex-col sm:flex-row items-center lg:items-start
                             justify-center lg:justify-start gap-4">
               <Link
                 to="/app"
