@@ -162,21 +162,35 @@ function Shell() {
             {NAV.map(({ to, icon: Icon, key }) => {
               const on = active === to
               const isScan = to === '/app/scan'
+              // Unread alerts show on the tab as well as the header bell, so a
+              // farmer on any screen sees that something is waiting for them.
+              const count = to === '/app/alerts' ? unread : 0
               return (
                 <Link
                   key={to}
                   to={to} data-tour={`nav-${to.split('/').pop()}`}
-                  className={`flex flex-col items-center justify-center gap-0.5 py-2 min-h-[60px] text-[10.5px] font-medium transition-colors
+                  className={`relative flex flex-col items-center justify-center gap-1 py-2 min-h-[60px] text-[11px] font-medium transition-colors
                     lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:min-h-[44px] lg:rounded-xl lg:text-[14px] ${
-                    on ? 'text-leaf-deep lg:text-cream lg:bg-cream/10' : 'text-soil-dark/50 hover:text-soil-dark lg:text-cream/65 lg:hover:text-cream lg:hover:bg-cream/5'
+                    on ? 'text-leaf-deep font-semibold lg:text-cream lg:bg-cream/10 lg:shadow-[inset_3px_0_0_#c8862d]' : 'text-soil-dark/55 hover:text-soil-dark lg:text-cream/65 lg:hover:text-cream lg:hover:bg-cream/5'
                   }`}
                 >
+                  {count > 0 && (
+                    <span className="absolute top-1 left-[calc(50%+6px)] min-w-[18px] h-[18px] px-1 rounded-full bg-ember text-cream text-[10px] font-bold leading-[18px] text-center
+                      lg:static lg:order-last lg:ml-auto lg:min-w-[20px] lg:h-5 lg:leading-5">
+                      {count > 9 ? '9+' : count}
+                    </span>
+                  )}
                   {isScan ? (
                     <span className={`-mt-6 w-12 h-12 rounded-full flex items-center justify-center shadow-lg ring-4 ring-cream lg:mt-0 lg:w-5 lg:h-5 lg:shadow-none lg:ring-0 lg:rounded-none lg:bg-transparent ${on ? 'bg-ochre text-cream lg:text-ochre' : 'bg-leaf-deep text-cream lg:text-inherit'}`}>
                       <Icon className="w-5 h-5" />
                     </span>
                   ) : (
-                    <Icon className={`w-5 h-5 ${on ? 'lg:text-ochre' : ''}`} strokeWidth={on ? 2.4 : 2} />
+                    // On a phone the active tab gets a soft pill behind its icon;
+                    // on the sidebar the ochre rail on the row already says it.
+                    <span className={`flex items-center justify-center w-12 h-7 rounded-full transition-colors
+                      lg:w-5 lg:h-5 lg:rounded-none ${on ? 'bg-leaf-deep/10 lg:bg-transparent' : ''}`}>
+                      <Icon className={`w-5 h-5 ${on ? 'lg:text-ochre' : ''}`} strokeWidth={on ? 2.4 : 2} />
+                    </span>
                   )}
                   {t(key)}
                 </Link>
