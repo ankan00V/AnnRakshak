@@ -1,25 +1,33 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  AlertTriangle, CameraOff, CheckCircle2, CloudSun, Droplets, Eye, Leaf, Loader2, MapPin, ScanSearch, ShieldAlert,
-  Sprout, Stethoscope, Video, Volume2, VolumeX, X,
+  AlertTriangle, CameraOff, CheckCircle2, CloudSun, Droplets, Eye, Leaf, Loader2, MapPin, Monitor, ScanSearch,
+  ShieldAlert, Sprout, Stethoscope, Upload, Video, Volume2, VolumeX, X,
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../../api/client'
 import type { LiveContext, LiveFrameReply, LiveGuide, LiveSummary, TargetView } from '../../api/types'
-import { useAsync } from '../../lib/hooks'
+import { useAsync, useCarryable } from '../../lib/hooks'
 import { Speaker } from '../../lib/speaker'
+import type { Grabber } from '../../lib/videoframes'
+import { MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS, VideoError, openVideo } from '../../lib/videoframes'
 import { Card, ErrorBox, ListenButton, Pill } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
 import DemoNotice, { useReadOnlyFarm } from '../components/DemoNotice'
 
 type Phase = 'intro' | 'starting' | 'live' | 'finishing' | 'summary' | 'error'
 type Ask = { cue_id: string; question: string; candidates: TargetView[] }
+/** Where the frames come from. A phone points its camera at the crop; a computer
+ *  cannot be carried to the field, so it sends a video the farmer already filmed
+ *  and we step through it here. The server is handed the same frames either way. */
+type Source = 'camera' | 'video'
 
 const FRAME_EVERY_MS = 650   // ~1.5 frames/s, each ~20-40 KB: works on a 3G/4G link
 const FRAME_MAX_SIDE = 512
 const INFLIGHT_TIMEOUT_MS = 6000
 const FINISH_TIMEOUT_MS = 25000
 const MIN_FRAME_SIDE = 64        // a stopped or starting track gives 0-2 px frames
+const GRAB_EVERY_S = 1           // one frame a second out of an uploaded video
+const MAX_UPLOAD_FRAMES = 200    // the walk needs ~16 good frames; the server stops at 600
 
 function position(timeoutMs = 6000): Promise<GeolocationPosition | null> {
   return new Promise((resolve) => {
@@ -50,6 +58,10 @@ export default function Live() {
   const [expertChoice, setExpertChoice] = useState(false)
   const [summary, setSummary] = useState<LiveSummary | null>(null)
   const [muted, setMuted] = useState(false)
+  const carryable = useCarryable()
+  const [source, setSource] = useState<Source>('camera')
+  const [watched, setWatched] = useState(0)      // how far through the uploaded video
+  const [videoCut, setVideoCut] = useState(false)      // longer than we watch
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -57,40 +69,48 @@ export default function Live() {
   const streamRef = useRef<MediaStream | null>(null)
   const speakerRef = useRef<Speaker | null>(null)
   const loopRef = useRef<number | null>(null)
-  const fresh = () => ({ seq: 0, inflight: false, sentAt: 0, capturing: false, photoModel: true, finishing: false, done: false })
+  const fileRef = useRef<HTMLInputElement>(null)
+  const grabRef = useRef<Grabber | null>(null)
+  const walk = useRef({ at: 0, pass: 0, frames: 0 })
+  const fresh = () => ({ seq: 0, inflight: false, sentAt: 0, capturing: false, photoModel: true,
+                         finishing: false, done: false, stepsDone: false, source: 'camera' as Source })
   const st = useRef(fresh())
   const finishTimer = useRef<number | null>(null)
 
-  const stopCamera = useCallback(() => {
+  /** Let go of whatever was feeding frames: the camera's tracks, or the video
+   *  file and the object URL holding it in memory. */
+  const stopSource = useCallback(() => {
     if (loopRef.current) window.clearInterval(loopRef.current)
     loopRef.current = null
     st.current.capturing = false
     streamRef.current?.getTracks().forEach((tr) => tr.stop())
     streamRef.current = null
+    grabRef.current?.close()
+    grabRef.current = null
   }, [])
 
   useEffect(() => () => {
-    stopCamera()
+    stopSource()
     if (finishTimer.current) window.clearTimeout(finishTimer.current)
     if (wsRef.current) {
       wsRef.current.onclose = null
       wsRef.current.close()
     }
     speakerRef.current?.dispose()
-  }, [stopCamera])
+  }, [stopSource])
 
   /** The call dropped (network, server restart) before the summary arrived. */
   const lost = useCallback(() => {
     if (st.current.done) return
     st.current.done = true
     if (finishTimer.current) window.clearTimeout(finishTimer.current)
-    stopCamera()
+    stopSource()
     speakerRef.current?.stop()
     setAsk(null)
     setExpertChoice(false)
     setError(t('liveLost'))
     setPhase('error')
-  }, [stopCamera, t])
+  }, [stopSource, t])
 
   const finish = useCallback((sendToExpert: boolean) => {
     if (st.current.finishing) return
@@ -125,6 +145,48 @@ export default function Live() {
     ws.send(JSON.stringify({ type: 'frame', seq: s.seq, data }))
   }, [])
 
+  /** The file is read to the end. The server settles what the readings are
+   *  worth — two frames must agree before anything is called seen, and a thin
+   *  reading goes to an expert on its own. */
+  const endVideo = useCallback(() => {
+    const s = st.current
+    if (s.finishing || s.stepsDone) return
+    s.capturing = false
+    setWatched(1)
+    const ws = wsRef.current
+    if (!ws || ws.readyState !== WebSocket.OPEN) return
+    ws.send(JSON.stringify({ type: 'end_of_video' }))
+  }, [])
+
+  /** Send the next frame out of the uploaded video. Unlike the camera loop this
+   *  is driven by the server's reply to the previous frame: there is no live
+   *  scene to keep up with, so frames go one at a time, in order, and the
+   *  quality gate and the step machine see exactly what a phone would send. */
+  const pumpVideo = useCallback(async () => {
+    const g = grabRef.current
+    const s = st.current
+    const w = walk.current
+    if (!g || s.source !== 'video' || !s.capturing || s.finishing) return
+    // Loops rather than recurses: a position the decoder cannot give us is
+    // stepped over, not treated as the end of the video.
+    for (;;) {
+      if (w.frames >= MAX_UPLOAD_FRAMES || w.at > g.duration - 0.01) return endVideo()
+      const at = w.at
+      w.at = at + GRAB_EVERY_S
+      setWatched(Math.min(1, at / g.duration))
+      const data = await g.grab(at)
+      const ws = wsRef.current
+      if (!s.capturing || s.finishing || !ws || ws.readyState !== WebSocket.OPEN) return
+      if (!data) continue
+      w.frames += 1
+      s.seq += 1
+      s.inflight = true
+      s.sentAt = Date.now()
+      ws.send(JSON.stringify({ type: 'frame', seq: s.seq, data }))
+      return
+    }
+  }, [endVideo])
+
   const onMessage = useCallback((ev: MessageEvent) => {
     const m = JSON.parse(ev.data)
     const sp = speakerRef.current
@@ -135,6 +197,7 @@ export default function Live() {
       setPhase('live')
       st.current.capturing = true
       void sp?.prompt(m.guide.text)
+      if (st.current.source === 'video') void pumpVideo()
     } else if (m.type === 'frame') {
       const r = m as LiveFrameReply
       st.current.inflight = false
@@ -151,19 +214,21 @@ export default function Live() {
       setGuide(r.guide)
       if (r.advanced && r.guide.text) void sp?.prompt(r.guide.text)
       else if (r.quality && !r.quality.ok && r.quality.hint_text) void sp?.hint(r.quality.hint_text)
+      if (st.current.source === 'video') void pumpVideo()
     } else if (m.type === 'ask') {
       st.current.capturing = false
       setAsk(m)
       void sp?.prompt(m.question)
     } else if (m.type === 'steps_done') {
       st.current.capturing = false
+      st.current.stepsDone = true
       if (m.asked) return
       if (st.current.photoModel) finish(false)
       else setExpertChoice(true)
     } else if (m.type === 'summary') {
       st.current.done = true
       if (finishTimer.current) window.clearTimeout(finishTimer.current)
-      stopCamera()
+      stopSource()
       setSummary(m.summary)
       setPhase('summary')
       void sp?.prompt(m.summary.speech)
@@ -175,8 +240,9 @@ export default function Live() {
     } else if (m.type === 'error') {
       st.current.inflight = false
       if (m.code === 'SESSION_LIMIT') finish(false)
+      else if (st.current.source === 'video') void pumpVideo()  // skip the bad frame, keep going
     }
-  }, [finish, stopCamera])
+  }, [finish, pumpVideo, stopSource])
 
   // A language change takes effect at once: mid-call the server switches the
   // guidance and context; after the call the summary is re-rendered from what was saved.
@@ -192,16 +258,43 @@ export default function Live() {
     }
   }, [lang, summary, farmId])
 
-  const start = async () => {
+  /** Everything both routes do before a frame exists: forget the last walk and
+   *  wake the voice up. */
+  const begin = (from: Source) => {
     setPhase('starting')
     setError(null)
     st.current = fresh()
+    st.current.source = from
+    walk.current = { at: 0, pass: 0, frames: 0 }
+    setSource(from)
+    setWatched(0)
+    setVideoCut(false)
     setTally({})
     setAsk(null)
     setExpertChoice(false)
+    setQuality(null)
+    setLiveTop(null)
     speakerRef.current?.dispose()
     speakerRef.current = new Speaker(lang)
     speakerRef.current.muted = muted
+  }
+
+  /** Open the call. The server is told where the field is and which language to
+   *  speak; what is feeding the frames is ours to know. */
+  const connect = (pos: GeolocationPosition | null, from: Source) => {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws'
+    const ws = new WebSocket(`${proto}://${location.host}/api/live/${farmId}`)
+    wsRef.current = ws
+    ws.onopen = () => ws.send(JSON.stringify({
+      type: 'start', lang, mode: from === 'video' ? 'video' : 'walk',
+      lat: pos?.coords.latitude ?? null, lon: pos?.coords.longitude ?? null, accuracy: pos?.coords.accuracy ?? null,
+    }))
+    ws.onmessage = onMessage
+    ws.onclose = lost  // also fires after onerror
+  }
+
+  const start = async () => {
+    begin('camera')
     const where = position()
     try {
       streamRef.current = await navigator.mediaDevices.getUserMedia({
@@ -216,25 +309,37 @@ export default function Live() {
     // another app taking the camera, or the OS revoking it, ends the track without an error
     streamRef.current.getVideoTracks()[0]?.addEventListener('ended', () => {
       if (st.current.finishing) return
-      stopCamera()
+      stopSource()
       wsRef.current?.close()
       setError(t('liveNoCamera'))
       setPhase('error')
     })
     const v = videoRef.current!
+    v.removeAttribute('src')
     v.srcObject = streamRef.current
     await v.play().catch(() => undefined)
-    const pos = await where
-    const proto = location.protocol === 'https:' ? 'wss' : 'ws'
-    const ws = new WebSocket(`${proto}://${location.host}/api/live/${farmId}`)
-    wsRef.current = ws
-    ws.onopen = () => ws.send(JSON.stringify({
-      type: 'start', lang,
-      lat: pos?.coords.latitude ?? null, lon: pos?.coords.longitude ?? null, accuracy: pos?.coords.accuracy ?? null,
-    }))
-    ws.onmessage = onMessage
-    ws.onclose = lost  // also fires after onerror
+    connect(await where, 'camera')
     loopRef.current = window.setInterval(sendFrame, 150)
+  }
+
+  /** The computer's route: a video of the field, watched here frame by frame.
+   *  Nothing is uploaded — the file is decoded in this browser and only the
+   *  frames the walk asks for are sent, exactly as a phone sends them. */
+  const startUpload = async (file: File) => {
+    begin('video')
+    const where = position()
+    try {
+      const g = await openVideo(file, videoRef.current!, FRAME_MAX_SIDE, 0.72)
+      grabRef.current = g
+      setVideoCut(g.full > g.duration + 1)
+    } catch (e) {
+      const reason = e instanceof VideoError ? e.reason : 'unreadable'
+      setError(t(reason === 'too_big' ? 'liveVideoBig' : reason === 'not_video' ? 'liveVideoNot' : 'liveVideoBad')
+        .replace('{mb}', String(Math.round(MAX_VIDEO_BYTES / (1024 * 1024)))))
+      setPhase('error')
+      return
+    }
+    connect(await where, 'video')
   }
 
   const answer = (a: 'yes' | 'no' | 'unknown') => {
@@ -281,7 +386,10 @@ export default function Live() {
             <p className="mt-1 text-sm text-soil-dark/60">{t('liveCtaSub')}</p>
           </div>
           <Card className="p-4 space-y-3">
-            {[[Video, t('liveHow1')], [Eye, t('liveHow2')], [ShieldAlert, t('liveHow3')]].map(([Icon, text], i) => {
+            {(carryable
+              ? [[Video, t('liveHow1')], [Eye, t('liveHow2')], [ShieldAlert, t('liveHow3')]]
+              : [[Monitor, t('liveOnComputer')], [Upload, t('liveUploadSub')], [Eye, t('liveFilmTips')]]
+            ).map(([Icon, text], i) => {
               const I = Icon as typeof Video
               return (
                 <p key={i} className="flex gap-3 text-sm">
@@ -297,16 +405,28 @@ export default function Live() {
           {phase === 'error' && error && (
             <ErrorBox error={new Error(error)} />
           )}
-          <button onClick={start}
+          {/* One route per device, not two. A phone walks the field with its
+              camera. A computer cannot, and its camera faces a desk, so there
+              the walk is a video of the field — offering the webcam as well
+              would only be a button that wastes the farmer's time. */}
+          <button onClick={carryable ? start : () => fileRef.current?.click()}
             className="w-full min-h-[56px] rounded-full bg-leaf-deep text-cream text-base font-medium flex items-center justify-center gap-2 shadow-lg shadow-leaf-deep/25">
-            <Video className="w-5 h-5" /> {t('liveStart')}
+            {carryable ? <Video className="w-5 h-5" /> : <Upload className="w-5 h-5" />}
+            {carryable ? t('liveStart') : t('liveUpload')}
           </button>
+          <input ref={fileRef} type="file" accept="video/*" className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              e.target.value = ''
+              if (f) void startUpload(f)
+            }} />
         </>
       )}
 
       {/* The call: full screen over the app chrome while it runs. */}
       <div className={live ? 'fixed inset-0 z-[60] bg-black text-white' : 'hidden'}>
-        <video ref={videoRef} playsInline muted className="absolute inset-0 w-full h-full object-cover" />
+        <video ref={videoRef} playsInline muted
+          className={`absolute inset-0 w-full h-full ${source === 'video' ? 'object-contain' : 'object-cover'}`} />
         <canvas ref={canvasRef} className="hidden" />
 
         <div className="absolute inset-x-0 top-0 p-4 pt-[max(1rem,env(safe-area-inset-top))] bg-gradient-to-b from-black/80 via-black/50 to-transparent">
@@ -326,6 +446,19 @@ export default function Live() {
               {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
             </button>
           </div>
+          {source === 'video' && (
+            <div className="mt-3">
+              <p className="text-[11px] uppercase tracking-wide text-white/60">
+                {t('liveWatching')}
+                {videoCut && <span className="ml-1.5 normal-case tracking-normal text-ochre">
+                  {t('liveVideoCut').replace('{min}', String(Math.round(MAX_VIDEO_SECONDS / 60)))}
+                </span>}
+              </p>
+              <span className="mt-1 block h-1 rounded-full bg-white/25">
+                <span className="block h-1 rounded-full bg-ochre transition-[width] duration-200" style={{ width: `${Math.round(watched * 100)}%` }} />
+              </span>
+            </div>
+          )}
           {guide?.step && (
             <>
               <p className="mt-3 text-[11px] uppercase tracking-wide text-white/60">
@@ -359,14 +492,19 @@ export default function Live() {
         </div>
 
         {/* Where to aim: a leaf-sized box for close-ups, the whole frame otherwise. */}
-        {phase === 'live' && guide?.step && (
+        {phase === 'live' && guide?.step && source === 'camera' && (
           <div key={flash} className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 border-2 rounded-3xl transition-colors ${
             guide.kind === 'close' ? 'w-[62vw] h-[62vw] max-w-sm max-h-96' : 'w-[88vw] h-[46vh]'
           } ${flash ? 'animate-[pulse_0.6s_ease-out_1] border-leaf' : 'border-white/50'}`} />
         )}
 
         <div className="absolute inset-x-0 bottom-0 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black/85 via-black/50 to-transparent space-y-2">
-          {phase === 'live' && quality && (
+          {phase === 'live' && source === 'video' && guide && (
+            <p className="mx-auto w-fit rounded-full bg-white/15 px-3 py-1 text-sm font-medium">
+              {t('liveVideoRead').replace('{n}', String(guide.read ?? 0)).replace('{k}', String(guide.kept ?? 0))}
+            </p>
+          )}
+          {phase === 'live' && source === 'camera' && quality && (
             <p className={`mx-auto w-fit rounded-full px-3 py-1 text-sm font-medium ${quality.ok ? 'bg-leaf/90' : 'bg-ochre/90 text-soil-dark'}`}>
               {quality.ok ? t('liveKeep') : quality.hint_text}
             </p>
@@ -383,7 +521,7 @@ export default function Live() {
             </p>
           )}
           <div className="flex justify-center">
-            <button onClick={() => (phase === 'live' ? finish(false) : (stopCamera(), wsRef.current?.close(), setPhase('intro')))}
+            <button onClick={() => (phase === 'live' ? finish(false) : (stopSource(), wsRef.current?.close(), setPhase('intro')))}
               className="min-h-[48px] px-6 rounded-full bg-ember text-white font-medium flex items-center gap-2">
               <X className="w-4 h-4" /> {t('liveEnd')}
             </button>

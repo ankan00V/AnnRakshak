@@ -76,3 +76,21 @@ export function useWide(px = 1024): boolean {
   }, [query])
   return wide
 }
+
+/** True when this device can be carried into the field with its camera pointed
+ *  at a plant — a phone or a tablet. A laptop has a camera too, but it faces
+ *  the person and the crop is outside, so the live walk is offered there as a
+ *  video the farmer already filmed. The primary pointer tells the two apart;
+ *  either way both routes stay on the screen, so a wrong guess costs a tap. */
+export function useCarryable(): boolean {
+  const query = '(pointer: coarse)'
+  const [coarse, setCoarse] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches)
+  useEffect(() => {
+    const m = window.matchMedia(query)
+    const on = () => setCoarse(m.matches)
+    on()
+    m.addEventListener('change', on)
+    return () => m.removeEventListener('change', on)
+  }, [])
+  return coarse && typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia
+}

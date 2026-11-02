@@ -1,0 +1,72 @@
+/* The hero demo. Every frame inside the phone is a photograph of the real
+   app (see ScanDemo.tsx and scripts/capture-demo.mjs), so there is almost
+   nothing to style here: the look is the product's own. */
+
+.sd { --sd-leaf-deep: #1f3d2b; --sd-leaf: #3d6b4a; --sd-ochre: #c8862d; }
+
+.sd-phone { position: absolute; left: 50%; transform: translateX(-50%); top: 0; }
+
+/* The app's own area, and only that. Inside the phone's content box one pixel
+   is one iOS point, so this is the 402 x 874 screen less Apple's 62pt status
+   bar and 34pt home indicator — exactly what the capture is sized to. The
+   clock, signal and battery are the phone's and are never painted over; the
+   app begins where iOS begins it. */
+.sd-screen {
+  position: absolute;
+  top: 62px;
+  right: 0;
+  bottom: 34px;
+  left: 0;
+  overflow: hidden;
+  background: #f7f3ec;
+}
+
+/* The frames. All mounted, one shown: a dissolve, so the screen never blanks
+   between beats and so moving down the verdict reads as the page scrolling
+   rather than the app cutting to somewhere else. */
+.sd-shot {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: auto;
+  opacity: 0;
+  transition: opacity 340ms ease;
+  will-change: opacity;
+}
+.sd-shot[data-on] { opacity: 1; }
+
+/* Invisible: the cursor needs somewhere to land, and the thing it lands on is
+   printed in the photograph underneath. */
+.sd-tap {
+  position: absolute;
+  width: 2px; height: 2px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* The pause while the gate decides. Not a spinner for show: the real call
+   takes about this long, and the frame after it is the real answer. */
+.sd-busy {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  background: rgba(20, 22, 15, 0.42);
+  backdrop-filter: blur(2px);
+}
+.sd-busy__pulse {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 3px solid rgba(247, 243, 236, 0.35);
+  border-top-color: var(--sd-ochre);
+  animation: sd-spin 760ms linear infinite;
+}
+@keyframes sd-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-shot { transition: opacity 120ms ease; }
+  .sd-busy__pulse { animation: none; }
+}
+
+/* iOS takes the home indicator's contrast from whatever is under it, and
+   under it is the app's white bottom bar — but the kit drives the indicator
+   and the status glyphs from one color, and the glyphs sit on dark green.
+   So the indicator is darkened here. Color only; the kit keeps its shape. */
+.sd-phone .ss-phone__home { color: rgba(20, 22, 15, 0.34); }

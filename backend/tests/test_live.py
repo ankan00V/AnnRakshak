@@ -96,6 +96,53 @@ def test_one_weak_glimpse_adds_a_confirm_step_and_then_goes_to_expert():
     assert [x["target"] for x in f["possible"]] == ["rice_brown_spot"]
 
 
+# --- a video the farmer already filmed ------------------------------------------
+
+def test_a_video_is_read_without_asking_for_views_it_cannot_have():
+    """The guided walk coaches a camera towards six views. A file is already
+    shot, so it gets no steps and no coaching — it is read, and what the
+    readings are worth is settled by the same evidence rules."""
+    s = LiveSession(crop="rice", lang="en", can_classify=True, mode="video")
+    out = s.on_frame(leaf(7), b"f7", lambda img: [("rice_brown_spot", 0.88)])
+    assert out["guide"]["step"] is None          # nothing is being asked for
+    assert out["guide"]["total"] == 0            # and there is no step to be at
+    assert out["quality"]["hint_text"] is None   # a file cannot be coached
+    assert out["counted"] and out["guide"]["kept"] == 1
+    assert not s.done                            # only the caller ends a video
+    s.ended = True
+    assert s.done
+
+
+def test_a_video_reaches_the_same_verdict_as_a_walk():
+    sure = lambda img: [("rice_brown_spot", 0.86), ("rice_healthy", 0.1), ("rice_blast", 0.02)]  # noqa: E731
+    s = LiveSession(crop="rice", lang="en", can_classify=True, mode="video")
+    for seed in range(100, 130):
+        s.on_frame(leaf(seed), f"f{seed}".encode(), sure)
+    s.ended = True
+    f = s.findings(kb)
+    assert [x["target"] for x in f["seen"]] == ["rice_brown_spot"]
+    assert f["seen"][0]["strong_views"] >= 2
+    assert s.evidence_for("rice_brown_spot")
+
+
+def test_a_video_too_thin_to_read_goes_to_an_expert_not_to_a_spray():
+    once = [0]
+
+    def classify(img):
+        once[0] += 1
+        if once[0] == 1:
+            return [("rice_brown_spot", 0.55), ("rice_healthy", 0.4)]
+        return [("rice_healthy", 0.92), ("rice_brown_spot", 0.05)]
+
+    s = LiveSession(crop="rice", lang="en", can_classify=True, mode="video")
+    for seed in range(200, 212):
+        s.on_frame(leaf(seed), f"f{seed}".encode(), classify)
+    s.ended = True
+    f = s.findings(kb)
+    assert not f["seen"]
+    assert [x["target"] for x in f["possible"]] == ["rice_brown_spot"]
+
+
 def test_healthy_field_has_no_findings():
     s = LiveSession(crop="maize", lang="hi", can_classify=True)
     walk(s, lambda img: [("maize_healthy", 0.95), ("maize_aphid", 0.03), ("maize_maydis_leaf_blight", 0.01)])

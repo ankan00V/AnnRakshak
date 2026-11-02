@@ -677,6 +677,10 @@ export interface LiveGuide {
   need?: number
   got?: number
   text?: string
+  /** Video mode: frames read so far, and how many were clear enough to keep.
+   *  A video has no steps to be at, so these stand in for the step counter. */
+  read?: number
+  kept?: number
 }
 
 export interface LiveFrameReply {
