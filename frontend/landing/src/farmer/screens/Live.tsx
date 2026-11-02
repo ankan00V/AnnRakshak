@@ -34,6 +34,10 @@ const REDIAL_WAITS_MS = [800, 1500, 3000, 5000, 8000]
 /** A view that has not advanced in this long is one the farmer may simply not
  *  be able to get: offer them the way past it rather than coach forever. */
 const STUCK_MS = 20000
+/** Said to the server while the farmer is reading a question or deciding
+ *  whether to send a case: without it, thinking looks exactly like a phone that
+ *  has gone flat, and the server lets the call go. */
+const PING_EVERY_MS = 20000
 const MAX_UPLOAD_FRAMES = 200    // the walk needs ~16 good frames; the server stops at 600
 
 function position(timeoutMs = 6000): Promise<GeolocationPosition | null> {
@@ -373,6 +377,17 @@ export default function Live() {
     document.addEventListener('visibilitychange', back)
     return () => document.removeEventListener('visibilitychange', back)
   }, [keepAwake])
+
+  // The call is quiet whenever the farmer is being asked something rather than
+  // walking. Say so, so the silence is not read as a phone that has died.
+  useEffect(() => {
+    if (phase !== 'starting' && phase !== 'live' && phase !== 'finishing') return
+    const t = window.setInterval(() => {
+      const ws = wsRef.current
+      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'ping' }))
+    }, PING_EVERY_MS)
+    return () => window.clearInterval(t)
+  }, [phase])
 
   // Offer the way past a view that is not coming. Some fields have no leaf you
   // can turn over and no plant base above the water.

@@ -1,8 +1,10 @@
 """Live field walk: frame quality, guidance, evidence rules and the WebSocket flow."""
 
 import base64
+import contextlib
 import re
 import io
+import time
 from datetime import date, timedelta
 
 import numpy as np
@@ -288,6 +290,63 @@ def test_a_made_up_resume_token_is_refused_without_breaking_the_call(client):
     with client.websocket_connect("/api/live/1") as ws:
         ws.send_json({"type": "resume", "token": "not-a-real-token"})
         assert ws.receive_json()["code"] == "RESUME_UNKNOWN"
+
+
+def _settles_at(n: int, timeout: float = 2.0) -> int:
+    """The handler unwinds on the server's own thread; give it a moment."""
+    from app.routers import live as R
+    end = time.monotonic() + timeout
+    while R._in_progress() != n and time.monotonic() < end:
+        time.sleep(0.02)
+    return R._in_progress()
+
+
+def test_a_socket_that_says_nothing_takes_no_place_in_the_queue(client, monkeypatch):
+    """The cap on calls in flight is only worth having if it cannot be filled by
+    sockets that never become calls. Opening a connection and going quiet is the
+    cheapest attack there is."""
+    from app.routers import live as R
+
+    monkeypatch.setattr(R, "OPENING_SECONDS", 0.2)
+    with contextlib.suppress(Exception), client.websocket_connect("/api/live/1"):
+        time.sleep(0.5)
+        assert R._in_progress() == 0
+    assert _settles_at(0) == 0
+    # and the next caller is not turned away because of it
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "en"})
+        assert ws.receive_json()["type"] == "ready"
+
+
+def test_one_caller_cannot_take_every_place(client, monkeypatch):
+    """A cap counted only in total is a cap one signed-in account can fill by
+    itself, which shuts the feature off for everybody else."""
+    monkeypatch.setattr(config, "LIVE_MAX_PER_CALLER", 1)
+    with client.websocket_connect("/api/live/1") as first:
+        first.send_json({"type": "start", "lang": "en"})
+        assert first.receive_json()["type"] == "ready"
+        with client.websocket_connect("/api/live/1") as second:
+            second.send_json({"type": "start", "lang": "en"})
+            assert second.receive_json()["code"] == "TOO_BUSY"
+
+
+def test_a_call_gone_quiet_is_let_go_but_not_thrown_away(client, monkeypatch):
+    """A phone that goes flat mid-walk must not hold its place for ever — and
+    must not lose the walk either."""
+    from app.routers import live as R
+
+    monkeypatch.setattr(R, "IDLE_SECONDS", 0.3)
+    with contextlib.suppress(Exception), client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "en"})
+        token = ws.receive_json()["resume"]
+        ws.send_json({"type": "frame", "seq": 1, "data": base64.b64encode(jpeg(leaf(31))).decode()})
+        ws.receive_json()
+        time.sleep(1.0)   # the phone says nothing at all
+    assert _settles_at(0) == 0, "a silent call kept its place"
+
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "resume", "token": token})
+        assert ws.receive_json()["resumed"], "the walk should have been held, not binned"
 
 
 def test_a_call_in_progress_holds_no_database_connection(client):

@@ -272,6 +272,11 @@ Cloudflare publishes other test keys worth knowing while building this:
 #: Raise it on a machine with more cores, or where the model runs on a GPU.
 LIVE_MAX_CALLS = int(os.environ.get("ANNRAKSHAK_LIVE_MAX_CALLS") or 12)
 
+#: How many of those a single account may hold at once. A cap counted only in
+#: total is a cap one signed-in caller can fill by itself, which is a cheap way
+#: to shut the feature off for everybody else.
+LIVE_MAX_PER_CALLER = int(os.environ.get("ANNRAKSHAK_LIVE_MAX_PER_CALLER") or 2)
+
 OTP_DIGITS = 6
 OTP_TTL_MINUTES = 5
 OTP_MAX_ATTEMPTS = 5

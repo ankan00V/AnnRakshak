@@ -25,12 +25,15 @@ as seen only when two separate frames agree.
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import binascii
+import contextlib
 import secrets
 import time
 from dataclasses import dataclass
 
+from collections import Counter
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from typing import TypeVar
@@ -49,6 +52,18 @@ router = APIRouter(prefix="/api", tags=["live"], dependencies=[Depends(auth.requ
 MAX_FRAME_BYTES = 400_000
 MAX_FRAMES = 600
 MAX_SECONDS = 600
+#: How long a connection may stay silent before it is treated as gone. The phone
+#: sends a frame about twice a second while walking and a ping while it waits
+#: for the farmer to answer a question, so silence this long means the phone is
+#: asleep, flat or out of signal — not that somebody is thinking.
+IDLE_SECONDS = 90
+#: How long a caller has to say what they want after connecting.
+OPENING_SECONDS = 15
+#: The outside edge of a call. MAX_SECONDS stops new frames but still lets the
+#: farmer finish and keep what they walked; this is the point where a socket is
+#: let go whatever it claims to be doing, so a stream of pings cannot hold a
+#: place in the queue for ever.
+HARD_SECONDS = MAX_SECONDS + 180
 from app.i18n import LANGS  # noqa: E402
 
 T = TypeVar("T")
@@ -129,24 +144,28 @@ def _unpark(token: str, farm_id: int, user_id: int | None) -> "_Parked | None":
     return _parked.pop(token)
 
 
-_calls = 0
+_calls: Counter[int | None] = Counter()
 
 
 def _in_progress() -> int:
-    return _calls
+    return sum(_calls.values())
 
 
 @contextmanager
-def _one_more_call() -> Iterator[None]:
-    """Count the calls in flight. A single worker's event loop runs them all, so
-    a plain integer is the whole of it — no lock is needed where nothing else
-    runs between the read and the write."""
-    global _calls
-    _calls += 1
+def _one_more_call(user_id: int | None) -> Iterator[None]:
+    """Count the calls in flight, and whose they are. A single worker's event
+    loop runs them all, so a plain counter is the whole of it — nothing else
+    runs between the read and the write.
+
+    Counting by caller as well as in total matters: a cap that only counts the
+    total is a cap one account can fill on its own."""
+    _calls[user_id] += 1
     try:
         yield
     finally:
-        _calls -= 1
+        _calls[user_id] -= 1
+        if _calls[user_id] <= 0:
+            del _calls[user_id]
 
 
 async def _in_db(work: Callable[[Session], T]) -> T:
@@ -209,28 +228,36 @@ async def live_ws(ws: WebSocket, farm_id: int):
         await ws.close(code=1000 if refusal == "FARM_NOT_FOUND" else 1008)
         return
 
+    # A socket that connects and then says nothing is not a call and is not
+    # charged as one: counting it would let anyone hold every place in the
+    # queue just by opening connections and going quiet.
+    try:
+        start = await asyncio.wait_for(ws.receive_json(), OPENING_SECONDS)
+    except (TimeoutError, WebSocketDisconnect):
+        with contextlib.suppress(Exception):
+            await ws.close(code=1000)
+        return
+    opening = start.get("type")
+    if opening not in ("start", "resume"):
+        await ws.send_json({"type": "error", "code": "EXPECTED_START"})
+        await ws.close()
+        return
+
     # Every frame of every call runs the model on a worker thread. Past a point
     # more callers do not mean more throughput, only that each one waits longer
     # and all of them time out together. Turning the next caller away with a
     # reason they can act on beats degrading the calls already under way.
-    if _in_progress() >= config.LIVE_MAX_CALLS:
+    if _in_progress() >= config.LIVE_MAX_CALLS or _calls[user_id] >= config.LIVE_MAX_PER_CALLER:
         await ws.send_json({"type": "error", "code": "TOO_BUSY"})
         await ws.close(code=1013)
         return
 
-    # Set before the try, because a caller who disconnects while we are still
-    # waiting for their first message lands in the handler below with none of
-    # this assigned.
+    # Set before the try, because a drop part-way through setting a call up
+    # lands in the handler below with none of this assigned.
     sess, ctx, lang, resume_token, settled = None, {}, farm_lang, "", True
 
-    with _one_more_call():
+    with _one_more_call(user_id):
         try:
-            start = await ws.receive_json()
-            opening = start.get("type")
-            if opening not in ("start", "resume"):
-                await ws.send_json({"type": "error", "code": "EXPECTED_START"})
-                await ws.close()
-                return
 
             if opening == "resume":
                 picked = _unpark(str(start.get("token") or ""), farm_id, user_id)
@@ -284,7 +311,15 @@ async def live_ws(ws: WebSocket, farm_id: int):
                 announced_done = True
 
             while True:
-                msg = await ws.receive_json()
+                try:
+                    msg = await asyncio.wait_for(ws.receive_json(), IDLE_SECONDS)
+                except TimeoutError:
+                    break   # gone quiet: hold the walk, hand the place back
+                # Past this point a call is let go whatever it is sending. The
+                # frame limit below still lets a farmer at MAX_SECONDS finish
+                # and keep what they walked; this is the outside edge.
+                if time.monotonic() - began > HARD_SECONDS:
+                    break
                 kind = msg.get("type")
                 if kind == "frame":
                     if sess.frames >= MAX_FRAMES or time.monotonic() - began > MAX_SECONDS:
@@ -353,11 +388,15 @@ async def live_ws(ws: WebSocket, farm_id: int):
                 elif kind == "ping":
                     await ws.send_json({"type": "pong"})
         except WebSocketDisconnect:
-            # Nothing was written, so there is nothing to undo. But the walk
-            # itself is worth something: a farmer halfway down a field on a
-            # patchy network should not have to start again at the gate, so the
-            # session waits a few minutes for them to dial back in.
-            if not settled and sess is not None and sess.mode == "walk" and sess.good_frames:
-                _parked[resume_token] = _Parked(time.monotonic(), farm_id, user_id, sess, ctx, lang,
-                                                time.monotonic() - began)
-                _sweep_parked(time.monotonic())
+            pass  # nothing was written, so there is nothing to undo
+
+        # Dropped, gone quiet, or simply out of time. Either way the walk itself
+        # is worth something: a farmer halfway down a field on a patchy network
+        # should not have to start again at the gate, so the session waits a few
+        # minutes for them to dial back in.
+        if not settled and sess is not None and sess.mode == "walk" and sess.good_frames:
+            now = time.monotonic()
+            _parked[resume_token] = _Parked(now, farm_id, user_id, sess, ctx, lang, now - began)
+            _sweep_parked(now)
+        with contextlib.suppress(Exception):
+            await ws.close(code=1001)
