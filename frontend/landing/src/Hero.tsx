@@ -77,10 +77,10 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* The phone is the figure: it leads, and it is cut by the foot of
-              the section rather than floating with air all round it. */}
+          {/* The phone is the figure: it leads, and it stands whole, because
+              the thing being judged is what the screen is doing. */}
           <div className="relative lg:justify-self-end w-full flex justify-center
-                          -mb-16 lg:-mb-24 pointer-events-none select-none">
+                          pointer-events-none select-none">
             <ScanDemo />
           </div>
         </div>
