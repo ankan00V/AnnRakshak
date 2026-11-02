@@ -20,6 +20,24 @@ const GATE = [
 export default function HowItWorks() {
   return (
     <section id="how-it-works" className="w-full bg-leaf-deep text-cream">
+      {/* Where the sequence starts, and why it can: last season's stubble
+          being worked into strips for the next crop, seed waiting on the
+          trolley. A field is registered with its sowing date, and from that
+          day the crop's stage, its degree-days and its weather risk are
+          counted — which is what step 01 below reads. The page ends on the
+          harvest behind "Ready to protect your harvest?", so the footage runs
+          the length of one season, the same span the app does. */}
+      <FootageBand
+        src="/footage/new-season.mp4"
+        poster="/footage/new-season-poster.webp"
+        objectClass="object-[center_55%]"
+      >
+        <span className="block mb-1.5 font-sans text-[11px] sm:text-xs font-semibold uppercase tracking-[0.14em] text-ochre">
+          Day 1 of the season
+        </span>
+        From the day it is sown, the app counts the crop's stage, its weather and its risk.
+      </FootageBand>
+
       <div className="max-w-6xl mx-auto px-6 md:px-12 py-12 sm:py-16 md:py-28">
         <Reveal className="max-w-3xl">
           <h2 className="font-instrument-serif text-[2rem] sm:text-5xl md:text-[3.5rem] leading-[1.05] text-balance">
@@ -49,20 +67,6 @@ export default function HowItWorks() {
             </Reveal>
           ))}
         </ol>
-
-        {/* Between the sequence and the step the sequence is really about.
-            Inset rather than full-bleed, because this section is built of
-            panels and a bled band would cut it in half. */}
-        <Reveal className="mt-10 sm:mt-14 md:mt-20">
-          <FootageBand
-            src="/footage/ploughing.mp4"
-            poster="/footage/ploughing-poster.webp"
-            objectClass="object-[center_60%]"
-            className="rounded-3xl ring-1 ring-cream/10"
-          >
-            Land enough for a season's work, and one officer to walk it.
-          </FootageBand>
-        </Reveal>
 
         {/* The centrepiece: what the confidence gate actually did. */}
         <Reveal className="mt-10 sm:mt-14 md:mt-24">

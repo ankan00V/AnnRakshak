@@ -15,6 +15,12 @@ import FootageBackdrop from './FootageBackdrop'
  *  heading, a control or anything a reader has to work at. If it needs more
  *  than that it should be a section instead.
  *
+ *  And it has to show something the product does. Footage placed because it
+ *  is pretty, under a line written to fit whatever the shot happens to be,
+ *  reads as filler — three such bands were cut for exactly that. Today there
+ *  is one: the field being readied for a new season, at the head of How it
+ *  works, because a season's first day is where the app starts counting.
+ *
  *  Video bands cost about half a megabyte each, so they use FootageBackdrop,
  *  which fetches nothing until the band is nearly in view and nothing at all
  *  on a save-data or 2g connection, or for a reader who asked for less

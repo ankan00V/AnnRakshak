@@ -1,5 +1,4 @@
 import Reveal from '../ui/Reveal'
-import FootageBand from '../ui/FootageBand'
 
 /** Three rows, not three cards: each one pairs what it costs with why.
  *  The pesticide figure is the sum of every state MoSPI publishes for 2023-24
@@ -60,17 +59,6 @@ export default function Problem() {
           ))}
         </div>
       </div>
-
-      {/* The turn out of the problem: a real field running to the village it
-          feeds. It also carries the join from this cream section into the
-          green one, which until now was a straight colour change. */}
-      <FootageBand
-        still="/footage/village-field.webp"
-        alt="A harvested field running in rows to the village behind it"
-        objectClass="object-[center_58%]"
-      >
-        Every number above lands on a field like this one.
-      </FootageBand>
     </section>
   )
 }

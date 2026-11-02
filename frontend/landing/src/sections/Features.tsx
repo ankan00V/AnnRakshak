@@ -1,6 +1,5 @@
 import { Ban, Bug, ListOrdered, Map, UserCheck, Volume2 } from 'lucide-react'
 import Reveal from '../ui/Reveal'
-import FootageBand from '../ui/FootageBand'
 import OnPhone from '../ui/OnPhone'
 import { LANGS } from '../lib/i18n'
 
@@ -177,15 +176,6 @@ export default function Features() {
         </div>
         </OnPhone>
       </div>
-
-      {/* What all of it is for, and the join into the dark section. */}
-      <FootageBand
-        src="/footage/sowing.mp4"
-        poster="/footage/sowing-poster.webp"
-        objectClass="object-[center_64%]"
-      >
-        None of it matters until it reaches the person on the tractor.
-      </FootageBand>
     </section>
   )
 }
