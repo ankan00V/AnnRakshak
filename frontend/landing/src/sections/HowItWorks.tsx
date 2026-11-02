@@ -1,5 +1,6 @@
 import { BellRing, Camera, HelpCircle, Sprout, UserCheck } from 'lucide-react'
 import Reveal from '../ui/Reveal'
+import FootageBand from '../ui/FootageBand'
 
 const STEPS = [
   { icon: BellRing, label: 'Alert', line: 'Weather, crop stage, traps and confirmed nearby cases say where to look — before damage shows.' },
@@ -48,6 +49,20 @@ export default function HowItWorks() {
             </Reveal>
           ))}
         </ol>
+
+        {/* Between the sequence and the step the sequence is really about.
+            Inset rather than full-bleed, because this section is built of
+            panels and a bled band would cut it in half. */}
+        <Reveal className="mt-10 sm:mt-14 md:mt-20">
+          <FootageBand
+            src="/footage/ploughing.mp4"
+            poster="/footage/ploughing-poster.webp"
+            objectClass="object-[center_60%]"
+            className="rounded-3xl ring-1 ring-cream/10"
+          >
+            Land enough for a season's work, and one officer to walk it.
+          </FootageBand>
+        </Reveal>
 
         {/* The centrepiece: what the confidence gate actually did. */}
         <Reveal className="mt-10 sm:mt-14 md:mt-24">
