@@ -156,7 +156,7 @@ function Shell() {
       </main>
 
       {farmId != null && (
-        <nav className="fixed bottom-0 inset-x-0 z-30 bg-paper/95 backdrop-blur border-t border-soil-dark/10 pb-[env(safe-area-inset-bottom)]
+        <nav className="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-soil-dark/10 pb-[env(safe-area-inset-bottom)]
           lg:top-16 lg:right-auto lg:w-64 lg:border-t-0 lg:pb-0 lg:bg-leaf-deep lg:backdrop-blur-none lg:flex lg:flex-col">
           <div className="max-w-md mx-auto grid grid-cols-5 lg:max-w-none lg:w-full lg:flex lg:flex-col lg:gap-1 lg:px-4 lg:pt-4">
             {NAV.map(({ to, icon: Icon, key }) => {
@@ -208,7 +208,7 @@ function Toast() {
   const warn = toast.severity === 'warning'
   return (
     <div className="fixed top-16 inset-x-0 z-40 px-3 animate-fadein">
-      <div role="alert" className={`max-w-md mx-auto rounded-2xl shadow-xl p-3 flex gap-3 items-start ${warn ? 'bg-ember text-cream' : 'bg-paper border border-ochre/40'}`}>
+      <div role="alert" className={`max-w-md mx-auto rounded-2xl shadow-xl p-3 flex gap-3 items-start ${warn ? 'bg-ember text-cream' : 'bg-white border border-ochre/40'}`}>
         <AlertTriangle className={`w-5 h-5 shrink-0 mt-0.5 ${warn ? '' : 'text-ochre'}`} />
         <button className="flex-1 text-left" onClick={() => { setToast(null); navigate(toast.url) }}>
           <span className="block text-sm font-semibold leading-snug">{toast.title}</span>

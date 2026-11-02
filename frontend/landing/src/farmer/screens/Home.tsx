@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Camera, ClipboardCheck, Loader2, ShieldCheck, Sparkles, Video, Wheat } from 'lucide-react'
+import { ArrowRight, Camera, ClipboardCheck, Loader2, ShieldCheck, Sparkles, Video, Wheat } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api } from '../../api/client'
 import ReportSheet from '../components/ReportSheet'
@@ -53,42 +53,46 @@ export default function Home() {
     <>
         <Link
           to="/app/live" data-tour="live"
-          className="relative block w-full rounded-3xl bg-gradient-to-br from-soil-dark to-leaf-deep text-cream overflow-hidden p-5 shadow-lg shadow-leaf-deep/25 active:scale-[0.99] transition-transform"
+          className="group relative flex min-h-[168px] flex-col justify-between overflow-hidden rounded-3xl bg-leaf-deep p-5 pb-16 text-cream shadow-md ring-1 ring-cream/10 transition-transform active:scale-[0.99]"
         >
-          <span aria-hidden className="absolute -bottom-14 -right-8 w-48 h-48 rounded-full bg-ochre/30 blur-2xl" />
-          <span className="relative inline-flex items-center gap-1.5 rounded-full bg-ember px-2 py-0.5 text-[10px] font-bold">
-            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
+          <span className="flex items-start justify-between gap-3">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-cream/10 text-ochre">
+              <Video className="h-6 w-6" aria-hidden />
+            </span>
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ember px-2.5 py-1 text-[10px] font-bold tracking-wide">
+              <span className="h-1.5 w-1.5 rounded-full bg-cream animate-pulse" aria-hidden /> LIVE
+            </span>
           </span>
-          <span className="relative mt-2 flex items-center gap-4">
-            <span className="w-14 h-14 rounded-2xl bg-cream/10 ring-1 ring-ochre/50 flex items-center justify-center">
-              <Video className="w-7 h-7 text-ochre" />
-            </span>
-            <span>
-              <span className="block text-lg font-medium leading-tight">{t('liveCta')}</span>
-              <span className="block text-xs text-cream/70 mt-0.5">{t('liveCtaSub')}</span>
-            </span>
+          <span className="mt-4 block">
+            <span className="block text-lg font-semibold leading-snug">{t('liveCta')}</span>
+            <span className="mt-1 block text-[13px] leading-relaxed text-cream/70">{t('liveCtaSub')}</span>
+          </span>
+          <span aria-hidden className="absolute bottom-5 right-5 flex h-8 w-8 items-center justify-center rounded-full bg-ochre text-soil-dark transition-transform group-hover:translate-x-0.5">
+            <ArrowRight className="h-4 w-4" />
           </span>
         </Link>
 
         <Link
           to="/app/scan" data-tour="scan"
-          className="relative block w-full rounded-3xl bg-leaf-deep text-cream overflow-hidden p-5 shadow-lg shadow-leaf-deep/25 active:scale-[0.99] transition-transform"
+          className="group relative flex min-h-[168px] flex-col justify-between overflow-hidden rounded-3xl bg-leaf-deep p-5 pb-16 text-cream shadow-md ring-1 ring-cream/10 transition-transform active:scale-[0.99]"
         >
-          <span aria-hidden className="absolute -top-12 -right-10 w-44 h-44 rounded-full bg-leaf/40 blur-2xl" />
-          <span className="relative flex items-center gap-4">
-            <span className="w-14 h-14 rounded-2xl bg-cream/10 ring-1 ring-ochre/50 flex items-center justify-center">
-              <Camera className="w-7 h-7 text-ochre" />
+          <span className="flex items-start">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-cream/10 text-ochre">
+              <Camera className="h-6 w-6" aria-hidden />
             </span>
-            <span>
-              <span className="block text-lg font-medium leading-tight">{t('takePhoto')}</span>
-              <span className="block text-xs text-cream/70 mt-0.5">{t('takePhotoSub')}</span>
-            </span>
+          </span>
+          <span className="mt-4 block">
+            <span className="block text-lg font-semibold leading-snug">{t('takePhoto')}</span>
+            <span className="mt-1 block text-[13px] leading-relaxed text-cream/70">{t('takePhotoSub')}</span>
+          </span>
+          <span aria-hidden className="absolute bottom-5 right-5 flex h-8 w-8 items-center justify-center rounded-full bg-ochre text-soil-dark transition-transform group-hover:translate-x-0.5">
+            <ArrowRight className="h-4 w-4" />
           </span>
           {/* Only the demo banner is worth a farmer's attention: it says the
               answer is not a real diagnosis. Naming the model when it IS real
               tells them nothing they can act on. */}
           {d.model.is_stub && (
-            <span className="relative mt-3 flex items-center gap-1.5 text-[11px] text-cream/60">
+            <span className="mt-3 flex items-center gap-1.5 text-[11px] text-cream/60">
               <Sparkles className="w-3 h-3" />
               {t('demoModel')}
             </span>

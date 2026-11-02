@@ -59,7 +59,7 @@ export default function AccountMenu({ logoutLabel = 'Log out', demoLabel = 'Demo
         {initials || '•'}
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-paper text-soil-dark shadow-xl border border-soil-dark/10 p-4 z-50 animate-fadein">
+        <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-white text-soil-dark shadow-xl border border-soil-dark/10 p-4 z-50 animate-fadein">
           <p className="font-semibold leading-tight">{me.name}</p>
           {org && <p className="mt-0.5 text-[12px] text-soil-dark/60 leading-snug">{org}</p>}
           {place && <p className="mt-0.5 text-[12px] text-soil-dark/60">{place}</p>}
@@ -122,7 +122,7 @@ export default function AccountMenu({ logoutLabel = 'Log out', demoLabel = 'Demo
                   <label className="mt-2 block text-[11px] text-soil-dark/60">{privacy.typeToConfirm}</label>
                   <input value={typed} onChange={(e) => setTyped(e.target.value)} autoFocus
                     aria-label={privacy.typeToConfirm}
-                    className="mt-1 w-full min-h-[40px] rounded-lg border border-soil-dark/20 bg-paper px-3 text-sm" />
+                    className="mt-1 w-full min-h-[40px] rounded-lg border border-soil-dark/20 bg-white px-3 text-sm" />
                   {erased ? (
                     // Said here rather than in an alert box: the last thing this
                     // account sees should still look like the app.
