@@ -31,13 +31,20 @@ function Frame() {
   const { setLang } = useFarmer()
   const { me, loading } = useAuth()
   const [params] = useSearchParams()
+  const { pathname } = useLocation()
   if (loading) return <PageSkeleton />
   // A signed-in person has no business on the sign-up forms — except the one
   // trying out the shared demonstration account, who reached here by pressing
   // "add your own field". Sending them back to the demo is the one answer that
   // cannot be what they meant. Letting them look costs nothing: signing up
   // replaces the session, and backing out leaves the demo as it was.
-  if (me && !me.is_demo) return <Navigate to={safeNext(params.get('next')) ?? homeOf(me.role)} replace />
+  //
+  // The sign-in page is not one of those forms. "Demo farmer" signs you in
+  // right here, so a demo session that is not sent on has nowhere to go and
+  // the button looks broken.
+  if (me && (!me.is_demo || pathname.startsWith('/login'))) {
+    return <Navigate to={safeNext(params.get('next')) ?? homeOf(me.role)} replace />
+  }
   return (
     /* On a laptop the window is the frame: header, panel and form are laid
        out inside one screen and the form is the only thing that scrolls. The

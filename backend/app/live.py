@@ -132,9 +132,12 @@ def _namer(kb: KB, lang: str):
     return name
 
 
-def new_session(kb: KB, farm: Farm, lang: str) -> LiveSession:
+def new_session(kb: KB, farm: Farm, lang: str, mode: str = "walk") -> LiveSession:
+    """A guided walk ("walk") or a video the farmer already filmed ("video").
+    Both end in the same summary, off the same evidence rules."""
     can = kb.crops[farm.crop]["photo_diagnosis"] and not vision.model_status()["is_stub"]
-    return LiveSession(crop=farm.crop, lang=lang, can_classify=can, target_name=_namer(kb, lang))
+    return LiveSession(crop=farm.crop, lang=lang, can_classify=can, target_name=_namer(kb, lang),
+                       mode=mode if mode in ("walk", "video") else "walk")
 
 
 def relang(kb: KB, sess: LiveSession, lang: str) -> None:

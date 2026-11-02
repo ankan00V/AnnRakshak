@@ -112,6 +112,10 @@ BASE_STEPS = [("overview", "scene", 3), ("plant", "plant", 2), ("leaf_top", "clo
 CONFIRM_NEED = 3
 MAX_EVIDENCE_FRAMES = 3
 MIN_SHARE_OF_STRONG = 0.25
+VIDEO_KIND = "close"
+"""A file is read for usable close-ups of the crop and nothing else: there is no
+one to coach towards the other views, so there is no point measuring against
+them."""
 """A second problem must make up at least this share of the walk's strong disease
 readings to be reported as seen; below it, it goes to an expert as possible."""
 
@@ -160,6 +164,9 @@ class LiveSession:
     confirm_added: bool = False
     asked: str | None = None
     answer: tuple[str, str] | None = None  # (cue_id, yes/no/unknown)
+    mode: str = "walk"     # "walk": a camera being guided; "video": a file being read
+    ended: bool = False    # video: the caller says there are no more frames
+    kept: int = 0          # video: frames clear enough to be worth reading
     _last_thumb: np.ndarray | None = None
 
     def __post_init__(self):
@@ -169,9 +176,16 @@ class LiveSession:
     # --- public ---------------------------------------------------------------
     @property
     def done(self) -> bool:
+        if self.mode == "video":
+            return self.ended
         return self.idx >= len(self.steps)
 
     def guide(self) -> dict:
+        # Reading a file has no steps to be at, so there is nothing to guide:
+        # what the caller wants to show is how much of the video has been read
+        # and how much of it was worth reading.
+        if self.mode == "video":
+            return {"step": None, "index": 0, "total": 0, "read": self.frames, "kept": self.kept}
         if self.done:
             return {"step": None, "index": len(self.steps), "total": len(self.steps)}
         s = self.steps[self.idx]
@@ -182,6 +196,8 @@ class LiveSession:
     def on_frame(self, img: Image.Image, jpeg: bytes,
                  classify: Callable[[Image.Image], list[tuple[str, float]]] | None) -> dict:
         self.frames += 1
+        if self.mode == "video":
+            return self._read_frame(img, jpeg, classify)
         if self.done:
             return {"quality": None, "counted": False, "advanced": False, "guide": self.guide()}
         step = self.steps[self.idx]
@@ -213,6 +229,39 @@ class LiveSession:
             self._maybe_add_confirm()
             self.idx += 1
             out["advanced"] = True
+        return out | {"guide": self.guide()}
+
+    def _read_frame(self, img: Image.Image, jpeg: bytes,
+                    classify: Callable[[Image.Image], list[tuple[str, float]]] | None) -> dict:
+        """One frame out of a video the farmer filmed before they got here.
+
+        Nothing is asked for and nothing is refused. The video is already shot,
+        so coaching it towards a view it does not contain would only be a
+        complaint. Every frame is read; a frame is kept only when it is a close
+        enough, steady enough, green enough look at the crop to be worth the
+        model's opinion. What those opinions are worth is settled afterwards by
+        findings(), on exactly the evidence rules the guided walk uses — two
+        separate frames must agree before anything is called seen.
+        """
+        q = measure(img, VIDEO_KIND, self._last_thumb)
+        out: dict = {"quality": q.__dict__ | {"hint_text": None}, "counted": False,
+                     "advanced": False, "live": None}
+        if not q.ok:
+            return out | {"guide": self.guide()}
+        self._last_thumb = _thumb(img)
+        self.good_frames += 1
+        self.closeups.append((q.sharp, jpeg))
+        self.closeups = sorted(self.closeups, key=lambda x: -x[0])[:MAX_EVIDENCE_FRAMES]
+        if classify is not None and self.can_classify:
+            preds = classify(img)
+            if not preds:  # the model says this is not a crop view at all
+                self.good_frames -= 1
+                self.closeups = [c for c in self.closeups if c[1] is not jpeg]
+                return out | {"guide": self.guide()}
+            self.classified += 1
+            out["live"] = self._record(preds, jpeg)
+        self.kept += 1
+        out["counted"] = True
         return out | {"guide": self.guide()}
 
     def pending_question(self, kb) -> dict | None:

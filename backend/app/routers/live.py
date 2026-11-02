@@ -1,7 +1,7 @@
 """Live field walk over a WebSocket.
 
 Protocol (JSON messages):
-  client -> {"type": "start", "lang": "mr", "lat": 21.1, "lon": 79.6, "accuracy": 12}
+  client -> {"type": "start", "lang": "mr", "mode": "walk"|"video", "lat": ..., "lon": ...}
   server -> {"type": "ready", "context": {...}, "guide": {...}, "photo_model": true}
   client -> {"type": "frame", "seq": 7, "data": "<base64 JPEG, <=400 KB>"}
   server -> {"type": "frame", "seq": 7, "quality": {...}, "counted": bool, "advanced": bool,
@@ -9,11 +9,18 @@ Protocol (JSON messages):
   server -> {"type": "ask", "cue_id", "question", "candidates"}      (at most once)
   client -> {"type": "answer", "cue_id": "...", "answer": "yes|no|unknown"}
   server -> {"type": "steps_done"}                                   (all views collected)
+  client -> {"type": "end_of_video"}                                 (video: no more frames)
   client -> {"type": "finish", "send_to_expert": false}
   server -> {"type": "summary", "summary": {...}}  and closes.
 
 A disconnect before "finish" saves nothing. Frames are decoded in memory and
 dropped; only evidence frames for a finding are written, as problem photos.
+
+Two sources feed the same machinery. A phone walks the field and is guided view
+by view. A computer cannot be carried there, so it reads a video the farmer
+filmed earlier: the frames arrive the same way, but nothing is asked for and
+nothing is coached — the video is already shot. Either way a problem is reported
+as seen only when two separate frames agree.
 """
 
 from __future__ import annotations
@@ -86,13 +93,29 @@ async def live_ws(ws: WebSocket, farm_id: int):
             await ws.close()
             return
         lang = start.get("lang") if start.get("lang") in LANGS else farm.lang
+        mode = "video" if start.get("mode") == "video" else "walk"
         lat, lon = start.get("lat"), start.get("lon")
         if not (isinstance(lat, int | float) and isinstance(lon, int | float)):
             lat = lon = None
         ctx = await run_in_threadpool(live.context, db, kb, farm, lat, lon, start.get("accuracy"), lang)
-        sess = live.new_session(kb, farm, lang)
+        sess = live.new_session(kb, farm, lang, mode)
         await ws.send_json({"type": "ready", "context": ctx, "guide": sess.guide(), "photo_model": sess.can_classify})
         began, announced_done = time.monotonic(), False
+
+        async def announce_done() -> None:
+            """Everything that is going to be looked at has been. Ask the Doubt
+            Doctor question if two problems are still competing, then hand over."""
+            nonlocal announced_done
+            if announced_done:
+                return
+            cue = sess.pending_question(kb)
+            if cue:
+                a, b = cue["pair"]
+                await ws.send_json({"type": "ask", "cue_id": cue["id"],
+                                    "question": tr(cue["question"], lang),
+                                    "candidates": [kb.target_view(a, lang), kb.target_view(b, lang)]})
+            await ws.send_json({"type": "steps_done", "asked": bool(cue)})
+            announced_done = True
 
         while True:
             msg = await ws.receive_json()
@@ -117,15 +140,13 @@ async def live_ws(ws: WebSocket, farm_id: int):
                 out = await run_in_threadpool(sess.on_frame, img, jpeg,
                                               live.classify if sess.can_classify else None)
                 await ws.send_json({"type": "frame", "seq": msg.get("seq")} | out)
-                if sess.done and not announced_done:
-                    cue = sess.pending_question(kb)
-                    if cue:
-                        a, b = cue["pair"]
-                        await ws.send_json({"type": "ask", "cue_id": cue["id"],
-                                            "question": tr(cue["question"], lang),
-                                            "candidates": [kb.target_view(a, lang), kb.target_view(b, lang)]})
-                    await ws.send_json({"type": "steps_done", "asked": bool(cue)})
-                    announced_done = True
+                if sess.done:
+                    await announce_done()
+            elif kind == "end_of_video" and sess.mode == "video":
+                # The file ran out. However much of it was worth reading is what
+                # the summary is built from — a thin reading goes to an expert.
+                sess.ended = True
+                await announce_done()
             elif kind == "answer":
                 sess.on_answer(str(msg.get("cue_id")), str(msg.get("answer")))
                 await ws.send_json({"type": "answered"})
