@@ -65,7 +65,7 @@ export default function Home() {
           </span>
           <span className="mt-4 block">
             <span className="block text-lg font-semibold leading-snug">{t('liveCta')}</span>
-            <span className="mt-1 block text-[13px] leading-relaxed text-cream/70">{t('liveCtaSub')}</span>
+            <span className="mt-1 block pr-10 text-[13px] leading-relaxed text-cream/70">{t('liveCtaSub')}</span>
           </span>
           <span aria-hidden className="absolute bottom-5 right-5 flex h-8 w-8 items-center justify-center rounded-full bg-ochre text-soil-dark transition-transform group-hover:translate-x-0.5">
             <ArrowRight className="h-4 w-4" />
@@ -83,7 +83,7 @@ export default function Home() {
           </span>
           <span className="mt-4 block">
             <span className="block text-lg font-semibold leading-snug">{t('takePhoto')}</span>
-            <span className="mt-1 block text-[13px] leading-relaxed text-cream/70">{t('takePhotoSub')}</span>
+            <span className="mt-1 block pr-10 text-[13px] leading-relaxed text-cream/70">{t('takePhotoSub')}</span>
           </span>
           <span aria-hidden className="absolute bottom-5 right-5 flex h-8 w-8 items-center justify-center rounded-full bg-ochre text-soil-dark transition-transform group-hover:translate-x-0.5">
             <ArrowRight className="h-4 w-4" />
