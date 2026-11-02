@@ -10,6 +10,10 @@ import { useAuth } from './AuthContext'
 export type PrivacyLabels = {
   yourData: string; downloadData: string; deleteAccount: string; deleteWhat: string
   typeToConfirm: string; confirmWord: string; forever: string; cancel: string; done: string
+  /** The notice: what is kept, where, and who can see it. The DPDP Act asks
+   *  for this to be told plainly rather than buried, and it belongs beside the
+   *  two buttons that act on it. */
+  what: string; phone: string; cookie: string; noAds: string; server: string
 }
 
 /** The signed-in person in a dark header: initials, and a menu with who they
@@ -55,7 +59,7 @@ export default function AccountMenu({ logoutLabel = 'Log out', demoLabel = 'Demo
         {initials || '•'}
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-white text-soil-dark shadow-xl border border-soil-dark/10 p-4 z-50 animate-fadein">
+        <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-paper text-soil-dark shadow-xl border border-soil-dark/10 p-4 z-50 animate-fadein">
           <p className="font-semibold leading-tight">{me.name}</p>
           {org && <p className="mt-0.5 text-[12px] text-soil-dark/60 leading-snug">{org}</p>}
           {place && <p className="mt-0.5 text-[12px] text-soil-dark/60">{place}</p>}
@@ -85,6 +89,22 @@ export default function AccountMenu({ logoutLabel = 'Log out', demoLabel = 'Demo
           {privacy && !me.is_demo && (
             <div className="mt-4 pt-3 border-t border-soil-dark/10">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-soil-dark/45">{privacy.yourData}</p>
+              {/* Closed by default: a farmer who came here to download or
+                  delete should not have to scroll past a notice to reach the
+                  button. Open, it is four short lines and no legal language. */}
+              <details className="mt-2 group">
+                <summary className="flex items-center gap-2 text-sm text-soil-dark/70 cursor-pointer list-none
+                                    marker:content-none hover:text-soil-dark">
+                  <ShieldCheck className="w-4 h-4 text-leaf" />
+                  {privacy.what}
+                </summary>
+                <ul className="mt-2 space-y-1.5 pl-6 text-[12px] leading-snug text-soil-dark/65">
+                  <li>{privacy.phone}</li>
+                  <li>{privacy.cookie}</li>
+                  <li>{privacy.noAds}</li>
+                  <li>{privacy.server}</li>
+                </ul>
+              </details>
               <a href={api.myDataUrl} download
                 className="mt-2 flex items-center gap-2 text-sm text-leaf-deep font-medium hover:underline">
                 <Download className="w-4 h-4" />
@@ -102,7 +122,7 @@ export default function AccountMenu({ logoutLabel = 'Log out', demoLabel = 'Demo
                   <label className="mt-2 block text-[11px] text-soil-dark/60">{privacy.typeToConfirm}</label>
                   <input value={typed} onChange={(e) => setTyped(e.target.value)} autoFocus
                     aria-label={privacy.typeToConfirm}
-                    className="mt-1 w-full min-h-[40px] rounded-lg border border-soil-dark/20 bg-white px-3 text-sm" />
+                    className="mt-1 w-full min-h-[40px] rounded-lg border border-soil-dark/20 bg-paper px-3 text-sm" />
                   {erased ? (
                     // Said here rather than in an alert box: the last thing this
                     // account sees should still look like the app.
