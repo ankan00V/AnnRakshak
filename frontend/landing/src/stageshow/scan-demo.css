@@ -1,0 +1,208 @@
+/* The scan demo's own look. The colours are AnnRakshak's, taken from the app
+   rather than from the kit's defaults, so the demo sits beside the product
+   instead of looking like a mock-up of it. */
+
+.sd {
+  --sd-leaf-deep: #1f3d2b;
+  --sd-leaf: #3d6b4a;
+  --sd-ochre: #c8862d;
+  --sd-ink: #2b1d12;
+  --sd-cream: #f7f3ec;
+  --sd-line: rgba(43, 29, 18, 0.1);
+}
+
+/* A field of the brand's green behind the phone. The phone runs off the foot
+   of the stage, so there is no air on four sides and no plate under it. */
+.sd-wash {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(61, 107, 74, 0.22), transparent 62%),
+    radial-gradient(90% 70% at 85% 95%, rgba(200, 134, 45, 0.14), transparent 60%);
+}
+
+.sd-phone {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 34px;
+}
+
+/* ---- home ------------------------------------------------------------- */
+
+.sd-home {
+  position: absolute;
+  inset: 0;
+  background: var(--sd-cream);
+  padding: 46px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 260ms ease;
+}
+/* It recedes rather than vanishing: coming back reads as the camera leaving. */
+.sd-home[data-back] { transform: scale(0.965); opacity: 0.55; }
+
+.sd-home__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sd-home__who { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.sd-home__place { font-size: 13.5px; font-weight: 600; color: var(--sd-ink); line-height: 1.2; }
+.sd-home__crop { font-size: 11px; color: rgba(43, 29, 18, 0.58); line-height: 1.2; }
+
+.sd-alert {
+  display: flex;
+  gap: 9px;
+  padding: 11px 12px;
+  border-radius: 14px;
+  background: rgba(200, 134, 45, 0.1);
+  border: 1px solid rgba(200, 134, 45, 0.28);
+}
+.sd-alert__dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--sd-ochre); margin-top: 5px; flex: none;
+}
+.sd-alert__body { display: flex; flex-direction: column; gap: 6px; }
+.sd-alert__title { font-size: 12.5px; font-weight: 600; color: var(--sd-ink); }
+
+.sd-scan {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 16px;
+  border: 0; border-radius: 999px;
+  background: var(--sd-leaf-deep);
+  color: var(--sd-cream);
+  font: inherit; font-size: 14px; font-weight: 600;
+  cursor: pointer;
+}
+.sd-scan__ring {
+  width: 17px; height: 17px; border-radius: 50%;
+  border: 2px solid currentColor; opacity: 0.85; flex: none;
+}
+.sd-scan__label { line-height: 1; }
+
+.sd-rows {
+  display: flex; flex-direction: column; gap: 10px; margin-top: 2px;
+  flex: 1;                     /* reach the foot: no void under the list */
+}
+.sd-row__when { margin-left: auto; }
+.sd-row { display: flex; align-items: center; gap: 10px; }
+.sd-row__thumb {
+  width: 38px; height: 38px; border-radius: 10px; flex: none;
+  background: linear-gradient(135deg, #cfdcc6, #aec4a4);
+}
+.sd-row__text { display: flex; flex-direction: column; gap: 6px; }
+
+/* ---- camera ----------------------------------------------------------- */
+
+.sd-cam {
+  position: absolute;
+  inset: 0;
+  background: #14160f;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transform: translateY(14px);
+  pointer-events: none;
+  transition: opacity 300ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.sd-cam[data-on] { opacity: 1; transform: none; pointer-events: auto; }
+
+/* A farmer holds the phone close. At 68% the blade swam in a black frame,
+   which reads as an empty camera rather than a leaf being examined. */
+.sd-leaf {
+  width: 104%; height: auto; margin-top: -6%;
+  filter: drop-shadow(0 10px 26px rgba(0, 0, 0, 0.45));
+}
+.sd-leaf__lesion { animation: sd-lesion 420ms ease both; }
+@keyframes sd-lesion { from { opacity: 0; } to { opacity: 1; } }
+
+/* The focus frame a camera draws, not a decoration: it says where to point. */
+.sd-cam__grid {
+  position: absolute;
+  inset: 16% 14%;
+  border: 1.5px solid rgba(247, 243, 236, 0.4);
+  border-radius: 12px;
+  mask: linear-gradient(#000 0 0) 0 0/22px 2px no-repeat,
+        linear-gradient(#000 0 0) 100% 0/22px 2px no-repeat,
+        linear-gradient(#000 0 0) 0 100%/22px 2px no-repeat,
+        linear-gradient(#000 0 0) 100% 100%/22px 2px no-repeat,
+        linear-gradient(#000 0 0) 0 0/2px 22px no-repeat,
+        linear-gradient(#000 0 0) 100% 0/2px 22px no-repeat,
+        linear-gradient(#000 0 0) 0 100%/2px 22px no-repeat,
+        linear-gradient(#000 0 0) 100% 100%/2px 22px no-repeat;
+}
+
+.sd-shutter {
+  position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+  width: 56px; height: 56px; border-radius: 50%;
+  background: rgba(247, 243, 236, 0.18);
+  border: 2px solid rgba(247, 243, 236, 0.9);
+  display: grid; place-items: center; cursor: pointer; padding: 0;
+}
+.sd-shutter__ring {
+  width: 42px; height: 42px; border-radius: 50%; background: var(--sd-cream);
+}
+
+.sd-reading {
+  position: absolute; bottom: 34px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-radius: 999px;
+  background: rgba(20, 22, 15, 0.72);
+  color: rgba(247, 243, 236, 0.92);
+  font-size: 12.5px;
+  backdrop-filter: blur(6px);
+}
+.sd-reading__pulse {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--sd-ochre);
+  animation: sd-pulse 900ms ease-in-out infinite;
+}
+@keyframes sd-pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+
+/* ---- the answer ------------------------------------------------------- */
+
+/* A card over the camera rather than a sheet on the phone's chin. The phone
+   is cropped at the foot — that is the framing — so a payoff pinned to the
+   bottom edge is a payoff nobody sees. This sits in the part of the screen
+   that is always in frame. */
+.sd-answer {
+  position: absolute; left: 12px; right: 12px; top: 42%;
+  background: var(--sd-cream);
+  border-radius: 18px;
+  padding: 14px 15px 15px;
+  display: flex; flex-direction: column; gap: 7px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.42);
+}
+.sd-answer__grab { display: none; }
+.sd-answer__name { margin: 0; font-size: 19px; font-weight: 700; color: var(--sd-ink); line-height: 1.15; }
+.sd-answer__sure {
+  margin: 0; display: flex; align-items: baseline; gap: 8px;
+  font-size: 12.5px; color: rgba(43, 29, 18, 0.62);
+}
+/* The gate's own words. The number alone would be a boast; this says the app
+   is above the bar at which it is allowed to speak at all. */
+.sd-answer__gate {
+  font-size: 10.5px; padding: 2px 7px; border-radius: 999px;
+  background: rgba(61, 107, 74, 0.14); color: var(--sd-leaf-deep); font-weight: 600;
+}
+.sd-answer__do {
+  margin: 4px 0 0; display: flex; gap: 8px; align-items: flex-start;
+  font-size: 13px; line-height: 1.4; color: var(--sd-ink);
+}
+.sd-answer__tick {
+  width: 15px; height: 15px; border-radius: 50%; flex: none; margin-top: 2px;
+  background: var(--sd-leaf); position: relative;
+}
+.sd-answer__tick::after {
+  content: ''; position: absolute; left: 4.5px; top: 3.5px;
+  width: 4px; height: 7px; border: solid var(--sd-cream);
+  border-width: 0 1.8px 1.8px 0; transform: rotate(45deg);
+}
+.sd-answer__done {
+  margin-top: 8px; align-self: stretch;
+  padding: 11px; border: 0; border-radius: 12px;
+  background: var(--sd-leaf-deep); color: var(--sd-cream);
+  font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-home, .sd-cam { transition: none; }
+  .sd-leaf__lesion, .sd-reading__pulse { animation: none; }
+}
