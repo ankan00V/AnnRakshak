@@ -251,7 +251,8 @@ def finish(db: Session, kb: KB, farm: Farm, sess: LiveSession, ctx: dict, lang: 
         classified_views=f["classified_views"], verdict=verdict,
         findings={"seen": [{k: v for k, v in x.items() if k not in ("advisory",)} for x in seen_out],
                   "possible": possible_out, "healthy_views": f["healthy_views"],
-                  "other_crop_views": f["other_crop_views"], "answer": f["answer"]},
+                  "other_crop_views": f["other_crop_views"], "answer": f["answer"],
+                  "skipped_views": f["skipped_views"]},
         context={k: ctx[k] for k in ("location", "weather_now", "forecast", "soil", "crop")}
         | {"risks": [{k: r[k] for k in ("target", "level", "trigger", "reason_i18n")} for r in ctx["risks"]]},
         problem_ids=problem_ids, model_version=model_version,

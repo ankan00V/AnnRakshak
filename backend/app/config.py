@@ -264,6 +264,14 @@ Cloudflare publishes other test keys worth knowing while building this:
   2x00000000000000000000AB / 2x0000000000000000000000000000000AA  always fails
   3x00000000000000000000FF                                        always asks"""
 
+#: How many live field calls one worker will carry at once. Every frame of every
+#: call runs the photo model on a worker thread, so beyond a point more callers
+#: buy nothing: each frame waits longer, the coaching falls behind what the
+#: camera is pointed at, and the calls start timing out together. Better to tell
+#: the next caller to try again in a minute than to spoil the calls in progress.
+#: Raise it on a machine with more cores, or where the model runs on a GPU.
+LIVE_MAX_CALLS = int(os.environ.get("ANNRAKSHAK_LIVE_MAX_CALLS") or 12)
+
 OTP_DIGITS = 6
 OTP_TTL_MINUTES = 5
 OTP_MAX_ATTEMPTS = 5
