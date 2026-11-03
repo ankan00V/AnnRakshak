@@ -231,11 +231,17 @@ field — so it is not saved without the farmer confirming it."""
 
 
 @router.patch("/farms/{farm_id}")
-def update_farm(farm_id: int, body: FarmPrefs, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+def update_farm(farm_id: int, body: FarmPrefs, request: Request, db: Session = Depends(get_db),
+                kb: KB = Depends(get_kb)):
     """The farmer's preferred language (the app, the voice, notifications and
     emails all follow it), and the field's own spot once they allow location —
-    everything from the weather to the outbreak radius is read there."""
-    farm = _farm(db, farm_id)
+    everything from the weather to the outbreak radius is read there.
+
+    Changing either of those is working somebody's field, so it takes the same
+    rule as sowing and harvesting: an officer may read a farm, and still may
+    not move it to another district or switch the language its owner is
+    written to in."""
+    farm = _own_farm(db, farm_id, request)
     if body.lang:
         farm.lang = body.lang
     if body.lat is not None and body.lon is not None:

@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from PIL import Image
 from sqlalchemy import func, select
 
-from app import cache, geo, services
+from app import cache, config, geo, services
 from app.db import Base, SessionLocal, engine
 from app.engine import phenology
 from app.engine.weather import Day, Window
@@ -543,11 +543,38 @@ def test_a_far_away_phone_fix_needs_the_farmer_to_confirm_it(client):
 
 
 def test_a_demo_farm_never_moves_to_the_viewers_location(client):
+    """Whoever opened the shared demo is not standing in that field.
+
+    The refusal now comes from the write gate rather than from the location
+    code: changing a shared demo field's language or its spot is editing what
+    the next visitor walks into, so it is refused the same way sowing and
+    harvesting on it are, with the one code the app already understands."""
     with SessionLocal() as db:
-        db.get(Farm, 2).is_demo = True
+        farm = db.get(Farm, 2)
+        farm.is_demo, farm.user_id = True, None   # shared: belongs to nobody
+        before = (farm.lat, farm.lon)
         db.commit()
     r = client.patch("/api/farms/2", json={"lat": 21.181, "lon": 79.661})
-    assert r.status_code == 409 and r.json()["detail"]["code"] == "demo_farm"
+    assert r.status_code == 403 and r.json()["detail"]["code"] == "demo_read_only"
+    with SessionLocal() as db:
+        assert (db.get(Farm, 2).lat, db.get(Farm, 2).lon) == before
+
+
+def test_a_field_is_not_relanguaged_or_relocated_by_somebody_else(client, monkeypatch):
+    """Reading a farm is not writing to it. An officer may open any field in
+    their district; that must not let them move it to another one, or switch
+    the language its owner is written to in."""
+    monkeypatch.setattr(config, "AUTH_ENFORCE", True)
+    with SessionLocal() as db:
+        farm = db.get(Farm, 2)
+        farm.is_demo, farm.lang = False, "mr"   # a real field, with a holder
+        db.commit()
+    # 401 from the router's own gate, 403/404 from the farm's: refused either
+    # way, and the field is untouched. Which of the two answers first is not
+    # the point — that neither lets the write through is.
+    assert client.patch("/api/farms/2", json={"lang": "ta"}).status_code in (401, 403, 404)
+    with SessionLocal() as db:
+        assert db.get(Farm, 2).lang == "mr"
 
 
 # --------------------------------------------------------------------------
