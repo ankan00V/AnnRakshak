@@ -7,7 +7,7 @@ import { useAuth } from '../../auth/AuthContext'
 import { useAsync } from '../../lib/hooks'
 import { MAIN, SIDE, SPLIT } from '../../ui/layout'
 import { Card, ErrorBox, Pill } from '../../ui/kit'
-import { OutlookPanel, PageHead, PanelBone } from '../panels'
+import { OutlookPanel, PageHead, Panel, PanelBone } from '../panels'
 
 // Every language the app sends in. This list was three, so an officer could
 // check the Marathi, Hindi and English of what they were about to send and had
@@ -249,7 +249,8 @@ export default function Advisories() {
       <div className={`space-y-5 ${SIDE}`}>
         <Card className="p-4 md:p-5">
           <h2 className="font-semibold">Issued before</h2>
-          {!history.data ? <div className="mt-3"><PanelBone rows={4} /></div>
+          {history.error && !history.data ? <div className="mt-3"><ErrorBox error={history.error} onRetry={history.reload} /></div>
+            : !history.data ? <div className="mt-3"><PanelBone rows={4} /></div>
             : history.data.length === 0 ? (
               <p className="mt-3 text-sm text-soil-dark/70">Nothing has been issued from this office yet.</p>
             ) : (
@@ -287,7 +288,7 @@ export default function Advisories() {
             )}
         </Card>
 
-        {outlook.data ? <OutlookPanel rows={outlook.data} /> : <PanelBone rows={6} />}
+        <Panel q={outlook} rows={6}>{(rows) => <OutlookPanel rows={rows} />}</Panel>
       </div>
       </div>
     </>
