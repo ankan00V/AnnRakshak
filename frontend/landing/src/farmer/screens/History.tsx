@@ -54,7 +54,7 @@ export function ProblemDetail() {
             {t('expertVerdict')} — {d.expert.expert_name}
           </p>
           {d.expert.notes && <p className="mt-1 text-sm">{d.expert.notes}</p>}
-          {d.expert.referred_to_lab && <Pill tone="sky" className="mt-2">Lab referral</Pill>}
+          {d.expert.referred_to_lab && <Pill tone="sky" className="mt-2">{t('sentToLab')}</Pill>}
         </div>
       )}
       {d.case && d.case.status === 'open' && (

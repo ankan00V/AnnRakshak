@@ -266,11 +266,12 @@ export default function InTheField() {
       <div className="max-w-6xl mx-auto px-6 md:px-12 py-14 sm:py-20 md:py-28">
         <Reveal className="max-w-3xl">
           <h2 className="font-instrument-serif text-[2rem] sm:text-5xl md:text-[3.5rem] leading-[1.05] text-balance">
-            On the ground, all season.
+            By the time you can see it, it has already spread.
           </h2>
           <p className="mt-4 max-w-2xl text-sm md:text-base font-light leading-relaxed text-cream/75 text-pretty">
-            Real fields, filmed by the team. Over each one, the screen a farmer or an officer sees
-            at that moment of the season.
+            A leaf disease spreads for 3–7 days before anyone notices. So AnnRakshak watches each
+            field from the day it is sown. Below is one rice field’s season, filmed by the team, with
+            the screen the farmer or the officer sees at each turn.
           </p>
         </Reveal>
 

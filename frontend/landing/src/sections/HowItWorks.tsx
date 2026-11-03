@@ -1,14 +1,30 @@
-import { BellRing, Camera, HelpCircle, Sprout, UserCheck } from 'lucide-react'
 import Reveal from '../ui/Reveal'
+import PhoneShot from '../ui/PhoneShot'
 
-/** Five steps, each one line a farmer can read at a glance. The order is the
- *  point, so these are the one numbered sequence on the page. */
+/** How it works, shown with the app itself: three real screens, in order.
+ *  These are the one numbered sequence on the page, because the order is
+ *  what a farmer does. What used to be a separate Features section — where
+ *  the model looked, the safest fix first, what not to do — is visible on
+ *  these screens, so it is shown here instead of described somewhere else. */
 const STEPS = [
-  { icon: BellRing, label: 'Get a warning', line: 'It tells you what to check, before the damage shows.' },
-  { icon: Camera, label: 'Take a photo', line: 'It names the disease or pest on the leaf.' },
-  { icon: HelpCircle, label: 'Not sure?', line: 'It asks you one question, or sends it to an expert.' },
-  { icon: Sprout, label: 'Treat it', line: 'The safest fix first, with the right dose for your field.' },
-  { icon: UserCheck, label: 'Check back', line: 'Four days later it asks if the crop is better.' },
+  {
+    src: '/demo/scan-en.webp',
+    alt: 'The scan screen: photograph a sick plant, with a frame to fill and a live field check option',
+    title: 'Take a photo',
+    line: 'Point the camera at the sick leaf, in daylight. No typing, no forms.',
+  },
+  {
+    src: '/demo/result-en-0.webp',
+    alt: 'The answer: a rice panicle with the Grad-CAM heat map over it, named False smut, 98% sure',
+    title: 'See what it is',
+    line: 'It names the disease, marks where it looked, and says how sure it is.',
+  },
+  {
+    src: '/demo/result-en-1.webp',
+    alt: 'The treatment: what not to do, with a listen button, then the safest field practice first',
+    title: 'Treat it safely',
+    line: 'What not to do, then the safest step first. Chemicals only if it keeps spreading.',
+  },
 ]
 
 /** What happened to 126 held-out ICAR photos the model had never seen. */
@@ -24,34 +40,36 @@ export default function HowItWorks() {
       <div className="max-w-6xl mx-auto px-6 md:px-12 py-14 sm:py-20 md:py-24">
         <Reveal className="max-w-3xl">
           <h2 className="font-instrument-serif text-[2rem] sm:text-5xl md:text-[3.5rem] leading-[1.05] text-balance">
-            From a warning to a crop that’s better.
+            From a photo to a safe treatment.
           </h2>
         </Reveal>
 
-        <ol className="mt-10 sm:mt-14 grid gap-6 md:grid-cols-5 md:gap-6">
-          {STEPS.map(({ icon: Icon, label, line }, i) => (
-            <Reveal key={label} delay={i * 70}>
-              <li className="relative flex items-start gap-4 md:block">
-                {i < STEPS.length - 1 && (
-                  <span aria-hidden className="hidden md:block absolute top-6 left-14 right-[-1.5rem] h-px bg-cream/15" />
-                )}
-                <span className="relative flex items-center justify-center w-12 h-12 shrink-0 rounded-full bg-cream/[0.08] ring-1 ring-cream/15">
-                  <Icon className="w-5 h-5 text-ochre" aria-hidden />
-                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-ochre text-[11px] font-semibold text-soil-dark">
-                    {i + 1}
-                  </span>
-                </span>
-                <div className="md:mt-5">
-                  <h3 className="text-base md:text-lg font-medium leading-snug">{label}</h3>
-                  <p className="mt-1 text-sm font-light leading-relaxed text-cream/75 text-pretty">{line}</p>
+        {/* Three screens. On a phone they are a row you swipe, so three tall
+            screenshots do not stack into three screens of scrolling. */}
+        <ol
+          id="features"
+          className="scroll-mt-24 mt-10 sm:mt-14 -mx-6 px-6 md:mx-0 md:px-0 scroll-px-6 md:scroll-px-0
+                     flex gap-5 overflow-x-auto snap-x snap-mandatory overscroll-x-contain
+                     [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
+                     md:grid md:grid-cols-3 md:gap-10 lg:gap-14 md:overflow-visible"
+        >
+          {STEPS.map(({ src, alt, title, line }, i) => (
+            <li key={title} className="snap-start shrink-0 w-[68%] sm:w-[44%] md:w-auto">
+              <Reveal delay={i * 90}>
+                <PhoneShot src={src} alt={alt} className="mx-auto max-w-[280px]" />
+                <div className="mx-auto mt-6 max-w-[280px]">
+                  <p className="flex items-baseline gap-2.5">
+                    <span className="font-instrument-serif text-2xl leading-none text-ochre">{i + 1}</span>
+                    <span className="text-lg font-medium leading-snug">{title}</span>
+                  </p>
+                  <p className="mt-1.5 text-sm font-light leading-relaxed text-cream/75 text-pretty">{line}</p>
                 </div>
-              </li>
-            </Reveal>
+              </Reveal>
+            </li>
           ))}
         </ol>
 
-        {/* The honesty of it, in a farmer's words: what happened to photos the
-            model had never seen. The thresholds behind it belong in the docs. */}
+        {/* The honesty of it, in a farmer's words. */}
         <Reveal className="mt-12 sm:mt-16 md:mt-20">
           <div className="grid gap-6 border-t border-cream/15 pt-8 md:grid-cols-12 md:gap-10">
             <h3 className="md:col-span-5 font-instrument-serif text-[1.75rem] sm:text-4xl leading-[1.08] text-balance">
