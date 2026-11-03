@@ -11,6 +11,11 @@ import { Bone, BoneLines, Card, ErrorBox, Loading, Pill } from '../ui/kit'
 
 export const pct = (n: number | null | undefined, d = 0) => (n == null ? '—' : `${(n * 100).toFixed(d)}%`)
 
+/** "1 farm", "2 farms". The console counts farms, cases and officers all over,
+ *  and a district screen that says "1 farms" reads as unfinished to the person
+ *  whose district it is. */
+export const many = (n: number, one: string, more = `${one}s`) => `${n} ${n === 1 ? one : more}`
+
 export function OfficerLoadPanel() {
   const { me } = useAuth()
   // Who is carrying what is the office's view. An ordinary officer is not
@@ -64,7 +69,7 @@ export function OfficerLoadPanel() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-semibold flex items-center gap-2"><Users className="w-4 h-4 text-leaf" /> District officers</h2>
         <span className="text-xs text-soil-dark/60">
-          {officers.length} officers · {districts} districts · {w.data.open_total} open
+          {many(officers.length, 'officer')} · {many(districts, 'district')} · {w.data.open_total} open
         </span>
       </div>
 

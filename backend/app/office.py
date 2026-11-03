@@ -437,8 +437,8 @@ def indent(db: Session, kb: KB, *, demo: bool, days: int = 7, lang: str = "en") 
             # Tricho-cards are quoted per acre; the rest is a count of farms to
             # supply. Both are a starting quantity for the office, not a bill.
             "suggested": [{"input": i["short"], "institute": _institute_name(i),
-                           "quantity": f"{round(g['acres'])} acre-sets" if "tricho" in i["short"].lower()
-                           else f"{len(g['farm_ids'])} units",
+                           "quantity": (f"{round(g['acres'])} acre-set" + ("" if round(g["acres"]) == 1 else "s")) if "tricho" in i["short"].lower()
+                           else f"{len(g['farm_ids'])} unit" + ("" if len(g["farm_ids"]) == 1 else "s"),
                            "order_by": (date.today() + timedelta(days=LEAD_DAYS)).isoformat()
                            if "tricho" in i["short"].lower() else None}
                           for i in inputs],
