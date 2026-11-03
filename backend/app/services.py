@@ -1361,7 +1361,19 @@ def propagate(db: Session, kb: KB, origin: Farm, target: str, case_id: int, toda
     rule = kb.rules[target]
     t = kb.targets[target]
     issued = 0
-    for farm in db.scalars(select(Farm).where(Farm.crop == origin.crop, Farm.id != origin.id)).all():
+    # The neighbours this warns are every farm of the crop within the radius —
+    # so the query has to carry the two lines the rest of the app keeps. A
+    # demonstration field and a real one are not neighbours whatever the
+    # distance between them: without this a visitor resolving a demo case put
+    # a high alert on real farmers' fields, and a real case warned the demo
+    # fields the next visitor walks into. And a field whose crop is already off
+    # has nothing to inspect, so warning it is noise its owner learns to ignore.
+    for farm in db.scalars(select(Farm).where(
+        Farm.crop == origin.crop,
+        Farm.id != origin.id,
+        Farm.is_demo.is_(bool(origin.is_demo)),
+        Farm.status == "growing",
+    )).all():
         km = haversine_km(origin.lat, origin.lon, farm.lat, farm.lon)
         if km > SPREAD_RADIUS_KM:
             continue

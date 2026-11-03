@@ -264,6 +264,41 @@ def test_a_failed_push_does_not_undo_a_committed_verdict(client, monkeypatch):
     assert r.status_code == 200 and r.json()["final_label"] == "rice_brown_spot"
 
 
+def test_a_spread_warning_does_not_cross_the_demo_line_or_reach_a_cleared_field(client):
+    """propagate() warns every farm of the crop within the radius. Without the
+    two lines the rest of the app keeps, a real case warned the demonstration
+    fields the next visitor walks into (and a demo case warned real farmers) —
+    and a field whose crop is already off was told to go and inspect it."""
+    from app.models import Alert, Farm
+
+    with SessionLocal() as db:
+        origin = db.get(Farm, 1)   # a real field, so it can be diagnosed on
+        # A demonstration field and a harvested one, both next door, same crop.
+        made = {}
+        for tag, is_demo, status in (("demo", True, "growing"), ("off", False, "harvested")):
+            f = Farm(farmer_name=f"Neighbour {tag}", phone=f"90000000{len(made)}", lang="en",
+                     crop=origin.crop, sowing_date=origin.sowing_date, date_basis=origin.date_basis,
+                     state=origin.state, district=origin.district, village=origin.village,
+                     lat=origin.lat, lon=origin.lon, area_acres=1.0,
+                     is_demo=is_demo, status=status)
+            db.add(f)
+            db.flush()
+            made[tag] = f.id
+        db.commit()
+        before = {a.id for a in db.query(Alert).all()}
+
+    _officers(2)
+    case_id = diagnose(client, 1, "unsure")["case"]["id"]
+    client.post(f"/api/cases/{case_id}/resolve", json={
+        "verdict": "confirmed", "final_label": "rice_brown_spot", "expert_name": "Dr. Kale"})
+
+    with SessionLocal() as db:
+        fresh = [a for a in db.query(Alert).all() if a.id not in before and a.trigger == "spread"]
+        warned = {a.farm_id for a in fresh}
+    assert made["demo"] not in warned, "a real case warned a demonstration field"
+    assert made["off"] not in warned, "a field whose crop is already off was told to inspect it"
+
+
 def test_a_healthy_verdict_is_shown_to_the_farmer_not_left_as_a_dash(client):
     """"healthy" and "something else" are not knowledge-base labels, so
     resolving a case to one clears problem.target — which left the farmer's own
