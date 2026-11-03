@@ -589,7 +589,9 @@ export default function Live() {
       )}
 
       {/* The call: full screen over the app chrome while it runs. */}
-      <div className={live ? 'fixed inset-0 z-[60] bg-black text-white' : 'hidden'}>
+      {/* Above the tour's own z-[60]: while a call is running nothing belongs
+          over the camera, whichever mounted first. */}
+      <div className={live ? 'fixed inset-0 z-[70] bg-black text-white' : 'hidden'}>
         <video ref={videoRef} playsInline muted
           className={`absolute inset-0 w-full h-full ${source === 'video' ? 'object-contain' : 'object-cover'}`} />
         <canvas ref={canvasRef} className="hidden" />
