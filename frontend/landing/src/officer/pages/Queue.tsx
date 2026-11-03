@@ -57,6 +57,9 @@ export default function Queue() {
     crop: params.get('crop') ?? undefined,
     target: params.get('target') ?? undefined,
     overdue: params.get('overdue') === '1',
+    // Without this the "Set aside" button wrote a URL parameter nobody read,
+    // so a snoozed case could be hidden and never looked at again.
+    snoozed: params.get('snoozed') === '1',
     q_text: params.get('q') ?? undefined,
     sort: (params.get('sort') as CaseQuery['sort']) ?? 'oldest',
   }), [params])
@@ -134,7 +137,7 @@ export default function Queue() {
     }
   }, [list, say, complain])
 
-  const activeFilters = ['district', 'crop', 'target', 'overdue', 'q'].filter((k) => params.get(k))
+  const activeFilters = ['district', 'crop', 'target', 'overdue', 'snoozed', 'q'].filter((k) => params.get(k))
 
   // A queue that never changes while you watch it looks broken. Ask quietly,
   // only while the tab is in front of somebody.

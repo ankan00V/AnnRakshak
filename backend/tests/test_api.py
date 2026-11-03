@@ -186,6 +186,34 @@ def test_a_resolved_case_cannot_be_handed_on(client):
     assert client.post(f"/api/cases/{case_id}/reassign", json={}).status_code == 409
 
 
+def test_an_advisory_is_confined_to_the_districts_an_officer_covers(monkeypatch):
+    """An advisory is a message to every farm of a crop in a district. Nothing
+    compared the list in the request against the patch the officer was verified
+    for — and an empty list meant everywhere, not everywhere-of-mine."""
+    import pytest
+    from fastapi import HTTPException
+
+    from app.routers import officials as o
+
+    monkeypatch.setattr(config, "AUTH_ENFORCE", True)
+    monkeypatch.setattr(o, "_me", lambda request, db: object())
+    monkeypatch.setattr(o, "_mine", lambda request, db: ["Bhandara", "Nagpur"])
+
+    assert o._within_reach(None, None, ["Bhandara"]) == ["Bhandara"]
+    assert o._within_reach(None, None, []) == ["Bhandara", "Nagpur"]   # mine, not everywhere
+
+    with pytest.raises(HTTPException) as e:
+        o._within_reach(None, None, ["Latur"])
+    assert e.value.status_code == 403 and "Latur" in e.value.detail
+
+    # An officer with no districts has no patch to address, which is not the
+    # same as having all of them.
+    monkeypatch.setattr(o, "_mine", lambda request, db: [])
+    with pytest.raises(HTTPException) as e:
+        o._within_reach(None, None, [])
+    assert e.value.status_code == 403
+
+
 def test_the_verdict_reaches_the_farmer_who_asked_for_it(client, monkeypatch):
     """propagate() warns the farms around this one and excludes the origin by
     design, which left the farmer who actually sent the photograph as the only

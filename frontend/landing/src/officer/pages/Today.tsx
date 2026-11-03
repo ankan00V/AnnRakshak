@@ -155,14 +155,14 @@ export default function Today() {
       )}
 
       {summary.data ? <Kpis s={summary.data} /> : !summary.error && <KpisSkeleton />}
-      <TrendStrip />
+      <TrendStrip supervisor={supervisor} />
     </>
   )
 }
 
 /** A number with no direction is a poster. This week against the last, and the
  *  fortnight behind it. */
-function TrendStrip() {
+function TrendStrip({ supervisor }: { supervisor: boolean }) {
   const t = useAsync(() => api.trends(), [])
   if (!t.data) return <PanelBone rows={3} />
   const items = [
@@ -177,10 +177,16 @@ function TrendStrip() {
           <h2 className="font-semibold">This week against last</h2>
           <p className="text-xs text-soil-dark/60 mt-0.5">The fortnight to date, a bar a day.</p>
         </div>
-        <a href="/api/officials/report" download
-          className="flex items-center gap-1.5 rounded-full border border-soil-dark/20 px-3 py-1.5 text-xs font-medium hover:bg-soil-dark/5">
-          <Download className="w-3.5 h-3.5" /> The week as a file
-        </a>
+        {/* The endpoint is supervisor-only. Offering the button to everyone
+            meant most officers pressed it and were handed a 403. */}
+        {supervisor ? (
+          <a href="/api/officials/report" download
+            className="flex items-center gap-1.5 rounded-full border border-soil-dark/20 px-3 py-1.5 text-xs font-medium hover:bg-soil-dark/5">
+            <Download className="w-3.5 h-3.5" /> The week as a file
+          </a>
+        ) : (
+          <p className="text-xs text-soil-dark/50">Your supervisor files the week.</p>
+        )}
       </div>
       <div className="mt-4 grid gap-5 sm:grid-cols-3">
         {items.map(({ label, s }) => {
