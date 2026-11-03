@@ -885,7 +885,7 @@ export interface LiveEvent {
   /** 'verdict': an expert has answered a case this farm sent. It is the
    *  answer to a question the farmer asked, not a forecast, so it arrives
    *  whatever the hour and points at the verdict itself. */
-  type: 'notice' | 'alert' | 'verdict'
+  type: 'notice' | 'alert' | 'verdict' | 'followup'
   id: number
   severity: Severity
   title: string

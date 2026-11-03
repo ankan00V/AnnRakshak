@@ -38,7 +38,7 @@ from app.config import (
 )
 from app.engine import agromet, risk
 from app.kb import KB, tr, trl
-from app.models import Alert, EmailLog, Farm, Notice, Problem, PushSubscription, SprayLog, User
+from app.models import Alert, EmailLog, Farm, FollowUp, Notice, Problem, PushSubscription, SprayLog, User
 
 LEVEL_LABEL = {
     "high": {"en": "High risk", "hi": "अधिक जोखिम", "mr": "जास्त धोका"},
@@ -241,6 +241,66 @@ def verdict_reached(db: Session, kb: KB, farm: Farm, problem_id: int, target: st
     broker.publish(farm.id, {"type": "verdict", "id": problem_id, "severity": "info",
                              "title": title, "body": body, "url": url})
     return push(db, farm.id, _payload(title, body, url, f"verdict-{problem_id}", "info"))
+
+
+FOLLOWUP_TEXT = {
+    "title": {
+        "en": "How is your crop now?", "hi": "अब आपकी फसल कैसी है?",
+        "mr": "आता तुमचे पीक कसे आहे?", "bn": "এখন আপনার ফসল কেমন আছে?",
+        "ta": "இப்போது உங்கள் பயிர் எப்படி இருக்கிறது?", "te": "ఇప్పుడు మీ పంట ఎలా ఉంది?",
+        "kn": "ಈಗ ನಿಮ್ಮ ಬೆಳೆ ಹೇಗಿದೆ?", "ml": "ഇപ്പോൾ നിങ്ങളുടെ വിള എങ്ങനെയുണ്ട്?",
+        "gu": "હવે તમારો પાક કેવો છે?", "pa": "ਹੁਣ ਤੁਹਾਡੀ ਫ਼ਸਲ ਕਿਵੇਂ ਹੈ?",
+    },
+    "named": {
+        "en": "{name}: tell us whether it is better, the same or worse.",
+        "hi": "{name}: बताइए कि यह बेहतर है, वैसा ही है या बिगड़ा है।",
+        "mr": "{name}: सांगा ते बरे आहे, तसेच आहे की बिघडले आहे.",
+        "bn": "{name}: জানান এটি ভালো, একই রকম না খারাপ হয়েছে।",
+        "ta": "{name}: இது நன்றாக உள்ளதா, அப்படியே உள்ளதா, மோசமாகிவிட்டதா என்று சொல்லுங்கள்.",
+        "te": "{name}: ఇది మెరుగ్గా ఉందా, అలాగే ఉందా, లేక దిగజారిందా చెప్పండి.",
+        "kn": "{name}: ಇದು ಸುಧಾರಿಸಿದೆಯೇ, ಹಾಗೆಯೇ ಇದೆಯೇ, ಅಥವಾ ಹದಗೆಟ್ಟಿದೆಯೇ ಹೇಳಿ.",
+        "ml": "{name}: ഇത് ഭേദമായോ, അതുപോലെയാണോ, അതോ വഷളായോ എന്ന് പറയുക.",
+        "gu": "{name}: જણાવો કે તે સારું છે, એવું જ છે કે બગડ્યું છે.",
+        "pa": "{name}: ਦੱਸੋ ਕਿ ਇਹ ਠੀਕ ਹੈ, ਉਵੇਂ ਹੀ ਹੈ ਜਾਂ ਵਿਗੜ ਗਿਆ ਹੈ।",
+    },
+}
+
+
+def followup_reminders(db: Session, kb: KB, farm: Farm, now: datetime) -> int:
+    """Ask the farmer how the crop is, on the day the follow-up falls due.
+
+    A follow-up was scheduled, shown on the home screen, and otherwise left to
+    the farmer to remember. Which means "it got worse" — the answer that
+    re-escalates to an expert — only ever came from someone who happened to
+    open the app on the right day. The check that is supposed to catch a
+    treatment that did not work was the one nobody was asked to make.
+
+    Reminded once, marked, and not again. Quiet hours are respected: this is a
+    question about a crop, not a warning about weather coming tonight.
+    """
+    if quiet(now):
+        return 0
+    due = db.scalars(
+        select(FollowUp).join(Problem, Problem.id == FollowUp.problem_id).where(
+            Problem.farm_id == farm.id,
+            FollowUp.response.is_(None),
+            FollowUp.reminded_at.is_(None),
+            FollowUp.due_on <= now.date(),
+        )).all()
+    sent = 0
+    for fu in due:
+        problem = db.get(Problem, fu.problem_id)
+        target = problem.target if problem else None
+        name = tr(kb.targets[target]["names"], farm.lang) if target and target in kb.targets else ""
+        body = (tr(FOLLOWUP_TEXT["named"], farm.lang).replace("{name}", name) if name
+                else tr(FOLLOWUP_TEXT["title"], farm.lang))
+        title, url = tr(FOLLOWUP_TEXT["title"], farm.lang), f"/app/history/{fu.problem_id}"
+        broker.publish(farm.id, {"type": "followup", "id": fu.id, "severity": "info",
+                                 "title": title, "body": body, "url": url})
+        push(db, farm.id, _payload(title, body, url, f"followup-{fu.id}", "info"))
+        fu.reminded_at = now
+        sent += 1
+    return sent
 
 
 def deliver_push(db: Session, kb: KB, farm: Farm, now: datetime) -> int:

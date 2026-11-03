@@ -69,6 +69,7 @@ ADDED_COLUMNS = {
              "snoozed_until": "DATETIME", "response_due_at": "DATETIME",
              "handovers": "INTEGER DEFAULT 0", "passed_over": "JSON"},
     "problem": {"season_no": "INTEGER DEFAULT 1"},
+    "followup": {"reminded_at": "DATETIME"},
     "trap_reading": {"season_no": "INTEGER DEFAULT 1"},
     "live_scan": {"season_no": "INTEGER DEFAULT 1"},
     "spray_log": {"season_no": "INTEGER DEFAULT 1"},

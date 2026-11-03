@@ -110,6 +110,9 @@ def farm_cycle(db: Session, kb: KB, farm: Farm, now: datetime, fetch=agroweather
     out["alerts"] += len(new_alerts)
     notify.publish_new(kb, farm, new, list(new_alerts), now)
     out["pushed"] += notify.deliver_push(db, kb, farm, now)
+    # The day-4 check on a treatment that was advised. Without this it was only
+    # ever made by a farmer who happened to open the app on the right day.
+    out["followups"] += notify.followup_reminders(db, kb, farm, now)
     if bundle and farm.email:
         if notify.email_alerts(db, kb, farm, bundle, now):
             out["alert_emails"] += 1

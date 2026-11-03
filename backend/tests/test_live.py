@@ -55,7 +55,12 @@ def test_the_call_speaks_every_language_the_app_offers():
     catches that but this."""
     from app.engine.livescan import HINTS, TEXT
     from app.i18n import LANGS
-    for name, table in (("TEXT", TEXT), ("HINTS", HINTS)):
+    from app.notify import FOLLOWUP_TEXT, VERDICT_TEXT
+    for name, table in (("TEXT", TEXT), ("HINTS", HINTS),
+                        # The push notifications are the same problem one step
+                        # further out: nobody sees an English fallback land on
+                        # a phone, so nothing but this catches a missing one.
+                        ("VERDICT_TEXT", VERDICT_TEXT), ("FOLLOWUP_TEXT", FOLLOWUP_TEXT)):
         for key, said in table.items():
             missing = [lg for lg in LANGS if not said.get(lg, "").strip()]
             assert not missing, f"{name}[{key}] does not speak {missing}"

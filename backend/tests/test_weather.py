@@ -259,6 +259,45 @@ def run(b, now=NOW):
     return watch.cycle(now=now, fetch=lambda lat, lon: b)
 
 
+def test_the_day_four_check_is_actually_asked(world):
+    """A follow-up was scheduled, shown on the home screen, and otherwise left
+    to the farmer to remember. So "it got worse" — the answer that re-escalates
+    to an expert — only ever came from someone who happened to open the app on
+    the right day. The check meant to catch a treatment that did not work was
+    the one nobody was asked to make."""
+    from app.models import FollowUp, Problem
+
+    with SessionLocal() as db:
+        problem = Problem(farm_id=1, target="rice_brown_spot")
+        db.add(problem)
+        db.flush()
+        db.add(FollowUp(problem_id=problem.id, due_on=NOW.date()))
+        db.commit()
+
+    b = bundle()
+    first = run(b)
+    assert first.get("followups", 0) >= 1, "nobody was asked how the crop is"
+
+    again = run(b)
+    assert again.get("followups", 0) == 0, "asked twice for the same follow-up"
+
+    with SessionLocal() as db:
+        fu = db.query(FollowUp).order_by(FollowUp.id.desc()).first()
+        assert fu.reminded_at is not None
+
+
+def test_a_follow_up_already_answered_is_not_asked_again(world):
+    from app.models import FollowUp, Problem
+
+    with SessionLocal() as db:
+        problem = Problem(farm_id=1, target="rice_brown_spot")
+        db.add(problem)
+        db.flush()
+        db.add(FollowUp(problem_id=problem.id, due_on=NOW.date(), response="improved"))
+        db.commit()
+    assert run(bundle()).get("followups", 0) == 0
+
+
 def test_watch_issues_each_notice_once(world):
     b = bundle(hour=lambda t, row: (storm(t, row), humid(t, row)))
     first = run(b)
