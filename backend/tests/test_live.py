@@ -56,7 +56,8 @@ def test_the_call_speaks_every_language_the_app_offers():
     from app.engine.livescan import HINTS, TEXT
     from app.i18n import LANGS
     from app.notify import FOLLOWUP_TEXT, VERDICT_TEXT
-    for name, table in (("TEXT", TEXT), ("HINTS", HINTS),
+    from app.services import VERDICT_NAMES
+    for name, table in (("TEXT", TEXT), ("HINTS", HINTS), ("VERDICT_NAMES", VERDICT_NAMES),
                         # The push notifications are the same problem one step
                         # further out: nobody sees an English fallback land on
                         # a phone, so nothing but this catches a missing one.

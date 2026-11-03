@@ -264,6 +264,23 @@ def test_a_failed_push_does_not_undo_a_committed_verdict(client, monkeypatch):
     assert r.status_code == 200 and r.json()["final_label"] == "rice_brown_spot"
 
 
+def test_a_healthy_verdict_is_shown_to_the_farmer_not_left_as_a_dash(client):
+    """"healthy" and "something else" are not knowledge-base labels, so
+    resolving a case to one clears problem.target — which left the farmer's own
+    history showing a dash. "Your crop is fine" is the most reassuring thing
+    this app can say and it was the one verdict rendered as nothing."""
+    _officers(2)
+    case_id = diagnose(client, 1, "unsure")["case"]["id"]
+    client.post(f"/api/cases/{case_id}/resolve", json={
+        "verdict": "confirmed", "final_label": "healthy", "expert_name": "Dr. Kale"})
+
+    home = client.get("/api/farms/1/home?lang=en").json()
+    rows = [p for p in home["problems"] if p["target"] is None]
+    assert rows, "the resolved problem should be in the farmer's history"
+    assert rows[0]["name"], "the farmer is shown a dash where the verdict should be"
+    assert "healthy" in rows[0]["name"].lower()
+
+
 def test_expert_can_record_a_healthy_plant(client):
     """The model saw a disease; the officer looked and the crop is fine."""
     _officers(2)

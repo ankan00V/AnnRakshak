@@ -1085,7 +1085,11 @@ def _problem_view(db: Session, kb: KB, problem: Problem, lang: str, last_diag, a
         "severity": problem.severity,
         "opened_at": problem.opened_at.isoformat() if problem.opened_at else None,
         "target": target,
-        "name": tr(kb.targets[target]["names"], lang) if target in kb.targets else None,
+        # An expert's "healthy" or "something else" clears problem.target,
+        # because neither is a label the rest of the app can act on. The farmer
+        # is still owed the answer.
+        "name": (tr(kb.targets[target]["names"], lang) if target in kb.targets
+                 else verdict_name(conf.final_label, lang) if conf else None),
         "image_url": _image_url(last_diag.image_path) if last_diag else None,
         "gate_outcome": last_diag.gate_outcome if last_diag else None,
         "gate_reason": last_diag.gate_reason if last_diag else None,
@@ -1097,6 +1101,8 @@ def _problem_view(db: Session, kb: KB, problem: Problem, lang: str, last_diag, a
         "case": case_brief(db, case) if case else None,
         "expert": {
             "verdict": conf.verdict, "final_label": conf.final_label, "expert_name": conf.expert_name,
+            "final_name": (tr(kb.targets[conf.final_label]["names"], lang)
+                           if conf.final_label in kb.targets else verdict_name(conf.final_label, lang)),
             "notes": translate_note(conf.notes, lang)[0] if conf.notes else None,
             "notes_translated": translate_note(conf.notes, lang)[1] if conf.notes else False,
             "referred_to_lab": conf.referred_to_lab,
@@ -1245,6 +1251,33 @@ their notes; the farmer is told a person looked and what they wrote. Nothing is
 invented: with no authored advisory for it, the app offers none."""
 
 SPECIAL_VERDICTS = (HEALTHY_VERDICT, OTHER_VERDICT)
+
+#: What an expert's two non-disease verdicts are called, for the farmer.
+#: Neither is a knowledge-base label, so problem.target is cleared when one is
+#: recorded — which left the farmer's own history showing a dash where the
+#: answer should be. "Your crop is fine" is the most reassuring thing this app
+#: can say, and it was the one verdict rendered as nothing at all.
+VERDICT_NAMES = {
+    HEALTHY_VERDICT: {
+        "en": "Crop is healthy", "hi": "फसल ठीक है", "mr": "पीक ठीक आहे",
+        "bn": "ফসল ঠিক আছে", "ta": "பயிர் நன்றாக உள்ளது", "te": "పంట బాగుంది",
+        "kn": "ಬೆಳೆ ಚೆನ್ನಾಗಿದೆ", "ml": "വിള കുഴപ്പമില്ല", "gu": "પાક સારો છે",
+        "pa": "ਫ਼ਸਲ ਠੀਕ ਹੈ",
+    },
+    OTHER_VERDICT: {
+        "en": "Something else", "hi": "कुछ और", "mr": "दुसरे काहीतरी",
+        "bn": "অন্য কিছু", "ta": "வேறு ஏதோ", "te": "ఇంకేదో",
+        "kn": "ಬೇರೆ ಏನೋ", "ml": "മറ്റെന്തോ", "gu": "બીજું કંઈક",
+        "pa": "ਕੁਝ ਹੋਰ",
+    },
+}
+
+
+def verdict_name(final_label: str | None, lang: str) -> str | None:
+    """The farmer-facing name of a verdict that is not a disease."""
+    table = VERDICT_NAMES.get(final_label or "")
+    return tr(table, lang) if table else None
+
 
 
 def resolve_case(
