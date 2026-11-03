@@ -457,6 +457,7 @@ const en = {
   loading: 'Loading…',
   offline: 'Cannot reach the server. Check your connection.',
   retry: 'Retry',
+  notSaved: 'That did not save. Try again.',
   acres: 'acres',
 
   // Sign-in and sign-up
@@ -1104,6 +1105,7 @@ const hi: Partial<Record<Key, string>> = {
   loading: 'लोड हो रहा है…',
   offline: 'सर्वर से संपर्क नहीं। कनेक्शन जाँचें।',
   retry: 'फिर से',
+  notSaved: 'यह सहेजा नहीं गया। फिर कोशिश कीजिए।',
   acres: 'एकड़',
 
   // Sign-in and sign-up
@@ -1749,6 +1751,7 @@ const mr: Partial<Record<Key, string>> = {
   loading: 'लोड होत आहे…',
   offline: 'सर्व्हरशी संपर्क होत नाही. कनेक्शन तपासा.',
   retry: 'पुन्हा',
+  notSaved: 'हे जतन झाले नाही. पुन्हा प्रयत्न करा.',
   acres: 'एकर',
 
   // Sign-in and sign-up

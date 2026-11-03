@@ -322,6 +322,12 @@ function FollowUp({ id, name, onDone, row = false }: { id: number; name: string 
         setMsg(out.message)
         setTimeout(onDone, 2500)
       } else onDone()
+    } catch {
+      // "It got worse" carries a photo and the farmer's own words to a district
+      // officer. Losing it without a word is the worst of the three to lose.
+      // The slot it lands in is already ember, and onDone is NOT called: the
+      // card stays, with the buttons live.
+      setMsg(t('notSaved'))
     } finally {
       setBusy(null)
     }

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Bug, CalendarClock, CheckCircle2, CloudRain, Eye, Loader2, Radar, Search } from 'lucide-react'
+import { AlertTriangle, Bug, CalendarClock, CheckCircle2, CloudRain, Eye, Loader2, Radar, Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../api/client'
 import ReportSheet from './ReportSheet'
@@ -28,6 +28,7 @@ export default function AlertCard({ alert, onDone }: { alert: AlertView; onDone:
   const navigate = useNavigate()
   const [busy, setBusy] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
+  const [failed, setFailed] = useState(false)
   const Icon = TRIGGER_ICON[alert.trigger] ?? Eye
   const style = LEVEL_STYLE[alert.level]
   const answered = alert.outcome === 'nothing_found' || alert.outcome === 'found'
@@ -42,6 +43,7 @@ export default function AlertCard({ alert, onDone }: { alert: AlertView; onDone:
   const answer = async (outcome: 'nothing_found' | 'found' | 'snoozed',
                         evidence?: { photo: Blob | null; note: string }) => {
     setBusy(outcome)
+    setFailed(false)
     try {
       const r = await api.alertOutcome(alert.id, outcome, lang, evidence)
       setReporting(false)
@@ -52,6 +54,11 @@ export default function AlertCard({ alert, onDone }: { alert: AlertView; onDone:
       if (r.message) setNote(r.message)
       else onDone()
       if (r.message) setTimeout(onDone, 2500)
+    } catch {
+      // Walking the field and reporting what was there is the farmer's half of
+      // this. Dropping it silently closes the card as though it was recorded.
+      setFailed(true)
+      setNote(t('notSaved'))
     } finally {
       setBusy(null)
     }
@@ -100,8 +107,8 @@ export default function AlertCard({ alert, onDone }: { alert: AlertView; onDone:
         </div>
 
         {note ? (
-          <p className="mt-3 text-sm text-leaf-deep flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4" />
+          <p className={`mt-3 text-sm flex items-center gap-2 ${failed ? 'text-ember' : 'text-leaf-deep'}`}>
+            {failed ? <AlertTriangle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
             {note}
           </p>
         ) : answered ? (

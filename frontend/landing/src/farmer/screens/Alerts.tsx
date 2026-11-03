@@ -6,6 +6,7 @@ import { useAsync } from '../../lib/hooks'
 import { Card, ErrorBox, SectionTitle } from '../../ui/kit'
 import { AlertsSkeleton } from '../components/Skeletons'
 import AlertCard from '../components/AlertCard'
+import { useReadOnlyFarm } from '../components/DemoNotice'
 import { NoticeInbox, NotifySettings } from '../components/NotifyPanels'
 import { useFarmer } from '../FarmerContext'
 import { MAIN, SIDE, SPLIT } from '../layout'
@@ -13,6 +14,7 @@ import { MAIN, SIDE, SPLIT } from '../layout'
 
 export default function Alerts() {
   const { farmId, lang, t } = useFarmer()
+  const readOnly = useReadOnlyFarm() !== null
   const home = useAsync(() => api.home(farmId!, lang), [farmId, lang], ['home', farmId!, lang].join(':'))
   const alerts = useAsync(() => api.alerts(farmId!, lang), [farmId, lang], ['alerts', farmId!, lang].join(':'))
 
@@ -42,8 +44,15 @@ export default function Alerts() {
 
       <aside className={`space-y-6 ${SIDE}`}>
       <NotifySettings />
-      {crop && <TrapForm crop={crop} onSaved={alerts.reload} />}
-      <SensorForm onSaved={alerts.reload} />
+      {/* The shared demo field belongs to nobody, so the server refuses every
+          write to it. Offering these two forms there is offering a farmer work
+          that cannot land — the other write surfaces already say so instead. */}
+      {!readOnly && (
+        <>
+          {crop && <TrapForm crop={crop} onSaved={alerts.reload} />}
+          <SensorForm onSaved={alerts.reload} />
+        </>
+      )}
 
       {done.length > 0 && (
         <section>
@@ -77,11 +86,13 @@ function TrapForm({ crop, onSaved }: { crop: string; onSaved: () => void }) {
   const [traps, setTraps] = useState('3')
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
+  const [failed, setFailed] = useState(false)
   const readings = useAsync(() => api.traps(farmId!), [farmId], ['traps', farmId!].join(':'))
 
   const save = async () => {
     setBusy(true)
     setMsg(null)
+    setFailed(false)
     try {
       const r = await api.addTrap(farmId!, { target, count: parseInt(count, 10), traps: parseInt(traps, 10), nights: 1, trap_type: 'pheromone' })
       const fired = r.fired.some((f) => f.trigger === 'trap' && f.target === target)
@@ -89,6 +100,9 @@ function TrapForm({ crop, onSaved }: { crop: string; onSaved: () => void }) {
       setCount('')
       readings.reload()
       onSaved()
+    } catch {
+      setFailed(true)
+      setMsg(t('notSaved'))
     } finally {
       setBusy(false)
     }
@@ -127,7 +141,7 @@ function TrapForm({ crop, onSaved }: { crop: string; onSaved: () => void }) {
         {busy && <Loader2 className="w-4 h-4 animate-spin" />}
         {t('record')}
       </button>
-      {msg && <p className="text-sm font-medium text-center">{msg}</p>}
+      {msg && <p className={`text-sm font-medium text-center ${failed ? 'text-ember' : ''}`}>{msg}</p>}
       {readings.data && readings.data.length > 0 && (
         <div className="flex items-end gap-1 h-16 pt-2 border-t border-soil-dark/10">
           {readings.data.slice(0, 10).reverse().map((r) => {
@@ -158,14 +172,19 @@ function SensorForm({ onSaved }: { onSaved: () => void }) {
   const [rain, setRain] = useState('')
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
+  const [failed, setFailed] = useState(false)
   const num = (v: string) => (v === '' ? null : Number(v))
   const save = async () => {
     setBusy(true)
+    setFailed(false)
     try {
       await api.addSensor(farmId!, [{ on: new Date().toISOString().slice(0, 10), rh_max: num(rh), t_min: num(tmin), t_max: num(tmax), rain_mm: num(rain) }])
       await api.runRisk(farmId!)
       setDone(true)
       onSaved()
+    } catch {
+      // setDone stays false, so the form is still there to try again with.
+      setFailed(true)
     } finally {
       setBusy(false)
     }
@@ -196,6 +215,7 @@ function SensorForm({ onSaved }: { onSaved: () => void }) {
             {t('record')}
           </button>
           {done && <p className="text-sm text-center text-leaf-deep">{t('trapRecorded')}</p>}
+          {failed && <p className="text-sm text-center text-ember">{t('notSaved')}</p>}
         </div>
       )}
     </Card>
