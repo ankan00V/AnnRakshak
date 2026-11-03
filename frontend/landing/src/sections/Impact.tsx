@@ -84,7 +84,7 @@ export default function Impact() {
               show={
                 <PhoneShot src="/demo/result-mr.webp"
                   alt="The answer in Marathi: the disease name, how sure it is, and what not to do, with a listen button"
-                  crop={{ aspect: 'aspect-[4/3]', position: 'object-[50%_29%]' }} />
+                  crop={{ aspect: 'aspect-square', position: 'object-[50%_32%]' }} />
               }
               points={FARMER_POINTS}
             />
