@@ -1,7 +1,4 @@
-import { CheckCircle2, ClipboardCheck, Volume2 } from 'lucide-react'
 import Reveal from '../ui/Reveal'
-import OnPhone from '../ui/OnPhone'
-import FootageBackdrop from '../ui/FootageBackdrop'
 
 const FARMER_POINTS = [
   'Where to look, before the symptoms spread — from this field’s own weather and crop stage.',
@@ -28,103 +25,6 @@ function Points({ points, dot }: { points: string[]; dot: string }) {
   )
 }
 
-/** The alert as it reaches a Bhandara farmer: her language, her weather, two things to check. */
-function AlertVignette() {
-  return (
-    <div className="mt-7 sm:mt-9 rounded-[1.75rem] bg-cream/[0.06] ring-1 ring-cream/10 overflow-hidden">
-      {/* The field the alert is about, cropped to the part worth seeing: the
-          combine and the man standing in the cut paddy beside it. The card
-          overlaps it, so the band costs the column less than its own height
-          and nothing is ever read against moving grass. */}
-      <div className="relative h-[150px]">
-        <FootageBackdrop
-          src="/footage/field.mp4"
-          poster="/footage/field-poster.webp"
-          scrim={<div className="absolute inset-0 bg-gradient-to-b from-soil-dark/10 via-transparent to-soil-dark/85" />}
-        />
-      </div>
-      <div className="relative -mt-9 px-3 pb-3">
-      <div className="rounded-3xl bg-cream p-5 text-soil-dark shadow-xl shadow-black/30">
-        <div className="flex items-center justify-between gap-3">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-ember/10 px-2.5 py-1 text-[11px] font-medium text-ember">
-            जास्त धोका
-          </span>
-          <Volume2 className="w-4 h-4 text-leaf-deep" aria-hidden />
-        </div>
-        <p lang="mr" className="mt-3 text-base font-medium leading-snug">शेत तपासणी: करपा (ब्लास्ट)</p>
-        <p lang="mr" className="mt-2 text-[13px] font-light leading-relaxed text-soil-dark/75">
-          22/09 ते 26/09 सलग 5 दिवस आर्द्रता 90% पेक्षा जास्त व सरासरी तापमान 22–28°C राहिले. हे हवामान
-          करपा रोगासाठी अनुकूल आहे.
-        </p>
-        <div className="mt-4 border-t border-soil-dark/10 pt-3">
-          <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-leaf-deep">
-            <ClipboardCheck className="w-3.5 h-3.5" aria-hidden />
-            आज हे तपासा
-          </p>
-          <ul lang="mr" className="mt-2.5 space-y-2 text-[13px] font-light leading-relaxed text-soil-dark/80">
-            <li className="flex gap-2">
-              <CheckCircle2 className="w-4 h-4 text-leaf shrink-0 mt-0.5" aria-hidden />
-              आज तिरक्या रेषेत चाला व 10 रोपांच्या वरच्या पानांवर डोळ्यासारखे राखाडी ठिपके पाहा.
-            </li>
-            <li className="flex gap-2">
-              <CheckCircle2 className="w-4 h-4 text-leaf shrink-0 mt-0.5" aria-hidden />
-              5 रोपांवर लोंबीखालची गाठ तपासा — गाठ काळी असल्यास लगेच तज्ज्ञांना दाखवा.
-            </li>
-          </ul>
-        </div>
-      </div>
-        <p className="px-2 pt-3 text-[11px] text-cream/70">
-          A real alert: the rule is ICAR-IIRR’s, the weather is this farm’s, and it stays open until
-          she records what she found.
-        </p>
-      </div>
-    </div>
-  )
-}
-
-/** Confirmed cases, the farms inside their spread radius, and where scouts go next. */
-function HotspotVignette() {
-  const cases = [
-    { cx: 58, cy: 62, r: 26 },
-    { cx: 150, cy: 104, r: 22 },
-    { cx: 104, cy: 158, r: 18 },
-  ]
-  const awaiting = [{ cx: 196, cy: 54 }, { cx: 76, cy: 124 }, { cx: 168, cy: 160 }]
-  const advised = [{ cx: 128, cy: 40 }, { cx: 36, cy: 104 }, { cx: 208, cy: 128 }, { cx: 148, cy: 188 }]
-
-  return (
-    <div className="mt-7 sm:mt-9 rounded-[1.75rem] bg-cream/[0.06] ring-1 ring-cream/10 p-3">
-      <div className="rounded-3xl bg-[#eef0ea] p-4">
-        <svg viewBox="0 0 244 210" className="w-full h-auto" role="img"
-          aria-label="District map: three expert-confirmed cases with 5 km spread rings, farms awaiting an expert, and AI-advised cases">
-          <rect width="244" height="210" rx="12" fill="#e7eae1" />
-          {/* field boundaries, kept faint */}
-          <g stroke="#c9d0c0" strokeWidth="1" fill="none">
-            <path d="M0 70h244M0 140h244M80 0v210M170 0v210" />
-          </g>
-          {cases.map(({ cx, cy, r }) => (
-            <g key={`${cx}-${cy}`}>
-              <circle cx={cx} cy={cy} r={r} fill="#b0472a" fillOpacity="0.1" stroke="#b0472a"
-                strokeOpacity="0.45" strokeDasharray="3 3" />
-              <circle cx={cx} cy={cy} r="5" fill="#b0472a" />
-            </g>
-          ))}
-          {awaiting.map(({ cx, cy }) => <circle key={`a${cx}`} cx={cx} cy={cy} r="4.5" fill="#2f6fa8" />)}
-          {advised.map(({ cx, cy }) => <circle key={`d${cx}`} cx={cx} cy={cy} r="4.5" fill="#c8862d" />)}
-        </svg>
-        <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[11px] text-soil-dark/70">
-          <li className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-ember" />Expert-confirmed</li>
-          <li className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#2f6fa8]" />Awaiting expert</li>
-          <li className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-ochre" />AI-advised</li>
-        </ul>
-      </div>
-      <p className="px-2 pt-3 pb-1 text-[11px] text-cream/70">
-        A confirmed case sends an inspection task to every farm inside its ring — the same evening.
-      </p>
-    </div>
-  )
-}
-
 export default function Impact() {
   return (
     <section id="impact" className="w-full bg-soil-dark text-cream">
@@ -137,9 +37,6 @@ export default function Impact() {
                 One screen, in her language, that says what to do today.
               </p>
               <Points points={FARMER_POINTS} dot="bg-ochre" />
-              <OnPhone label="See the warning as it arrives" className="mt-7 sm:mt-0">
-                <AlertVignette />
-              </OnPhone>
             </div>
           </Reveal>
 
@@ -150,9 +47,6 @@ export default function Impact() {
                 The district, as it actually stands this week.
               </p>
               <Points points={OFFICIAL_POINTS} dot="bg-cream/60" />
-              <OnPhone label="See the district map" className="mt-7 sm:mt-0">
-                <HotspotVignette />
-              </OnPhone>
             </div>
           </Reveal>
         </div>

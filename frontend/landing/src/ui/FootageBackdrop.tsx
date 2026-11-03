@@ -2,12 +2,11 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 /** Our own field footage, playing behind a panel that was already there.
  *
- *  Used twice: behind the closing block, which asks whether you are ready to
- *  protect your harvest, and behind the two audience columns, so the alert a
- *  farmer reads and the map an officer works from sit over the field they are
- *  both about. Neither costs the page any height — the backdrop is absolutely
- *  positioned inside a panel that already existed, which is the only reason
- *  either belongs.
+ *  Used behind the closing block, which asks whether you are ready to protect
+ *  your harvest: behind it, a harvest. It costs the page no height — the
+ *  backdrop is absolutely positioned inside a panel that already existed. The
+ *  rest of the page's footage is in sections/Season.tsx, where each clip is a
+ *  stage of the season the app keeps.
  *
  *  A clip is around a megabyte, which on a village connection is not nothing,
  *  so it is only fetched once its panel is about to be seen, and not at all on

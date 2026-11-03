@@ -1,6 +1,7 @@
 import { FarmerProvider } from './farmer/FarmerContext'
 import Hero from './Hero'
 import Problem from './sections/Problem'
+import InTheField from './sections/InTheField'
 import HowItWorks from './sections/HowItWorks'
 import Features from './sections/Features'
 import Impact from './sections/Impact'
@@ -12,6 +13,7 @@ export default function Landing() {
     <FarmerProvider>
       <Hero />
       <Problem />
+      <InTheField />
       <HowItWorks />
       <Features />
       <Impact />
