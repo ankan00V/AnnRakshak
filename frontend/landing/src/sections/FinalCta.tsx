@@ -6,13 +6,17 @@ import FootageBackdrop from '../ui/FootageBackdrop'
 import { useAuth } from '../auth/AuthContext'
 import { homeOf } from '../auth/helpers'
 import { useFarmer } from '../farmer/FarmerContext'
+import { LANGS } from '../lib/i18n'
 
-/** What the advice actually rests on. Government sources, named. */
-const SOURCES = [
-  { name: 'ICAR', line: 'Rice and maize disease images; 24 released bio-inputs with the institute to call' },
-  { name: 'IMD', line: 'Subdivision rainfall normals, 1901–2017 — four subdivisions mapped to districts so far' },
-  { name: 'MoSPI', line: 'Pesticide consumption by state — the 79,423 t a year this has to move' },
-  { name: 'Sentinel-2 · Landsat 8', line: 'Per-field NDVI, cloud-filtered, watched for a fall in vigour' },
+const LANGUAGES = LANGS.filter((l) => l.ready).length
+
+/** Who we are, in four lines a farmer or an officer would care about. The
+ *  datasets behind the advice are in the docs; this strip is about the app. */
+const ABOUT = [
+  { name: 'Anna + rakshak', line: 'Harvest, and its protector. The name is the whole job.' },
+  { name: 'Four crops', line: 'Rice, maize, cotton and soybean — each diagnosed from one photo.' },
+  { name: `${LANGUAGES} languages`, line: 'Every alert and answer read aloud, for those who do not read.' },
+  { name: 'A person behind it', line: 'When the app is not sure, a KVK expert or an officer answers.' },
 ]
 
 export default function FinalCta() {
@@ -37,7 +41,7 @@ export default function FinalCta() {
       <div className="relative max-w-6xl mx-auto px-6 md:px-12 pt-12 sm:pt-16 md:pt-28">
         <Reveal>
           <div className="grid gap-y-7 gap-x-8 sm:grid-cols-2 lg:grid-cols-4 border-y border-cream/15 py-8">
-            {SOURCES.map(({ name, line }) => (
+            {ABOUT.map(({ name, line }) => (
               <div key={name}>
                 <p className="text-sm font-medium text-ochre">{name}</p>
                 <p className="mt-1.5 text-xs font-light leading-relaxed text-cream/75 text-pretty">{line}</p>

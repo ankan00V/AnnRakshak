@@ -1,180 +1,97 @@
-import { Ban, Bug, ListOrdered, Map, UserCheck, Volume2 } from 'lucide-react'
+import { ArrowRight, Ban } from 'lucide-react'
+import type { ReactNode } from 'react'
 import Reveal from '../ui/Reveal'
-import OnPhone from '../ui/OnPhone'
-import { LANGS } from '../lib/i18n'
 
-const GRADCAM = [
-  { src: '/shots/gradcam-blast.webp', alt: 'Heat map over a rice panicle, concentrated on the blackened neck node — rice neck blast', caption: 'rice neck blast' },
-  { src: '/shots/gradcam-turcicum.webp', alt: 'Heat map over a maize leaf, following the long cigar-shaped lesion — turcicum leaf blight', caption: 'turcicum leaf blight' },
-  { src: '/shots/gradcam-brown.webp', alt: 'Heat map tight around two dark spots on a rice leaf — brown spot', caption: 'rice brown spot' },
+/** Three things a farmer would notice, each said in one line and shown in a
+ *  small picture of what it looks like. Languages, crops and the expert
+ *  behind every answer are in the closing strip, so they are not repeated. */
+
+const HEAT = [
+  { src: '/shots/gradcam-blast.webp', alt: 'Heat map on a rice panicle, hot on the blackened neck — neck blast' },
+  { src: '/shots/gradcam-turcicum.webp', alt: 'Heat map along the long lesion on a maize leaf — turcicum leaf blight' },
+  { src: '/shots/gradcam-brown.webp', alt: 'Heat map tight on two dark spots on a rice leaf — brown spot' },
 ]
 
-/** Cultural first, chemical last — the order the knowledge base refuses to load without. */
-const LADDER = [
-  { step: 'Field practice', line: 'Remove and burn infected debris. Drain the standing water.' },
-  { step: 'Natural control', line: 'Trichoderma, Bt, a pheromone trap — ICAR-released, named with its institute.' },
-  { step: 'Chemical', line: 'Last. Dosed for your plot, with the label rule quoted and an officer to confirm it.' },
-]
-
-const LANGUAGES = LANGS.filter((l) => l.ready)
-const COUNT = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven'][LANGUAGES.length] ?? String(LANGUAGES.length)
-
-const ALSO = [
-  { icon: Bug, title: 'Traps and field sensors', line: 'Pheromone-trap counts read against ICAR-CICR action levels. A farm’s own sensor overrides the district forecast.' },
-  { icon: UserCheck, title: 'Expert validation in three minutes', line: 'A case arrives pre-packed: photos, ranked hypotheses, the farmer’s answer, trap counts, recent alerts.' },
-  { icon: Map, title: 'Surveillance for officials', line: 'Hotspots, weekly risk outlook, field accuracy, IMD rainfall against normal, the state pesticide baseline.' },
-]
-
-function Tile({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+function Looked() {
   return (
-    <div className={`rounded-3xl border border-soil-dark/10 bg-white/80 p-5 sm:p-6 md:p-8 ${className}`}>
-      {children}
+    <div className="grid grid-cols-3 gap-2">
+      {HEAT.map(({ src, alt }) => (
+        <img key={src} src={src} alt={alt} loading="lazy" width={440} height={440}
+          className="w-full aspect-square rounded-xl object-cover" />
+      ))}
     </div>
   )
 }
 
+function Ladder() {
+  const rungs = ['Field care', 'Natural', 'Chemical, last']
+  return (
+    <ol className="flex flex-wrap items-center gap-1.5 text-[12px] sm:text-[13px]">
+      {rungs.map((r, i) => (
+        <li key={r} className="flex items-center gap-1.5">
+          <span className={`rounded-full px-2.5 sm:px-3 py-1.5 whitespace-nowrap ${
+            i === 2 ? 'border border-soil-dark/20 text-soil-dark/70' : 'bg-leaf-deep text-cream'}`}>{r}</span>
+          {i < rungs.length - 1 && <ArrowRight className="w-3.5 h-3.5 text-soil-dark/40" aria-hidden />}
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+function Refused() {
+  return (
+    <div className="rounded-xl border border-ember/25 bg-ember/[0.06] p-3.5">
+      <p className="flex items-center gap-2 text-sm font-medium text-ember">
+        <Ban className="w-4 h-4 shrink-0" aria-hidden /> Glyphosate 41% SL — do not spray
+      </p>
+      <p className="mt-1 text-xs leading-relaxed text-soil-dark/70">
+        A weed killer, against a leaf disease. It will burn the crop.
+      </p>
+    </div>
+  )
+}
+
+const THINGS: { title: string; line: string; show: ReactNode }[] = [
+  {
+    title: 'It shows where it looked',
+    line: 'Every answer marks the part of the leaf it read, so you — and the expert — can check it.',
+    show: <Looked />,
+  },
+  {
+    title: 'The safest fix comes first',
+    line: 'What to do in the field, then natural control. Chemicals only when nothing else will do.',
+    show: <Ladder />,
+  },
+  {
+    title: 'It stops the wrong spray',
+    line: 'Check a bottle before you buy. If it is wrong for your crop or your problem, it says so.',
+    show: <Refused />,
+  },
+]
+
 export default function Features() {
   return (
     <section id="features" className="w-full bg-cream text-soil-dark">
-      <div className="max-w-6xl mx-auto px-6 md:px-12 py-12 sm:py-16 md:py-28">
-        {/* The sentence wants to be read as one line, and above 1152px it can
-            be: the column stops growing there, so 1056px is all the room this
-            heading will ever get and 44px is what fits it. Narrower than that
-            it keeps the larger size and wraps. */}
-        <Reveal className="max-w-3xl min-[1152px]:max-w-none">
-          <h2 className="font-instrument-serif text-[2rem] sm:text-5xl md:text-[3.5rem] min-[1152px]:text-[2.75rem]
-                         leading-[1.05] text-balance min-[1152px]:text-pretty">
-            Built for how farmers actually work — and honest when it isn’t sure.
+      <div className="max-w-6xl mx-auto px-6 md:px-12 py-14 sm:py-20 md:py-24">
+        <Reveal className="max-w-3xl">
+          <h2 className="font-instrument-serif text-[2rem] sm:text-5xl md:text-[3.5rem] leading-[1.05] text-balance">
+            Careful with your crop, and your money.
           </h2>
         </Reveal>
 
-        {/* The heat maps are the most convincing thing the product owns, and
-            they were three thumbnails in a tile that was two thirds empty.
-            They get the full width, and the three cards below get one heading
-            style between them so they read as a set rather than as whatever
-            each one happened to be. */}
-        <Reveal className="mt-8 sm:mt-10 md:mt-16">
-          <Tile>
-            <div className="md:flex md:items-end md:justify-between md:gap-10">
-              <h3 className="font-instrument-serif text-2xl md:text-3xl shrink-0">Where the model looked</h3>
-              <p className="mt-2 md:mt-0 max-w-xl text-sm font-light leading-relaxed text-soil-dark/70 text-pretty">
-                Every diagnosis carries its own Grad-CAM. If the heat sits on the soil instead of
-                the lesion, the farmer and the KVK expert can both see it and say so.
-              </p>
-            </div>
-            {/* Three across on a phone too. Stacked, these were nine hundred
-                pixels of the same argument made three times; side by side
-                they read as one row of evidence, which is what they are. */}
-            <div className="mt-5 grid grid-cols-3 gap-2 sm:mt-6 sm:gap-3">
-              {GRADCAM.map(({ src, alt, caption }) => (
-                <figure key={src} className="relative overflow-hidden rounded-2xl bg-soil-dark/5">
-                  <img src={src} alt={alt} loading="lazy" width={440} height={440}
-                    className="w-full aspect-square object-cover" />
-                  {/* The name belongs on the picture: a caption underneath at
-                      eleven pixels was a footnote to the thing being shown. */}
-                  <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-soil-dark/85 to-transparent
-                                         px-1.5 pt-6 pb-1.5 text-[9px] leading-tight font-medium text-cream
-                                         sm:px-3 sm:pt-8 sm:pb-2.5 sm:text-[13px] sm:leading-normal">
-                    {caption}
-                  </figcaption>
-                </figure>
-              ))}
-            </div>
-            <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-soil-dark/55">
-              <span aria-hidden className="h-2 w-16 rounded-full bg-[linear-gradient(90deg,#3b4cc0,#5ec9c0,#f7f056,#e8762c,#b40426)]" />
-              cool: ignored · hot: what decided the answer
-            </p>
-          </Tile>
-        </Reveal>
-
-        <div className="mt-5 grid gap-4 sm:gap-5 lg:grid-cols-3 lg:items-stretch">
-          {/* The ladder, as rungs. */}
-          <Reveal className="h-full" delay={40}>
-            <Tile className="h-full">
-              <h3 className="flex items-start gap-2.5 text-lg font-medium lg:min-h-[3.5rem]">
-                <ListOrdered className="w-4 h-4 mt-1 text-leaf shrink-0" /> Chemical last, veto first
-              </h3>
-              <ol className="mt-4 space-y-3 sm:mt-5 sm:space-y-4">
-                {LADDER.map(({ step, line }, i) => (
-                  <li key={step} className="relative pl-7">
-                    <span aria-hidden className="absolute left-0 top-1 text-[11px] font-semibold tabular-nums text-ochre">
-                      {i + 1}
-                    </span>
-                    {i < LADDER.length - 1 && (
-                      <span aria-hidden className="absolute left-[5px] top-6 bottom-[-14px] w-px bg-soil-dark/15" />
-                    )}
-                    <p className="text-sm font-medium">{step}</p>
-                    <p className="mt-1 text-xs font-light leading-relaxed text-soil-dark/75">{line}</p>
-                  </li>
-                ))}
-              </ol>
-            </Tile>
-          </Reveal>
-
-          {/* The spray check, as the farmer sees it. */}
-          <Reveal className="h-full" delay={80}>
-            <Tile className="h-full flex flex-col">
-              <h3 className="flex items-start gap-2.5 text-lg font-medium lg:min-h-[3.5rem]">
-                <Ban className="w-4 h-4 mt-1 text-ember shrink-0" /> It can refuse a bottle, never bless one
-              </h3>
-              <div className="mt-5 rounded-2xl border border-ember/25 bg-ember/[0.06] p-4">
-                <p className="text-sm font-medium text-ember">Glyphosate 41% SL — do not spray</p>
-                <p className="mt-1 text-xs font-light leading-relaxed text-soil-dark/70">
-                  A weed killer, against a leaf disease. It will not touch the fungus and it will
-                  burn the crop.
-                </p>
-              </div>
-              <p className="mt-auto pt-4 text-xs font-light leading-relaxed text-soil-dark/75">
-                The check has no vocabulary for “safe”. It vetoes the wrong class, the wrong crop
-                and anything off-label; the printed label still decides the dose.
-              </p>
-            </Tile>
-          </Reveal>
-
-          {/* Languages, in their own scripts. */}
-          <Reveal className="h-full" delay={120}>
-            <Tile className="h-full flex flex-col">
-              <h3 className="flex items-start gap-2.5 text-lg font-medium lg:min-h-[3.5rem]">
-                <Volume2 className="w-4 h-4 mt-1 text-leaf shrink-0" /> {COUNT} languages, read out loud
-              </h3>
-              <p className="mt-2 text-sm font-light leading-relaxed text-soil-dark/70 text-pretty">
-                Every advisory, alert and question in the farmer’s own language — spoken through
-                Bhashini, so a farmer who does not read still gets the whole answer.
-              </p>
-              {/* The scripts themselves are the argument, so they are set at
-                  reading size rather than as small grey pills. */}
-              <ul className="mt-auto pt-4 sm:pt-6 flex flex-wrap gap-x-1.5 gap-y-1 sm:gap-x-2 sm:gap-y-1.5">
-                {LANGUAGES.map((l) => (
-                  <li key={l.code} lang={l.code} title={l.english}
-                    className="rounded-full bg-leaf-deep/[0.07] px-2.5 py-0.5 text-[13px] leading-6 text-leaf-deep sm:px-3 sm:py-1 sm:text-[15px] sm:leading-7">
-                    {l.label}
-                  </li>
-                ))}
-              </ul>
-            </Tile>
-          </Reveal>
-        </div>
-
-        {/* The rest, as a ruled list rather than three more cards. Secondary
-            by its own framing, so on a phone it is a line you can open rather
-            than four hundred more pixels of scrolling past it. */}
-        <OnPhone label="Three more things it does" className="mt-8">
-        <div className="sm:mt-10 md:mt-16 border-t border-soil-dark/15">
-          {ALSO.map(({ icon: Icon, title, line }, i) => (
-            <Reveal key={title} delay={i * 70}>
-              <div className="grid gap-2 md:grid-cols-12 md:gap-8 items-start border-b border-soil-dark/15 py-6">
-                <h3 className="md:col-span-5 flex items-center gap-3 text-base font-medium">
-                  <Icon className="w-4 h-4 text-leaf shrink-0" />
-                  {title}
-                </h3>
-                <p className="md:col-span-7 text-sm font-light leading-relaxed text-soil-dark/70 text-pretty">
-                  {line}
-                </p>
+        <div className="mt-10 sm:mt-14 grid gap-10 md:grid-cols-3 md:gap-10">
+          {THINGS.map(({ title, line, show }, i) => (
+            <Reveal key={title} delay={i * 80}>
+              <div className="border-t border-soil-dark/15 pt-6">
+                {/* One height for the three pictures, so the titles under them
+                    line up across the row. */}
+                <div className="md:h-28 md:flex md:flex-col md:justify-center">{show}</div>
+                <h3 className="mt-5 text-lg font-medium leading-snug">{title}</h3>
+                <p className="mt-1.5 text-sm font-light leading-relaxed text-soil-dark/75 text-pretty">{line}</p>
               </div>
             </Reveal>
           ))}
         </div>
-        </OnPhone>
       </div>
     </section>
   )

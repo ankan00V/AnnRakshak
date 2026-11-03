@@ -1,96 +1,83 @@
 import { BellRing, Camera, HelpCircle, Sprout, UserCheck } from 'lucide-react'
 import Reveal from '../ui/Reveal'
 
+/** Five steps, each one line a farmer can read at a glance. The order is the
+ *  point, so these are the one numbered sequence on the page. */
 const STEPS = [
-  { icon: BellRing, label: 'Alert', line: 'Weather, crop stage, traps and confirmed nearby cases say where to look — before damage shows.' },
-  { icon: Camera, label: 'Photo', line: 'The model names the disease or pest, and shows the part of the leaf it read.' },
-  { icon: HelpCircle, label: 'Ask or escalate', line: 'Torn between two? One field question. Still unsure? A KVK expert, never a guess.' },
-  { icon: Sprout, label: 'Act', line: 'Safest step first, a dose worked out for your plot, and a spray check before you buy.' },
-  { icon: UserCheck, label: 'Follow up', line: 'A day-4 check-in. A confirmed case warns the neighbours and is recorded against the model.' },
+  { icon: BellRing, label: 'Get a warning', line: 'It tells you what to check, before the damage shows.' },
+  { icon: Camera, label: 'Take a photo', line: 'It names the disease or pest on the leaf.' },
+  { icon: HelpCircle, label: 'Not sure?', line: 'It asks you one question, or sends it to an expert.' },
+  { icon: Sprout, label: 'Treat it', line: 'The safest fix first, with the right dose for your field.' },
+  { icon: UserCheck, label: 'Check back', line: 'Four days later it asks if the crop is better.' },
 ]
 
-/** What the gate did on the 126 held-out ICAR photos it has never seen. */
+/** What happened to 126 held-out ICAR photos the model had never seen. */
 const GATE = [
-  { pct: 89.7, label: 'Advised', note: '98.2% of those were right', tone: 'bg-ochre' },
-  { pct: 0.8, label: 'Asked one question', note: 'the answer settled it every time', tone: 'bg-cream/70' },
-  { pct: 9.5, label: 'Sent to an expert', note: 'the farmer waits for a person', tone: 'bg-cream/25' },
+  { pct: 89.7, label: 'Got an answer', tone: 'bg-ochre' },
+  { pct: 0.8, label: 'Asked a question', tone: 'bg-cream/70' },
+  { pct: 9.5, label: 'Sent to an expert', tone: 'bg-cream/30' },
 ]
 
 export default function HowItWorks() {
   return (
     <section id="how-it-works" className="w-full bg-leaf-deep text-cream">
-      <div className="max-w-6xl mx-auto px-6 md:px-12 py-12 sm:py-16 md:py-28">
+      <div className="max-w-6xl mx-auto px-6 md:px-12 py-14 sm:py-20 md:py-24">
         <Reveal className="max-w-3xl">
           <h2 className="font-instrument-serif text-[2rem] sm:text-5xl md:text-[3.5rem] leading-[1.05] text-balance">
-            From an early warning to a treatment someone checked.
+            From a warning to a crop that’s better.
           </h2>
         </Reveal>
 
-        {/* The rail: a numbered sequence, because the order is the point. */}
-        <ol className="mt-8 sm:mt-8 sm:mt-12 md:mt-20 grid gap-8 md:grid-cols-5 md:gap-5">
+        <ol className="mt-10 sm:mt-14 grid gap-6 md:grid-cols-5 md:gap-6">
           {STEPS.map(({ icon: Icon, label, line }, i) => (
-            <Reveal key={label} delay={i * 80}>
-              <li className="relative flex md:flex-col items-start gap-5 md:gap-0 h-full">
+            <Reveal key={label} delay={i * 70}>
+              <li className="relative flex items-start gap-4 md:block">
                 {i < STEPS.length - 1 && (
-                  <span aria-hidden className="hidden md:block absolute top-6 left-[calc(50%+2rem)] right-[-1.25rem] h-px bg-gradient-to-r from-cream/30 to-cream/5" />
+                  <span aria-hidden className="hidden md:block absolute top-6 left-14 right-[-1.5rem] h-px bg-cream/15" />
                 )}
-                <span className="relative z-10 flex items-center justify-center w-12 h-12 rounded-2xl bg-cream/[0.08] ring-1 ring-cream/15 shrink-0 md:mx-auto">
-                  <Icon className="w-5 h-5 text-ochre" />
-                </span>
-                <div className="md:mt-6 md:text-center">
-                  <span className="text-[11px] font-semibold tabular-nums text-ochre/80">
-                    {String(i + 1).padStart(2, '0')}
+                <span className="relative flex items-center justify-center w-12 h-12 shrink-0 rounded-full bg-cream/[0.08] ring-1 ring-cream/15">
+                  <Icon className="w-5 h-5 text-ochre" aria-hidden />
+                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-ochre text-[11px] font-semibold text-soil-dark">
+                    {i + 1}
                   </span>
-                  <h3 className="mt-0.5 text-lg font-medium leading-snug">{label}</h3>
-                  <p className="mt-2 text-sm font-light leading-relaxed text-cream/75 text-pretty">{line}</p>
+                </span>
+                <div className="md:mt-5">
+                  <h3 className="text-base md:text-lg font-medium leading-snug">{label}</h3>
+                  <p className="mt-1 text-sm font-light leading-relaxed text-cream/75 text-pretty">{line}</p>
                 </div>
               </li>
             </Reveal>
           ))}
         </ol>
 
-        {/* The centrepiece: what the confidence gate actually did. */}
-        <Reveal className="mt-10 sm:mt-14 md:mt-24">
-          <div className="rounded-3xl bg-cream/[0.06] ring-1 ring-cream/10 p-6 md:p-10">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <h3 className="font-instrument-serif text-2xl md:text-3xl">
-                  Step 3 is the one nobody else ships.
-                </h3>
-                <p className="mt-2 max-w-xl text-sm font-light leading-relaxed text-cream/75 text-pretty">
-                  Every photo passes a confidence gate before a farmer is told anything. Below
-                  0.70 it asks or escalates; below 0.40 it never speaks at all.
-                </p>
-              </div>
-              <p className="text-xs text-cream/70 md:text-right">
-                126 held-out ICAR photos,<br className="hidden md:block" /> never seen in training
+        {/* The honesty of it, in a farmer's words: what happened to photos the
+            model had never seen. The thresholds behind it belong in the docs. */}
+        <Reveal className="mt-12 sm:mt-16 md:mt-20">
+          <div className="grid gap-6 border-t border-cream/15 pt-8 md:grid-cols-12 md:gap-10">
+            <h3 className="md:col-span-5 font-instrument-serif text-[1.75rem] sm:text-4xl leading-[1.08] text-balance">
+              When it isn’t sure, it says so.
+            </h3>
+            <div className="md:col-span-7">
+              <p className="text-[15px] font-light leading-relaxed text-cream/80 text-pretty">
+                Tested on 126 crop photos it had never seen: 9 in 10 got an answer, and 98 in 100 of
+                those answers were right. The rest got one question, or went to a real expert —
+                never a guess.
               </p>
+              <div className="mt-5 flex h-2.5 w-full overflow-hidden rounded-full bg-cream/10" role="img"
+                aria-label="Of 126 photos: 89.7% got an answer, 0.8% were asked a question, 9.5% were sent to an expert">
+                {GATE.map(({ pct, label, tone }) => (
+                  <span key={label} className={`${tone} h-full`} style={{ width: `${pct}%` }} />
+                ))}
+              </div>
+              <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-cream/70">
+                {GATE.map(({ pct, label, tone }) => (
+                  <li key={label} className="flex items-center gap-1.5">
+                    <span aria-hidden className={`h-2 w-2 rounded-full ${tone}`} />
+                    {label} · {pct}%
+                  </li>
+                ))}
+              </ul>
             </div>
-
-            <div className="mt-8 flex h-3 w-full overflow-hidden rounded-full bg-cream/10" role="img"
-              aria-label="Of 126 held-out photos: advised 89.7%, asked one question 0.8%, sent to an expert 9.5%">
-              {GATE.map(({ pct, label, tone }) => (
-                <span key={label} className={`${tone} h-full`} style={{ width: `${pct}%` }} />
-              ))}
-            </div>
-
-            {/* Three figures under the bar they describe. Stacked on a phone
-                they were three hundred pixels and read as a list of unrelated
-                numbers; in a row they read as the split the bar just showed. */}
-            <dl className="mt-5 grid grid-cols-3 gap-3 sm:mt-6 sm:gap-5">
-              {GATE.map(({ pct, label, note, tone }) => (
-                <div key={label}>
-                  <dt className="flex items-start gap-1.5 text-[11px] font-medium leading-tight sm:items-center sm:gap-2 sm:text-sm">
-                    <span aria-hidden className={`mt-1 w-2 h-2 shrink-0 rounded-full sm:mt-0 sm:w-2.5 sm:h-2.5 ${tone}`} />
-                    {label}
-                  </dt>
-                  <dd className="mt-1 sm:pl-[18px]">
-                    <span className="font-instrument-serif text-2xl tabular-nums sm:text-3xl">{pct}%</span>
-                    <span className="block text-[10px] leading-tight text-cream/70 sm:text-xs">{note}</span>
-                  </dd>
-                </div>
-              ))}
-            </dl>
           </div>
         </Reveal>
       </div>
