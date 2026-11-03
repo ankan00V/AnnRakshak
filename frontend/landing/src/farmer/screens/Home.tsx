@@ -6,6 +6,7 @@ import ReportSheet from '../components/ReportSheet'
 import type { CropInfo, Home as HomeData } from '../../api/types'
 import { useAsync, useWide } from '../../lib/hooks'
 import { bcp47 } from '../../lib/i18n'
+import { useReadOnlyFarm } from '../components/DemoNotice'
 import { EYEBROW, MAIN, SIDE, SPLIT } from '../layout'
 import SeasonSwitch from '../components/SeasonSwitch'
 import { fieldPhoto } from '../fieldPhoto'
@@ -315,6 +316,9 @@ function FollowUp({ id, name, dueOn, onDone, row = false }: {
   const { t, lang } = useFarmer()
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
+  // Answering on a shared demo field edits what the next visitor walks into,
+  // so the server refuses it; the buttons would only be able to fail.
+  const readOnly = useReadOnlyFarm() !== null
   // "It got worse" goes to a district officer, so it asks for a photo and the
   // farmer's own words first rather than sending an empty case.
   const [reporting, setReporting] = useState(false)
@@ -353,6 +357,8 @@ function FollowUp({ id, name, dueOn, onDone, row = false }: {
         </p>
         {msg ? (
           <p className="text-sm text-ember">{msg}</p>
+        ) : readOnly ? (
+          <p className="text-xs text-soil-dark/50 shrink-0">{t('demoReadOnlyShort')}</p>
         ) : (
           <div className="grid grid-cols-3 gap-2 w-[22rem] shrink-0">
             {choices.map(([r, label, cls]) => (
@@ -380,6 +386,8 @@ function FollowUp({ id, name, dueOn, onDone, row = false }: {
       {name && <p className="text-xs text-soil-dark/60 mt-0.5">{name}</p>}
       {msg ? (
         <p className="mt-2 text-sm text-ember">{msg}</p>
+      ) : readOnly ? (
+        <p className="mt-2 text-xs text-soil-dark/50">{t('demoReadOnlyShort')}</p>
       ) : (
         <div className="mt-3 grid grid-cols-3 gap-2">
           {choices.map(([r, label, cls]) => (

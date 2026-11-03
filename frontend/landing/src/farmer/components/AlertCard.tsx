@@ -3,6 +3,7 @@ import { AlertTriangle, Bug, CalendarClock, CheckCircle2, CloudRain, Eye, Loader
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../api/client'
 import ReportSheet from './ReportSheet'
+import { useReadOnlyFarm } from './DemoNotice'
 import type { AlertView } from '../../api/types'
 import { ListenButton, Pill } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
@@ -24,6 +25,10 @@ const LEVEL_STYLE = {
 /** An alert is a task, not a notification: it stays until the farmer records
  *  what they found. There is no dismiss button on purpose. */
 export default function AlertCard({ alert, onDone }: { alert: AlertView; onDone: () => void }) {
+  // A shared demo field is everybody's, so answering its warning would edit
+  // what the next visitor walks into — the server refuses it. Offering the
+  // buttons anyway would be a control that can only fail.
+  const readOnly = useReadOnlyFarm() !== null
   const { lang, t } = useFarmer()
   const navigate = useNavigate()
   const [busy, setBusy] = useState<string | null>(null)
@@ -113,6 +118,8 @@ export default function AlertCard({ alert, onDone }: { alert: AlertView; onDone:
           </p>
         ) : answered ? (
           <p className="mt-3 text-xs text-soil-dark/50">{t('answered')}</p>
+        ) : readOnly ? (
+          <p className="mt-3 text-xs text-soil-dark/50">{t('demoReadOnlyShort')}</p>
         ) : (
           <div className="mt-3 grid grid-cols-3 gap-2">
             {([

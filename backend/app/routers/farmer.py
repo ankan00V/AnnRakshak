@@ -57,6 +57,23 @@ def _writable_farm(db: Session, farm_id: int, request: Request) -> Farm:
     return _own_farm(db, farm_id, request)
 
 
+def _may_write(db: Session, farm: Farm | None, request: Request) -> None:
+    """The ownership half of _own_farm, for a write reached through a row id.
+
+    auth.guard() already runs on these routes, but it asks can_open_farm — who
+    may *read* this field. Reading is not writing: an officer may open any farm
+    in their district, and the shared demo fields may be opened by anyone at
+    all. Answering a warning or a follow-up is the farmer's own act, and it
+    changes what the next person sees."""
+    if farm is None:
+        return
+    me = auth.signed_in(request, db) if config.AUTH_ENFORCE else None
+    if not auth.may_change_farm(me, farm):
+        if auth.is_shared_demo(farm):
+            raise HTTPException(403, {"code": "demo_read_only"})
+        raise HTTPException(404, "not found")
+
+
 def _problem(db: Session, problem_id: int) -> Problem:
     p = db.get(Problem, problem_id)
     if p is None:
@@ -340,8 +357,10 @@ class ClarifyIn(BaseModel):
 
 
 @router.post("/problems/{problem_id}/clarify")
-def clarify(problem_id: int, body: ClarifyIn, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+def clarify(problem_id: int, body: ClarifyIn, request: Request, db: Session = Depends(get_db),
+            kb: KB = Depends(get_kb)):
     problem = _problem(db, problem_id)
+    _may_write(db, problem.farm, request)
     try:
         return services.answer_clarify(db, kb, problem, body.cue_id, body.answer, body.lang)
     except ValueError as exc:
@@ -349,8 +368,9 @@ def clarify(problem_id: int, body: ClarifyIn, db: Session = Depends(get_db), kb:
 
 
 @router.post("/problems/{problem_id}/escalate")
-def escalate(problem_id: int, lang: Lang = "en", db: Session = Depends(get_db)):
+def escalate(problem_id: int, request: Request, lang: Lang = "en", db: Session = Depends(get_db)):
     problem = _problem(db, problem_id)
+    _may_write(db, problem.farm, request)
     case = services.escalate(db, problem, "FARMER_REQUEST")
     db.commit()
     return {"case": services.case_brief(db, case), "message": services.msg("FARMER_REQUEST", lang)}
@@ -378,6 +398,7 @@ def problem_result(problem_id: int, lang: Lang = "en", db: Session = Depends(get
 @router.post("/followups/{followup_id}")
 async def followup(
     followup_id: int,
+    request: Request,
     response: Literal["improved", "no_change", "got_worse"] = Form(...),
     lang: Lang = Form("en"),
     note: str | None = Form(None),
@@ -394,6 +415,7 @@ async def followup(
     fu = db.get(FollowUp, followup_id)
     if fu is None:
         raise HTTPException(404, "follow-up not found")
+    _may_write(db, db.get(Problem, fu.problem_id).farm if fu.problem_id else None, request)
     if fu.response is not None:
         raise HTTPException(409, "follow-up already answered")
     data = await _read_capped(image) if image is not None else None
@@ -418,6 +440,7 @@ class AlertOutcomeIn(BaseModel):
 @router.post("/alerts/{alert_id}/outcome")
 async def alert_outcome(
     alert_id: int,
+    request: Request,
     outcome: Literal["nothing_found", "found", "snoozed"] = Form(...),
     lang: Lang = Form("en"),
     note: str | None = Form(None),
@@ -433,6 +456,7 @@ async def alert_outcome(
     alert = db.get(Alert, alert_id)
     if alert is None:
         raise HTTPException(404, "alert not found")
+    _may_write(db, db.get(Farm, alert.farm_id), request)
     data = await _read_capped(image) if image is not None else None
     return services.record_alert_outcome(db, kb, alert, outcome, lang, image_bytes=data, note=note)
 
