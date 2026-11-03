@@ -6,7 +6,7 @@ import { useAsync } from '../../lib/hooks'
 import { MAIN, SIDE, SPLIT } from '../../ui/layout'
 import { useAuth } from '../../auth/AuthContext'
 import { Card, ErrorBox } from '../../ui/kit'
-import { Kpis, KpisSkeleton, PageHead, PanelBone } from '../panels'
+import { Kpis, KpisSkeleton, many, PageHead, PanelBone } from '../panels'
 import { Download } from 'lucide-react'
 
 /** What needs a person today, in the order it should be dealt with. The numbers
@@ -139,7 +139,7 @@ export default function Today() {
                     <span className="flex items-center gap-2 shrink-0">
                       <Link to={`/officer/queue?target=${b.target}`}
                         className="text-xs tabular-nums text-soil-dark/70 hover:text-leaf-deep hover:underline underline-offset-2">
-                        {b.farms} farms
+                        {many(b.farms, 'farm')}
                       </Link>
                       <Link to={`/officer/advisories?target=${b.target}&crop=${b.crop}`}
                         className="rounded-full bg-ochre/15 text-[#8a5a17] text-xs font-medium px-3 py-1.5 hover:bg-ochre/25">

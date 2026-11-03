@@ -204,10 +204,10 @@ function SensorForm({ onSaved }: { onSaved: () => void }) {
       {open && (
         <div className="mt-3 space-y-2">
           <div className="grid grid-cols-2 gap-2">
-            <label className="block text-xs text-soil-dark/60">{t('humidity')} max %<input className={field} type="number" inputMode="decimal" value={rh} onChange={(e) => setRh(e.target.value)} /></label>
-            <label className="block text-xs text-soil-dark/60">Rain mm<input className={field} type="number" inputMode="decimal" value={rain} onChange={(e) => setRain(e.target.value)} /></label>
-            <label className="block text-xs text-soil-dark/60">Min °C<input className={field} type="number" inputMode="decimal" value={tmin} onChange={(e) => setTmin(e.target.value)} /></label>
-            <label className="block text-xs text-soil-dark/60">Max °C<input className={field} type="number" inputMode="decimal" value={tmax} onChange={(e) => setTmax(e.target.value)} /></label>
+            <label className="block text-xs text-soil-dark/60">{t('sensorRh')}<input className={field} type="number" inputMode="decimal" value={rh} onChange={(e) => setRh(e.target.value)} /></label>
+            <label className="block text-xs text-soil-dark/60">{t('sensorRain')}<input className={field} type="number" inputMode="decimal" value={rain} onChange={(e) => setRain(e.target.value)} /></label>
+            <label className="block text-xs text-soil-dark/60">{t('sensorTmin')}<input className={field} type="number" inputMode="decimal" value={tmin} onChange={(e) => setTmin(e.target.value)} /></label>
+            <label className="block text-xs text-soil-dark/60">{t('sensorTmax')}<input className={field} type="number" inputMode="decimal" value={tmax} onChange={(e) => setTmax(e.target.value)} /></label>
           </div>
           <button onClick={save} disabled={busy || (rh === '' && tmin === '' && tmax === '' && rain === '')}
             className="w-full min-h-[44px] rounded-full bg-sky-700 text-white text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2">

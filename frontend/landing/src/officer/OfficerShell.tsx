@@ -6,6 +6,7 @@ import type { Summary, Worklist } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import AccountMenu from '../auth/AccountMenu'
 import { useAsync } from '../lib/hooks'
+import { many } from './panels'
 import Darpan from './Darpan'
 import { Toasts } from '../ui/Toast'
 import BrandMark from '../ui/BrandMark'
@@ -58,7 +59,7 @@ export default function OfficerShell() {
     try {
       const r = await api.runAll()
       const src = Object.entries(r.weather_sources).map(([k, v]) => `${v} ${k}`).join(', ')
-      setSweep(`${r.alerts_issued} new alerts across ${r.farms} farms · weather: ${src}`)
+      setSweep(`${many(r.alerts_issued, 'new alert')} across ${many(r.farms, 'farm')} · weather: ${src}`)
       work.reload()
       summary.reload()
     } finally {

@@ -7,7 +7,7 @@ import { useAuth } from '../../auth/AuthContext'
 import { useAsync } from '../../lib/hooks'
 import { MAIN, SIDE, SPLIT } from '../../ui/layout'
 import { Card, ErrorBox, Pill } from '../../ui/kit'
-import { OutlookPanel, PageHead, Panel, PanelBone } from '../panels'
+import { many, OutlookPanel, PageHead, Panel, PanelBone } from '../panels'
 
 // Every language the app sends in. This list was three, so an officer could
 // check the Marathi, Hindi and English of what they were about to send and had
@@ -120,7 +120,7 @@ export default function Advisories() {
               className="mt-1 w-full min-h-[42px] rounded-xl border border-soil-dark/20 px-3 bg-cream/50 text-sm">
               <option value="">Choose…</option>
               {targets.map((t) => (
-                <option key={t.id} value={t.id}>{t.name} — {t.farms} farms alerted</option>
+                <option key={t.id} value={t.id}>{t.name} — {many(t.farms, 'farm')} alerted</option>
               ))}
             </select>
           </label>
@@ -268,7 +268,7 @@ export default function Advisories() {
                       {h.note && <span className="block text-[11px] text-soil-dark/50 truncate">“{h.note}”</span>}
                     </span>
                     <span className="text-right shrink-0">
-                      <span className="block text-xs tabular-nums text-soil-dark/70">{h.farms} farms</span>
+                      <span className="block text-xs tabular-nums text-soil-dark/70">{many(h.farms, 'farm')}</span>
                       {h.farms > 0 && (
                         <span className="mt-1 block text-[11px] tabular-nums">
                           {h.inspected === 0 ? (
