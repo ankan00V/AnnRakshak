@@ -195,6 +195,54 @@ def publish_new(kb: KB, farm: Farm, notices: list[Notice], alerts: list[Alert], 
                                  "body": c["text"], "url": "/app/alerts"})
 
 
+VERDICT_TEXT = {
+    "title": {
+        "en": "An expert has answered", "hi": "विशेषज्ञ ने जवाब दिया है",
+        "mr": "तज्ज्ञांनी उत्तर दिले आहे", "bn": "একজন বিশেষজ্ঞ উত্তর দিয়েছেন",
+        "ta": "ஒரு நிபுணர் பதில் அளித்துள்ளார்", "te": "ఒక నిపుణుడు సమాధానం ఇచ్చారు",
+        "kn": "ತಜ್ಞರು ಉತ್ತರಿಸಿದ್ದಾರೆ", "ml": "ഒരു വിദഗ്ധൻ മറുപടി നൽകി",
+        "gu": "નિષ્ણાતે જવાબ આપ્યો છે", "pa": "ਮਾਹਰ ਨੇ ਜਵਾਬ ਦਿੱਤਾ ਹੈ",
+    },
+    "found": {
+        "en": "{name}. Open it to see what to do.", "hi": "{name}। क्या करना है, देखिए।",
+        "mr": "{name}. काय करायचे ते पाहा.", "bn": "{name}। কী করতে হবে দেখুন।",
+        "ta": "{name}. என்ன செய்வது என்பதைப் பாருங்கள்.", "te": "{name}. ఏమి చేయాలో చూడండి.",
+        "kn": "{name}. ಏನು ಮಾಡಬೇಕು ಎಂದು ನೋಡಿ.", "ml": "{name}. എന്തു ചെയ്യണമെന്ന് നോക്കുക.",
+        "gu": "{name}. શું કરવું તે જુઓ.", "pa": "{name}। ਕੀ ਕਰਨਾ ਹੈ, ਵੇਖੋ।",
+    },
+    "none": {
+        "en": "Nothing was found on your crop.", "hi": "आपकी फसल पर कुछ नहीं मिला।",
+        "mr": "तुमच्या पिकावर काही आढळले नाही.", "bn": "আপনার ফসলে কিছু পাওয়া যায়নি।",
+        "ta": "உங்கள் பயிரில் எதுவும் காணப்படவில்லை.", "te": "మీ పంటపై ఏమీ కనిపించలేదు.",
+        "kn": "ನಿಮ್ಮ ಬೆಳೆಯ ಮೇಲೆ ಏನೂ ಕಂಡುಬಂದಿಲ್ಲ.", "ml": "നിങ്ങളുടെ വിളയിൽ ഒന്നും കണ്ടെത്തിയില്ല.",
+        "gu": "તમારા પાક પર કશું મળ્યું નથી.", "pa": "ਤੁਹਾਡੀ ਫ਼ਸਲ ਉੱਤੇ ਕੁਝ ਨਹੀਂ ਮਿਲਿਆ।",
+    },
+}
+
+
+def verdict_reached(db: Session, kb: KB, farm: Farm, problem_id: int, target: str | None) -> dict:
+    """Tell the farmer what the expert said, on the channels they already have.
+
+    The rest of the chain worked: the farms around them were warned, and the
+    district office saw it the same minute. The one person the verdict was for
+    was the only one it never reached — they had to reopen the app and find
+    their own way into History to learn that somebody had answered. For a
+    farmer who sent a photograph and went back to work, that is the difference
+    between an expert service and a filing cabinet.
+
+    Sent whatever the hour: unlike the weather notices this is not a forecast
+    that can wait for morning, it is the answer to a question they asked.
+    """
+    lang = farm.lang or "en"
+    name = tr(kb.targets[target]["names"], lang) if target and target in kb.targets else ""
+    body = (tr(VERDICT_TEXT["found"], lang).replace("{name}", name) if name
+            else tr(VERDICT_TEXT["none"], lang))
+    title, url = tr(VERDICT_TEXT["title"], lang), f"/app/history/{problem_id}"
+    broker.publish(farm.id, {"type": "verdict", "id": problem_id, "severity": "info",
+                             "title": title, "body": body, "url": url})
+    return push(db, farm.id, _payload(title, body, url, f"verdict-{problem_id}", "info"))
+
+
 def deliver_push(db: Session, kb: KB, farm: Farm, now: datetime) -> int:
     """Phone notifications for notices and alerts not yet handled on this channel."""
     today = now.date()

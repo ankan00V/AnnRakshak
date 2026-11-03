@@ -186,6 +186,56 @@ def test_a_resolved_case_cannot_be_handed_on(client):
     assert client.post(f"/api/cases/{case_id}/reassign", json={}).status_code == 409
 
 
+def test_the_verdict_reaches_the_farmer_who_asked_for_it(client, monkeypatch):
+    """propagate() warns the farms around this one and excludes the origin by
+    design, which left the farmer who actually sent the photograph as the only
+    party the answer never reached: they had to reopen the app and find their
+    own way into History to learn that somebody had replied."""
+    from app import notify
+
+    sent, pushed = [], []
+    monkeypatch.setattr(notify.broker, "publish", lambda fid, ev: sent.append((fid, ev)) or 1)
+    monkeypatch.setattr(notify, "push", lambda db, fid, payload: pushed.append((fid, payload)) or {})
+
+    _officers(2)
+    case_id = diagnose(client, 1, "unsure")["case"]["id"]
+    client.post(f"/api/cases/{case_id}/resolve", json={
+        "verdict": "confirmed", "final_label": "rice_brown_spot", "expert_name": "Dr. Kale"})
+
+    assert sent, "no open tab was told the expert had answered"
+    farm_id, event = sent[-1]
+    assert farm_id == 1 and event["type"] == "verdict"
+    assert event["url"].startswith("/app/history/"), "the farmer must land on the verdict itself"
+    assert event["title"] and event["body"]
+    assert pushed and pushed[-1][0] == 1, "no phone notification for the farmer who asked"
+
+
+def test_a_verdict_of_nothing_found_still_reaches_the_farmer(client, monkeypatch):
+    from app import notify
+
+    sent = []
+    monkeypatch.setattr(notify.broker, "publish", lambda fid, ev: sent.append(ev) or 1)
+    monkeypatch.setattr(notify, "push", lambda db, fid, payload: {})
+    _officers(2)
+    case_id = diagnose(client, 1, "unsure")["case"]["id"]
+    client.post(f"/api/cases/{case_id}/resolve", json={
+        "verdict": "confirmed", "final_label": "healthy", "expert_name": "Dr. Kale"})
+    assert sent and sent[-1]["type"] == "verdict"
+
+
+def test_a_failed_push_does_not_undo_a_committed_verdict(client, monkeypatch):
+    """A dead push endpoint is not a failed verdict."""
+    from app import notify
+
+    monkeypatch.setattr(notify, "verdict_reached",
+                        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("push is down")))
+    _officers(2)
+    case_id = diagnose(client, 1, "unsure")["case"]["id"]
+    r = client.post(f"/api/cases/{case_id}/resolve", json={
+        "verdict": "confirmed", "final_label": "rice_brown_spot", "expert_name": "Dr. Kale"})
+    assert r.status_code == 200 and r.json()["final_label"] == "rice_brown_spot"
+
+
 def test_expert_can_record_a_healthy_plant(client):
     """The model saw a disease; the officer looked and the crop is fine."""
     _officers(2)

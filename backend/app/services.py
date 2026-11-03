@@ -10,6 +10,7 @@ from __future__ import annotations
 import calendar
 import io
 import json
+import logging
 import math
 import uuid
 from datetime import UTC, date, datetime, timedelta
@@ -61,6 +62,8 @@ from app.models import (
     TrapReading,
     User,
 )
+
+log = logging.getLogger("annrakshak.services")
 
 HEALTHY_NAME = {"en": "Healthy {crop}", "hi": "स्वस्थ {crop}", "mr": "निरोगी {crop}"}
 
@@ -1294,6 +1297,16 @@ def resolve_case(
         advice = _advise(db, kb, problem, final_label, "expert", farm.lang, farm)
         spread = propagate(db, kb, farm, final_label, case.id, today)
     db.commit()
+    # propagate() warns the farms *around* this one — it excludes the origin by
+    # design. Which left the farmer who actually asked as the only party the
+    # verdict never reached. notify imports this module, so it is taken here
+    # rather than at the top; delivery must never be the reason a verdict that
+    # is already committed fails to return.
+    try:
+        from app import notify
+        notify.verdict_reached(db, kb, farm, problem.id, None if special else final_label)
+    except Exception:  # noqa: BLE001  a dead push endpoint is not a failed verdict
+        log.exception("verdict notification failed for farm %s", farm.id)
     return {
         "confirmation_id": conf.id, "verdict": verdict, "final_label": final_label,
         "model_label": model_label, "spread_alerts": spread, "followup": advice["followup"],

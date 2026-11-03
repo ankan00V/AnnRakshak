@@ -78,6 +78,7 @@ function Shell() {
     }
     es.addEventListener('notice', on)
     es.addEventListener('alert', on)
+    es.addEventListener('verdict', on)   // an expert answered a case this farm sent
     return () => es.close()
   }, [farmId, lang, setUnread, setToast])
 
