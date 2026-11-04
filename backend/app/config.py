@@ -251,7 +251,14 @@ OTP_CHANNEL = "email"
 """Where one-time codes go. Both roles give a mobile number at sign-up, but
 there is no free SMS gateway yet, so every code is emailed (SMTP above)."""
 EXPERT_AUTO_VERIFY = _flag("ANNRAKSHAK_EXPERT_AUTO_VERIFY", not PROD)
-"""Demo builds verify experts at sign-up; production sets this off and the district office verifies."""
+"""Whether this build takes an officer's sign-up form at its word: both the
+badge and the rank. On, a sign-up is verified and a supervisory post carries a
+supervisor's authority, which is what lets a laptop and a judge's walkthrough
+have somebody who can route a backlog with nobody around to appoint them. Off,
+the post is only the claim the form made and the district office grants both
+(POST /api/officials/officers/{id}/verify). Production sets this off; the first
+supervisor on a new production database comes from seed.py, since by design no
+sign-up can make one."""
 # --- Cloudflare Turnstile (the "are you a person" box on sign-in) ---------
 
 TURNSTILE_SITEKEY = os.environ.get("TURNSTILE_SITEKEY", "1x00000000000000000000AA")
@@ -369,8 +376,8 @@ def start_checks() -> list[str]:
     if DEMO_LOGIN:
         problems.append("ANNRAKSHAK_DEMO_LOGIN is on: anyone can sign in as a demo farmer or officer")
     if EXPERT_AUTO_VERIFY:
-        problems.append("ANNRAKSHAK_EXPERT_AUTO_VERIFY is on: an officer verifies themselves and may "
-                        "read any farmer's case")
+        problems.append("ANNRAKSHAK_EXPERT_AUTO_VERIFY is on: an officer verifies themselves, takes a "
+                        "supervisor's rank from their own sign-up form, and may read any farmer's case")
     if not COOKIE_SECURE:
         problems.append("ANNRAKSHAK_COOKIE_SECURE is off: the session cookie will travel over plain HTTP")
     if DB_URL.startswith("sqlite"):

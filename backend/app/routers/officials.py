@@ -463,14 +463,23 @@ def pending_officers(request: Request, db: Session = Depends(get_db)):
 
 class VerifyIn(BaseModel):
     verified: bool = True
+    supervisor: bool | None = None
+    """The rank, which the district office grants and the sign-up form no longer
+    claims. Absent leaves a standing appointment where it is, so letting an
+    officer in is not the same act as promoting them."""
 
 
 @router.post("/officers/{user_id}/verify", dependencies=[Depends(auth.require_supervisor)])
 def verify_officer(user_id: int, body: VerifyIn, request: Request, db: Session = Depends(get_db)):
-    """A supervisor lets an officer in — never themselves, and never across the
-    line between showcase data and real farmers."""
+    """A supervisor lets an officer in, and says whether that desk carries a
+    supervisor's authority — never themselves, never across the line between
+    showcase data and real farmers, and never into a district they do not work
+    themselves."""
     try:
-        return office.set_verified(db, user_id, body.verified, by=_me(request, db))
+        return office.set_verified(db, user_id, body.verified, supervisor=body.supervisor,
+                                   by=_me(request, db))
+    except PermissionError as exc:
+        raise HTTPException(403, str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(409 if "own" in str(exc) else 404, str(exc)) from exc
 

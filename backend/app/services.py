@@ -695,11 +695,15 @@ def case_is_visible_to(db: Session, case: Case, user: User | None) -> bool:
 def is_supervisor(db: Session, user: User | None) -> bool:
     """With sign-in off there is nobody to be, so there is nothing to withhold —
     the same convention as auth.can_open_farm, and the older flow tests rely on
-    it."""
+    it.
+
+    Verified as well as ranked, the pair auth.require_supervisor reads: the rank
+    comes from the district office, and an account the office has not let in has
+    nothing from it."""
     if not config.AUTH_ENFORCE:
         return True
     profile = db.get(ExpertProfile, user.id) if user and user.role == "expert" else None
-    return bool(profile and profile.supervisor)
+    return bool(profile and profile.supervisor and profile.verified)
 
 
 def workload(db: Session, district: str | None = None, demo: bool = False) -> list[dict]:

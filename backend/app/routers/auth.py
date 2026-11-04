@@ -506,11 +506,21 @@ def signup_expert(body: ExpertSignup, request: Request, response: Response, db: 
                          reporting_designation=body.reporting_designation.strip(),
                          reporting_contact=body.reporting_contact.strip(),
                          declared_at=auth.now(),
-                         # The rank follows the post. Without this every sign-up
-                         # was an ordinary desk, so a district whose officers had
-                         # all signed up had nobody who could route its backlog
-                         # or verify the next arrival.
-                         supervisor=body.designation in SUPERVISOR_DESIGNATIONS))
+                         # The post is a claim, not the rank. Verifying a
+                         # colleague, routing a district's backlog and moving
+                         # another desk's cases are the three things a
+                         # supervisor may do, and an account that picked
+                         # "Agriculture officer" out of this dropdown held all
+                         # three from its first minute -- which is the same as
+                         # nobody granting them. The claim stays on the record
+                         # in `designation`, where the district office reads it
+                         # on the pending list, rings the reporting officer and
+                         # grants the rank itself. A demo build trusts the form,
+                         # exactly as it does for `verified` above, so a laptop
+                         # and a judge's walkthrough still have a supervisor
+                         # without anybody around to appoint one.
+                         supervisor=(config.EXPERT_AUTO_VERIFY
+                                     and body.designation in SUPERVISOR_DESIGNATIONS)))
     auth.start_session(db, user, response, request.headers.get("user-agent"))
     db.commit()
     return _me(db, user)

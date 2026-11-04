@@ -330,12 +330,24 @@ def actions(db: Session, *, demo: bool, limit: int = 60) -> list[dict]:
              "at": a.at.isoformat() if a.at else None} for a in rows]
 
 
-def set_verified(db: Session, user_id: int, verified: bool, *, by: User | None = None) -> dict:
-    """Let an officer in, or take the badge back.
+def set_verified(db: Session, user_id: int, verified: bool, *, supervisor: bool | None = None,
+                 by: User | None = None) -> dict:
+    """Let an officer in, or take the badge back — and say what rank they hold.
 
     Never yourself: an officer who can verify their own account has not been
     verified by anybody. Never across the demo line either — a showcase
-    supervisor has no business over a real district's staff."""
+    supervisor has no business over a real district's staff. And not into a
+    district the verifier does not cover: a supervisor answers for the
+    districts recorded against their own post, so letting a stranger into a
+    district they have never worked is granting reach they do not hold
+    themselves. The patch that covers an officer's advisories (_within_reach in
+    routers/officials.py) takes the same line, for the same reason.
+
+    `supervisor` is the rank, and this is where it is granted, because the
+    sign-up form used to grant it to whoever chose the right designation out of
+    a dropdown. Left as None it is not touched, so an ordinary verification --
+    or taking the badge back from somebody who has gone on leave -- neither
+    promotes nor demotes anybody."""
     profile = db.get(ExpertProfile, user_id)
     if profile is None:
         raise ValueError("not an officer")
@@ -344,12 +356,22 @@ def set_verified(db: Session, user_id: int, verified: bool, *, by: User | None =
     subject = db.get(User, user_id)
     if by is not None and subject is not None and subject.is_demo != by.is_demo:
         raise ValueError("not an officer")   # same answer as an id that is not there
+    if by is not None:
+        boss = db.get(ExpertProfile, by.id)
+        mine = set(boss.districts or []) if boss else set()
+        theirs = set(profile.districts or [])
+        if not mine & theirs:
+            raise PermissionError(
+                "this officer works districts you do not cover: "
+                + (", ".join(sorted(theirs)) or "none are recorded against their post"))
     profile.verified = verified
+    if supervisor is not None:
+        profile.supervisor = supervisor
     record(db, actor=by, action="verify_officer" if verified else "unverify_officer",
            subject="officer", subject_id=user_id,
-           detail={"name": subject.name if subject else None})
+           detail={"name": subject.name if subject else None, "supervisor": profile.supervisor})
     db.commit()
-    return {"user_id": user_id, "verified": verified}
+    return {"user_id": user_id, "verified": verified, "supervisor": profile.supervisor}
 
 
 # --------------------------------------------------------------------------
