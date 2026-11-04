@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { AlertTriangle, ChevronRight, LocateFixed, Plus, Sprout } from 'lucide-react'
-import { api } from '../../api/client'
+import { AlertTriangle, ChevronRight, Plus, Sprout } from 'lucide-react'
+import { api, ApiError } from '../../api/client'
 import type { CropInfo, Farm } from '../../api/types'
 import WherePicker, { type Where } from '../../auth/WherePicker'
 import { useAsync } from '../../lib/hooks'
@@ -209,26 +209,30 @@ function RegisterForm({ crops, onDone }: {
   })
   const [area, setArea] = useState('2')
   const [ph, setPh] = useState('')  // Soil Health Card pH, optional
-  const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null)
-  const [locating, setLocating] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const [busy, setBusy] = useState(false)
 
-  const locate = () => {
-    if (!navigator.geolocation) return
-    setLocating(true)
-    navigator.geolocation.getCurrentPosition(
-      (p) => {
-        setCoords({ lat: p.coords.latitude, lon: p.coords.longitude })
-        setLocating(false)
-      },
-      () => setLocating(false),
-      { timeout: 10000 },
-    )
+  /** The refusal, in the farmer's own language.
+   *
+   *  ErrorBox shows an error's own message, and FastAPI answers a body it
+   *  cannot parse with a list of pydantic objects: what reached the farmer was
+   *  `[{"type":"missing","loc":["body","lat"]...}]`, in English. The gate on
+   *  Save is what keeps that body from being sent at all, so a 422 arriving
+   *  here is our mistake and not something a farmer can read or act on — say
+   *  the one true thing in their language, and leave the detail in the console
+   *  for whoever has to fix it. A sentence the server wrote itself comes back
+   *  already in `lang`, and is passed through untouched. */
+  const refusal = (e: unknown): Error => {
+    if (!(e instanceof ApiError)) return e instanceof Error ? e : new Error(t('notSaved'))
+    if (e.status === 0) return new Error(t('offline'))
+    if (e.status >= 500 || (e.status === 422 && e.message.trimStart().startsWith('['))) {
+      console.error('POST /api/farms refused this field:', e.message)
+      return new Error(t('notSaved'))
+    }
+    return e
   }
 
   const submit = async () => {
-
     setBusy(true)
     setError(null)
     try {
@@ -240,8 +244,12 @@ function RegisterForm({ crops, onDone }: {
         date_basis: basis || 'sown',
         state: where.state || null,
         district: where.district,
-        lat: where.lat ?? coords?.lat,
-        lon: where.lon ?? coords?.lon,
+        // The spot, and never a missing one: JSON.stringify leaves an
+        // undefined out of the body altogether, and the route has neither a
+        // default for lat and lon nor the village lookup sign-up falls back
+        // to. `whereBad` below is what guarantees there is a point to send.
+        lat: where.lat,
+        lon: where.lon,
         area_acres: parseFloat(area),
         irrigation,
         village: where.village || null,
@@ -249,7 +257,7 @@ function RegisterForm({ crops, onDone }: {
       })
       onDone(f.id)
     } catch (e) {
-      setError(e as Error)
+      setError(refusal(e))
     } finally {
       setBusy(false)
     }
@@ -258,6 +266,14 @@ function RegisterForm({ crops, onDone }: {
   const field = 'w-full min-h-[48px] rounded-xl border border-soil-dark/20 px-3 bg-cream/50 text-sm focus:outline-none focus:border-leaf'
   const selected = crops.find((c) => c.id === crop)
   const phOk = !ph || (parseFloat(ph) >= 3 && parseFloat(ph) <= 11)
+  // Where the field is, which this form left out of its own gate: the three
+  // faults WherePicker marks, and the spot the weather, the spray window and
+  // the outbreak radius are read at. Sign-up can go without a point — there
+  // the server looks the village up — but /api/farms cannot, so a farmer who
+  // has not given one is told so here, beside the box that is missing it,
+  // instead of being handed the server's complaint about `body.lat`.
+  const whereBad = !where.state || !where.district || where.village.trim().length < 2
+    || where.lat === null || where.lon === null
 
   return (
     <Card className="p-4 space-y-3">
@@ -299,7 +315,14 @@ function RegisterForm({ crops, onDone }: {
           : <Ask label={t('sowingDateOnly')} say="helpSowing" />}
         <input className={field} type="date" value={sowing} onChange={(e) => setSowing(e.target.value)} />
       </label>
-      <WherePicker value={where} onChange={setWhere} />
+      {/* The picker is the only place this form asks where the field is. A
+          second location button below used to set coordinates it could not
+          see, and no state, district or village with them, so the question
+          looked answered while the body went up without the names. Sign-up
+          reveals these faults on the way to its next step; this form has one
+          button and it is disabled while anything is missing, so they have to
+          be on screen before the farmer presses anything. */}
+      <WherePicker value={where} onChange={setWhere} showErrors needPoint />
       <div className="text-xs text-soil-dark/60">
         <p className="mb-1"><Ask label={t('authIrrigation')} say="helpIrrigation" /></p>
         <Chips columns={2} value={[irrigation]} onChange={([v]) => setIrrigation(v)}
@@ -311,15 +334,12 @@ function RegisterForm({ crops, onDone }: {
           placeholder="6.8" onChange={(e) => setPh(e.target.value)} />
         <span className="block mt-1 text-[11px] text-soil-dark/45">{t('soilPhCardHint')}</span>
       </label>
-      <button type="button" onClick={locate}
-        className="flex items-center gap-2 text-sm text-leaf-deep font-medium min-h-[40px]">
-        <LocateFixed className="w-4 h-4" />
-        {locating ? t('locating') : coords ? `${t('locationSet')} (${coords.lat.toFixed(3)}, ${coords.lon.toFixed(3)})` : t('useLocation')}
-      </button>
       {error && <ErrorBox error={error} />}
+      {whereBad && <p className="text-[12px] text-soil-dark/60 leading-snug">{t('authNeedWhere')}</p>}
       <button
         onClick={submit}
-        disabled={busy || !name.trim() || !(parseFloat(area) > 0) || !phOk || (!!selected?.nursery_days && !basis)}
+        disabled={busy || !name.trim() || !(parseFloat(area) > 0) || !phOk || whereBad
+          || (!!selected?.nursery_days && !basis)}
         className="w-full min-h-[48px] rounded-full bg-leaf-deep text-cream text-sm font-medium disabled:opacity-50"
       >
         {t('save')}
