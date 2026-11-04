@@ -577,9 +577,31 @@ def prior_counts(db: Session, district: str, crop: str) -> dict[str, tuple[int, 
     return {r.target: (r.confirmed, r.corrected) for r in rows}
 
 
+def _open_cases_like(farm: Farm):
+    """The cases a farmer is actually waiting behind.
+
+    Counted over every open case in the database, the position was not their
+    position and the ETA was not their wait: it included other districts, whose
+    officers will never see this case, and it counted across the demo line in
+    both directions. assign_case routes on the district and that line
+    (officers_for), so the queue a farmer stands in is the one those two
+    define, and telling them otherwise is a number this app has no business
+    being confident about."""
+    return (select(Case.id)
+            .join(Problem, Problem.id == Case.problem_id)
+            .join(Farm, Farm.id == Problem.farm_id)
+            .where(Case.status == "open",
+                   Farm.district == farm.district,
+                   Farm.is_demo.is_(bool(farm.is_demo))))
+
+
 def _queue_position(db: Session, case: Case) -> int:
+    problem = db.get(Problem, case.problem_id)
+    farm = db.get(Farm, problem.farm_id) if problem else None
+    if farm is None:
+        return 1
     ahead = db.scalar(
-        select(func.count(Case.id)).where(Case.status == "open", Case.id < case.id)
+        select(func.count()).select_from(_open_cases_like(farm).where(Case.id < case.id).subquery())
     )
     return (ahead or 0) + 1
 
@@ -591,9 +613,19 @@ def case_briefs(db: Session, cases: list[Case]) -> dict[int, dict]:
     — it is a round trip each, and the queue took seconds to open."""
     if not cases:
         return {}
-    open_ids = [i for (i,) in db.execute(
-        select(Case.id).where(Case.status == "open").order_by(Case.id)).all()]
-    position = {cid: n + 1 for n, cid in enumerate(open_ids)}
+    # One query for every open case with the two things that decide which queue
+    # it sits in, then a position inside each queue rather than across the lot.
+    rows = db.execute(
+        select(Case.id, Farm.district, Farm.is_demo)
+        .join(Problem, Problem.id == Case.problem_id)
+        .join(Farm, Farm.id == Problem.farm_id)
+        .where(Case.status == "open").order_by(Case.id)).all()
+    seen: dict[tuple[str | None, bool], int] = {}
+    position: dict[int, int] = {}
+    for cid, district, is_demo in rows:
+        queue = (district, bool(is_demo))
+        seen[queue] = seen.get(queue, 0) + 1
+        position[cid] = seen[queue]
     officer_ids = {c.assigned_to for c in cases if c.assigned_to}
     names = dict(db.execute(select(User.id, User.name).where(User.id.in_(officer_ids))).all()) if officer_ids else {}
     out = {}
@@ -872,6 +904,26 @@ def escalate(db: Session, problem: Problem, reason: str) -> Case:
 
 
 def _schedule_followup(db: Session, problem: Problem, today: date | None = None) -> FollowUp:
+    """The one open question on this problem, asked once.
+
+    A problem can be advised more than once — a second opinion, a re-decide
+    after the model is retrained, the same photograph sent twice — and each
+    one used to add another follow-up. They all come due on the same day and
+    ask the same question about the same disease, so the farmer's home screen
+    stacked identical cards and answering one left the rest sitting there.
+    Seen on the demonstration rice field: problem 121 with two.
+
+    An *answered* follow-up is not in the way, which is what lets
+    `respond_followup` schedule the next round: it sets the response before
+    it asks for one, and the query below flushes that first.
+    """
+    open_already = db.scalar(
+        select(FollowUp)
+        .where(FollowUp.problem_id == problem.id, FollowUp.response.is_(None))
+        .order_by(FollowUp.id)
+    )
+    if open_already:
+        return open_already
     fu = FollowUp(problem_id=problem.id, due_on=(today or date.today()) + timedelta(days=FOLLOWUP_DUE_DAYS))
     db.add(fu)
     db.flush()
