@@ -3,6 +3,7 @@ import type {
   AdvisoryIssued,
   AdvisoryPreview,
   AdvisoryRow,
+  AdvisoryTargetRow,
   AlertView,
   AuthOptions,
   CaseBrief,
@@ -277,6 +278,8 @@ export const api = {
   wakeCase: (id: number) => req<CaseBrief>(`/api/cases/${id}/wake`, { method: 'POST' }),
   recordInspection: (alertId: number, outcome: 'found' | 'nothing_found') =>
     req<{ id: number; outcome: string }>(`/api/officials/alerts/${alertId}/outcome`, json({ outcome })),
+  advisoryTargets: (crop: string, lang: Lang = 'en') =>
+    req<AdvisoryTargetRow[]>(`/api/officials/advisories/targets?crop=${crop}&lang=${lang}`),
   advisoryPreview: (d: AdvisoryDraft) => req<AdvisoryPreview>('/api/officials/advisories/preview', json(d)),
   issueAdvisory: (d: AdvisoryDraft) => req<AdvisoryIssued>('/api/officials/advisories', json(d)),
   advisoryHistory: () => req<AdvisoryRow[]>('/api/officials/advisories'),

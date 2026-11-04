@@ -403,6 +403,20 @@ def worklist(request: Request, lang: str = "en", db: Session = Depends(get_db), 
     return office.worklist(db, kb, demo=_demo(request, db), lang=lang)
 
 
+@router.get("/advisories/targets")
+def advisory_targets(request: Request, crop: str, lang: str = "en",
+                     db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    """What this crop may be advised for, with the count the risk engine has
+    flagged for each — not only the problems it has flagged.
+
+    An officer acts on a scout's report or a neighbouring district's telephone
+    call as often as on the engine's own reading, and the screen used to offer
+    them nothing but the reading."""
+    if crop not in kb.crops:
+        raise HTTPException(422, "unknown crop")
+    return office.advisory_targets(db, kb, crop=crop, demo=_demo(request, db), lang=lang)
+
+
 class AdvisoryIn(BaseModel):
     target: str
     crop: str

@@ -170,6 +170,17 @@ export interface AdvisoryDraft {
   audience?: 'all' | 'alerted' | 'nearby' | 'stage'
 }
 
+/** A problem an officer may issue an advisory for: everything the knowledge
+ *  base can hand a farmer tasks for, not only what the risk engine has raised
+ *  this week. `alerted` is how many farms it has already flagged. */
+export interface AdvisoryTargetRow {
+  target: string
+  name: string
+  crop: string
+  kind: string
+  alerted: number
+}
+
 export interface AdvisoryPreview {
   target: string
   name: string

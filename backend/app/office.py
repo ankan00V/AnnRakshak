@@ -132,6 +132,50 @@ def farms_matching(db: Session, *, crop: str, districts: list[str], demo: bool,
     return farms
 
 
+def advisory_targets(db: Session, kb: KB, *, crop: str, demo: bool, lang: str = "en",
+                    days: int = 7) -> list[dict]:
+    """Every problem of this crop an advisory may be issued for, and how many
+    farms the risk engine has already flagged for each.
+
+    The officer's screen used to offer only the outlook's own rows — what the
+    weather rules had raised in the last week — which left the one lever the
+    office pulls useless in exactly the week it is most wanted. A scout walks a
+    block and reports something no rule saw; the next district rings about an
+    outbreak; a seasonal warning has to go out before the first case does. On a
+    quiet week the dropdown was empty and there was nothing to send.
+
+    The two conditions issue() enforces are the only ones applied here, so what
+    an officer is offered is exactly what the office may send: the problem
+    belongs to this crop, and the knowledge base authors inspection tasks for
+    it. A target with no authored tasks is withheld rather than offered and then
+    refused at the last step — an advisory with nothing to go and check is not
+    an advisory.
+    """
+    since = date.today() - timedelta(days=days)
+    alerted: Counter[str] = Counter()
+    for target, _ in db.execute(
+        # One farm counted once per problem however many alerts it carries, and
+        # only this season's standing crop — the same window the outlook reads,
+        # so a problem that is building shows the same number in the dropdown
+        # as in the panel beside it.
+        select(Alert.target, Alert.farm_id)
+        .join(Farm, Farm.id == Alert.farm_id)
+        .where(Alert.issued_on >= since, Farm.crop == crop, Farm.is_demo.is_(demo),
+               Alert.season_no == Farm.season_no, Farm.status == "growing")
+        .distinct()
+    ).all():
+        alerted[target] += 1
+    rows = [
+        {"target": tid, "name": tr(t["names"], lang), "crop": crop, "kind": t["kind"],
+         "alerted": alerted.get(tid, 0)}
+        for tid, t in kb.targets.items()
+        if t["crop"] == crop and (kb.rules.get(tid, {}).get("tasks") or {}).get("en")
+    ]
+    # What is building first, then by name: fifteen problems is a list to read,
+    # not one to search.
+    return sorted(rows, key=lambda r: (-r["alerted"], r["name"]))
+
+
 def preview(db: Session, kb: KB, *, target: str, crop: str, districts: list[str],
             kind: str, note: str | None, officer: str, demo: bool,
             audience: str = "all") -> dict:
@@ -345,9 +389,11 @@ def set_verified(db: Session, user_id: int, verified: bool, *, supervisor: bool 
 
     `supervisor` is the rank, and this is where it is granted, because the
     sign-up form used to grant it to whoever chose the right designation out of
-    a dropdown. Left as None it is not touched, so an ordinary verification --
-    or taking the badge back from somebody who has gone on leave -- neither
-    promotes nor demotes anybody."""
+    a dropdown. Left as None it is not touched, so an ordinary verification
+    neither promotes nor demotes anybody. Taking the badge back always takes
+    the rank with it: otherwise an officer sent away and later let back in
+    would pick the rank up again on the way, which nobody asked for and nobody
+    would see happen.""" 
     profile = db.get(ExpertProfile, user_id)
     if profile is None:
         raise ValueError("not an officer")
@@ -360,12 +406,20 @@ def set_verified(db: Session, user_id: int, verified: bool, *, supervisor: bool 
         boss = db.get(ExpertProfile, by.id)
         mine = set(boss.districts or []) if boss else set()
         theirs = set(profile.districts or [])
-        if not mine & theirs:
+        # Every district of theirs, not merely one in common. A supervisor who
+        # covers Bhandara admitting an officer whose post claims Bhandara,
+        # Nagpur and Pune would be handing out reach into two districts they do
+        # not hold themselves -- and if the rank goes with it, handing out the
+        # power to admit others there too. Overlap is not authority.
+        outside = sorted(theirs - mine)
+        if outside or not theirs:
             raise PermissionError(
                 "this officer works districts you do not cover: "
-                + (", ".join(sorted(theirs)) or "none are recorded against their post"))
+                + (", ".join(outside) or "none are recorded against their post"))
     profile.verified = verified
-    if supervisor is not None:
+    if not verified:
+        profile.supervisor = False   # the badge goes, and the rank with it
+    elif supervisor is not None:
         profile.supervisor = supervisor
     record(db, actor=by, action="verify_officer" if verified else "unverify_officer",
            subject="officer", subject_id=user_id,

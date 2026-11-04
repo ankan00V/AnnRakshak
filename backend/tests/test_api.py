@@ -186,6 +186,63 @@ def test_a_resolved_case_cannot_be_handed_on(client):
     assert client.post(f"/api/cases/{case_id}/reassign", json={}).status_code == 409
 
 
+def test_a_supervisor_cannot_admit_an_officer_into_districts_they_do_not_hold(client):
+    """Overlap is not authority. A supervisor covering one district admitting an
+    officer whose post claims three would be handing out reach into two they do
+    not hold — and with the rank, the power to admit others there too."""
+    import pytest
+
+    from app import office
+    from app.models import ExpertProfile, User
+
+    with SessionLocal() as db:
+        boss = User(role="expert", name="Boss", email="boss@kvk.test")
+        hand = User(role="expert", name="Newcomer", email="new@kvk.test")
+        db.add_all([boss, hand])
+        db.flush()
+        db.add(ExpertProfile(user_id=boss.id, designation="kvk_scientist", organisation="KVK",
+                             employee_id="B1", qualification="phd", experience_years=9,
+                             districts=["Bhandara"], crops=["rice"], specialities=["plant_pathology"],
+                             languages=["en"], verified=True, supervisor=True))
+        db.add(ExpertProfile(user_id=hand.id, designation="agri_officer", organisation="DoA",
+                             employee_id="N1", qualification="msc_agri", experience_years=2,
+                             districts=["Bhandara", "Nagpur"], crops=["rice"],
+                             specialities=["entomology"], languages=["en"], verified=False))
+        db.commit()
+        boss_id, hand_id = boss.id, hand.id
+
+    with SessionLocal() as db:
+        with pytest.raises(PermissionError) as e:
+            office.set_verified(db, hand_id, True, supervisor=True, by=db.get(User, boss_id))
+        assert "Nagpur" in str(e.value)
+
+
+def test_taking_the_badge_back_takes_the_rank_with_it(client):
+    """Otherwise an officer sent away and later let back in picks the rank up
+    again on the way, which nobody asked for and nobody would see happen."""
+    from app import office
+    from app.models import ExpertProfile, User
+
+    with SessionLocal() as db:
+        boss = User(role="expert", name="Boss2", email="boss2@kvk.test")
+        them = User(role="expert", name="OnLeave", email="leave@kvk.test")
+        db.add_all([boss, them])
+        db.flush()
+        for u, sup in ((boss, True), (them, True)):
+            db.add(ExpertProfile(user_id=u.id, designation="kvk_scientist", organisation="KVK",
+                                 employee_id=f"X{u.id}", qualification="phd", experience_years=9,
+                                 districts=["Bhandara"], crops=["rice"],
+                                 specialities=["plant_pathology"], languages=["en"],
+                                 verified=True, supervisor=sup))
+        db.commit()
+        boss_id, them_id = boss.id, them.id
+
+    with SessionLocal() as db:
+        office.set_verified(db, them_id, False, by=db.get(User, boss_id))
+    with SessionLocal() as db:
+        assert db.get(ExpertProfile, them_id).supervisor is False
+
+
 def test_an_advisory_is_confined_to_the_districts_an_officer_covers(monkeypatch):
     """An advisory is a message to every farm of a crop in a district. Nothing
     compared the list in the request against the patch the officer was verified
