@@ -27,7 +27,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
-from app import auth, config, live, notify, services, watch
+from app import auth, config, live, notify, runtime, services, watch
 from app.config import EMAIL_BACKEND, PUSH_HOSTS
 from app.db import get_db
 from app.engine import agromet, agroweather, satellite
@@ -171,17 +171,37 @@ async def events(farm_id: int, request: Request, db: Session = Depends(get_db)):
     async def stream():
         q = notify.broker.subscribe(farm_id)
         ends = asyncio.get_running_loop().time() + SSE_MAX_SECONDS
+        # Set the moment the process starts shutting down. Waiting on it
+        # alongside the queue is what lets a restart finish now instead of
+        # holding the connection — and the process — open until `ends`.
+        stopping = asyncio.ensure_future(runtime.wait())
+        pending_get: asyncio.Future | None = None
         try:
             yield "retry: 5000\n\n"
             # Bounded lifetime: EventSource reconnects by itself, and a server
             # restart or deploy never waits on a stream that is open for hours.
             while not await request.is_disconnected() and asyncio.get_running_loop().time() < ends:
-                try:
-                    ev = await asyncio.wait_for(q.get(), timeout=20)
+                # The read is kept across iterations rather than cancelled on
+                # every keep-alive: a cancelled get() that had already taken an
+                # event off the queue would drop it.
+                if pending_get is None:
+                    pending_get = asyncio.ensure_future(q.get())
+                done, _ = await asyncio.wait({pending_get, stopping}, timeout=20,
+                                             return_when=asyncio.FIRST_COMPLETED)
+                if stopping in done:
+                    break
+                if pending_get in done:
+                    ev = pending_get.result()
+                    pending_get = None
                     yield f"event: {ev['type']}\ndata: {json.dumps(ev, ensure_ascii=False)}\n\n"
-                except TimeoutError:
+                else:
                     yield ": keep-alive\n\n"  # proxies close silent connections
         finally:
+            # Only now, with the subscription going away, is dropping an
+            # un-yielded event the right thing to do.
+            if pending_get is not None:
+                pending_get.cancel()
+            stopping.cancel()
             notify.broker.unsubscribe(farm_id, q)
 
     return StreamingResponse(stream(), media_type="text/event-stream",
