@@ -646,7 +646,14 @@ def _label_target(db: Session, farm: Farm, problem_id: int | None) -> str | None
 
 @router.post("/labelcheck")
 def label_check(body: LabelCheckIn, request: Request, db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
-    farm = _writable_farm(db, body.farm_id, request)
+    # Reading the label of a bottle writes nothing: labelcheck.check is a
+    # knowledge-base lookup with no database in it at all, and its sibling
+    # /labelcheck/note has always taken the read gate. This one asked for write
+    # permission, so the shared demo field refused it — and the screen, finding
+    # the field read-only, hid the spray check altogether. A judge pressing
+    # "Demo farmer" could not see the one feature whose whole point is that it
+    # can only ever say no.
+    farm = _farm(db, body.farm_id)
     auth.check_farm(auth.signed_in(request, db), farm)
     target = _label_target(db, farm, body.problem_id)
     out = labelcheck.check(kb, body.product, farm.crop, target, body.lang) | {"target": target}
