@@ -463,6 +463,8 @@ const en = {
   loading: 'Loading…',
   offline: 'Cannot reach the server. Check your connection.',
   retry: 'Retry',
+  lastKnown: 'Cannot reach the server. This is what your phone last saved — it may have changed since.',
+  lastKnownAt: 'Cannot reach the server. This is what your phone saved — {when}. It may have changed since.',
   notSaved: 'That did not save. Try again.',
   acres: 'acres',
 
@@ -1119,6 +1121,8 @@ const hi: Partial<Record<Key, string>> = {
   loading: 'लोड हो रहा है…',
   offline: 'सर्वर से संपर्क नहीं। कनेक्शन जाँचें।',
   retry: 'फिर से',
+  lastKnown: 'सर्वर से संपर्क नहीं। यह आपके फोन में सहेजी गई पिछली जानकारी है — अब बदल भी सकती है।',
+  lastKnownAt: 'सर्वर से संपर्क नहीं। यह आपके फोन में सहेजी गई जानकारी है — {when}। अब बदल भी सकती है।',
   notSaved: 'यह सहेजा नहीं गया। फिर कोशिश कीजिए।',
   acres: 'एकड़',
 
@@ -1773,6 +1777,8 @@ const mr: Partial<Record<Key, string>> = {
   loading: 'लोड होत आहे…',
   offline: 'सर्व्हरशी संपर्क होत नाही. कनेक्शन तपासा.',
   retry: 'पुन्हा',
+  lastKnown: 'सर्व्हरशी संपर्क होत नाही. ही तुमच्या फोनमध्ये जतन केलेली आधीची माहिती आहे — ती आता बदललीही असेल.',
+  lastKnownAt: 'सर्व्हरशी संपर्क होत नाही. ही तुमच्या फोनमध्ये जतन केलेली माहिती आहे — {when}. ती आता बदललीही असेल.',
   notSaved: 'हे जतन झाले नाही. पुन्हा प्रयत्न करा.',
   acres: 'एकर',
 

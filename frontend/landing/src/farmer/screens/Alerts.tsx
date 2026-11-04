@@ -6,6 +6,7 @@ import { useAsync } from '../../lib/hooks'
 import { Card, ErrorBox, SectionTitle } from '../../ui/kit'
 import { AlertsSkeleton } from '../components/Skeletons'
 import AlertCard from '../components/AlertCard'
+import LastKnown from '../components/LastKnown'
 import { useReadOnlyFarm } from '../components/DemoNotice'
 import { NoticeInbox, NotifySettings } from '../components/NotifyPanels'
 import { useFarmer } from '../FarmerContext'
@@ -19,7 +20,9 @@ export default function Alerts() {
   const alerts = useAsync(() => api.alerts(farmId!, lang), [farmId, lang], ['alerts', farmId!, lang].join(':'))
 
   if ((alerts.loading && !alerts.data) || (home.loading && !home.data)) return <AlertsSkeleton />
-  if (alerts.error) return <ErrorBox error={alerts.error} onRetry={alerts.reload} retryLabel={t('retry')} />
+  // The checks this phone kept are what a farmer with no signal came here for,
+  // so the error only takes the screen when there is nothing kept to take it from.
+  if (alerts.error && !alerts.data) return <ErrorBox error={alerts.error} onRetry={alerts.reload} retryLabel={t('retry')} />
   const crop = home.data?.farm.crop ?? ''
   const open = alerts.data!.filter((a) => a.outcome === null || a.outcome === 'snoozed')
   const done = alerts.data!.filter((a) => a.outcome === 'nothing_found' || a.outcome === 'found')
@@ -27,6 +30,7 @@ export default function Alerts() {
   return (
     <div className="space-y-6">
       <h1 className="font-instrument-serif text-3xl leading-tight">{t('alertsTitle')}</h1>
+      {alerts.error && <LastKnown at={alerts.savedAt} onRetry={alerts.reload} />}
 
       <div className={`space-y-6 ${SPLIT}`}>
       <div className={`space-y-6 ${MAIN}`}>

@@ -13,6 +13,7 @@ import { fieldPhoto } from '../fieldPhoto'
 import { Card, ErrorBox, SectionTitle } from '../../ui/kit'
 import { HomeSkeleton } from '../components/Skeletons'
 import AlertCard from '../components/AlertCard'
+import LastKnown from '../components/LastKnown'
 import LocationAsk from '../components/LocationAsk'
 import ProblemRow from '../components/ProblemRow'
 import WeatherStrip from '../components/WeatherStrip'
@@ -27,8 +28,13 @@ export default function Home() {
   const wide = useWide()
 
   if (home.loading && !home.data) return <HomeSkeleton />
-  if (home.error) return <ErrorBox error={home.error} onRetry={home.reload} retryLabel={t('retry')} />
+  // Only with nothing at all to show does the error become the screen. Where
+  // this phone kept the last home payload the farmer gets their own field back
+  // and the error is one line above it, which in a place with no signal is
+  // worth more to them than a page that is empty but correct.
+  if (home.error && !home.data) return <ErrorBox error={home.error} onRetry={home.reload} retryLabel={t('retry')} />
   const d = home.data!
+  const lastKnown = home.error ? <LastKnown at={home.savedAt} onRetry={home.reload} /> : null
   const crop = crops.data?.find((c) => c.id === d.farm.crop)
   const openAlerts = d.alerts.filter((a) => a.outcome === null || a.outcome === 'snoozed')
   const due = d.followups_due
@@ -160,6 +166,7 @@ export default function Home() {
   if (d.farm.status === 'fallow') {
     return (
       <div className="max-w-2xl mx-auto space-y-5">
+        {lastKnown}
         <Card className="overflow-hidden p-0 bg-soil-dark text-cream border-0">
           {/* A cut paddy field, straw still lying in windrows. The state this
               screen is describing, for a farmer who reads little — the picture
@@ -194,6 +201,7 @@ export default function Home() {
   if (wide) {
     return (
       <div className="space-y-8">
+        {lastKnown}
         {/* One grid, not a row of two cards and then a second row. As two
             rows, the right cell ended wherever the weather card ended and
             the next row began below the field card, so a tall field card —
@@ -238,6 +246,8 @@ export default function Home() {
 
   return (
     <div className="space-y-6">
+      {lastKnown}
+
       <FarmCard data={d} crop={crop} />
 
       {/* Everything below is read at the field's spot, so ask for it until we have one. */}
