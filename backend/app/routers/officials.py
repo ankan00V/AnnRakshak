@@ -369,6 +369,29 @@ def _mine(request: Request, db: Session) -> list[str]:
     return list(prof.districts or []) if prof else []
 
 
+def _within_reach(request: Request, db: Session, asked: list[str]) -> list[str]:
+    """The districts this officer may actually address.
+
+    An advisory is a message to every farm of a crop in a district. Nothing
+    compared the list in the request against the patch the officer was verified
+    for, so one could send into a neighbouring district — or, by leaving the
+    list empty, to every farm of that crop everywhere. An officer with no
+    districts recorded has no patch to address, which is not the same as all of
+    them, so they are told rather than quietly given the lot.
+    """
+    if not config.AUTH_ENFORCE and _me(request, db) is None:
+        return asked   # auth off: the same allowance may_change_farm makes
+    mine = _mine(request, db)
+    if not mine:
+        raise HTTPException(403, "no districts are recorded against your post, so there is nobody to send to")
+    if not asked:
+        return mine
+    outside = sorted(set(asked) - set(mine))
+    if outside:
+        raise HTTPException(403, f"outside the districts you cover: {', '.join(outside)}")
+    return sorted(set(asked))
+
+
 def _demo(request: Request, db: Session) -> bool:
     me = _me(request, db)
     return bool(me and me.is_demo)
@@ -378,6 +401,20 @@ def _demo(request: Request, db: Session) -> bool:
 def worklist(request: Request, lang: str = "en", db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
     """Today, as a list of things to do rather than numbers to admire."""
     return office.worklist(db, kb, demo=_demo(request, db), lang=lang)
+
+
+@router.get("/advisories/targets")
+def advisory_targets(request: Request, crop: str, lang: str = "en",
+                     db: Session = Depends(get_db), kb: KB = Depends(get_kb)):
+    """What this crop may be advised for, with the count the risk engine has
+    flagged for each — not only the problems it has flagged.
+
+    An officer acts on a scout's report or a neighbouring district's telephone
+    call as often as on the engine's own reading, and the screen used to offer
+    them nothing but the reading."""
+    if crop not in kb.crops:
+        raise HTTPException(422, "unknown crop")
+    return office.advisory_targets(db, kb, crop=crop, demo=_demo(request, db), lang=lang)
 
 
 class AdvisoryIn(BaseModel):
@@ -399,7 +436,8 @@ def advisory_preview(body: AdvisoryIn, request: Request,
     me = _me(request, db)
     if body.target not in kb.targets:
         raise HTTPException(422, "unknown target")
-    return office.preview(db, kb, target=body.target, crop=body.crop, districts=body.districts,
+    return office.preview(db, kb, target=body.target, crop=body.crop,
+                          districts=_within_reach(request, db, body.districts),
                           kind=body.kind, note=body.note,
                           officer=me.name if me else "The district office",
                           demo=bool(me and me.is_demo), audience=body.audience)
@@ -416,7 +454,10 @@ def issue_advisory(body: AdvisoryIn, request: Request,
     # script, should not be able to send twenty of them in a minute.
     limit(f"advisory:{me.id}", config.MAX_ADVISORIES_PER_OFFICER_PER_HOUR, 3600)
     try:
-        return office.issue(db, kb, target=body.target, crop=body.crop, districts=body.districts,
+        # The preview is gated the same way, so the count an officer is shown
+        # before sending is the count that is actually sent.
+        return office.issue(db, kb, target=body.target, crop=body.crop,
+                            districts=_within_reach(request, db, body.districts),
                             kind=body.kind, level=body.level, note=body.note, officer=me,
                             demo=me.is_demo, audience=body.audience)
     except ValueError as exc:
@@ -436,14 +477,23 @@ def pending_officers(request: Request, db: Session = Depends(get_db)):
 
 class VerifyIn(BaseModel):
     verified: bool = True
+    supervisor: bool | None = None
+    """The rank, which the district office grants and the sign-up form no longer
+    claims. Absent leaves a standing appointment where it is, so letting an
+    officer in is not the same act as promoting them."""
 
 
 @router.post("/officers/{user_id}/verify", dependencies=[Depends(auth.require_supervisor)])
 def verify_officer(user_id: int, body: VerifyIn, request: Request, db: Session = Depends(get_db)):
-    """A supervisor lets an officer in — never themselves, and never across the
-    line between showcase data and real farmers."""
+    """A supervisor lets an officer in, and says whether that desk carries a
+    supervisor's authority — never themselves, never across the line between
+    showcase data and real farmers, and never into a district they do not work
+    themselves."""
     try:
-        return office.set_verified(db, user_id, body.verified, by=_me(request, db))
+        return office.set_verified(db, user_id, body.verified, supervisor=body.supervisor,
+                                   by=_me(request, db))
+    except PermissionError as exc:
+        raise HTTPException(403, str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(409 if "own" in str(exc) else 404, str(exc)) from exc
 

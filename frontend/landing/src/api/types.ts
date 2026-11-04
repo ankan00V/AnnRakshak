@@ -170,6 +170,17 @@ export interface AdvisoryDraft {
   audience?: 'all' | 'alerted' | 'nearby' | 'stage'
 }
 
+/** A problem an officer may issue an advisory for: everything the knowledge
+ *  base can hand a farmer tasks for, not only what the risk engine has raised
+ *  this week. `alerted` is how many farms it has already flagged. */
+export interface AdvisoryTargetRow {
+  target: string
+  name: string
+  crop: string
+  kind: string
+  alerted: number
+}
+
 export interface AdvisoryPreview {
   target: string
   name: string
@@ -882,7 +893,10 @@ export interface NoticeItem extends WeatherAdvisory {
 }
 
 export interface LiveEvent {
-  type: 'notice' | 'alert'
+  /** 'verdict': an expert has answered a case this farm sent. It is the
+   *  answer to a question the farmer asked, not a forecast, so it arrives
+   *  whatever the hour and points at the verdict itself. */
+  type: 'notice' | 'alert' | 'verdict' | 'followup'
   id: number
   severity: Severity
   title: string

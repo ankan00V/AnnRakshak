@@ -10,6 +10,7 @@ from __future__ import annotations
 import calendar
 import io
 import json
+import logging
 import math
 import uuid
 from datetime import UTC, date, datetime, timedelta
@@ -61,6 +62,8 @@ from app.models import (
     TrapReading,
     User,
 )
+
+log = logging.getLogger("annrakshak.services")
 
 HEALTHY_NAME = {"en": "Healthy {crop}", "hi": "स्वस्थ {crop}", "mr": "निरोगी {crop}"}
 
@@ -692,11 +695,15 @@ def case_is_visible_to(db: Session, case: Case, user: User | None) -> bool:
 def is_supervisor(db: Session, user: User | None) -> bool:
     """With sign-in off there is nobody to be, so there is nothing to withhold —
     the same convention as auth.can_open_farm, and the older flow tests rely on
-    it."""
+    it.
+
+    Verified as well as ranked, the pair auth.require_supervisor reads: the rank
+    comes from the district office, and an account the office has not let in has
+    nothing from it."""
     if not config.AUTH_ENFORCE:
         return True
     profile = db.get(ExpertProfile, user.id) if user and user.role == "expert" else None
-    return bool(profile and profile.supervisor)
+    return bool(profile and profile.supervisor and profile.verified)
 
 
 def workload(db: Session, district: str | None = None, demo: bool = False) -> list[dict]:
@@ -1082,7 +1089,11 @@ def _problem_view(db: Session, kb: KB, problem: Problem, lang: str, last_diag, a
         "severity": problem.severity,
         "opened_at": problem.opened_at.isoformat() if problem.opened_at else None,
         "target": target,
-        "name": tr(kb.targets[target]["names"], lang) if target in kb.targets else None,
+        # An expert's "healthy" or "something else" clears problem.target,
+        # because neither is a label the rest of the app can act on. The farmer
+        # is still owed the answer.
+        "name": (tr(kb.targets[target]["names"], lang) if target in kb.targets
+                 else verdict_name(conf.final_label, lang) if conf else None),
         "image_url": _image_url(last_diag.image_path) if last_diag else None,
         "gate_outcome": last_diag.gate_outcome if last_diag else None,
         "gate_reason": last_diag.gate_reason if last_diag else None,
@@ -1094,6 +1105,8 @@ def _problem_view(db: Session, kb: KB, problem: Problem, lang: str, last_diag, a
         "case": case_brief(db, case) if case else None,
         "expert": {
             "verdict": conf.verdict, "final_label": conf.final_label, "expert_name": conf.expert_name,
+            "final_name": (tr(kb.targets[conf.final_label]["names"], lang)
+                           if conf.final_label in kb.targets else verdict_name(conf.final_label, lang)),
             "notes": translate_note(conf.notes, lang)[0] if conf.notes else None,
             "notes_translated": translate_note(conf.notes, lang)[1] if conf.notes else False,
             "referred_to_lab": conf.referred_to_lab,
@@ -1243,6 +1256,33 @@ invented: with no authored advisory for it, the app offers none."""
 
 SPECIAL_VERDICTS = (HEALTHY_VERDICT, OTHER_VERDICT)
 
+#: What an expert's two non-disease verdicts are called, for the farmer.
+#: Neither is a knowledge-base label, so problem.target is cleared when one is
+#: recorded — which left the farmer's own history showing a dash where the
+#: answer should be. "Your crop is fine" is the most reassuring thing this app
+#: can say, and it was the one verdict rendered as nothing at all.
+VERDICT_NAMES = {
+    HEALTHY_VERDICT: {
+        "en": "Crop is healthy", "hi": "फसल ठीक है", "mr": "पीक ठीक आहे",
+        "bn": "ফসল ঠিক আছে", "ta": "பயிர் நன்றாக உள்ளது", "te": "పంట బాగుంది",
+        "kn": "ಬೆಳೆ ಚೆನ್ನಾಗಿದೆ", "ml": "വിള കുഴപ്പമില്ല", "gu": "પાક સારો છે",
+        "pa": "ਫ਼ਸਲ ਠੀਕ ਹੈ",
+    },
+    OTHER_VERDICT: {
+        "en": "Something else", "hi": "कुछ और", "mr": "दुसरे काहीतरी",
+        "bn": "অন্য কিছু", "ta": "வேறு ஏதோ", "te": "ఇంకేదో",
+        "kn": "ಬೇರೆ ಏನೋ", "ml": "മറ്റെന്തോ", "gu": "બીજું કંઈક",
+        "pa": "ਕੁਝ ਹੋਰ",
+    },
+}
+
+
+def verdict_name(final_label: str | None, lang: str) -> str | None:
+    """The farmer-facing name of a verdict that is not a disease."""
+    table = VERDICT_NAMES.get(final_label or "")
+    return tr(table, lang) if table else None
+
+
 
 def resolve_case(
     db: Session, kb: KB, case: Case, *, verdict: str, final_label: str, expert_name: str,
@@ -1294,6 +1334,16 @@ def resolve_case(
         advice = _advise(db, kb, problem, final_label, "expert", farm.lang, farm)
         spread = propagate(db, kb, farm, final_label, case.id, today)
     db.commit()
+    # propagate() warns the farms *around* this one — it excludes the origin by
+    # design. Which left the farmer who actually asked as the only party the
+    # verdict never reached. notify imports this module, so it is taken here
+    # rather than at the top; delivery must never be the reason a verdict that
+    # is already committed fails to return.
+    try:
+        from app import notify
+        notify.verdict_reached(db, kb, farm, problem.id, None if special else final_label)
+    except Exception:  # noqa: BLE001  a dead push endpoint is not a failed verdict
+        log.exception("verdict notification failed for farm %s", farm.id)
     return {
         "confirmation_id": conf.id, "verdict": verdict, "final_label": final_label,
         "model_label": model_label, "spread_alerts": spread, "followup": advice["followup"],
@@ -1315,7 +1365,19 @@ def propagate(db: Session, kb: KB, origin: Farm, target: str, case_id: int, toda
     rule = kb.rules[target]
     t = kb.targets[target]
     issued = 0
-    for farm in db.scalars(select(Farm).where(Farm.crop == origin.crop, Farm.id != origin.id)).all():
+    # The neighbours this warns are every farm of the crop within the radius —
+    # so the query has to carry the two lines the rest of the app keeps. A
+    # demonstration field and a real one are not neighbours whatever the
+    # distance between them: without this a visitor resolving a demo case put
+    # a high alert on real farmers' fields, and a real case warned the demo
+    # fields the next visitor walks into. And a field whose crop is already off
+    # has nothing to inspect, so warning it is noise its owner learns to ignore.
+    for farm in db.scalars(select(Farm).where(
+        Farm.crop == origin.crop,
+        Farm.id != origin.id,
+        Farm.is_demo.is_(bool(origin.is_demo)),
+        Farm.status == "growing",
+    )).all():
         km = haversine_km(origin.lat, origin.lon, farm.lat, farm.lon)
         if km > SPREAD_RADIUS_KM:
             continue

@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { CheckCircle2, Loader2, Megaphone, Search, Send } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../../api/client'
-import type { AdvisoryDraft, AdvisoryPreview, OutlookRow } from '../../api/types'
+import type { AdvisoryDraft, AdvisoryPreview } from '../../api/types'
 import { useAuth } from '../../auth/AuthContext'
 import { useAsync } from '../../lib/hooks'
 import { MAIN, SIDE, SPLIT } from '../../ui/layout'
 import { Card, ErrorBox, Pill } from '../../ui/kit'
-import { OutlookPanel, PageHead, PanelBone } from '../panels'
+import { many, OutlookPanel, PageHead, Panel, PanelBone } from '../panels'
 
 // Every language the app sends in. This list was three, so an officer could
 // check the Marathi, Hindi and English of what they were about to send and had
@@ -44,12 +44,19 @@ export default function Advisories() {
     () => ({ target, crop, districts, kind, level, note: note || null, audience }),
     [target, crop, districts, kind, level, note, audience])
 
-  // The problems this crop can have, taken from what is actually building when
-  // the outlook knows, and from the knowledge base otherwise.
-  const targets = useMemo(() => {
-    const fromOutlook = (outlook.data ?? []).filter((r: OutlookRow) => r.crop === crop)
-    return fromOutlook.map((r) => ({ id: r.target, name: r.name, farms: r.farms }))
-  }, [outlook.data, crop])
+  /* Every problem this crop can have, with the farms the risk engine has
+     already flagged for each. The comment here used to promise the knowledge
+     base "otherwise" and the code never asked it: the list was the outlook's
+     own rows, so an officer on a quiet week opened this screen, found an empty
+     dropdown and could issue nothing at all. That is the week the lever matters
+     — a scout's report, the next district's telephone call, a warning that has
+     to go out before the first case does. The office asks for the crop's whole
+     list now, and what is building sorts to the top of it instead of being the
+     whole of it. */
+  const choices = useAsync(() => api.advisoryTargets(crop), [crop], `advisory-targets:${crop}`)
+  const targets = choices.data ?? []
+  const building = targets.filter((t) => t.alerted > 0)
+  const quiet = targets.filter((t) => t.alerted === 0)
 
   useEffect(() => {
     setPreview(null)
@@ -116,13 +123,40 @@ export default function Advisories() {
 
           <label className="block text-xs text-soil-dark/70">
             Problem
-            <select value={target} onChange={(e) => setTarget(e.target.value)}
+            {/* "Already alerted" is the right audience while something is
+                building, and nobody at all for a problem the engine has not
+                flagged — so a warning that arrives before the engine does moves
+                to the stage the problem attacks, rather than previewing as a
+                count of zero with no reason given. The audience cards are right
+                below, so the officer sees it move and can move it back. */}
+            <select value={target}
+              onChange={(e) => {
+                const next = e.target.value
+                setTarget(next)
+                if (audience === 'alerted' && !targets.some((t) => t.target === next && t.alerted > 0)) setAudience('stage')
+              }}
               className="mt-1 w-full min-h-[42px] rounded-xl border border-soil-dark/20 px-3 bg-cream/50 text-sm">
-              <option value="">Choose…</option>
-              {targets.map((t) => (
-                <option key={t.id} value={t.id}>{t.name} — {t.farms} farms alerted</option>
-              ))}
+              <option value="">{choices.loading ? 'Loading…' : 'Choose…'}</option>
+              {building.length > 0 && (
+                <optgroup label="Building now">
+                  {building.map((t) => (
+                    <option key={t.target} value={t.target}>{t.name} — {many(t.alerted, 'farm')} alerted</option>
+                  ))}
+                </optgroup>
+              )}
+              {quiet.length > 0 && (
+                <optgroup label={building.length > 0 ? 'Anything else this crop can have' : 'Anything this crop can have'}>
+                  {quiet.map((t) => (
+                    <option key={t.target} value={t.target}>{t.name}</option>
+                  ))}
+                </optgroup>
+              )}
             </select>
+            {choices.error && (
+              <span className="mt-1 block text-[11px] text-ember">
+                The list of problems did not load — reload the page before you send anything.
+              </span>
+            )}
           </label>
         </div>
 
@@ -249,7 +283,8 @@ export default function Advisories() {
       <div className={`space-y-5 ${SIDE}`}>
         <Card className="p-4 md:p-5">
           <h2 className="font-semibold">Issued before</h2>
-          {!history.data ? <div className="mt-3"><PanelBone rows={4} /></div>
+          {history.error && !history.data ? <div className="mt-3"><ErrorBox error={history.error} onRetry={history.reload} /></div>
+            : !history.data ? <div className="mt-3"><PanelBone rows={4} /></div>
             : history.data.length === 0 ? (
               <p className="mt-3 text-sm text-soil-dark/70">Nothing has been issued from this office yet.</p>
             ) : (
@@ -267,7 +302,7 @@ export default function Advisories() {
                       {h.note && <span className="block text-[11px] text-soil-dark/50 truncate">“{h.note}”</span>}
                     </span>
                     <span className="text-right shrink-0">
-                      <span className="block text-xs tabular-nums text-soil-dark/70">{h.farms} farms</span>
+                      <span className="block text-xs tabular-nums text-soil-dark/70">{many(h.farms, 'farm')}</span>
                       {h.farms > 0 && (
                         <span className="mt-1 block text-[11px] tabular-nums">
                           {h.inspected === 0 ? (
@@ -287,7 +322,7 @@ export default function Advisories() {
             )}
         </Card>
 
-        {outlook.data ? <OutlookPanel rows={outlook.data} /> : <PanelBone rows={6} />}
+        <Panel q={outlook} rows={6}>{(rows) => <OutlookPanel rows={rows} />}</Panel>
       </div>
       </div>
     </>

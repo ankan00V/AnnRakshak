@@ -251,7 +251,14 @@ OTP_CHANNEL = "email"
 """Where one-time codes go. Both roles give a mobile number at sign-up, but
 there is no free SMS gateway yet, so every code is emailed (SMTP above)."""
 EXPERT_AUTO_VERIFY = _flag("ANNRAKSHAK_EXPERT_AUTO_VERIFY", not PROD)
-"""Demo builds verify experts at sign-up; production sets this off and the district office verifies."""
+"""Whether this build takes an officer's sign-up form at its word: both the
+badge and the rank. On, a sign-up is verified and a supervisory post carries a
+supervisor's authority, which is what lets a laptop and a judge's walkthrough
+have somebody who can route a backlog with nobody around to appoint them. Off,
+the post is only the claim the form made and the district office grants both
+(POST /api/officials/officers/{id}/verify). Production sets this off; the first
+supervisor on a new production database comes from seed.py, since by design no
+sign-up can make one."""
 # --- Cloudflare Turnstile (the "are you a person" box on sign-in) ---------
 
 TURNSTILE_SITEKEY = os.environ.get("TURNSTILE_SITEKEY", "1x00000000000000000000AA")
@@ -263,6 +270,19 @@ starts turning scripts away. Set either to empty to take the box off entirely.
 Cloudflare publishes other test keys worth knowing while building this:
   2x00000000000000000000AB / 2x0000000000000000000000000000000AA  always fails
   3x00000000000000000000FF                                        always asks"""
+
+#: How many live field calls one worker will carry at once. Every frame of every
+#: call runs the photo model on a worker thread, so beyond a point more callers
+#: buy nothing: each frame waits longer, the coaching falls behind what the
+#: camera is pointed at, and the calls start timing out together. Better to tell
+#: the next caller to try again in a minute than to spoil the calls in progress.
+#: Raise it on a machine with more cores, or where the model runs on a GPU.
+LIVE_MAX_CALLS = int(os.environ.get("ANNRAKSHAK_LIVE_MAX_CALLS") or 12)
+
+#: How many of those a single account may hold at once. A cap counted only in
+#: total is a cap one signed-in caller can fill by itself, which is a cheap way
+#: to shut the feature off for everybody else.
+LIVE_MAX_PER_CALLER = int(os.environ.get("ANNRAKSHAK_LIVE_MAX_PER_CALLER") or 2)
 
 OTP_DIGITS = 6
 OTP_TTL_MINUTES = 5
@@ -356,8 +376,8 @@ def start_checks() -> list[str]:
     if DEMO_LOGIN:
         problems.append("ANNRAKSHAK_DEMO_LOGIN is on: anyone can sign in as a demo farmer or officer")
     if EXPERT_AUTO_VERIFY:
-        problems.append("ANNRAKSHAK_EXPERT_AUTO_VERIFY is on: an officer verifies themselves and may "
-                        "read any farmer's case")
+        problems.append("ANNRAKSHAK_EXPERT_AUTO_VERIFY is on: an officer verifies themselves, takes a "
+                        "supervisor's rank from their own sign-up form, and may read any farmer's case")
     if not COOKIE_SECURE:
         problems.append("ANNRAKSHAK_COOKIE_SECURE is off: the session cookie will travel over plain HTTP")
     if DB_URL.startswith("sqlite"):

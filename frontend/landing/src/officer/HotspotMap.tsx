@@ -40,12 +40,20 @@ export default function HotspotMap({ data, layers }: {
       {layers.cases && data.points.map((p) => (
         <CircleMarker key={p.problem_id} center={[p.lat, p.lon]} radius={p.status === 'confirmed' ? 9 : 7}
           pathOptions={{ color: '#fff', weight: 2, fillColor: STATUS_COLOR[p.status], fillOpacity: 0.95 }}
-          // A pin is a field somebody farms: clicking it opens that field.
-          eventHandlers={{ click: () => navigate(`/officer/farm/${p.farm_id}`) }}>
+          // A pin is a field somebody farms: clicking it opens that field —
+          // but only where this officer may identify it. Outside their patch
+          // the server sends no farm id on purpose, and following it anyway
+          // landed them on /officer/farm/null and "farm not found".
+          eventHandlers={p.farm_id != null
+            ? { click: () => navigate(`/officer/farm/${p.farm_id}`) }
+            : {}}>
           <Tooltip>
             <strong>{p.name ?? 'Unknown'}</strong><br />
-            {p.farmer_name} · {p.crop} · {p.district}{p.on ? ` · ${p.on}` : ''}<br />
-            <span style={{ opacity: 0.7 }}>{p.status.replace('_', ' ')} — click to open the field</span>
+            {p.farmer_name ? `${p.farmer_name} · ` : ''}{p.crop} · {p.district}{p.on ? ` · ${p.on}` : ''}<br />
+            <span style={{ opacity: 0.7 }}>
+              {p.status.replace('_', ' ')}
+              {p.farm_id != null ? ' — click to open the field' : ' — outside your districts'}
+            </span>
           </Tooltip>
         </CircleMarker>
       ))}

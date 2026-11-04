@@ -24,8 +24,13 @@ export interface Where {
  *  or pick the state and district from the Government's list — and if their
  *  district is not in it, they type it.
  */
-export default function WherePicker({ value, onChange, showErrors }: {
+export default function WherePicker({ value, onChange, showErrors, needPoint }: {
   value: Where; onChange: (w: Where) => void; showErrors?: boolean
+  /** This caller cannot save without the spot itself. Adding a field posts to
+   *  a route that takes no place names in its stead, where sign-up's does:
+   *  there the server looks the village up when the farmer refuses location,
+   *  so sign-up leaves this off and nothing is marked wrong. */
+  needPoint?: boolean
 }) {
   const { t } = useFarmer()
   const places = useAsync(() => api.places(), [], 'places')
@@ -39,6 +44,7 @@ export default function WherePicker({ value, onChange, showErrors }: {
   const states: StatePlaces[] = places.data?.states ?? []
   const districts = states.find((s) => s.name === value.state)?.districts ?? []
   const set = (patch: Partial<Where>) => onChange({ ...value, ...patch })
+  const noPoint = !!needPoint && (value.lat === null || value.lon === null)
 
   const locate = () => {
     if (!navigator.geolocation) return setLocError(t('locFailed'))
@@ -100,8 +106,13 @@ export default function WherePicker({ value, onChange, showErrors }: {
           {locating ? <Loader2 className="w-5 h-5 animate-spin" /> : <LocateFixed className="w-5 h-5" />}
           {value.fromGps ? t('locationSet') : t('authUseLocation')}
         </button>
-        <p className="mt-2 text-[12px] text-soil-dark/60 leading-snug">
-          {locError ?? (value.fromGps ? t('authLocationFilled') : t('authFieldHint'))}
+        {/* One line under the button, and which line it is says whether the
+            spot is still missing — a Save disabled over a point the farmer
+            cannot see is a dead button. What the browser itself refused wins:
+            that is the more particular thing to say. */}
+        <p className={`mt-2 text-[12px] leading-snug ${locError || noPoint ? 'text-ember' : 'text-soil-dark/60'}`}>
+          {locError ?? (noPoint ? t('authNeedPoint')
+            : value.fromGps ? t('authLocationFilled') : t('authFieldHint'))}
         </p>
       </div>
 

@@ -638,6 +638,22 @@ def test_sample_photos_are_for_demo_accounts_only(client, mail):
     assert client.get("/api/samples").status_code == 200  # the demo account may have them
 
 
+def test_a_production_signup_cannot_award_itself_a_supervisors_rank(client, mail, monkeypatch):
+    """A supervisor verifies colleagues, routes the whole district's backlog and
+    moves another desk's cases. All three were granted by picking "KVK
+    scientist" out of the sign-up form's own dropdown, which is the same as
+    nobody granting them. The claim still goes on the record as the
+    designation — the district office reads it, rings the reporting officer,
+    and grants the rank itself."""
+    monkeypatch.setattr(config, "EXPERT_AUTO_VERIFY", False)
+    r = expert_signup(client, mail)
+    assert r.status_code == 201, r.text
+    prof = r.json()["profile"]
+    assert prof["supervisor"] is False, "a sign-up form awarded itself a supervisor's authority"
+    assert prof["designation_name"] == "KVK scientist / Subject Matter Specialist", \
+        "the claim must survive on the record for the office to act on"
+
+
 def test_the_post_decides_the_supervisor_rank(client, mail):
     """The bug this guards: every sign-up was an ordinary desk.
 

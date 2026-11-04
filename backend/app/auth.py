@@ -417,12 +417,18 @@ def require_verified(conn: HTTPConnection, db: Session = Depends(get_db)) -> Non
 def require_supervisor(conn: HTTPConnection, db: Session = Depends(get_db)) -> None:
     """Verifying a colleague, routing a backlog and moving another officer's
     cases are supervisor decisions. Without this an officer can verify
-    themselves, which is the same as having no verification at all."""
+    themselves, which is the same as having no verification at all.
+
+    Verification is read here as well as the rank, because the two are one
+    permission: the rank is the district office's to grant, and an account the
+    office has not let in holds nothing it can grant from. Every route that
+    depends on this one also depends on require_verified, so this refuses
+    nobody today — it is what stops the next route that forgets the pair."""
     if not config.AUTH_ENFORCE:
         return
     user = current_user(conn, db)
     profile = expert_profile(db, user)
-    if profile is None or not profile.supervisor:
+    if profile is None or not profile.supervisor or not profile.verified:
         raise AuthError(403, say("supervisor_only"))
 
 

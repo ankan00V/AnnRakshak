@@ -52,8 +52,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         remember(m)
       })
       .catch((e: ApiError) => {
-        if (e.status === 0) setMe(recalled()) // offline: trust the last session until the server says otherwise
-        else remember(null)
+        // Offline: trust the last session until the server says otherwise —
+        // and keep what this phone saved, which is the whole point of it.
+        if (e.status === 0) setMe(recalled())
+        else {
+          // The server has answered, and the answer is that this is nobody.
+          // What the phone kept is one farmer's field, their problems and
+          // their photographs; on a shared handset it must not outlive their
+          // session just because it ended by expiring rather than by logging
+          // out.
+          remember(null)
+          clearCache()
+        }
       })
       .finally(() => setLoading(false))
   }, [])
@@ -62,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const expired = () => {
       setMe(null)
       remember(null)
+      clearCache()   // same reasoning as above: the session is gone, so is its data
     }
     window.addEventListener(UNAUTHORIZED, expired)
     return () => window.removeEventListener(UNAUTHORIZED, expired)

@@ -100,7 +100,7 @@ function districtLabel(districts: string[]): string {
 }
 
 /** Hand a case on: wrong speciality, a queue too long, or off for the day. */
-function HandOff({ b, onDone }: { b: CaseBundle; onDone: () => void }) {
+function HandOff({ b, onHandedOff }: { b: CaseBundle; onHandedOff: (to: CaseBrief) => void }) {
   // Who else is on the books is the office's business, not every officer's: an
   // ordinary desk may give a case up, and the system decides where it goes.
   const { me } = useAuth()
@@ -116,9 +116,14 @@ function HandOff({ b, onDone }: { b: CaseBundle; onDone: () => void }) {
     setBusy(true)
     setError(null)
     try {
-      await api.reassignCase(b.case.id, to)
+      const landed = await api.reassignCase(b.case.id, to)
       setOpen(false)
-      onDone()
+      // Deliberately no reload of this case. It has left this desk, and the
+      // server rightly refuses a case that is no longer this officer's to
+      // read — so asking for it again answered "case not found" to the
+      // officer who had just done the right thing. The reassign itself says
+      // where the case went; whoever owns the screen decides what to show.
+      onHandedOff(landed)
     } catch (e) {
       setError(e as Error)
     } finally {
@@ -226,11 +231,14 @@ function useElapsed() {
   return { s, label: `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` }
 }
 
-export function CaseView({ id, onBack, onResolved }: { id: number; onBack: () => void; onResolved: () => void }) {
+export function CaseView({ id, onBack, onResolved, onHandedOff }: {
+  id: number; onBack: () => void; onResolved: () => void; onHandedOff: (to: CaseBrief) => void
+}) {
   const bundle = useAsync(() => api.caseBundle(id), [id])
   if (bundle.loading && !bundle.data) return <CaseSkeleton />
   if (bundle.error) return <ErrorBox error={bundle.error} onRetry={bundle.reload} />
-  return <CaseDetail key={id} b={bundle.data!} onBack={onBack} onResolved={() => { bundle.reload(); onResolved() }} />
+  return <CaseDetail key={id} b={bundle.data!} onBack={onBack} onHandedOff={onHandedOff}
+    onResolved={() => { bundle.reload(); onResolved() }} />
 }
 
 
@@ -280,7 +288,9 @@ function CaseSkeleton() {
   )
 }
 
-function CaseDetail({ b, onBack, onResolved }: { b: CaseBundle; onBack: () => void; onResolved: () => void }) {
+function CaseDetail({ b, onBack, onResolved, onHandedOff }: {
+  b: CaseBundle; onBack: () => void; onResolved: () => void; onHandedOff: (to: CaseBrief) => void
+}) {
   const timer = useElapsed()
   const [photo, setPhoto] = useState(0)
   const [showCam, setShowCam] = useState(true)
@@ -313,7 +323,7 @@ function CaseDetail({ b, onBack, onResolved }: { b: CaseBundle; onBack: () => vo
               {b.case.handovers > 0 && ` · ${b.case.handovers} desk${b.case.handovers === 1 ? '' : 's'} before you`}
             </span>
           )}
-          {open && <HandOff b={b} onDone={onResolved} />}
+          {open && <HandOff b={b} onHandedOff={onHandedOff} />}
           {open && (
             <span className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ${timer.s > 180 ? 'bg-ember/10 text-ember' : 'bg-leaf/10 text-leaf-deep'}`}>
               <Timer className="w-4 h-4" /> {timer.label} <span className="text-xs opacity-70">/ 3:00 target</span>

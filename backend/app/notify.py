@@ -38,7 +38,7 @@ from app.config import (
 )
 from app.engine import agromet, risk
 from app.kb import KB, tr, trl
-from app.models import Alert, EmailLog, Farm, Notice, Problem, PushSubscription, SprayLog, User
+from app.models import Alert, EmailLog, Farm, FollowUp, Notice, Problem, PushSubscription, SprayLog, User
 
 LEVEL_LABEL = {
     "high": {"en": "High risk", "hi": "अधिक जोखिम", "mr": "जास्त धोका"},
@@ -193,6 +193,114 @@ def publish_new(kb: KB, farm: Farm, notices: list[Notice], alerts: list[Alert], 
         c = alert_card(kb, a, farm.lang)
         broker.publish(farm.id, {"type": "alert", "id": a.id, "severity": c["severity"], "title": c["title"],
                                  "body": c["text"], "url": "/app/alerts"})
+
+
+VERDICT_TEXT = {
+    "title": {
+        "en": "An expert has answered", "hi": "विशेषज्ञ ने जवाब दिया है",
+        "mr": "तज्ज्ञांनी उत्तर दिले आहे", "bn": "একজন বিশেষজ্ঞ উত্তর দিয়েছেন",
+        "ta": "ஒரு நிபுணர் பதில் அளித்துள்ளார்", "te": "ఒక నిపుణుడు సమాధానం ఇచ్చారు",
+        "kn": "ತಜ್ಞರು ಉತ್ತರಿಸಿದ್ದಾರೆ", "ml": "ഒരു വിദഗ്ധൻ മറുപടി നൽകി",
+        "gu": "નિષ્ણાતે જવાબ આપ્યો છે", "pa": "ਮਾਹਰ ਨੇ ਜਵਾਬ ਦਿੱਤਾ ਹੈ",
+    },
+    "found": {
+        "en": "{name}. Open it to see what to do.", "hi": "{name}। क्या करना है, देखिए।",
+        "mr": "{name}. काय करायचे ते पाहा.", "bn": "{name}। কী করতে হবে দেখুন।",
+        "ta": "{name}. என்ன செய்வது என்பதைப் பாருங்கள்.", "te": "{name}. ఏమి చేయాలో చూడండి.",
+        "kn": "{name}. ಏನು ಮಾಡಬೇಕು ಎಂದು ನೋಡಿ.", "ml": "{name}. എന്തു ചെയ്യണമെന്ന് നോക്കുക.",
+        "gu": "{name}. શું કરવું તે જુઓ.", "pa": "{name}। ਕੀ ਕਰਨਾ ਹੈ, ਵੇਖੋ।",
+    },
+    "none": {
+        "en": "Nothing was found on your crop.", "hi": "आपकी फसल पर कुछ नहीं मिला।",
+        "mr": "तुमच्या पिकावर काही आढळले नाही.", "bn": "আপনার ফসলে কিছু পাওয়া যায়নি।",
+        "ta": "உங்கள் பயிரில் எதுவும் காணப்படவில்லை.", "te": "మీ పంటపై ఏమీ కనిపించలేదు.",
+        "kn": "ನಿಮ್ಮ ಬೆಳೆಯ ಮೇಲೆ ಏನೂ ಕಂಡುಬಂದಿಲ್ಲ.", "ml": "നിങ്ങളുടെ വിളയിൽ ഒന്നും കണ്ടെത്തിയില്ല.",
+        "gu": "તમારા પાક પર કશું મળ્યું નથી.", "pa": "ਤੁਹਾਡੀ ਫ਼ਸਲ ਉੱਤੇ ਕੁਝ ਨਹੀਂ ਮਿਲਿਆ।",
+    },
+}
+
+
+def verdict_reached(db: Session, kb: KB, farm: Farm, problem_id: int, target: str | None) -> dict:
+    """Tell the farmer what the expert said, on the channels they already have.
+
+    The rest of the chain worked: the farms around them were warned, and the
+    district office saw it the same minute. The one person the verdict was for
+    was the only one it never reached — they had to reopen the app and find
+    their own way into History to learn that somebody had answered. For a
+    farmer who sent a photograph and went back to work, that is the difference
+    between an expert service and a filing cabinet.
+
+    Sent whatever the hour: unlike the weather notices this is not a forecast
+    that can wait for morning, it is the answer to a question they asked.
+    """
+    lang = farm.lang or "en"
+    name = tr(kb.targets[target]["names"], lang) if target and target in kb.targets else ""
+    body = (tr(VERDICT_TEXT["found"], lang).replace("{name}", name) if name
+            else tr(VERDICT_TEXT["none"], lang))
+    title, url = tr(VERDICT_TEXT["title"], lang), f"/app/history/{problem_id}"
+    broker.publish(farm.id, {"type": "verdict", "id": problem_id, "severity": "info",
+                             "title": title, "body": body, "url": url})
+    return push(db, farm.id, _payload(title, body, url, f"verdict-{problem_id}", "info"))
+
+
+FOLLOWUP_TEXT = {
+    "title": {
+        "en": "How is your crop now?", "hi": "अब आपकी फसल कैसी है?",
+        "mr": "आता तुमचे पीक कसे आहे?", "bn": "এখন আপনার ফসল কেমন আছে?",
+        "ta": "இப்போது உங்கள் பயிர் எப்படி இருக்கிறது?", "te": "ఇప్పుడు మీ పంట ఎలా ఉంది?",
+        "kn": "ಈಗ ನಿಮ್ಮ ಬೆಳೆ ಹೇಗಿದೆ?", "ml": "ഇപ്പോൾ നിങ്ങളുടെ വിള എങ്ങനെയുണ്ട്?",
+        "gu": "હવે તમારો પાક કેવો છે?", "pa": "ਹੁਣ ਤੁਹਾਡੀ ਫ਼ਸਲ ਕਿਵੇਂ ਹੈ?",
+    },
+    "named": {
+        "en": "{name}: tell us whether it is better, the same or worse.",
+        "hi": "{name}: बताइए कि यह बेहतर है, वैसा ही है या बिगड़ा है।",
+        "mr": "{name}: सांगा ते बरे आहे, तसेच आहे की बिघडले आहे.",
+        "bn": "{name}: জানান এটি ভালো, একই রকম না খারাপ হয়েছে।",
+        "ta": "{name}: இது நன்றாக உள்ளதா, அப்படியே உள்ளதா, மோசமாகிவிட்டதா என்று சொல்லுங்கள்.",
+        "te": "{name}: ఇది మెరుగ్గా ఉందా, అలాగే ఉందా, లేక దిగజారిందా చెప్పండి.",
+        "kn": "{name}: ಇದು ಸುಧಾರಿಸಿದೆಯೇ, ಹಾಗೆಯೇ ಇದೆಯೇ, ಅಥವಾ ಹದಗೆಟ್ಟಿದೆಯೇ ಹೇಳಿ.",
+        "ml": "{name}: ഇത് ഭേദമായോ, അതുപോലെയാണോ, അതോ വഷളായോ എന്ന് പറയുക.",
+        "gu": "{name}: જણાવો કે તે સારું છે, એવું જ છે કે બગડ્યું છે.",
+        "pa": "{name}: ਦੱਸੋ ਕਿ ਇਹ ਠੀਕ ਹੈ, ਉਵੇਂ ਹੀ ਹੈ ਜਾਂ ਵਿਗੜ ਗਿਆ ਹੈ।",
+    },
+}
+
+
+def followup_reminders(db: Session, kb: KB, farm: Farm, now: datetime) -> int:
+    """Ask the farmer how the crop is, on the day the follow-up falls due.
+
+    A follow-up was scheduled, shown on the home screen, and otherwise left to
+    the farmer to remember. Which means "it got worse" — the answer that
+    re-escalates to an expert — only ever came from someone who happened to
+    open the app on the right day. The check that is supposed to catch a
+    treatment that did not work was the one nobody was asked to make.
+
+    Reminded once, marked, and not again. Quiet hours are respected: this is a
+    question about a crop, not a warning about weather coming tonight.
+    """
+    if quiet(now):
+        return 0
+    due = db.scalars(
+        select(FollowUp).join(Problem, Problem.id == FollowUp.problem_id).where(
+            Problem.farm_id == farm.id,
+            FollowUp.response.is_(None),
+            FollowUp.reminded_at.is_(None),
+            FollowUp.due_on <= now.date(),
+        )).all()
+    sent = 0
+    for fu in due:
+        problem = db.get(Problem, fu.problem_id)
+        target = problem.target if problem else None
+        name = tr(kb.targets[target]["names"], farm.lang) if target and target in kb.targets else ""
+        body = (tr(FOLLOWUP_TEXT["named"], farm.lang).replace("{name}", name) if name
+                else tr(FOLLOWUP_TEXT["title"], farm.lang))
+        title, url = tr(FOLLOWUP_TEXT["title"], farm.lang), f"/app/history/{fu.problem_id}"
+        broker.publish(farm.id, {"type": "followup", "id": fu.id, "severity": "info",
+                                 "title": title, "body": body, "url": url})
+        push(db, farm.id, _payload(title, body, url, f"followup-{fu.id}", "info"))
+        fu.reminded_at = now
+        sent += 1
+    return sent
 
 
 def deliver_push(db: Session, kb: KB, farm: Farm, now: datetime) -> int:

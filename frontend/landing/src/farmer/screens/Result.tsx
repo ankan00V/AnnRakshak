@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  ArrowLeft, ArrowRightLeft, Camera, CheckCircle2, Clock, FlaskConical, HelpCircle, Loader2, PhoneCall, Plus, RefreshCw, ShieldQuestion, UserRound,
+  AlertTriangle, ArrowLeft, ArrowRightLeft, Camera, CheckCircle2, Clock, FlaskConical, HelpCircle, Loader2, PhoneCall, Plus, RefreshCw, ShieldQuestion, UserRound,
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../../api/client'
 import type { CaseBrief, DiagnoseResult, Farm, TargetView } from '../../api/types'
 import { useAsync } from '../../lib/hooks'
-import { ConfidenceMeter, GradCamOverlay, ListenButton, Pill } from '../../ui/kit'
+import { ConfidenceMeter, ErrorBox, GradCamOverlay, ListenButton, Pill } from '../../ui/kit'
 import AdvisoryView from '../components/AdvisoryView'
 import { useFarmer } from '../FarmerContext'
 import { bcp47 } from '../../lib/i18n'
@@ -33,6 +33,7 @@ function ResultView({ r }: { r: DiagnoseResult }) {
   const outcome = r.gate.outcome
   const top = r.gate.alternatives[0]
   const [escalating, setEscalating] = useState(false)
+  const [askFailed, setAskFailed] = useState<Error | null>(null)
 
   // Language switched on this screen: the same result, re-rendered in the new language.
   const langSeen = useRef(lang)
@@ -48,9 +49,14 @@ function ResultView({ r }: { r: DiagnoseResult }) {
 
   const askExpert = async () => {
     setEscalating(true)
+    setAskFailed(null)
     try {
       const out = await api.escalate(r.problem_id, lang)
       setResult({ ...r, gate: { ...r.gate, outcome: 'escalate', reason: 'FARMER_REQUEST' }, case: out.case, advisory: undefined, message: out.message })
+    } catch (e) {
+      // Silence here reads as "sent": the farmer waits for an expert who was
+      // never asked. They are told, and the button is still there.
+      setAskFailed(e as Error)
     } finally {
       setEscalating(false)
     }
@@ -108,6 +114,7 @@ function ResultView({ r }: { r: DiagnoseResult }) {
               {t('askExpert')}
             </button>
           </div>
+          {askFailed && <ErrorBox error={askFailed} onRetry={() => { void askExpert() }} retryLabel={t('retry')} />}
         </>
       )}
 
@@ -186,10 +193,12 @@ function Alternatives({ alts }: { alts: TargetView[] }) {
 function DoubtDoctor({ r }: { r: DiagnoseResult }) {
   const { t, lang, setResult } = useFarmer()
   const [busy, setBusy] = useState<string | null>(null)
+  const [failed, setFailed] = useState<Error | null>(null)
   const c = r.clarify!
 
   const answer = async (a: 'yes' | 'no' | 'unknown') => {
     setBusy(a)
+    setFailed(null)
     try {
       const out = await api.clarify(r.problem_id, c.cue_id, a, lang)
       if (out.outcome === 'advise' && out.advisory) {
@@ -205,6 +214,10 @@ function DoubtDoctor({ r }: { r: DiagnoseResult }) {
       } else {
         setResult({ ...r, gate: { ...r.gate, outcome: 'escalate' }, case: out.case, message: out.message ?? '', clarify: undefined })
       }
+    } catch (e) {
+      // The farmer looked at their crop and answered. Losing that without a
+      // word leaves the question on screen as though they never did.
+      setFailed(e as Error)
     } finally {
       setBusy(null)
     }
@@ -247,6 +260,14 @@ function DoubtDoctor({ r }: { r: DiagnoseResult }) {
             </button>
           ))}
         </div>
+        {/* On this card's own dark ground, not an ErrorBox: the buttons are
+            still live, so saying what happened is the whole fix. */}
+        {failed && (
+          <p className="mt-3 flex items-start gap-2 text-sm text-cream/90">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-ochre" />
+            {t('notSaved')}
+          </p>
+        )}
       </div>
     </section>
   )

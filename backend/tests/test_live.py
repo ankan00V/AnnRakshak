@@ -1,8 +1,10 @@
 """Live field walk: frame quality, guidance, evidence rules and the WebSocket flow."""
 
 import base64
+import contextlib
 import re
 import io
+import time
 from datetime import date, timedelta
 
 import numpy as np
@@ -42,6 +44,34 @@ def jpeg(im: Image.Image) -> bytes:
     buf = io.BytesIO()
     im.save(buf, "JPEG", quality=85)
     return buf.getvalue()
+
+
+# --- what the call says -------------------------------------------------------
+
+def test_the_call_speaks_every_language_the_app_offers():
+    """The walk is spoken aloud, step by step. A language missing from here does
+    not fail — tr() quietly falls back to English — so a farmer who chose Tamil
+    is talked to in English by the one screen that never stops talking. Nothing
+    catches that but this."""
+    from app.engine.livescan import HINTS, TEXT
+    from app.i18n import LANGS
+    from app.notify import FOLLOWUP_TEXT, VERDICT_TEXT
+    from app.services import VERDICT_NAMES
+    for name, table in (("TEXT", TEXT), ("HINTS", HINTS), ("VERDICT_NAMES", VERDICT_NAMES),
+                        # The push notifications are the same problem one step
+                        # further out: nobody sees an English fallback land on
+                        # a phone, so nothing but this catches a missing one.
+                        ("VERDICT_TEXT", VERDICT_TEXT), ("FOLLOWUP_TEXT", FOLLOWUP_TEXT)):
+        for key, said in table.items():
+            missing = [lg for lg in LANGS if not said.get(lg, "").strip()]
+            assert not missing, f"{name}[{key}] does not speak {missing}"
+
+
+def test_the_confirm_step_keeps_its_placeholder_in_every_language():
+    """"I think I see {name}" loses the disease if a translation drops it."""
+    from app.engine.livescan import TEXT
+    for lg, said in TEXT["confirm"].items():
+        assert "{name}" in said, f"confirm[{lg}] lost the disease name"
 
 
 # --- frame quality ------------------------------------------------------------
@@ -200,6 +230,147 @@ def client(monkeypatch):
                         district="Bhandara", lat=21.17, lon=79.65, area_acres=2, lang="mr"))
             db.commit()
         yield c
+
+
+def test_a_view_the_farmer_cannot_get_can_be_skipped(client):
+    """Not every field has a leaf you can turn over or a base above the water.
+    Coaching towards a picture that does not exist until the session times out
+    wastes the walk and ends with nothing."""
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "mr"})
+        assert ws.receive_json()["guide"]["step"] == "overview"
+        ws.send_json({"type": "skip"})
+        m = ws.receive_json()
+        assert m["type"] == "guide" and m["advanced"]
+        assert m["guide"]["step"] == "plant"
+
+
+def test_a_dropped_call_can_be_picked_back_up(client):
+    """Five minutes into a field on a patchy network, a dropped connection must
+    not mean walking it again from the gate."""
+    token, step, got = None, None, None
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "mr"})
+        ready = ws.receive_json()
+        token = ready["resume"]
+        assert token and not ready["resumed"]
+        for seq in range(2):  # short of the three the first view wants
+            ws.send_json({"type": "frame", "seq": seq,
+                          "data": base64.b64encode(jpeg(leaf(700 + seq))).decode()})
+            m = ws.receive_json()
+            step, got = m["guide"]["step"], m["guide"]["got"]
+        assert step == "overview" and got == 2, "part-way through the first view"
+        # and here the network goes
+
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "resume", "token": token})
+        back = ws.receive_json()
+        assert back["type"] == "ready" and back["resumed"]
+        assert back["guide"]["step"] == step and back["guide"]["got"] == got
+
+
+def test_a_resume_token_is_good_once_and_only_for_its_own_field(client):
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "mr"})
+        token = ws.receive_json()["resume"]
+        ws.send_json({"type": "frame", "seq": 1, "data": base64.b64encode(jpeg(leaf(9))).decode()})
+        ws.receive_json()
+
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "resume", "token": token})
+        assert ws.receive_json()["type"] == "ready"
+    # spent: the same token does not open a second call
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "resume", "token": token})
+        assert ws.receive_json()["code"] == "RESUME_UNKNOWN"
+
+
+def test_hanging_up_before_saying_anything_is_not_an_error(client):
+    """A caller who disconnects while the server is still waiting for their
+    opening message leaves none of a call's state behind to clean up."""
+    with client.websocket_connect("/api/live/1"):
+        pass  # gone before "start"
+
+
+def test_a_made_up_resume_token_is_refused_without_breaking_the_call(client):
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "resume", "token": "not-a-real-token"})
+        assert ws.receive_json()["code"] == "RESUME_UNKNOWN"
+
+
+def _settles_at(n: int, timeout: float = 2.0) -> int:
+    """The handler unwinds on the server's own thread; give it a moment."""
+    from app.routers import live as R
+    end = time.monotonic() + timeout
+    while R._in_progress() != n and time.monotonic() < end:
+        time.sleep(0.02)
+    return R._in_progress()
+
+
+def test_a_socket_that_says_nothing_takes_no_place_in_the_queue(client, monkeypatch):
+    """The cap on calls in flight is only worth having if it cannot be filled by
+    sockets that never become calls. Opening a connection and going quiet is the
+    cheapest attack there is."""
+    from app.routers import live as R
+
+    monkeypatch.setattr(R, "OPENING_SECONDS", 0.2)
+    with contextlib.suppress(Exception), client.websocket_connect("/api/live/1"):
+        time.sleep(0.5)
+        assert R._in_progress() == 0
+    assert _settles_at(0) == 0
+    # and the next caller is not turned away because of it
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "en"})
+        assert ws.receive_json()["type"] == "ready"
+
+
+def test_one_caller_cannot_take_every_place(client, monkeypatch):
+    """A cap counted only in total is a cap one signed-in account can fill by
+    itself, which shuts the feature off for everybody else."""
+    monkeypatch.setattr(config, "LIVE_MAX_PER_CALLER", 1)
+    with client.websocket_connect("/api/live/1") as first:
+        first.send_json({"type": "start", "lang": "en"})
+        assert first.receive_json()["type"] == "ready"
+        with client.websocket_connect("/api/live/1") as second:
+            second.send_json({"type": "start", "lang": "en"})
+            assert second.receive_json()["code"] == "TOO_BUSY"
+
+
+def test_a_call_gone_quiet_is_let_go_but_not_thrown_away(client, monkeypatch):
+    """A phone that goes flat mid-walk must not hold its place for ever — and
+    must not lose the walk either."""
+    from app.routers import live as R
+
+    monkeypatch.setattr(R, "IDLE_SECONDS", 0.3)
+    with contextlib.suppress(Exception), client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "en"})
+        token = ws.receive_json()["resume"]
+        ws.send_json({"type": "frame", "seq": 1, "data": base64.b64encode(jpeg(leaf(31))).decode()})
+        ws.receive_json()
+        time.sleep(1.0)   # the phone says nothing at all
+    assert _settles_at(0) == 0, "a silent call kept its place"
+
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "resume", "token": token})
+        assert ws.receive_json()["resumed"], "the walk should have been held, not binned"
+
+
+def test_a_call_in_progress_holds_no_database_connection(client):
+    """The pool holds fifteen connections and a call lasts minutes. If a walk
+    kept one for its whole length, fifteen farmers walking at once would stop
+    every other request in the application — and an open transaction that long
+    is cut from under the call by PgBouncer anyway. The frames need no database,
+    so between the context and the save there must be nothing checked out."""
+    from app.db import engine
+
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "mr"})
+        assert ws.receive_json()["type"] == "ready"
+        # The context has been built and the walk is under way.
+        assert engine.pool.checkedout() == 0
+        ws.send_json({"type": "frame", "seq": 1, "data": base64.b64encode(jpeg(leaf(1))).decode()})
+        assert ws.receive_json()["type"] == "frame"
+        assert engine.pool.checkedout() == 0, "a frame left a connection checked out"
 
 
 def test_live_walk_end_to_end(client):

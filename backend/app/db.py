@@ -69,6 +69,7 @@ ADDED_COLUMNS = {
              "snoozed_until": "DATETIME", "response_due_at": "DATETIME",
              "handovers": "INTEGER DEFAULT 0", "passed_over": "JSON"},
     "problem": {"season_no": "INTEGER DEFAULT 1"},
+    "followup": {"reminded_at": "DATETIME"},
     "trap_reading": {"season_no": "INTEGER DEFAULT 1"},
     "live_scan": {"season_no": "INTEGER DEFAULT 1"},
     "spray_log": {"season_no": "INTEGER DEFAULT 1"},
@@ -197,6 +198,12 @@ def _backfill_expert_ranks(bind) -> None:
     Renaming is safe to repeat. Granting the rank is not, because a district
     office may since have demoted somebody on purpose, so it runs only while
     the database holds no supervisor at all -- precisely the broken state.
+
+    Verified profiles only, and that is the whole of what keeps this honest now
+    that sign-up no longer writes the rank. This runs on every boot, and the
+    designation it reads is a word the account typed about itself: without the
+    clause, signing up as an Agriculture officer and waiting for the next
+    restart would be a way to be promoted by the schema.
     """
     from sqlalchemy import text  # noqa: PLC0415
 
@@ -208,6 +215,7 @@ def _backfill_expert_ranks(bind) -> None:
             return
         posts = ", ".join(f":d{i}" for i in range(len(SUPERVISOR_DESIGNATIONS)))
         conn.execute(
-            text(f"UPDATE expert_profile SET supervisor = TRUE WHERE designation IN ({posts})"),
+            text(f"UPDATE expert_profile SET supervisor = TRUE "
+                 f"WHERE verified AND designation IN ({posts})"),
             {f"d{i}": d for i, d in enumerate(SUPERVISOR_DESIGNATIONS)},
         )

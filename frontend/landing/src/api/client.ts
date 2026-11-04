@@ -3,6 +3,7 @@ import type {
   AdvisoryIssued,
   AdvisoryPreview,
   AdvisoryRow,
+  AdvisoryTargetRow,
   AlertView,
   AuthOptions,
   CaseBrief,
@@ -72,12 +73,34 @@ export class ApiError extends Error {
   }
 }
 
+/** How long to wait before calling a request lost.
+ *
+ *  A socket that stalls never rejects, so without this a screen waits for ever:
+ *  the skeleton stays, no error is raised, and nothing offers to try again. At
+ *  the edge of a field with one bar that is the ordinary case, not the rare
+ *  one. An upload carries a photograph over the same link, so it is given
+ *  considerably longer than a read before it is given up on. */
+const READ_TIMEOUT_MS = 15000
+const UPLOAD_TIMEOUT_MS = 60000
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response
+  // Honour a caller's own signal as well as the timeout, where one is given.
+  const timeout = init?.body instanceof FormData ? UPLOAD_TIMEOUT_MS : READ_TIMEOUT_MS
+  const clock = new AbortController()
+  const bell = setTimeout(() => clock.abort(), timeout)
+  const theirs = init?.signal
+  const relay = () => clock.abort()
+  theirs?.addEventListener('abort', relay)
   try {
-    res = await fetch(path, init)
+    res = await fetch(path, { ...init, signal: clock.signal })
   } catch {
+    // A timeout and a dead network are the same thing to the person holding
+    // the phone: the app could not reach the server. One message, one retry.
     throw new ApiError(0, 'offline')
+  } finally {
+    clearTimeout(bell)
+    theirs?.removeEventListener('abort', relay)
   }
   if (!res.ok) {
     let detail = res.statusText
@@ -255,6 +278,8 @@ export const api = {
   wakeCase: (id: number) => req<CaseBrief>(`/api/cases/${id}/wake`, { method: 'POST' }),
   recordInspection: (alertId: number, outcome: 'found' | 'nothing_found') =>
     req<{ id: number; outcome: string }>(`/api/officials/alerts/${alertId}/outcome`, json({ outcome })),
+  advisoryTargets: (crop: string, lang: Lang = 'en') =>
+    req<AdvisoryTargetRow[]>(`/api/officials/advisories/targets?crop=${crop}&lang=${lang}`),
   advisoryPreview: (d: AdvisoryDraft) => req<AdvisoryPreview>('/api/officials/advisories/preview', json(d)),
   issueAdvisory: (d: AdvisoryDraft) => req<AdvisoryIssued>('/api/officials/advisories', json(d)),
   advisoryHistory: () => req<AdvisoryRow[]>('/api/officials/advisories'),
