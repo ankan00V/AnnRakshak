@@ -4,7 +4,7 @@ import {
 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../../api/client'
-import type { CaseQuery } from '../../api/types'
+import type { CaseBrief, CaseQuery } from '../../api/types'
 import { useAsync } from '../../lib/hooks'
 import { Card, ErrorBox } from '../../ui/kit'
 import { useToast } from '../../ui/Toast'
@@ -136,6 +136,24 @@ export default function Queue() {
       complain((e as Error).message)
     }
   }, [list, say, complain])
+
+  // A case handed on is no longer this desk's to read, so there is nothing
+  // left to show in the pane: close it and say where the case went. It used to
+  // ask the server for the case again, which answered "case not found" to the
+  // officer who had just passed it to the right person.
+  const handedOff = useCallback((to: CaseBrief) => {
+    list.reload()
+    if (to.assigned_to !== null && to.assigned_to === me?.id) {
+      // One officer covers this district, so the router had nowhere to send it
+      // and gave it back. Saying "handed on" there would be a lie.
+      say(`Nobody else covers this district — case #${to.id} is still on your desk.`)
+      return
+    }
+    setSelected(null)
+    say(to.assigned_name
+      ? `Case #${to.id} is now with ${to.assigned_name}.`
+      : `Case #${to.id} is back in the queue — no officer covers that district yet.`)
+  }, [list, me, say])
 
   const activeFilters = ['district', 'crop', 'target', 'overdue', 'snoozed', 'q'].filter((k) => params.get(k))
 
@@ -366,7 +384,8 @@ export default function Queue() {
 
       {split && (
         <div className="lg:sticky lg:top-20">
-          <CaseView id={selected!} onBack={() => setSelected(null)} onResolved={() => { list.reload() }} />
+          <CaseView id={selected!} onBack={() => setSelected(null)} onHandedOff={handedOff}
+            onResolved={() => { list.reload() }} />
         </div>
       )}
     </div>
