@@ -105,3 +105,45 @@ def test_the_question_that_is_kept_is_the_one_already_due(db):
 
     assert again.id == first.id
     assert again.due_on == first.due_on
+
+
+def test_the_duplicates_the_old_behaviour_left_are_cleared_on_boot(db):
+    """`db._dedupe_open_followups`, against the shape really found.
+
+    Problem 121 on the demonstration rice field had two unanswered follow-ups
+    and problem 67 on another farm had two more. The earliest survives, since
+    it carries the due date the farmer was promised.
+    """
+    from app import db as dbmod
+
+    problem = _problem(db)
+    keep = FollowUp(problem_id=problem.id, due_on=date(2026, 10, 28))
+    dupe = FollowUp(problem_id=problem.id, due_on=date(2026, 11, 4))
+    answered = FollowUp(problem_id=problem.id, due_on=date(2026, 10, 1), response="same")
+    db.add_all([answered, keep, dupe])
+    db.commit()
+
+    dbmod._dedupe_open_followups(db.get_bind())
+    db.expire_all()
+
+    left = _open_followups(db, problem)
+    assert [f.id for f in left] == [keep.id]
+    assert left[0].due_on == date(2026, 10, 28)
+    # The record of what was asked and answered is not ours to delete.
+    assert db.get(FollowUp, answered.id) is not None
+
+
+def test_dedupe_is_safe_to_run_twice(db):
+    """It runs on every boot."""
+    from app import db as dbmod
+
+    problem = _problem(db)
+    db.add_all([FollowUp(problem_id=problem.id, due_on=date(2026, 10, 28)),
+                FollowUp(problem_id=problem.id, due_on=date(2026, 11, 4))])
+    db.commit()
+
+    dbmod._dedupe_open_followups(db.get_bind())
+    dbmod._dedupe_open_followups(db.get_bind())
+    db.expire_all()
+
+    assert len(_open_followups(db, problem)) == 1
