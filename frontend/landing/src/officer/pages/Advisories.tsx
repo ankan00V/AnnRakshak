@@ -295,7 +295,13 @@ export default function Advisories() {
                       <span className="block text-sm font-medium truncate">
                         {h.target.replace(/_/g, ' ')} <span className="text-soil-dark/50">· {h.kind}</span>
                       </span>
-                      <span className="block text-[11px] text-soil-dark/60 truncate">
+                      {/* Wraps rather than truncates. Who sent an advisory and
+                          when are the two things this list is consulted for —
+                          "was this already gone out, and by whom?" — and on one
+                          line they are the first to go: in a narrow window this
+                          read "every district…" and dropped both. Two lines of
+                          11px cost less than a second trip to ask. */}
+                      <span className="block text-[11px] text-soil-dark/60 [overflow-wrap:anywhere]">
                         {h.districts.length > 0 ? h.districts.join(', ') : 'every district'} · {h.issued_by}
                         {h.issued_at ? ` · ${h.issued_at.slice(0, 10)}` : ''}
                       </span>

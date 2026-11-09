@@ -73,7 +73,11 @@ export default function OfficerShell() {
       <header className="sticky top-0 z-30 bg-soil-dark text-cream">
         <div className="flex items-center justify-between gap-3 px-4 lg:px-6 h-14 lg:h-16">
           <div className="flex items-center gap-2.5 min-w-0">
-            <Link to="/" className="shrink-0"><BrandMark size={30} /></Link>
+            {/* The mark is the only thing inside, so without a name this link
+                reaches a screen reader as "link" and nothing else — on every
+                page of the console. The farmer app's own mark already carries
+                one. */}
+            <Link to="/" aria-label="AnnRakshak" className="shrink-0"><BrandMark size={30} /></Link>
             <span className="min-w-0">
               <span className="block font-semibold tracking-tight leading-none">AnnRakshak</span>
               <span className="hidden sm:block text-[11px] text-cream/55 truncate">
