@@ -220,11 +220,24 @@ That is the API, Postgres and Redis. The trained model is mounted from
 `ml/artifacts/` rather than baked in — without it the API still starts and
 serves the labelled stub, and `/health` says so.
 
-**What production refuses to do.** With `ANNRAKSHAK_ENV=production` the app will
-not start while a one-tap demo sign-in is enabled, while an expert can verify
-themselves, while the session cookie may travel over plain HTTP, or while
-sign-in codes are being written to a file instead of sent
-(`config.start_checks`). On a laptop the same list is printed as warnings.
+**What production refuses to do.** With `ANNRAKSHAK_ENV=production` the app
+will not start while any of these is true (`config.start_checks`, one test
+each). On a laptop the same list is printed as warnings and ignored.
+
+| Setting | Why it stops a deploy |
+| --- | --- |
+| `ANNRAKSHAK_DEMO_LOGIN` on | anyone can sign in as a demo farmer or officer |
+| `ANNRAKSHAK_EXPERT_AUTO_VERIFY` on | an officer verifies themselves, takes a supervisor's rank from their own sign-up form, and may read any farmer's case |
+| `ANNRAKSHAK_COOKIE_SECURE` off | the session cookie travels over plain HTTP |
+| `ANNRAKSHAK_DB_URL` on SQLite | one writer, so more than one worker corrupts or blocks |
+| `ANNRAKSHAK_PUBLIC_URL` still localhost | links in emails and notifications reach nobody |
+| `EMAIL_BACKEND=outbox` | sign-in codes are written to a file, not sent |
+| `TURNSTILE_SECRET` a Cloudflare test key | the box on sign-in is shown, answered and ticked, and refuses nobody |
+
+The last one is the quiet one, and the reason the list is worth reading
+rather than trusting: every other failure here looks like a failure. A test
+Turnstile key looks exactly like success — a real widget, a real round trip,
+a real tick — while the answer was settled before the request arrived.
 
 **Scaling past one container.** The background watcher — weather rules, the risk
 sweep, push and email — must run in exactly one process, or every farmer gets
