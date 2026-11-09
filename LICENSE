@@ -1,21 +1,57 @@
-MIT License
+AnnRakshak Attribution & Non-Commercial Use License
 
-Copyright (c) 2026 Ankan Ghosh
+Copyright (c) 2026 Ankan Ghosh. All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+1. Grant of Permission
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Permission is hereby granted to any individual or organization to access, use, reproduce, modify, and deploy AnnRakshak for personal, educational, research, agricultural, community-benefit, and other non-commercial purposes, subject to the conditions below.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+2. Attribution Requirements
+
+Any use, deployment, modification, or redistribution of this software must:
+
+- Clearly acknowledge Ankan Ghosh as the original creator and copyright holder of AnnRakshak.
+- Preserve all existing copyright notices and attribution statements.
+- Include a reference to the original repository: https://github.com/ankan00V/AnnRakshak.
+- Clearly identify modifications made by third parties.
+- Not imply that the original creator endorses or is affiliated with an independently modified deployment.
+
+For publicly accessible deployments, attribution must be reasonably visible in the application or its accompanying documentation.
+
+3. Permitted Use
+
+The following uses are permitted without requiring additional permission, provided they remain non-commercial:
+
+- Free deployment and use by farmers and agricultural communities.
+- Free deployment by NGOs and non-profit organizations.
+- Educational and research use by schools and universities.
+- Free deployment by government departments and public agricultural institutions.
+- Personal use, experimentation, modification, and non-commercial redistribution.
+
+4. Restrictions
+
+Without prior written permission from the copyright holder, you may not:
+
+- Sell, commercially license, or monetize the software or derivative versions.
+- Offer AnnRakshak or its modified versions as a paid commercial service or SaaS.
+- Incorporate the software into commercial products or services.
+- Remove or misrepresent original copyright and attribution notices.
+- Claim authorship or ownership of the original AnnRakshak codebase.
+
+5. Ownership
+
+All rights, title, and interest in the original AnnRakshak software remain with Ankan Ghosh.
+
+Modifications created by third parties do not transfer ownership of the original software to those parties. Third-party contributions remain subject to applicable ownership and licensing arrangements.
+
+6. Commercial Licensing
+
+Any commercial use, including paid deployment, commercial integration, resale, or monetization, requires prior written authorization from the copyright holder.
+
+For commercial licensing inquiries, contact the repository owner through GitHub.
+
+7. Disclaimer
+
+The software is provided "AS IS", without warranties or guarantees of any kind, to the maximum extent permitted by applicable law.
+
+The copyright holder shall not be liable for claims, damages, or other liabilities arising from the use or distribution of this software.
