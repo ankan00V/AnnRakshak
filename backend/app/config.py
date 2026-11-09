@@ -271,6 +271,16 @@ Cloudflare publishes other test keys worth knowing while building this:
   2x00000000000000000000AB / 2x0000000000000000000000000000000AA  always fails
   3x00000000000000000000FF                                        always asks"""
 
+#: Cloudflare's published test secrets. Every one of them is a decision made
+#: before the request arrives — always pass, always fail, already spent — so a
+#: site running on any of them has a box that asks and an answer that was
+#: never in doubt. `start_checks` refuses to let production start on one.
+TURNSTILE_TEST_SECRETS = frozenset({
+    "1x0000000000000000000000000000000AA",  # always passes
+    "2x0000000000000000000000000000000AA",  # always fails
+    "3x0000000000000000000000000000000AA",  # token already spent
+})
+
 #: How many live field calls one worker will carry at once. Every frame of every
 #: call runs the photo model on a worker thread, so beyond a point more callers
 #: buy nothing: each frame waits longer, the coaching falls behind what the
@@ -387,4 +397,13 @@ def start_checks() -> list[str]:
                         "will not reach anyone")
     if EMAIL_BACKEND == "outbox":
         problems.append("EMAIL_BACKEND is 'outbox': sign-in codes are written to a file, not sent")
+    if TURNSTILE_SECRET in TURNSTILE_TEST_SECRETS:
+        # The quiet one. Leaving the box off is a decision somebody made;
+        # leaving Cloudflare's test secret in place looks exactly like having
+        # it on — a real widget, a real round trip to Cloudflare, a real tick
+        # — while the answer was settled before anyone asked. Sign-up is where
+        # the officer accounts are made, so an open door here is an open door
+        # to the district's cases.
+        problems.append("TURNSTILE_SECRET is one of Cloudflare's test keys: the box on sign-in "
+                        "is shown and answered but refuses nobody")
     return problems
