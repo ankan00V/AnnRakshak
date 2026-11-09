@@ -143,6 +143,30 @@ def test_a_video_is_read_without_asking_for_views_it_cannot_have():
     assert s.done
 
 
+def test_one_view_held_for_a_long_time_is_still_one_view():
+    """The decision this pins: a video gets no easier bar than a walk.
+
+    Thirty seconds on a single diseased leaf feels like far more evidence than
+    two photographs and is not — a model that misreads that leaf misreads every
+    frame of it identically, so the frames are one sample, not thirty. The
+    novelty gate is what keeps the count honest: it measures each frame against
+    the last accepted one, so an unchanging view accumulates nothing however
+    long it runs, and the answer is an expert rather than a confident name.
+    """
+    sure = lambda img: [("rice_brown_spot", 0.95), ("rice_healthy", 0.03)]  # noqa: E731
+    s = LiveSession(crop="rice", lang="en", can_classify=True, mode="video")
+    frame = leaf(11)
+    for _ in range(40):                     # the same leaf, over and over
+        s.on_frame(frame, b"same", sure)
+    s.ended = True
+
+    assert s.kept == 1, "an unchanging view counted more than once"
+    f = s.findings(kb)
+    assert not f["seen"], "forty frames of one leaf became a confident verdict"
+    assert [x["target"] for x in f["possible"]] == ["rice_brown_spot"]
+    assert s.why_thin() == "move_a_little", "the farmer is not told to move along the row"
+
+
 def test_a_video_reaches_the_same_verdict_as_a_walk():
     sure = lambda img: [("rice_brown_spot", 0.86), ("rice_healthy", 0.1), ("rice_blast", 0.02)]  # noqa: E731
     s = LiveSession(crop="rice", lang="en", can_classify=True, mode="video")

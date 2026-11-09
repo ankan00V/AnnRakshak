@@ -238,7 +238,26 @@ MIN_SHARE_OF_STRONG = 0.25
 MIN_VIDEO_VIEWS = 2
 """Readable frames below which a video is worth explaining rather than only
 reporting. Two is the bar a disease must clear anyway, so under it the farmer
-was never going to get an answer and deserves to know why."""
+was never going to get an answer and deserves to know why.
+
+A video does NOT get an easier bar than a walk, and the temptation to give it
+one should be resisted here rather than rediscovered. Thirty seconds held on a
+single diseased leaf feels like far more evidence than two photographs, and it
+is not: a model that misreads that leaf misreads every frame of it the same
+way, so those frames are one sample wearing thirty hats. Counting them would
+buy a confident answer on exactly the footage least able to support one.
+
+What saves the rule from being merely timid is that it never counted frames in
+the first place. A frame becomes a view only by passing the novelty gate, and
+that gate measures each frame against the last *accepted* one — so a handheld
+video that drifts across a plant accumulates real views as it goes, while a
+camera resting on a bund accumulates none. Different looks count; the same look
+repeated does not. That is the distinction the rule is actually for, and it
+already draws it.
+
+So a static video ends at "possible — an expert will check", with the reading
+telling the farmer to walk the row and film a few different plants. That is the
+honest answer, and the expert's verdict now reaches them."""
 VIDEO_KIND = "close"
 """A file is read for usable close-ups of the crop and nothing else: there is no
 one to coach towards the other views, so there is no point measuring against
