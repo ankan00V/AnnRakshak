@@ -174,6 +174,7 @@ def init_db(bind=None) -> None:
     _widen_columns(eng, insp)
     _add_indexes(eng, insp)
     _backfill_expert_ranks(eng)
+    _dedupe_open_followups(eng)
 
 
 # Designation ids that were in use before the sign-up form fixed the vocabulary.
@@ -183,6 +184,34 @@ SUPERVISOR_DESIGNATIONS = ("agri_officer", "kvk_scientist")
 taluka or district, and the KVK scientist who heads the subject-matter team.
 Verifying a colleague, routing a backlog and moving another officer's cases are
 theirs. Everyone else advises."""
+
+
+def _dedupe_open_followups(bind) -> None:
+    """Leave one unanswered follow-up per problem.
+
+    Scheduling one used to be unconditional, so a problem advised more than
+    once — a second opinion, a re-decide after a new model ships, the same
+    photograph sent twice — collected a follow-up per advice. They came due
+    on the same day and asked the same question about the same disease, so
+    the home screen stacked identical cards and answering one left the rest.
+    `services._schedule_followup` now returns the open one instead of adding
+    another; this clears what the old behaviour left behind.
+
+    The earliest is the one kept, because it carries the due date the farmer
+    was actually promised. Answered follow-ups are never touched: they are
+    the record of what was asked and what came back, and a problem is
+    expected to have many of them over a season.
+
+    Safe to repeat — once each problem has one, it matches nothing.
+    """
+    from sqlalchemy import text  # noqa: PLC0415
+
+    with bind.begin() as conn:
+        conn.execute(text(
+            "DELETE FROM followup WHERE response IS NULL AND id NOT IN ("
+            "  SELECT MIN(id) FROM followup WHERE response IS NULL GROUP BY problem_id"
+            ")"
+        ))
 
 
 def _backfill_expert_ranks(bind) -> None:

@@ -321,6 +321,39 @@ def test_a_failed_push_does_not_undo_a_committed_verdict(client, monkeypatch):
     assert r.status_code == 200 and r.json()["final_label"] == "rice_brown_spot"
 
 
+def test_the_wait_a_farmer_is_quoted_is_their_own_queue(client):
+    """Position and ETA were counted over every open case in the database, so a
+    farmer in one district was told to wait behind cases whose officers will
+    never see theirs — and the count crossed the demo line in both directions.
+    Cases route on the district and that line, so the queue is the one those
+    two define."""
+    from app.models import Farm
+
+    with SessionLocal() as db:
+        here = db.get(Farm, 1)
+        here.is_demo = False
+        # A field of the same crop in another district, and a demo field in
+        # this one. Neither is a case this farmer waits behind.
+        for district, is_demo in (("Nagpur", False), (here.district, True)):
+            db.add(Farm(farmer_name="Elsewhere", phone=f"9100{district[:3]}{int(is_demo)}",
+                        lang="en", crop=here.crop, sowing_date=here.sowing_date,
+                        date_basis=here.date_basis, state=here.state, district=district,
+                        village="V", lat=here.lat, lon=here.lon, area_acres=1.0,
+                        is_demo=is_demo, status="growing"))
+        db.commit()
+        other_ids = [f.id for f in db.query(Farm).filter(Farm.farmer_name == "Elsewhere").all()]
+
+    # One escalated case on each of the two neighbours, then one of our own.
+    for fid in other_ids:
+        diagnose(client, fid, "unsure")
+    mine = diagnose(client, 1, "unsure")["case"]
+
+    assert mine["queue_position"] == 1, (
+        "a farmer was told to wait behind cases in another district, or across the demo line")
+    from app.services import CASE_ETA_MINUTES_PER_POSITION
+    assert mine["eta_minutes"] == CASE_ETA_MINUTES_PER_POSITION
+
+
 def test_a_spread_warning_does_not_cross_the_demo_line_or_reach_a_cleared_field(client):
     """propagate() warns every farm of the crop within the radius. Without the
     two lines the rest of the app keeps, a real case warned the demonstration
