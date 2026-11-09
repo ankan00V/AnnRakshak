@@ -52,10 +52,22 @@ export default function LanguagePicker({ onPick, variant = 'button', wide = true
 
   return (
     <>
+      {/* On a phone this pill was 88px of a 375px header — wider than the
+          bell and the avatar together — and the width came out of the field
+          line beside it, which is the one thing in the header a farmer needs
+          to read: "Rice (paddy) · Bhandara" wants 125px and was given 85, so
+          it was cut mid-village on every screen of the app.
+
+          Below `sm` the language name goes and the glyph stays. The pill is
+          still a 36px target, still says what it does to a screen reader, and
+          the sheet it opens still lists every language in its own script —
+          which is the screen that has to be readable without English, not
+          this button. */}
       <button data-tour="lang" onClick={() => setOpen(true)} aria-label={t('chooseLanguage')}
-        className="flex items-center gap-1.5 rounded-full bg-cream/10 hover:bg-cream/20 px-3 min-h-[36px] text-xs font-medium">
-        <Languages className="w-4 h-4" />
-        {current?.label}
+        className="flex items-center gap-1.5 rounded-full bg-cream/10 hover:bg-cream/20
+                   px-2.5 sm:px-3 min-w-[36px] min-h-[36px] justify-center text-xs font-medium">
+        <Languages className="w-4 h-4 shrink-0" />
+        <span className="hidden sm:inline">{current?.label}</span>
       </button>
       {open && createPortal(
         <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center" onClick={() => setOpen(false)}>

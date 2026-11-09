@@ -78,6 +78,8 @@ function Shell() {
     }
     es.addEventListener('notice', on)
     es.addEventListener('alert', on)
+    es.addEventListener('verdict', on)   // an expert answered a case this farm sent
+    es.addEventListener('followup', on)  // the day-4 check on a treatment is due
     return () => es.close()
   }, [farmId, lang, setUnread, setToast])
 
@@ -146,7 +148,10 @@ function Shell() {
           one content width and one 12-column grid (see farmer/layout.ts), so
           edges line up from screen to screen. Detail screens (a result, the
           history) keep a centred reading width. */}
-      <main className={`flex-1 w-full max-w-md mx-auto px-4 pt-5 pb-28 animate-fadein lg:max-w-none lg:px-10 lg:pt-8 lg:pb-16 ${
+      {/* pb clears the bottom nav AND the Krishi button floating above it: the
+          button's top edge is 124px off the bottom on a phone, so 112px of
+          padding let the last card slide under it. */}
+      <main className={`flex-1 w-full max-w-md mx-auto px-4 pt-5 pb-36 animate-fadein lg:max-w-none lg:px-10 lg:pt-8 lg:pb-24 ${
         farmId != null ? 'lg:pl-[calc(16rem+2.5rem)]' : ''}`} key={pathname}>
         <div className={`lg:mx-auto ${farmId == null || wideRoute ? 'lg:max-w-6xl' : 'lg:max-w-3xl'}`}>
           {/* Picking a field comes before the screens about a field — but not

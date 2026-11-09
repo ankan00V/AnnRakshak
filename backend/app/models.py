@@ -371,6 +371,9 @@ class FollowUp(Base):
     due_on: Mapped[date] = mapped_column(Date)
     response: Mapped[str | None] = mapped_column(String(20))
     responded_at: Mapped[datetime | None] = mapped_column(DateTime)
+    #: When the farmer was reminded it was due. Without this the watcher, which
+    #: runs every half hour, would ask them the same question all day.
+    reminded_at: Mapped[datetime | None] = mapped_column(DateTime)
 
 
 class Case(Base):

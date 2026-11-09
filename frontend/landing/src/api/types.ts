@@ -170,6 +170,17 @@ export interface AdvisoryDraft {
   audience?: 'all' | 'alerted' | 'nearby' | 'stage'
 }
 
+/** A problem an officer may issue an advisory for: everything the knowledge
+ *  base can hand a farmer tasks for, not only what the risk engine has raised
+ *  this week. `alerted` is how many farms it has already flagged. */
+export interface AdvisoryTargetRow {
+  target: string
+  name: string
+  crop: string
+  kind: string
+  alerted: number
+}
+
 export interface AdvisoryPreview {
   target: string
   name: string
@@ -677,10 +688,16 @@ export interface LiveGuide {
   need?: number
   got?: number
   text?: string
-  /** Video mode: frames read so far, and how many were clear enough to keep.
-   *  A video has no steps to be at, so these stand in for the step counter. */
+  /** Video mode: frames read so far, how many passed the quality gate, and how
+   *  many the model could actually read. A video has no steps to be at, so
+   *  these stand in for the step counter. */
   read?: number
+  clear?: number
   kept?: number
+  /** Why a video gave almost nothing, when it did: 'not_crop', 'too_dark',
+   *  'hold_steady', 'show_crop'/'come_closer', 'move_a_little'. Null when the
+   *  reading was good enough that there is nothing to explain. */
+  why_thin?: string | null
 }
 
 export interface LiveFrameReply {
@@ -882,7 +899,10 @@ export interface NoticeItem extends WeatherAdvisory {
 }
 
 export interface LiveEvent {
-  type: 'notice' | 'alert'
+  /** 'verdict': an expert has answered a case this farm sent. It is the
+   *  answer to a question the farmer asked, not a forecast, so it arrives
+   *  whatever the hour and points at the verdict itself. */
+  type: 'notice' | 'alert' | 'verdict' | 'followup'
   id: number
   severity: Severity
   title: string

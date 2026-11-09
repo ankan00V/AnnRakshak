@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   AlertTriangle, CameraOff, CheckCircle2, CloudSun, Droplets, Eye, Leaf, Loader2, MapPin, Monitor, ScanSearch,
-  ShieldAlert, Sprout, Stethoscope, Upload, Video, Volume2, VolumeX, X,
+  Flashlight, ShieldAlert, SkipForward, Sprout, Stethoscope, Upload, Video, Volume2, VolumeX, X,
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../../api/client'
@@ -27,6 +27,30 @@ const INFLIGHT_TIMEOUT_MS = 6000
 const FINISH_TIMEOUT_MS = 25000
 const MIN_FRAME_SIDE = 64        // a stopped or starting track gives 0-2 px frames
 const GRAB_EVERY_S = 1           // one frame a second out of an uploaded video
+/** What the server says a thin video hit, and the sentence the farmer gets for
+ *  it. Each one names the thing to do differently, because "it did not work"
+ *  is the same screen for a recording of somebody else's video as for a crop
+ *  filmed at dusk, and the two need opposite advice. */
+const WHY_VIDEO: Record<string, string> = {
+  not_crop: 'videoNotCrop',
+  move_a_little: 'videoOneSpot',
+  too_dark: 'videoTooDark',
+  too_bright: 'videoTooDark',
+  hold_steady: 'videoBlurry',
+  show_crop: 'videoTooFar',
+  come_closer: 'videoTooFar',
+}
+/** How long to keep trying to get a dropped call back, and the gaps between
+ *  tries. A field edge with one bar drops a socket often; walking the whole
+ *  field again because of it is not an answer. */
+const REDIAL_WAITS_MS = [800, 1500, 3000, 5000, 8000]
+/** A view that has not advanced in this long is one the farmer may simply not
+ *  be able to get: offer them the way past it rather than coach forever. */
+const STUCK_MS = 20000
+/** Said to the server while the farmer is reading a question or deciding
+ *  whether to send a case: without it, thinking looks exactly like a phone that
+ *  has gone flat, and the server lets the call go. */
+const PING_EVERY_MS = 20000
 const MAX_UPLOAD_FRAMES = 200    // the walk needs ~16 good frames; the server stops at 600
 
 function position(timeoutMs = 6000): Promise<GeolocationPosition | null> {
@@ -61,6 +85,9 @@ export default function Live() {
   const carryable = useCarryable()
   const [source, setSource] = useState<Source>('camera')
   const [watched, setWatched] = useState(0)      // how far through the uploaded video
+  const [redialling, setRedialling] = useState(false)
+  const [stuck, setStuck] = useState(false)
+  const [torch, setTorch] = useState<boolean | null>(null)   // null: this camera has no light
   const [videoCut, setVideoCut] = useState(false)      // longer than we watch
 
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -72,10 +99,36 @@ export default function Live() {
   const fileRef = useRef<HTMLInputElement>(null)
   const grabRef = useRef<Grabber | null>(null)
   const walk = useRef({ at: 0, pass: 0, frames: 0 })
+  const resumeRef = useRef<string | null>(null)
+  const redial = useRef({ tries: 0, timer: 0 })
+  const wakeRef = useRef<WakeLockSentinel | null>(null)
+  const closedRef = useRef<() => void>(() => undefined)
+  const stepSince = useRef(0)
   const fresh = () => ({ seq: 0, inflight: false, sentAt: 0, capturing: false, photoModel: true,
                          finishing: false, done: false, stepsDone: false, source: 'camera' as Source })
   const st = useRef(fresh())
   const finishTimer = useRef<number | null>(null)
+
+  /** A guided walk is minutes of looking at the field, not at the phone. Every
+   *  phone darkens and then locks a screen nobody has touched — and locking it
+   *  stops the camera, which ends the call. The wake lock is the only thing
+   *  standing between a farmer halfway down their field and a dead session.
+   *  Browsers drop it whenever the page is hidden, so it is taken again every
+   *  time the page comes back. */
+  const keepAwake = useCallback(async () => {
+    if (wakeRef.current || !('wakeLock' in navigator)) return
+    try {
+      wakeRef.current = await navigator.wakeLock.request('screen')
+      wakeRef.current.addEventListener('release', () => { wakeRef.current = null })
+    } catch {
+      /* denied, or the battery is too low for the browser to allow it */
+    }
+  }, [])
+
+  const letSleep = useCallback(() => {
+    void wakeRef.current?.release().catch(() => undefined)
+    wakeRef.current = null
+  }, [])
 
   /** Let go of whatever was feeding frames: the camera's tracks, or the video
    *  file and the object URL holding it in memory. */
@@ -87,7 +140,9 @@ export default function Live() {
     streamRef.current = null
     grabRef.current?.close()
     grabRef.current = null
-  }, [])
+    window.clearTimeout(redial.current.timer)
+    letSleep()
+  }, [letSleep])
 
   useEffect(() => () => {
     stopSource()
@@ -194,8 +249,15 @@ export default function Live() {
       setCtx(m.context)
       setGuide(m.guide)
       st.current.photoModel = m.photo_model
+      resumeRef.current = m.resume ?? null
+      redial.current.tries = 0
+      setRedialling(false)
+      setStuck(false)
+      stepSince.current = Date.now()
       setPhase('live')
       st.current.capturing = true
+      // Coming back from a drop, the step is the one they were already on:
+      // repeat it, so they know what to point at without reading the screen.
       void sp?.prompt(m.guide.text)
       if (st.current.source === 'video') void pumpVideo()
     } else if (m.type === 'frame') {
@@ -212,6 +274,10 @@ export default function Live() {
         }
       }
       setGuide(r.guide)
+      if (r.advanced) {
+        stepSince.current = Date.now()
+        setStuck(false)
+      }
       if (r.advanced && r.guide.text) void sp?.prompt(r.guide.text)
       else if (r.quality && !r.quality.ok && r.quality.hint_text) void sp?.hint(r.quality.hint_text)
       if (st.current.source === 'video') void pumpVideo()
@@ -232,6 +298,13 @@ export default function Live() {
       setSummary(m.summary)
       setPhase('summary')
       void sp?.prompt(m.summary.speech)
+    } else if (m.type === 'guide') {
+      // A view was skipped: the walk has moved on to the next one.
+      setGuide(m.guide)
+      stepSince.current = Date.now()
+      setStuck(false)
+      setQuality(null)
+      if (m.guide.text) void sp?.prompt(m.guide.text)
     } else if (m.type === 'lang') {
       // Language switched mid-call: the server re-sent the context and the current step.
       setCtx(m.context)
@@ -240,9 +313,18 @@ export default function Live() {
     } else if (m.type === 'error') {
       st.current.inflight = false
       if (m.code === 'SESSION_LIMIT') finish(false)
-      else if (st.current.source === 'video') void pumpVideo()  // skip the bad frame, keep going
+      else if (m.code === 'RESUME_UNKNOWN') {
+        // The walk was waiting too long, or came back to a different server.
+        resumeRef.current = null
+        lost()
+      } else if (m.code === 'TOO_BUSY') {
+        st.current.done = true
+        stopSource()
+        setError(t('liveTooBusy'))
+        setPhase('error')
+      } else if (st.current.source === 'video') void pumpVideo()  // skip the bad frame, keep going
     }
-  }, [finish, pumpVideo, stopSource])
+  }, [finish, lost, pumpVideo, stopSource, t])
 
   // A language change takes effect at once: mid-call the server switches the
   // guidance and context; after the call the summary is re-rendered from what was saved.
@@ -258,6 +340,99 @@ export default function Live() {
     }
   }, [lang, summary, farmId])
 
+  const socket = useCallback((open: (ws: WebSocket) => void) => {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws'
+    const ws = new WebSocket(`${proto}://${location.host}/api/live/${farmId}`)
+    wsRef.current = ws
+    ws.onopen = () => open(ws)
+    ws.onmessage = onMessage
+    ws.onclose = () => closedRef.current()   // also fires after onerror
+    return ws
+  }, [farmId, onMessage])
+
+  /** Dial back in and ask for the walk we were on. The camera is left running
+   *  throughout: the farmer is still standing in front of the same leaf. */
+  const redialNow = useCallback(() => {
+    const token = resumeRef.current
+    if (!token || st.current.finishing || st.current.done) return
+    socket((ws) => ws.send(JSON.stringify({ type: 'resume', token })))
+  }, [socket])
+
+  /** The connection went. On a field edge with one bar that is ordinary, not
+   *  fatal — the walk is held on the server for a few minutes, so keep trying
+   *  before telling the farmer their walk is gone. */
+  const dropped = useCallback(() => {
+    const s = st.current
+    if (s.done || s.finishing) return
+    if (s.source !== 'camera' || !resumeRef.current || redial.current.tries >= REDIAL_WAITS_MS.length) {
+      return lost()
+    }
+    s.capturing = false
+    s.inflight = false
+    setRedialling(true)
+    const wait = REDIAL_WAITS_MS[redial.current.tries]
+    redial.current.tries += 1
+    window.clearTimeout(redial.current.timer)
+    redial.current.timer = window.setTimeout(redialNow, wait)
+  }, [lost, redialNow])
+
+  useEffect(() => { closedRef.current = dropped }, [dropped])
+
+  // A phone that is put to sleep, or an app switched away from to take a call,
+  // stops its camera. Coming back, the wake lock has to be taken again and the
+  // preview told to play — otherwise the call is alive but blind.
+  useEffect(() => {
+    const back = () => {
+      if (document.visibilityState !== 'visible' || !st.current.capturing) return
+      void keepAwake()
+      void videoRef.current?.play().catch(() => undefined)
+    }
+    document.addEventListener('visibilitychange', back)
+    return () => document.removeEventListener('visibilitychange', back)
+  }, [keepAwake])
+
+  // The call is quiet whenever the farmer is being asked something rather than
+  // walking. Say so, so the silence is not read as a phone that has died.
+  useEffect(() => {
+    if (phase !== 'starting' && phase !== 'live' && phase !== 'finishing') return
+    const t = window.setInterval(() => {
+      const ws = wsRef.current
+      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'ping' }))
+    }, PING_EVERY_MS)
+    return () => window.clearInterval(t)
+  }, [phase])
+
+  // Offer the way past a view that is not coming. Some fields have no leaf you
+  // can turn over and no plant base above the water.
+  useEffect(() => {
+    if (phase !== 'live' || source !== 'camera' || !guide?.step) return
+    const t = window.setInterval(() => {
+      if (Date.now() - stepSince.current > STUCK_MS) setStuck(true)
+    }, 1000)
+    return () => window.clearInterval(t)
+  }, [phase, source, guide?.step])
+
+  const skipView = () => {
+    setStuck(false)
+    stepSince.current = Date.now()
+    wsRef.current?.send(JSON.stringify({ type: 'skip' }))
+  }
+
+  /** The camera's own light, where it has one. A field is walked early or late
+   *  as often as at noon, and "too dark" is not advice if the phone is holding
+   *  the only lamp there is. */
+  const flipTorch = async () => {
+    const track = streamRef.current?.getVideoTracks()[0]
+    if (!track || torch === null) return
+    const next = !torch
+    try {
+      await track.applyConstraints({ advanced: [{ torch: next }] } as unknown as MediaTrackConstraints)
+      setTorch(next)
+    } catch {
+      setTorch(null)   // the camera said it could and then would not
+    }
+  }
+
   /** Everything both routes do before a frame exists: forget the last walk and
    *  wake the voice up. */
   const begin = (from: Source) => {
@@ -268,6 +443,10 @@ export default function Live() {
     walk.current = { at: 0, pass: 0, frames: 0 }
     setSource(from)
     setWatched(0)
+    setRedialling(false)
+    setStuck(false)
+    resumeRef.current = null
+    redial.current = { tries: 0, timer: 0 }
     setVideoCut(false)
     setTally({})
     setAsk(null)
@@ -282,15 +461,10 @@ export default function Live() {
   /** Open the call. The server is told where the field is and which language to
    *  speak; what is feeding the frames is ours to know. */
   const connect = (pos: GeolocationPosition | null, from: Source) => {
-    const proto = location.protocol === 'https:' ? 'wss' : 'ws'
-    const ws = new WebSocket(`${proto}://${location.host}/api/live/${farmId}`)
-    wsRef.current = ws
-    ws.onopen = () => ws.send(JSON.stringify({
+    socket((ws) => ws.send(JSON.stringify({
       type: 'start', lang, mode: from === 'video' ? 'video' : 'walk',
       lat: pos?.coords.latitude ?? null, lon: pos?.coords.longitude ?? null, accuracy: pos?.coords.accuracy ?? null,
-    }))
-    ws.onmessage = onMessage
-    ws.onclose = lost  // also fires after onerror
+    })))
   }
 
   const start = async () => {
@@ -314,10 +488,14 @@ export default function Live() {
       setError(t('liveNoCamera'))
       setPhase('error')
     })
+    const track = streamRef.current.getVideoTracks()[0]
+    const caps = (track?.getCapabilities?.() ?? {}) as { torch?: boolean }
+    setTorch(caps.torch ? false : null)
     const v = videoRef.current!
     v.removeAttribute('src')
     v.srcObject = streamRef.current
     await v.play().catch(() => undefined)
+    void keepAwake()
     connect(await where, 'camera')
     loopRef.current = window.setInterval(sendFrame, 150)
   }
@@ -362,7 +540,8 @@ export default function Live() {
   const live = phase === 'starting' || phase === 'live' || phase === 'finishing'
 
   if (phase === 'summary' && summary) {
-    return <SummaryView s={summary} onAgain={() => { setSummary(null); setPhase('intro') }} onDone={() => navigate('/app')} />
+    return <SummaryView s={summary} whyThin={source === 'video' ? guide?.why_thin ?? null : null}
+      onAgain={() => { setSummary(null); setPhase('intro') }} onDone={() => navigate('/app')} />
   }
 
   if (readOnly) {
@@ -424,7 +603,9 @@ export default function Live() {
       )}
 
       {/* The call: full screen over the app chrome while it runs. */}
-      <div className={live ? 'fixed inset-0 z-[60] bg-black text-white' : 'hidden'}>
+      {/* Above the tour's own z-[60]: while a call is running nothing belongs
+          over the camera, whichever mounted first. */}
+      <div className={live ? 'fixed inset-0 z-[70] bg-black text-white' : 'hidden'}>
         <video ref={videoRef} playsInline muted
           className={`absolute inset-0 w-full h-full ${source === 'video' ? 'object-contain' : 'object-cover'}`} />
         <canvas ref={canvasRef} className="hidden" />
@@ -440,6 +621,12 @@ export default function Live() {
                   <span key={i} className={`h-1 flex-1 rounded-full ${i < guide.index ? 'bg-leaf' : i === guide.index ? 'bg-ochre' : 'bg-white/25'}`} />
                 ))}
               </div>
+            )}
+            {torch !== null && (
+              <button onClick={() => { void flipTorch() }} aria-label={t('liveTorch')} aria-pressed={torch}
+                className={`w-9 h-9 rounded-full flex items-center justify-center ${torch ? 'bg-ochre text-soil-dark' : 'bg-white/15'}`}>
+                <Flashlight className="w-4 h-4" />
+              </button>
             )}
             <button onClick={toggleMute} aria-label={muted ? t('liveUnmute') : t('liveMute')}
               className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center">
@@ -504,6 +691,16 @@ export default function Live() {
               {t('liveVideoRead').replace('{n}', String(guide.read ?? 0)).replace('{k}', String(guide.kept ?? 0))}
             </p>
           )}
+          {/* A video that gave the model almost nothing to read says which wall
+              it hit. Without this the farmer watched a good-looking video
+              produce "0 clear close-ups" and had no idea what to do about it —
+              a screen recording and a crop filmed at dusk fail identically on
+              screen and need opposite advice. */}
+          {source === 'video' && WHY_VIDEO[guide?.why_thin ?? ''] && (
+            <p className="mx-auto max-w-sm rounded-2xl bg-ochre/90 px-3 py-2 text-sm leading-snug text-soil-dark">
+              {t(WHY_VIDEO[guide!.why_thin!])}
+            </p>
+          )}
           {phase === 'live' && source === 'camera' && quality && (
             <p className={`mx-auto w-fit rounded-full px-3 py-1 text-sm font-medium ${quality.ok ? 'bg-leaf/90' : 'bg-ochre/90 text-soil-dark'}`}>
               {quality.ok ? t('liveKeep') : quality.hint_text}
@@ -520,6 +717,14 @@ export default function Live() {
               {t('liveSeenSoFar')}: {Object.values(tally).map((x) => `${x.name} ×${x.n}`).join(' · ')}
             </p>
           )}
+          {stuck && phase === 'live' && (
+            <div className="flex justify-center">
+              <button onClick={skipView}
+                className="min-h-[40px] px-4 rounded-full border border-white/40 text-sm font-medium flex items-center gap-2">
+                <SkipForward className="w-4 h-4" /> {t('liveSkip')}
+              </button>
+            </div>
+          )}
           <div className="flex justify-center">
             <button onClick={() => (phase === 'live' ? finish(false) : (stopSource(), wsRef.current?.close(), setPhase('intro')))}
               className="min-h-[48px] px-6 rounded-full bg-ember text-white font-medium flex items-center gap-2">
@@ -528,6 +733,13 @@ export default function Live() {
           </div>
         </div>
 
+        {redialling && (
+          <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-3 px-8 text-center">
+            <Loader2 className="w-8 h-8 animate-spin text-ochre" />
+            <p className="text-sm">{t('liveRedial')}</p>
+            <p className="text-xs text-white/60">{t('liveRedialStay')}</p>
+          </div>
+        )}
         {(phase === 'starting' || phase === 'finishing') && (
           <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-ochre" />
@@ -579,7 +791,9 @@ const VERDICT = {
 
 const LEVEL_TONE = { high: 'ember', medium: 'ochre', low: 'neutral' } as const
 
-function SummaryView({ s, onAgain, onDone }: { s: LiveSummary; onAgain: () => void; onDone: () => void }) {
+function SummaryView({ s, whyThin, onAgain, onDone }: {
+  s: LiveSummary; whyThin: string | null; onAgain: () => void; onDone: () => void
+}) {
   const { t, lang } = useFarmer()
   const v = VERDICT[s.verdict]
   const c = s.context
@@ -604,7 +818,15 @@ function SummaryView({ s, onAgain, onDone }: { s: LiveSummary; onAgain: () => vo
           </div>
           <ListenButton text={s.speech} lang={lang} label={t('listen')} stopLabel={t('stop')} compact tone="light" />
         </div>
-        {(s.verdict === 'unclear' || s.verdict === 'no_model') && (
+        {/* A video that gave almost nothing knows which wall it hit, and the
+            general advice is wrong for most of them: telling somebody whose
+            screen recording the model cannot read as a crop to "hold the phone
+            close to a leaf, in daylight" sends them out to film the same
+            unusable thing again. Where the reading says why, it replaces the
+            general line rather than sitting under it. */}
+        {whyThin && WHY_VIDEO[whyThin] ? (
+          <p className="mt-3 text-sm leading-snug opacity-90">{t(WHY_VIDEO[whyThin])}</p>
+        ) : (s.verdict === 'unclear' || s.verdict === 'no_model') && (
           <p className="mt-3 text-sm leading-snug opacity-90">
             {s.verdict === 'unclear' ? t('liveUnclearHint') : t('liveNoModelHint').replace('{crop}', c.crop.name)}
           </p>

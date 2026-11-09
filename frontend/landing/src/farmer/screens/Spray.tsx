@@ -4,15 +4,14 @@ import { api } from '../../api/client'
 import type { LabelVerdict } from '../../api/types'
 import { useAsync } from '../../lib/hooks'
 import { ErrorBox, ListenButton, VoiceButton } from '../../ui/kit'
-import { useFarmer } from '../FarmerContext'
 import DemoNotice, { useReadOnlyFarm } from '../components/DemoNotice'
+import { useFarmer } from '../FarmerContext'
 import { MAIN, SIDE, SPLIT } from '../layout'
 
 const QUICK = ['Mancozeb', 'Copper oxychloride', 'Emamectin', 'Tricyclazole', 'Chlorantraniliprole', 'Glyphosate']
 
 export default function Spray() {
   const { farmId, lang, t } = useFarmer()
-  const readOnly = useReadOnlyFarm() !== null
   const [q, setQ] = useState('')
   const [busy, setBusy] = useState(false)
   const [v, setV] = useState<LabelVerdict | null>(null)
@@ -22,6 +21,7 @@ export default function Spray() {
   const [error, setError] = useState<Error | null>(null)
   const home = useAsync(() => api.home(farmId!, lang), [farmId, lang], ['home', farmId!, lang].join(':'))
   const weather = useAsync(() => api.weather(farmId!, lang), [farmId, lang], ['weather', farmId!, lang].join(':'))
+  const readOnly = useReadOnlyFarm() !== null
   const [logged, setLogged] = useState<string | null>(null)
   const logSpray = async () => {
     const r = await api.logSpray(farmId!, v?.product ?? (q.trim() || null), lang)
@@ -65,10 +65,25 @@ export default function Spray() {
 
   const waiting = v?.tone === 'unknown' && note === 'loading'
 
+  const header = (
+    <div>
+      <FlaskConical className="w-8 h-8 text-ochre" />
+      <h1 className="mt-2 font-instrument-serif text-3xl leading-tight">{t('sprayTitle')}</h1>
+      <p className="mt-1 text-sm text-soil-dark/60">{t('spraySub')}</p>
+    </div>
+  )
+
+  // The answer this screen gives is only worth having when it is about a real
+  // field: whether a product suits *your* crop, against *your* diagnosis, at a
+  // dose for *your* plot. On the shared demonstration field there is no such
+  // crop and no such diagnosis, so a verdict here would be a guess wearing the
+  // clothes of advice — and this is the screen where a wrong answer is bought
+  // at the counter and sprayed. The camera and the live check already stop
+  // here; this was the one that did not.
   if (readOnly) {
     return (
-      <div className="space-y-4">
-        <h1 className="font-instrument-serif text-3xl">{t('sprayTitle')}</h1>
+      <div className="space-y-5">
+        {header}
         <DemoNotice />
       </div>
     )
@@ -76,11 +91,7 @@ export default function Spray() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <FlaskConical className="w-8 h-8 text-ochre" />
-        <h1 className="mt-2 font-instrument-serif text-3xl leading-tight">{t('sprayTitle')}</h1>
-        <p className="mt-1 text-sm text-soil-dark/60">{t('spraySub')}</p>
-      </div>
+      {header}
 
       <div className={`space-y-5 ${SPLIT}`}>
       <aside className={`space-y-5 lg:order-2 ${SIDE}`}>

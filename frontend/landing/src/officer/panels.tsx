@@ -11,6 +11,11 @@ import { Bone, BoneLines, Card, ErrorBox, Loading, Pill } from '../ui/kit'
 
 export const pct = (n: number | null | undefined, d = 0) => (n == null ? '—' : `${(n * 100).toFixed(d)}%`)
 
+/** "1 farm", "2 farms". The console counts farms, cases and officers all over,
+ *  and a district screen that says "1 farms" reads as unfinished to the person
+ *  whose district it is. */
+export const many = (n: number, one: string, more = `${one}s`) => `${n} ${n === 1 ? one : more}`
+
 export function OfficerLoadPanel() {
   const { me } = useAuth()
   // Who is carrying what is the office's view. An ordinary officer is not
@@ -64,7 +69,7 @@ export function OfficerLoadPanel() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-semibold flex items-center gap-2"><Users className="w-4 h-4 text-leaf" /> District officers</h2>
         <span className="text-xs text-soil-dark/60">
-          {officers.length} officers · {districts} districts · {w.data.open_total} open
+          {many(officers.length, 'officer')} · {many(districts, 'district')} · {w.data.open_total} open
         </span>
       </div>
 
@@ -128,6 +133,26 @@ export function OfficerLoadPanel() {
 
 /** The panels the officer pages are built from. Each one fetches what it
  *  needs, so a page is a choice of panels rather than one giant loader. */
+/** A panel while it loads, when it cannot load, and once it has.
+ *
+ *  The middle case is the one that kept going missing. useAsync stops loading
+ *  and sets `error`, but a panel that only asks "is there data yet?" never
+ *  reads it — so a failed call leaves its skeleton shimmering on the console for
+ *  ever, with nothing for the officer to press and no sign anything is wrong.
+ *  Stale data is kept on screen if a refresh fails; a first load that fails has
+ *  nothing to keep, and says so. */
+export function Panel<T>({ q, rows = 4, children }: {
+  q: { data: T | null; error: Error | null; reload: () => void }
+  rows?: number
+  children: (data: T) => ReactNode
+}) {
+  if (q.data) return <>{children(q.data)}</>
+  if (q.error) {
+    return <Card className="p-4 md:p-5"><ErrorBox error={q.error} onRetry={q.reload} /></Card>
+  }
+  return <PanelBone rows={rows} />
+}
+
 export function PanelBone({ rows = 4 }: { rows?: number }) {
   return (
     <Card className="p-4 space-y-3">

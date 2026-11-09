@@ -1,7 +1,7 @@
 import { ArrowLeft, UserCheck } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../../api/client'
-import { useAsync } from '../../lib/hooks'
+import { useAsync, useWide } from '../../lib/hooks'
 import { ErrorBox, Pill } from '../../ui/kit'
 import { HistorySkeleton, ProblemDetailSkeleton } from '../components/Skeletons'
 import AdvisoryView from '../components/AdvisoryView'
@@ -10,6 +10,8 @@ import { useFarmer } from '../FarmerContext'
 
 export default function History() {
   const { farmId, lang, t } = useFarmer()
+  // The status pill beside the name squeezes it off a phone; under it, it does not.
+  const wide = useWide()
   const home = useAsync(() => api.home(farmId!, lang), [farmId, lang], ['home', farmId!, lang].join(':'))
   if (home.loading && !home.data) return <HistorySkeleton />
   if (home.error) return <ErrorBox error={home.error} onRetry={home.reload} />
@@ -20,7 +22,7 @@ export default function History() {
       {problems.length === 0 ? (
         <p className="text-sm text-soil-dark/50">{t('noProblems')}</p>
       ) : (
-        <div className="space-y-2">{problems.map((p) => <ProblemRow key={p.id} p={p} />)}</div>
+        <div className="space-y-2">{problems.map((p) => <ProblemRow key={p.id} p={p} stacked={!wide} />)}</div>
       )}
     </div>
   )
@@ -52,7 +54,7 @@ export function ProblemDetail() {
             {t('expertVerdict')} — {d.expert.expert_name}
           </p>
           {d.expert.notes && <p className="mt-1 text-sm">{d.expert.notes}</p>}
-          {d.expert.referred_to_lab && <Pill tone="sky" className="mt-2">Lab referral</Pill>}
+          {d.expert.referred_to_lab && <Pill tone="sky" className="mt-2">{t('sentToLab')}</Pill>}
         </div>
       )}
       {d.case && d.case.status === 'open' && (

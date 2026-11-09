@@ -199,13 +199,16 @@ export default function Scan() {
   )
   const samplesEl = (
     <>
-        {!busy && !preview && shown.length > 0 && (
+        {!busy && (demoFarm ? true : !preview) && shown.length > 0 && (
           <div>
             <p className="text-xs text-soil-dark/50 mb-2">{t('samplesTitle')}</p>
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 lg:grid lg:grid-cols-4 lg:gap-3 lg:overflow-visible">
-              {shown.map((s) => (
-                <button key={s.url} onClick={async () => pick(await (await fetch(s.url)).blob())}
-                  className="shrink-0 w-20 text-left lg:w-auto">
+              {shown.map((s) => {
+                const Frame = demoFarm ? 'span' : 'button'
+                return (
+                <Frame key={s.url}
+                  {...(demoFarm ? {} : { onClick: async () => pick(await (await fetch(s.url)).blob()) })}
+                  className="shrink-0 w-20 text-left lg:w-auto block">
                   <span className="relative block">
                     <img src={s.url} alt={s.true_class} className="w-20 h-20 lg:w-full lg:h-auto lg:aspect-square rounded-xl object-cover border border-soil-dark/10" loading="lazy" />
                     {s.expected && s.expected !== 'advise' && (
@@ -215,8 +218,9 @@ export default function Scan() {
                     )}
                   </span>
                   <Pill className="mt-1 !text-[9px] !px-1.5">{s.true_class.replace(/^(rice|maize)_/, '').replace(/_/g, ' ')}</Pill>
-                </button>
-              ))}
+                </Frame>
+                )
+              })}
             </div>
           </div>
         )}

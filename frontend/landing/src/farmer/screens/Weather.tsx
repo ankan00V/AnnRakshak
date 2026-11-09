@@ -5,6 +5,7 @@ import type { Lang, WeatherAdvisory, WeatherDay, WeatherHour, WeatherView } from
 import { useAsync, useWide } from '../../lib/hooks'
 import { Card, ErrorBox, ListenButton, Pill, SectionTitle } from '../../ui/kit'
 import { WeatherSkeleton } from '../components/Skeletons'
+import LastKnown from '../components/LastKnown'
 import { bcp47 } from '../../lib/i18n'
 import { useFarmer } from '../FarmerContext'
 import { MAIN, SIDE, SPLIT } from '../layout'
@@ -67,7 +68,10 @@ export default function Weather() {
   const w = useAsync(() => api.weather(farmId!, lang), [farmId, lang], ['weather', farmId!, lang].join(':'))
   const wide = useWide()
   if (w.loading && !w.data) return <WeatherSkeleton />
-  if (w.error) return <ErrorBox error={w.error} onRetry={w.reload} retryLabel={t('retry')} />
+  // A forecast kept on this phone still tells a farmer what the week looked
+  // like when it was fetched, and `fetched_at` below dates it. The error takes
+  // the screen only when there is nothing kept.
+  if (w.error && !w.data) return <ErrorBox error={w.error} onRetry={w.reload} retryLabel={t('retry')} />
   const v = w.data!
   const speech = v.advisories.filter((a) => a.rule !== 'spray_window').slice(0, 3).map((a) => `${a.title}. ${a.text}`).join(' ')
 
@@ -83,6 +87,9 @@ export default function Weather() {
           {speech && <ListenButton text={speech} lang={lang} label={t('listen')} stopLabel={t('stop')} compact />}
         </div>
         {v.stale && <p className="text-xs rounded-xl bg-ochre/10 text-[#8a5a17] p-2.5">{t('staleData')}</p>}
+        {/* `stale` above is the server saying its own weather copy is old. This
+            is the phone saying it never reached the server at all. */}
+        {w.error && <LastKnown at={w.savedAt} onRetry={w.reload} />}
     </>
   )
   const todo = (

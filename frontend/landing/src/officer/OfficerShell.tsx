@@ -6,6 +6,7 @@ import type { Summary, Worklist } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import AccountMenu from '../auth/AccountMenu'
 import { useAsync } from '../lib/hooks'
+import { many } from './panels'
 import Darpan from './Darpan'
 import { Toasts } from '../ui/Toast'
 import BrandMark from '../ui/BrandMark'
@@ -58,7 +59,7 @@ export default function OfficerShell() {
     try {
       const r = await api.runAll()
       const src = Object.entries(r.weather_sources).map(([k, v]) => `${v} ${k}`).join(', ')
-      setSweep(`${r.alerts_issued} new alerts across ${r.farms} farms · weather: ${src}`)
+      setSweep(`${many(r.alerts_issued, 'new alert')} across ${many(r.farms, 'farm')} · weather: ${src}`)
       work.reload()
       summary.reload()
     } finally {
@@ -72,7 +73,11 @@ export default function OfficerShell() {
       <header className="sticky top-0 z-30 bg-soil-dark text-cream">
         <div className="flex items-center justify-between gap-3 px-4 lg:px-6 h-14 lg:h-16">
           <div className="flex items-center gap-2.5 min-w-0">
-            <Link to="/" className="shrink-0"><BrandMark size={30} /></Link>
+            {/* The mark is the only thing inside, so without a name this link
+                reaches a screen reader as "link" and nothing else — on every
+                page of the console. The farmer app's own mark already carries
+                one. */}
+            <Link to="/" aria-label="AnnRakshak" className="shrink-0"><BrandMark size={30} /></Link>
             <span className="min-w-0">
               <span className="block font-semibold tracking-tight leading-none">AnnRakshak</span>
               <span className="hidden sm:block text-[11px] text-cream/55 truncate">

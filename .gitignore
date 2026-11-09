@@ -44,3 +44,6 @@ backend/reviews/
 # Raw per-image scores behind a gate decision (ml/tune_gate.py): a derived
 # measurement, regenerated from the model and the split whenever it is needed.
 ml/reports/*.json
+
+# Local dev certificates (mkcert). Never committed.
+frontend/*/.certs/

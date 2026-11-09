@@ -6,7 +6,7 @@ import { useAsync } from '../../lib/hooks'
 import { MAIN, SIDE, SPLIT } from '../../ui/layout'
 import { useAuth } from '../../auth/AuthContext'
 import { Card, ErrorBox } from '../../ui/kit'
-import { Kpis, KpisSkeleton, PageHead, PanelBone } from '../panels'
+import { Kpis, KpisSkeleton, many, PageHead, PanelBone } from '../panels'
 import { Download } from 'lucide-react'
 
 /** What needs a person today, in the order it should be dealt with. The numbers
@@ -139,7 +139,7 @@ export default function Today() {
                     <span className="flex items-center gap-2 shrink-0">
                       <Link to={`/officer/queue?target=${b.target}`}
                         className="text-xs tabular-nums text-soil-dark/70 hover:text-leaf-deep hover:underline underline-offset-2">
-                        {b.farms} farms
+                        {many(b.farms, 'farm')}
                       </Link>
                       <Link to={`/officer/advisories?target=${b.target}&crop=${b.crop}`}
                         className="rounded-full bg-ochre/15 text-[#8a5a17] text-xs font-medium px-3 py-1.5 hover:bg-ochre/25">
@@ -155,14 +155,14 @@ export default function Today() {
       )}
 
       {summary.data ? <Kpis s={summary.data} /> : !summary.error && <KpisSkeleton />}
-      <TrendStrip />
+      <TrendStrip supervisor={supervisor} />
     </>
   )
 }
 
 /** A number with no direction is a poster. This week against the last, and the
  *  fortnight behind it. */
-function TrendStrip() {
+function TrendStrip({ supervisor }: { supervisor: boolean }) {
   const t = useAsync(() => api.trends(), [])
   if (!t.data) return <PanelBone rows={3} />
   const items = [
@@ -177,10 +177,16 @@ function TrendStrip() {
           <h2 className="font-semibold">This week against last</h2>
           <p className="text-xs text-soil-dark/60 mt-0.5">The fortnight to date, a bar a day.</p>
         </div>
-        <a href="/api/officials/report" download
-          className="flex items-center gap-1.5 rounded-full border border-soil-dark/20 px-3 py-1.5 text-xs font-medium hover:bg-soil-dark/5">
-          <Download className="w-3.5 h-3.5" /> The week as a file
-        </a>
+        {/* The endpoint is supervisor-only. Offering the button to everyone
+            meant most officers pressed it and were handed a 403. */}
+        {supervisor ? (
+          <a href="/api/officials/report" download
+            className="flex items-center gap-1.5 rounded-full border border-soil-dark/20 px-3 py-1.5 text-xs font-medium hover:bg-soil-dark/5">
+            <Download className="w-3.5 h-3.5" /> The week as a file
+          </a>
+        ) : (
+          <p className="text-xs text-soil-dark/50">Your supervisor files the week.</p>
+        )}
       </div>
       <div className="mt-4 grid gap-5 sm:grid-cols-3">
         {items.map(({ label, s }) => {

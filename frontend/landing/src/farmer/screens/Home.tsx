@@ -5,12 +5,15 @@ import { api } from '../../api/client'
 import ReportSheet from '../components/ReportSheet'
 import type { CropInfo, Home as HomeData } from '../../api/types'
 import { useAsync, useWide } from '../../lib/hooks'
+import { bcp47 } from '../../lib/i18n'
+import { useReadOnlyFarm } from '../components/DemoNotice'
 import { EYEBROW, MAIN, SIDE, SPLIT } from '../layout'
 import SeasonSwitch from '../components/SeasonSwitch'
 import { fieldPhoto } from '../fieldPhoto'
 import { Card, ErrorBox, SectionTitle } from '../../ui/kit'
 import { HomeSkeleton } from '../components/Skeletons'
 import AlertCard from '../components/AlertCard'
+import LastKnown from '../components/LastKnown'
 import LocationAsk from '../components/LocationAsk'
 import ProblemRow from '../components/ProblemRow'
 import WeatherStrip from '../components/WeatherStrip'
@@ -25,8 +28,13 @@ export default function Home() {
   const wide = useWide()
 
   if (home.loading && !home.data) return <HomeSkeleton />
-  if (home.error) return <ErrorBox error={home.error} onRetry={home.reload} retryLabel={t('retry')} />
+  // Only with nothing at all to show does the error become the screen. Where
+  // this phone kept the last home payload the farmer gets their own field back
+  // and the error is one line above it, which in a place with no signal is
+  // worth more to them than a page that is empty but correct.
+  if (home.error && !home.data) return <ErrorBox error={home.error} onRetry={home.reload} retryLabel={t('retry')} />
   const d = home.data!
+  const lastKnown = home.error ? <LastKnown at={home.savedAt} onRetry={home.reload} /> : null
   const crop = crops.data?.find((c) => c.id === d.farm.crop)
   const openAlerts = d.alerts.filter((a) => a.outcome === null || a.outcome === 'snoozed')
   const due = d.followups_due
@@ -40,7 +48,7 @@ export default function Home() {
   const followups = (
     <>
       {due.slice(0, 2).map((f) => (
-        <FollowUp key={f.id} id={f.id} name={f.name} onDone={home.reload} />
+        <FollowUp key={f.id} id={f.id} name={f.name} dueOn={f.due_on} onDone={home.reload} />
       ))}
       {due.length > 2 && (
         <Link to="/app/history" className="block text-center text-sm text-leaf-deep font-medium -mt-3">
@@ -139,8 +147,11 @@ export default function Home() {
             <p className="text-sm text-soil-dark/50">{t('noProblems')}</p>
           ) : (
             <div className="space-y-2">
+              {/* Always stacked: on a phone this column is the screen's width
+                  minus a thumbnail, and on a laptop it is the sidebar. Either
+                  way a pill beside the name eats the name. */}
               {d.problems.filter((p) => p.gate_outcome !== 'retake').slice(0, 5).map((p) => (
-                <ProblemRow key={p.id} p={p} stacked={wide} />
+                <ProblemRow key={p.id} p={p} stacked />
               ))}
             </div>
           )}
@@ -155,6 +166,7 @@ export default function Home() {
   if (d.farm.status === 'fallow') {
     return (
       <div className="max-w-2xl mx-auto space-y-5">
+        {lastKnown}
         <Card className="overflow-hidden p-0 bg-soil-dark text-cream border-0">
           {/* A cut paddy field, straw still lying in windrows. The state this
               screen is describing, for a farmer who reads little — the picture
@@ -189,6 +201,7 @@ export default function Home() {
   if (wide) {
     return (
       <div className="space-y-8">
+        {lastKnown}
         {/* One grid, not a row of two cards and then a second row. As two
             rows, the right cell ended wherever the weather card ended and
             the next row began below the field card, so a tall field card —
@@ -206,7 +219,7 @@ export default function Home() {
                 <p className={EYEBROW}>{t('followupDue')}</p>
                 <Card className="divide-y divide-soil-dark/10">
                   {due.slice(0, 3).map((f) => (
-                    <FollowUp key={f.id} id={f.id} name={f.name} onDone={home.reload} row />
+                    <FollowUp key={f.id} id={f.id} name={f.name} dueOn={f.due_on} onDone={home.reload} row />
                   ))}
                 </Card>
                 {due.length > 3 && (
@@ -233,6 +246,8 @@ export default function Home() {
 
   return (
     <div className="space-y-6">
+      {lastKnown}
+
       <FarmCard data={d} crop={crop} />
 
       {/* Everything below is read at the field's spot, so ask for it until we have one. */}
@@ -305,10 +320,15 @@ function FarmCard({ data, crop }: { data: HomeData; crop?: CropInfo }) {
   )
 }
 
-function FollowUp({ id, name, onDone, row = false }: { id: number; name: string | null; onDone: () => void; row?: boolean }) {
+function FollowUp({ id, name, dueOn, onDone, row = false }: {
+  id: number; name: string | null; dueOn: string; onDone: () => void; row?: boolean
+}) {
   const { t, lang } = useFarmer()
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
+  // Answering on a shared demo field edits what the next visitor walks into,
+  // so the server refuses it; the buttons would only be able to fail.
+  const readOnly = useReadOnlyFarm() !== null
   // "It got worse" goes to a district officer, so it asks for a photo and the
   // farmer's own words first rather than sending an empty case.
   const [reporting, setReporting] = useState(false)
@@ -322,6 +342,12 @@ function FollowUp({ id, name, onDone, row = false }: { id: number; name: string 
         setMsg(out.message)
         setTimeout(onDone, 2500)
       } else onDone()
+    } catch {
+      // "It got worse" carries a photo and the farmer's own words to a district
+      // officer. Losing it without a word is the worst of the three to lose.
+      // The slot it lands in is already ember, and onDone is NOT called: the
+      // card stays, with the buttons live.
+      setMsg(t('notSaved'))
     } finally {
       setBusy(null)
     }
@@ -329,12 +355,20 @@ function FollowUp({ id, name, onDone, row = false }: { id: number; name: string 
   const choose = (r: 'improved' | 'no_change' | 'got_worse') =>
     r === 'got_worse' ? setReporting(true) : void send(r)
   const choices = ([['improved', t('improved'), 'bg-leaf text-cream'], ['no_change', t('noChange'), 'bg-white border border-soil-dark/20'], ['got_worse', t('gotWorse'), 'bg-ember text-cream']] as const)
+  // Two treatments of the same disease give two cards with the same name on
+  // them. Without the date a farmer cannot tell which one they are answering.
+  const when = new Date(dueOn + 'T00:00:00').toLocaleDateString(bcp47(lang), { day: 'numeric', month: 'short' })
   if (row) {
     return (
       <div className="flex items-center gap-6 px-5 py-4">
-        <p className="flex-1 min-w-0 font-semibold truncate">{name ?? t('followupDue')}</p>
+        <p className="flex-1 min-w-0 font-semibold truncate">
+          {name ?? t('followupDue')}
+          <span className="ml-2 font-normal text-soil-dark/55">{when}</span>
+        </p>
         {msg ? (
           <p className="text-sm text-ember">{msg}</p>
+        ) : readOnly ? (
+          <p className="text-xs text-soil-dark/50 shrink-0">{t('demoReadOnlyShort')}</p>
         ) : (
           <div className="grid grid-cols-3 gap-2 w-[22rem] shrink-0">
             {choices.map(([r, label, cls]) => (
@@ -355,10 +389,15 @@ function FollowUp({ id, name, onDone, row = false }: { id: number; name: string 
   }
   return (
     <Card className="p-4 border-ochre/40 bg-ochre/5">
-      <p className="text-sm font-semibold">{t('followupDue')}</p>
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-sm font-semibold">{t('followupDue')}</p>
+        <p className="text-xs text-soil-dark/55 shrink-0">{when}</p>
+      </div>
       {name && <p className="text-xs text-soil-dark/60 mt-0.5">{name}</p>}
       {msg ? (
         <p className="mt-2 text-sm text-ember">{msg}</p>
+      ) : readOnly ? (
+        <p className="mt-2 text-xs text-soil-dark/50">{t('demoReadOnlyShort')}</p>
       ) : (
         <div className="mt-3 grid grid-cols-3 gap-2">
           {choices.map(([r, label, cls]) => (

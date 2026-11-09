@@ -25,7 +25,7 @@ from app.models import Diagnosis, Farm, Problem
 from app.engine import vision
 from app.kb import get_kb
 from app import voice
-from app import cache, mosdac, notify, watch
+from app import cache, mosdac, notify, runtime, watch
 from app import krishi as krishi_kb
 from app.routers import auth, darpan, expert, farmer, geo, krishi, live, officials, weather
 
@@ -50,11 +50,16 @@ async def lifespan(_: FastAPI):
     get_kb()  # refuse to start on a broken knowledge base
     krishi_kb.index()  # ... or a broken Krishi help base
     init_db()
+    runtime.arm()
     tasks = [asyncio.create_task(cache.listen(notify.broker.deliver_local))]
     if WATCH_ENABLED:
         tasks.append(asyncio.create_task(watch.run_forever()))
         tasks.append(asyncio.create_task(mosdac.run_forever()))  # returns at once without an account
     yield
+    # Streaming handlers are connections, and uvicorn's graceful shutdown
+    # waits for every connection to close. Tell them first, or the process
+    # sits here until each one reaches its own deadline.
+    runtime.begin()
     for task in tasks:
         task.cancel()
     # Background loops talk to the network; one stuck on a dead socket must not

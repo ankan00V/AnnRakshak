@@ -53,58 +53,181 @@ KINDS = {
 }
 
 TEXT = {
+    # What the walk asks for, step by step. Spoken aloud, so each is one plain
+    # sentence a farmer can act on without looking at the screen.
     "overview": {
         "en": "Stand at the edge of your field and slowly show me the whole field.",
         "hi": "खेत के किनारे खड़े होकर धीरे-धीरे पूरा खेत दिखाइए।",
         "mr": "शेताच्या कडेला उभे राहून हळूहळू संपूर्ण शेत दाखवा.",
+        "bn": "মাঠের কিনারায় দাঁড়ান এবং ধীরে ধীরে পুরো মাঠটি দেখান।",
+        "ta": "வயலின் ஓரத்தில் நின்று, மெதுவாக வயல் முழுவதையும் காட்டுங்கள்.",
+        "te": "పొలం అంచున నిలబడి, నెమ్మదిగా పొలం మొత్తం చూపించండి.",
+        "kn": "ಹೊಲದ ಅಂಚಿನಲ್ಲಿ ನಿಂತು, ನಿಧಾನವಾಗಿ ಇಡೀ ಹೊಲವನ್ನು ತೋರಿಸಿ.",
+        "ml": "വയലിന്റെ അരികിൽ നിന്ന് പതുക്കെ വയൽ മുഴുവൻ കാണിക്കുക.",
+        "gu": "ખેતરની કિનારે ઊભા રહીને ધીમે ધીમે આખું ખેતર બતાવો.",
+        "pa": "ਖੇਤ ਦੇ ਕਿਨਾਰੇ ਖੜ੍ਹੇ ਹੋ ਕੇ ਹੌਲੀ-ਹੌਲੀ ਸਾਰਾ ਖੇਤ ਦਿਖਾਓ।",
     },
     "plant": {
         "en": "Walk into the field. Show me one whole plant, from top to bottom.",
         "hi": "खेत के अंदर जाइए। एक पूरा पौधा ऊपर से नीचे तक दिखाइए।",
         "mr": "शेतात आत चला. एक संपूर्ण रोप वरपासून खालपर्यंत दाखवा.",
+        "bn": "মাঠের ভিতরে যান। একটি গোটা গাছ উপর থেকে নিচ পর্যন্ত দেখান।",
+        "ta": "வயலுக்குள் நடந்து செல்லுங்கள். ஒரு செடியை மேலிருந்து கீழ் வரை முழுவதுமாகக் காட்டுங்கள்.",
+        "te": "పొలంలోకి నడవండి. ఒక మొక్కను పై నుంచి కింది వరకు పూర్తిగా చూపించండి.",
+        "kn": "ಹೊಲದ ಒಳಗೆ ನಡೆಯಿರಿ. ಒಂದು ಗಿಡವನ್ನು ಮೇಲಿಂದ ಕೆಳಗಿನವರೆಗೆ ಪೂರ್ತಿ ತೋರಿಸಿ.",
+        "ml": "വയലിനുള്ളിലേക്ക് നടക്കുക. ഒരു ചെടി മുകളിൽ നിന്ന് താഴെ വരെ മുഴുവനായി കാണിക്കുക.",
+        "gu": "ખેતરની અંદર ચાલો. એક આખો છોડ ઉપરથી નીચે સુધી બતાવો.",
+        "pa": "ਖੇਤ ਦੇ ਅੰਦਰ ਜਾਓ। ਇੱਕ ਪੂਰਾ ਬੂਟਾ ਉੱਪਰੋਂ ਹੇਠਾਂ ਤੱਕ ਦਿਖਾਓ।",
     },
     "leaf_top": {
         "en": "Bring the camera close to the leaves, about one hand away. Show the top side.",
         "hi": "कैमरा पत्तियों के पास लाइए, लगभग एक हाथ दूर। पत्ती का ऊपरी भाग दिखाइए।",
         "mr": "कॅमेरा पानांच्या जवळ आणा, सुमारे एक हात अंतरावर. पानाची वरची बाजू दाखवा.",
+        "bn": "ক্যামেরাটি পাতার কাছে আনুন, প্রায় এক হাত দূরে। পাতার উপরের দিক দেখান।",
+        "ta": "கேமராவை இலைகளுக்கு அருகில் கொண்டு வாருங்கள், சுமார் ஒரு கை தூரத்தில். இலையின் மேல் பக்கத்தைக் காட்டுங்கள்.",
+        "te": "కెమెరాను ఆకుల దగ్గరకు తీసుకురండి, సుమారు ఒక చేయి దూరంలో. ఆకు పై వైపు చూపించండి.",
+        "kn": "ಕ್ಯಾಮೆರಾವನ್ನು ಎಲೆಗಳ ಹತ್ತಿರ ತನ್ನಿ, ಸುಮಾರು ಒಂದು ಕೈ ದೂರದಲ್ಲಿ. ಎಲೆಯ ಮೇಲ್ಭಾಗ ತೋರಿಸಿ.",
+        "ml": "ക്യാമറ ഇലകളുടെ അടുത്തേക്ക് കൊണ്ടുവരുക, ഏകദേശം ഒരു കൈ അകലത്തിൽ. ഇലയുടെ മുകൾഭാഗം കാണിക്കുക.",
+        "gu": "કેમેરાને પાનની નજીક લાવો, લગભગ એક હાથ દૂર. પાનની ઉપરની બાજુ બતાવો.",
+        "pa": "ਕੈਮਰਾ ਪੱਤਿਆਂ ਦੇ ਨੇੜੇ ਲਿਆਓ, ਲਗਭਗ ਇੱਕ ਹੱਥ ਦੂਰ। ਪੱਤੇ ਦਾ ਉੱਪਰਲਾ ਪਾਸਾ ਦਿਖਾਓ।",
     },
     "leaf_under": {
         "en": "Now turn a leaf over and show me its underside.",
         "hi": "अब एक पत्ती पलटकर उसका निचला भाग दिखाइए।",
         "mr": "आता एक पान उलटून त्याची खालची बाजू दाखवा.",
+        "bn": "এবার একটি পাতা উল্টে তার নিচের দিক দেখান।",
+        "ta": "இப்போது ஒரு இலையைத் திருப்பி அதன் அடிப்பக்கத்தைக் காட்டுங்கள்.",
+        "te": "ఇప్పుడు ఒక ఆకును తిప్పి దాని కింది వైపు చూపించండి.",
+        "kn": "ಈಗ ಒಂದು ಎಲೆಯನ್ನು ತಿರುಗಿಸಿ ಅದರ ಕೆಳಭಾಗ ತೋರಿಸಿ.",
+        "ml": "ഇനി ഒരു ഇല മറിച്ച് അതിന്റെ അടിഭാഗം കാണിക്കുക.",
+        "gu": "હવે એક પાન ઉલટાવીને તેની નીચેની બાજુ બતાવો.",
+        "pa": "ਹੁਣ ਇੱਕ ਪੱਤਾ ਪਲਟ ਕੇ ਉਸ ਦਾ ਹੇਠਲਾ ਪਾਸਾ ਦਿਖਾਓ।",
     },
     "base": {
         "en": "Show me the base of the plant, where it meets the soil or water.",
         "hi": "पौधे का निचला हिस्सा दिखाइए, जहाँ वह मिट्टी या पानी से मिलता है।",
         "mr": "रोपाचा खालचा भाग दाखवा, जिथे ते माती किंवा पाण्याला मिळते.",
+        "bn": "গাছের গোড়া দেখান, যেখানে সেটি মাটি বা জলের সঙ্গে মিশেছে।",
+        "ta": "செடியின் அடிப்பகுதியைக் காட்டுங்கள், அது மண்ணையோ தண்ணீரையோ தொடும் இடத்தை.",
+        "te": "మొక్క మొదలు చూపించండి, అది మట్టిని లేదా నీటిని తాకే చోటు.",
+        "kn": "ಗಿಡದ ಬುಡ ತೋರಿಸಿ, ಅದು ಮಣ್ಣು ಅಥವಾ ನೀರನ್ನು ಸೇರುವ ಜಾಗ.",
+        "ml": "ചെടിയുടെ ചുവട് കാണിക്കുക, അത് മണ്ണിലോ വെള്ളത്തിലോ ചേരുന്ന ഭാഗം.",
+        "gu": "છોડનો નીચેનો ભાગ બતાવો, જ્યાં તે માટી કે પાણીને મળે છે.",
+        "pa": "ਬੂਟੇ ਦਾ ਹੇਠਲਾ ਹਿੱਸਾ ਦਿਖਾਓ, ਜਿੱਥੇ ਉਹ ਮਿੱਟੀ ਜਾਂ ਪਾਣੀ ਨਾਲ ਮਿਲਦਾ ਹੈ।",
     },
     "second_spot": {
         "en": "Walk about 20 steps to another part of the field and show me leaves close up again.",
         "hi": "लगभग 20 कदम चलकर खेत के दूसरे हिस्से में जाइए और फिर से पत्तियाँ पास से दिखाइए।",
         "mr": "सुमारे 20 पावले चालून शेताच्या दुसऱ्या भागात जा आणि पुन्हा पाने जवळून दाखवा.",
+        "bn": "প্রায় বিশ পা হেঁটে মাঠের অন্য অংশে যান এবং আবার পাতা কাছ থেকে দেখান।",
+        "ta": "சுமார் இருபது அடி நடந்து வயலின் வேறு ஒரு பகுதிக்குச் சென்று, மீண்டும் இலைகளை அருகில் காட்டுங்கள்.",
+        "te": "సుమారు ఇరవై అడుగులు నడిచి పొలంలో వేరే భాగానికి వెళ్లి, మళ్లీ ఆకులను దగ్గరగా చూపించండి.",
+        "kn": "ಸುಮಾರು ಇಪ್ಪತ್ತು ಹೆಜ್ಜೆ ನಡೆದು ಹೊಲದ ಬೇರೆ ಭಾಗಕ್ಕೆ ಹೋಗಿ, ಮತ್ತೆ ಎಲೆಗಳನ್ನು ಹತ್ತಿರದಿಂದ ತೋರಿಸಿ.",
+        "ml": "ഏകദേശം ഇരുപത് ചുവട് നടന്ന് വയലിന്റെ മറ്റൊരു ഭാഗത്ത് ചെന്ന്, വീണ്ടും ഇലകൾ അടുത്ത് കാണിക്കുക.",
+        "gu": "લગભગ વીસ ડગલાં ચાલીને ખેતરના બીજા ભાગમાં જાઓ અને ફરીથી પાન નજીકથી બતાવો.",
+        "pa": "ਲਗਭਗ ਵੀਹ ਕਦਮ ਚੱਲ ਕੇ ਖੇਤ ਦੇ ਦੂਜੇ ਹਿੱਸੇ ਵਿੱਚ ਜਾਓ ਅਤੇ ਫਿਰ ਪੱਤੇ ਨੇੜਿਓਂ ਦਿਖਾਓ।",
     },
     "confirm": {
         "en": "I think I see {name}. Show me more leaves with those marks, close up.",
         "hi": "मुझे {name} जैसा कुछ दिख रहा है। ऐसे निशान वाली और पत्तियाँ पास से दिखाइए।",
         "mr": "मला {name} सारखे काहीतरी दिसत आहे. असे डाग असलेली आणखी पाने जवळून दाखवा.",
+        "bn": "আমার মনে হচ্ছে {name} দেখছি। এমন দাগ আছে এমন আরও পাতা কাছ থেকে দেখান।",
+        "ta": "எனக்கு {name} போல் தெரிகிறது. அந்த மாதிரி அடையாளம் உள்ள இன்னும் சில இலைகளை அருகில் காட்டுங்கள்.",
+        "te": "నాకు {name} లాగా కనిపిస్తోంది. అలాంటి మచ్చలు ఉన్న మరిన్ని ఆకులను దగ్గరగా చూపించండి.",
+        "kn": "ನನಗೆ {name} ಇದ್ದಂತೆ ಕಾಣುತ್ತಿದೆ. ಅಂಥ ಕಲೆ ಇರುವ ಇನ್ನಷ್ಟು ಎಲೆಗಳನ್ನು ಹತ್ತಿರದಿಂದ ತೋರಿಸಿ.",
+        "ml": "എനിക്ക് {name} പോലെ തോന്നുന്നു. അത്തരം പാടുകളുള്ള കൂടുതൽ ഇലകൾ അടുത്ത് കാണിക്കുക.",
+        "gu": "મને {name} જેવું લાગે છે. એવા ડાઘવાળાં વધુ પાન નજીકથી બતાવો.",
+        "pa": "ਮੈਨੂੰ {name} ਵਰਗਾ ਕੁਝ ਦਿਸ ਰਿਹਾ ਹੈ। ਇਹੋ ਜਿਹੇ ਨਿਸ਼ਾਨ ਵਾਲੇ ਹੋਰ ਪੱਤੇ ਨੇੜਿਓਂ ਦਿਖਾਓ।",
     },
 }
 
 HINTS = {
-    "too_dark": {"en": "Too dark — turn towards the light.", "hi": "बहुत अँधेरा है — रोशनी की तरफ़ घूमिए।",
-                 "mr": "खूप अंधार आहे — उजेडाकडे वळा."},
-    "too_bright": {"en": "Too much glare — shade the leaf or turn a little.",
-                   "hi": "बहुत चमक है — पत्ती पर छाया कीजिए या थोड़ा घूमिए।",
-                   "mr": "खूप चकाकी आहे — पानावर सावली करा किंवा थोडे वळा."},
-    "hold_steady": {"en": "Hold the phone steady.", "hi": "फ़ोन स्थिर पकड़िए।", "mr": "फोन स्थिर धरा."},
-    "show_crop": {"en": "Point the camera at your crop.", "hi": "कैमरा अपनी फसल की ओर कीजिए।",
-                  "mr": "कॅमेरा तुमच्या पिकाकडे करा."},
-    "come_closer": {"en": "Come closer to the leaves.", "hi": "पत्तियों के और पास आइए।",
-                    "mr": "पानांच्या आणखी जवळ या."},
-    "move_a_little": {"en": "Good. Now move a little to show a different part.",
-                      "hi": "अच्छा। अब थोड़ा हटकर दूसरा हिस्सा दिखाइए।",
-                      "mr": "छान. आता थोडे हलून दुसरा भाग दाखवा."},
-    "good": {"en": "Good, keep going.", "hi": "बढ़िया, ऐसे ही दिखाते रहिए।", "mr": "छान, असेच दाखवत राहा."},
+    # Coaching while a view is not usable yet. Spoken at most once every few
+    # seconds, so each one names the fix, not the fault.
+    "too_dark": {
+        "en": "Too dark — turn towards the light.",
+        "hi": "बहुत अँधेरा है — रोशनी की तरफ़ घूमिए।",
+        "mr": "खूप अंधार आहे — उजेडाकडे वळा.",
+        "bn": "খুব অন্ধকার। আলোর দিকে ঘুরুন।",
+        "ta": "மிகவும் இருட்டாக இருக்கிறது. வெளிச்சத்தை நோக்கித் திரும்புங்கள்.",
+        "te": "చాలా చీకటిగా ఉంది. వెలుతురు వైపు తిరగండి.",
+        "kn": "ತುಂಬಾ ಕತ್ತಲೆ ಇದೆ. ಬೆಳಕಿನ ಕಡೆ ತಿರುಗಿ.",
+        "ml": "വളരെ ഇരുട്ടാണ്. വെളിച്ചത്തിന്റെ ഭാഗത്തേക്ക് തിരിയുക.",
+        "gu": "બહુ અંધારું છે. પ્રકાશ તરફ ફરો.",
+        "pa": "ਬਹੁਤ ਹਨੇਰਾ ਹੈ। ਰੌਸ਼ਨੀ ਵੱਲ ਮੁੜੋ।",
+    },
+    "too_bright": {
+        "en": "Too much glare — shade the leaf or turn a little.",
+        "hi": "बहुत चमक है — पत्ती पर छाया कीजिए या थोड़ा घूमिए।",
+        "mr": "खूप चकाकी आहे — पानावर सावली करा किंवा थोडे वळा.",
+        "bn": "খুব চকচক করছে। পাতায় ছায়া দিন বা একটু ঘুরুন।",
+        "ta": "மிகவும் பளபளக்கிறது. இலையின் மேல் நிழல் விடுங்கள் அல்லது கொஞ்சம் திரும்புங்கள்.",
+        "te": "చాలా మెరుస్తోంది. ఆకుపై నీడ పడేలా చేయండి లేదా కొంచెం తిరగండి.",
+        "kn": "ತುಂಬಾ ಹೊಳೆಯುತ್ತಿದೆ. ಎಲೆಯ ಮೇಲೆ ನೆರಳು ಮಾಡಿ ಅಥವಾ ಸ್ವಲ್ಪ ತಿರುಗಿ.",
+        "ml": "വളരെ തിളക്കമുണ്ട്. ഇലയ്ക്ക് മുകളിൽ തണൽ കൊടുക്കുക, അല്ലെങ്കിൽ അല്പം തിരിയുക.",
+        "gu": "બહુ ચમક છે. પાન પર છાંયો કરો અથવા થોડું ફરો.",
+        "pa": "ਬਹੁਤ ਚਮਕ ਹੈ। ਪੱਤੇ ਉੱਤੇ ਛਾਂ ਕਰੋ ਜਾਂ ਥੋੜ੍ਹਾ ਮੁੜੋ।",
+    },
+    "hold_steady": {
+        "en": "Hold the phone steady.",
+        "hi": "फ़ोन स्थिर पकड़िए।",
+        "mr": "फोन स्थिर धरा.",
+        "bn": "ফোনটি স্থির করে ধরুন।",
+        "ta": "ஃபோனை அசையாமல் பிடியுங்கள்.",
+        "te": "ఫోన్‌ను కదలకుండా పట్టుకోండి.",
+        "kn": "ಫೋನ್ ಅಲ್ಲಾಡದಂತೆ ಹಿಡಿಯಿರಿ.",
+        "ml": "ഫോൺ ഇളകാതെ പിടിക്കുക.",
+        "gu": "ફોન સ્થિર પકડો.",
+        "pa": "ਫ਼ੋਨ ਸਥਿਰ ਫੜੋ।",
+    },
+    "show_crop": {
+        "en": "Point the camera at your crop.",
+        "hi": "कैमरा अपनी फसल की ओर कीजिए।",
+        "mr": "कॅमेरा तुमच्या पिकाकडे करा.",
+        "bn": "ক্যামেরা আপনার ফসলের দিকে করুন।",
+        "ta": "கேமராவை உங்கள் பயிரை நோக்கித் திருப்புங்கள்.",
+        "te": "కెమెరాను మీ పంట వైపు తిప్పండి.",
+        "kn": "ಕ್ಯಾಮೆರಾವನ್ನು ನಿಮ್ಮ ಬೆಳೆಯ ಕಡೆ ತಿರುಗಿಸಿ.",
+        "ml": "ക്യാമറ നിങ്ങളുടെ വിളയുടെ നേരെ തിരിക്കുക.",
+        "gu": "કેમેરા તમારા પાક તરફ કરો.",
+        "pa": "ਕੈਮਰਾ ਆਪਣੀ ਫ਼ਸਲ ਵੱਲ ਕਰੋ।",
+    },
+    "come_closer": {
+        "en": "Come closer to the leaves.",
+        "hi": "पत्तियों के और पास आइए।",
+        "mr": "पानांच्या आणखी जवळ या.",
+        "bn": "পাতার আরও কাছে আসুন।",
+        "ta": "இலைகளுக்கு இன்னும் அருகில் வாருங்கள்.",
+        "te": "ఆకులకు ఇంకా దగ్గరగా రండి.",
+        "kn": "ಎಲೆಗಳ ಇನ್ನೂ ಹತ್ತಿರ ಬನ್ನಿ.",
+        "ml": "ഇലകളുടെ കൂടുതൽ അടുത്തേക്ക് വരിക.",
+        "gu": "પાનની વધુ નજીક આવો.",
+        "pa": "ਪੱਤਿਆਂ ਦੇ ਹੋਰ ਨੇੜੇ ਆਓ।",
+    },
+    "move_a_little": {
+        "en": "Good. Now move a little to show a different part.",
+        "hi": "अच्छा। अब थोड़ा हटकर दूसरा हिस्सा दिखाइए।",
+        "mr": "छान. आता थोडे हलून दुसरा भाग दाखवा.",
+        "bn": "ভালো হয়েছে। এবার একটু সরে অন্য একটি অংশ দেখান।",
+        "ta": "நல்லது. இப்போது கொஞ்சம் நகர்ந்து வேறு ஒரு பகுதியைக் காட்டுங்கள்.",
+        "te": "బాగుంది. ఇప్పుడు కొంచెం కదిలి వేరే భాగం చూపించండి.",
+        "kn": "ಒಳ್ಳೆಯದು. ಈಗ ಸ್ವಲ್ಪ ಸರಿದು ಬೇರೆ ಭಾಗ ತೋರಿಸಿ.",
+        "ml": "നന്നായി. ഇനി അല്പം മാറി മറ്റൊരു ഭാഗം കാണിക്കുക.",
+        "gu": "સરસ. હવે થોડું ખસીને બીજો ભાગ બતાવો.",
+        "pa": "ਵਧੀਆ। ਹੁਣ ਥੋੜ੍ਹਾ ਹਟ ਕੇ ਦੂਜਾ ਹਿੱਸਾ ਦਿਖਾਓ।",
+    },
+    "good": {
+        "en": "Good, keep going.",
+        "hi": "बढ़िया, ऐसे ही दिखाते रहिए।",
+        "mr": "छान, असेच दाखवत राहा.",
+        "bn": "ভালো হচ্ছে, এভাবেই দেখাতে থাকুন।",
+        "ta": "நல்லது, இப்படியே காட்டிக் கொண்டே இருங்கள்.",
+        "te": "బాగుంది, ఇలాగే చూపిస్తూ ఉండండి.",
+        "kn": "ಒಳ್ಳೆಯದು, ಹೀಗೇ ತೋರಿಸುತ್ತಿರಿ.",
+        "ml": "നന്നായി, ഇങ്ങനെ തന്നെ കാണിച്ചുകൊണ്ടിരിക്കുക.",
+        "gu": "સરસ, આમ જ બતાવતા રહો.",
+        "pa": "ਵਧੀਆ, ਇਵੇਂ ਹੀ ਦਿਖਾਉਂਦੇ ਰਹੋ।",
+    },
 }
 
 BASE_STEPS = [("overview", "scene", 3), ("plant", "plant", 2), ("leaf_top", "close", 4),
@@ -112,6 +235,29 @@ BASE_STEPS = [("overview", "scene", 3), ("plant", "plant", 2), ("leaf_top", "clo
 CONFIRM_NEED = 3
 MAX_EVIDENCE_FRAMES = 3
 MIN_SHARE_OF_STRONG = 0.25
+MIN_VIDEO_VIEWS = 2
+"""Readable frames below which a video is worth explaining rather than only
+reporting. Two is the bar a disease must clear anyway, so under it the farmer
+was never going to get an answer and deserves to know why.
+
+A video does NOT get an easier bar than a walk, and the temptation to give it
+one should be resisted here rather than rediscovered. Thirty seconds held on a
+single diseased leaf feels like far more evidence than two photographs, and it
+is not: a model that misreads that leaf misreads every frame of it the same
+way, so those frames are one sample wearing thirty hats. Counting them would
+buy a confident answer on exactly the footage least able to support one.
+
+What saves the rule from being merely timid is that it never counted frames in
+the first place. A frame becomes a view only by passing the novelty gate, and
+that gate measures each frame against the last *accepted* one — so a handheld
+video that drifts across a plant accumulates real views as it goes, while a
+camera resting on a bund accumulates none. Different looks count; the same look
+repeated does not. That is the distinction the rule is actually for, and it
+already draws it.
+
+So a static video ends at "possible — an expert will check", with the reading
+telling the farmer to walk the row and film a few different plants. That is the
+honest answer, and the expert's verdict now reaches them."""
 VIDEO_KIND = "close"
 """A file is read for usable close-ups of the crop and nothing else: there is no
 one to coach towards the other views, so there is no point measuring against
@@ -165,8 +311,15 @@ class LiveSession:
     asked: str | None = None
     answer: tuple[str, str] | None = None  # (cue_id, yes/no/unknown)
     mode: str = "walk"     # "walk": a camera being guided; "video": a file being read
+    skipped: list[str] = field(default_factory=list)  # views the farmer could not get
     ended: bool = False    # video: the caller says there are no more frames
-    kept: int = 0          # video: frames clear enough to be worth reading
+    kept: int = 0          # video: frames the model could actually read
+    clear: int = 0         # video: frames that passed the quality gate
+    #: Why frames were passed over, counted. A video that yields nothing has to
+    #: be able to say which wall it hit: a farmer told "nothing close enough"
+    #: refilms closer, and one whose footage the model cannot recognise as a
+    #: crop at all needs to hear something completely different.
+    passed_over_why: dict[str, int] = field(default_factory=dict)
     _last_thumb: np.ndarray | None = None
 
     def __post_init__(self):
@@ -185,7 +338,8 @@ class LiveSession:
         # what the caller wants to show is how much of the video has been read
         # and how much of it was worth reading.
         if self.mode == "video":
-            return {"step": None, "index": 0, "total": 0, "read": self.frames, "kept": self.kept}
+            return {"step": None, "index": 0, "total": 0, "read": self.frames,
+                    "clear": self.clear, "kept": self.kept, "why_thin": self.why_thin()}
         if self.done:
             return {"step": None, "index": len(self.steps), "total": len(self.steps)}
         s = self.steps[self.idx]
@@ -247,22 +401,68 @@ class LiveSession:
         out: dict = {"quality": q.__dict__ | {"hint_text": None}, "counted": False,
                      "advanced": False, "live": None}
         if not q.ok:
+            self._passed_over(q.hint or "unclear")
             return out | {"guide": self.guide()}
+        self.clear += 1
         self._last_thumb = _thumb(img)
         self.good_frames += 1
         self.closeups.append((q.sharp, jpeg))
         self.closeups = sorted(self.closeups, key=lambda x: -x[0])[:MAX_EVIDENCE_FRAMES]
         if classify is not None and self.can_classify:
             preds = classify(img)
-            if not preds:  # the model says this is not a crop view at all
+            if not preds:
+                # Sharp, green and close enough, and still not something the
+                # model recognises as a crop it has been taught. A screen
+                # recording of a video player is the honest example: a
+                # watermark, playback chrome and two rounds of compression over
+                # footage that is a crop underneath. The gate is right to
+                # refuse it — it is what stops a confident disease name on a
+                # photograph of something else — but the farmer has to be told,
+                # because from where they stand a good video simply did nothing.
                 self.good_frames -= 1
                 self.closeups = [c for c in self.closeups if c[1] is not jpeg]
+                self._passed_over("not_crop")
                 return out | {"guide": self.guide()}
             self.classified += 1
             out["live"] = self._record(preds, jpeg)
         self.kept += 1
         out["counted"] = True
         return out | {"guide": self.guide()}
+
+    def _passed_over(self, why: str) -> None:
+        self.passed_over_why[why] = self.passed_over_why.get(why, 0) + 1
+
+    def why_thin(self) -> str | None:
+        """The one thing most worth telling a farmer whose video gave little.
+
+        Not a tally — a sentence's worth of cause. "not_crop" outranks the rest
+        even when it is not the commonest: a video the model cannot read at all
+        needs different advice from one that was merely dark, and hearing "too
+        dark" about footage that was never going to be read would send the
+        farmer out to refilm the same unusable thing.
+        """
+        if self.kept >= MIN_VIDEO_VIEWS or not self.passed_over_why:
+            return None
+        if self.passed_over_why.get("not_crop"):
+            return "not_crop"
+        return max(self.passed_over_why.items(), key=lambda kv: kv[1])[0]
+
+    def skip(self) -> bool:
+        """Move past the view being asked for.
+
+        Some views cannot be had: a leaf underside on a crop grown flat to the
+        ground, a plant base under standing water, a second spot across a bund
+        the farmer is not going to cross in the rain. Coaching someone towards a
+        picture that does not exist until the session times out is the worst
+        answer available — it wastes their walk and ends with nothing. Moving on
+        costs only the evidence that view would have given, and the evidence
+        rules already know how to say "not enough to be sure".
+        """
+        if self.done or self.mode != "walk":
+            return False
+        self.skipped.append(self.steps[self.idx].id)
+        self.idx += 1
+        return True
 
     def pending_question(self, kb) -> dict | None:
         """A Doubt Doctor question once the close-ups are in, if the two
@@ -347,6 +547,9 @@ class LiveSession:
             "good_frames": self.good_frames,
             "frames": self.frames,
             "answer": {"cue_id": self.answer[0], "answer": self.answer[1]} if self.answer else None,
+            # Which views were never shown. A thin walk should read back as a
+            # thin walk years later, not as a field that looked fine.
+            "skipped_views": list(self.skipped),
         }
 
     def evidence_for(self, target: str) -> list[bytes]:

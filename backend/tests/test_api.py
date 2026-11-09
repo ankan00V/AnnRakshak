@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from PIL import Image
 from sqlalchemy import func, select
 
-from app import cache, geo, services
+from app import cache, config, geo, services
 from app.db import Base, SessionLocal, engine
 from app.engine import phenology
 from app.engine.weather import Day, Window
@@ -184,6 +184,226 @@ def test_a_resolved_case_cannot_be_handed_on(client):
     client.post(f"/api/cases/{case_id}/resolve", json={
         "verdict": "confirmed", "final_label": "rice_brown_spot", "expert_name": "Dr. Kale"})
     assert client.post(f"/api/cases/{case_id}/reassign", json={}).status_code == 409
+
+
+def test_a_supervisor_cannot_admit_an_officer_into_districts_they_do_not_hold(client):
+    """Overlap is not authority. A supervisor covering one district admitting an
+    officer whose post claims three would be handing out reach into two they do
+    not hold — and with the rank, the power to admit others there too."""
+    import pytest
+
+    from app import office
+    from app.models import ExpertProfile, User
+
+    with SessionLocal() as db:
+        boss = User(role="expert", name="Boss", email="boss@kvk.test")
+        hand = User(role="expert", name="Newcomer", email="new@kvk.test")
+        db.add_all([boss, hand])
+        db.flush()
+        db.add(ExpertProfile(user_id=boss.id, designation="kvk_scientist", organisation="KVK",
+                             employee_id="B1", qualification="phd", experience_years=9,
+                             districts=["Bhandara"], crops=["rice"], specialities=["plant_pathology"],
+                             languages=["en"], verified=True, supervisor=True))
+        db.add(ExpertProfile(user_id=hand.id, designation="agri_officer", organisation="DoA",
+                             employee_id="N1", qualification="msc_agri", experience_years=2,
+                             districts=["Bhandara", "Nagpur"], crops=["rice"],
+                             specialities=["entomology"], languages=["en"], verified=False))
+        db.commit()
+        boss_id, hand_id = boss.id, hand.id
+
+    with SessionLocal() as db:
+        with pytest.raises(PermissionError) as e:
+            office.set_verified(db, hand_id, True, supervisor=True, by=db.get(User, boss_id))
+        assert "Nagpur" in str(e.value)
+
+
+def test_taking_the_badge_back_takes_the_rank_with_it(client):
+    """Otherwise an officer sent away and later let back in picks the rank up
+    again on the way, which nobody asked for and nobody would see happen."""
+    from app import office
+    from app.models import ExpertProfile, User
+
+    with SessionLocal() as db:
+        boss = User(role="expert", name="Boss2", email="boss2@kvk.test")
+        them = User(role="expert", name="OnLeave", email="leave@kvk.test")
+        db.add_all([boss, them])
+        db.flush()
+        for u, sup in ((boss, True), (them, True)):
+            db.add(ExpertProfile(user_id=u.id, designation="kvk_scientist", organisation="KVK",
+                                 employee_id=f"X{u.id}", qualification="phd", experience_years=9,
+                                 districts=["Bhandara"], crops=["rice"],
+                                 specialities=["plant_pathology"], languages=["en"],
+                                 verified=True, supervisor=sup))
+        db.commit()
+        boss_id, them_id = boss.id, them.id
+
+    with SessionLocal() as db:
+        office.set_verified(db, them_id, False, by=db.get(User, boss_id))
+    with SessionLocal() as db:
+        assert db.get(ExpertProfile, them_id).supervisor is False
+
+
+def test_an_advisory_is_confined_to_the_districts_an_officer_covers(monkeypatch):
+    """An advisory is a message to every farm of a crop in a district. Nothing
+    compared the list in the request against the patch the officer was verified
+    for — and an empty list meant everywhere, not everywhere-of-mine."""
+    import pytest
+    from fastapi import HTTPException
+
+    from app.routers import officials as o
+
+    monkeypatch.setattr(config, "AUTH_ENFORCE", True)
+    monkeypatch.setattr(o, "_me", lambda request, db: object())
+    monkeypatch.setattr(o, "_mine", lambda request, db: ["Bhandara", "Nagpur"])
+
+    assert o._within_reach(None, None, ["Bhandara"]) == ["Bhandara"]
+    assert o._within_reach(None, None, []) == ["Bhandara", "Nagpur"]   # mine, not everywhere
+
+    with pytest.raises(HTTPException) as e:
+        o._within_reach(None, None, ["Latur"])
+    assert e.value.status_code == 403 and "Latur" in e.value.detail
+
+    # An officer with no districts has no patch to address, which is not the
+    # same as having all of them.
+    monkeypatch.setattr(o, "_mine", lambda request, db: [])
+    with pytest.raises(HTTPException) as e:
+        o._within_reach(None, None, [])
+    assert e.value.status_code == 403
+
+
+def test_the_verdict_reaches_the_farmer_who_asked_for_it(client, monkeypatch):
+    """propagate() warns the farms around this one and excludes the origin by
+    design, which left the farmer who actually sent the photograph as the only
+    party the answer never reached: they had to reopen the app and find their
+    own way into History to learn that somebody had replied."""
+    from app import notify
+
+    sent, pushed = [], []
+    monkeypatch.setattr(notify.broker, "publish", lambda fid, ev: sent.append((fid, ev)) or 1)
+    monkeypatch.setattr(notify, "push", lambda db, fid, payload: pushed.append((fid, payload)) or {})
+
+    _officers(2)
+    case_id = diagnose(client, 1, "unsure")["case"]["id"]
+    client.post(f"/api/cases/{case_id}/resolve", json={
+        "verdict": "confirmed", "final_label": "rice_brown_spot", "expert_name": "Dr. Kale"})
+
+    assert sent, "no open tab was told the expert had answered"
+    farm_id, event = sent[-1]
+    assert farm_id == 1 and event["type"] == "verdict"
+    assert event["url"].startswith("/app/history/"), "the farmer must land on the verdict itself"
+    assert event["title"] and event["body"]
+    assert pushed and pushed[-1][0] == 1, "no phone notification for the farmer who asked"
+
+
+def test_a_verdict_of_nothing_found_still_reaches_the_farmer(client, monkeypatch):
+    from app import notify
+
+    sent = []
+    monkeypatch.setattr(notify.broker, "publish", lambda fid, ev: sent.append(ev) or 1)
+    monkeypatch.setattr(notify, "push", lambda db, fid, payload: {})
+    _officers(2)
+    case_id = diagnose(client, 1, "unsure")["case"]["id"]
+    client.post(f"/api/cases/{case_id}/resolve", json={
+        "verdict": "confirmed", "final_label": "healthy", "expert_name": "Dr. Kale"})
+    assert sent and sent[-1]["type"] == "verdict"
+
+
+def test_a_failed_push_does_not_undo_a_committed_verdict(client, monkeypatch):
+    """A dead push endpoint is not a failed verdict."""
+    from app import notify
+
+    monkeypatch.setattr(notify, "verdict_reached",
+                        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("push is down")))
+    _officers(2)
+    case_id = diagnose(client, 1, "unsure")["case"]["id"]
+    r = client.post(f"/api/cases/{case_id}/resolve", json={
+        "verdict": "confirmed", "final_label": "rice_brown_spot", "expert_name": "Dr. Kale"})
+    assert r.status_code == 200 and r.json()["final_label"] == "rice_brown_spot"
+
+
+def test_the_wait_a_farmer_is_quoted_is_their_own_queue(client):
+    """Position and ETA were counted over every open case in the database, so a
+    farmer in one district was told to wait behind cases whose officers will
+    never see theirs — and the count crossed the demo line in both directions.
+    Cases route on the district and that line, so the queue is the one those
+    two define."""
+    from app.models import Farm
+
+    with SessionLocal() as db:
+        here = db.get(Farm, 1)
+        here.is_demo = False
+        # A field of the same crop in another district, and a demo field in
+        # this one. Neither is a case this farmer waits behind.
+        for district, is_demo in (("Nagpur", False), (here.district, True)):
+            db.add(Farm(farmer_name="Elsewhere", phone=f"9100{district[:3]}{int(is_demo)}",
+                        lang="en", crop=here.crop, sowing_date=here.sowing_date,
+                        date_basis=here.date_basis, state=here.state, district=district,
+                        village="V", lat=here.lat, lon=here.lon, area_acres=1.0,
+                        is_demo=is_demo, status="growing"))
+        db.commit()
+        other_ids = [f.id for f in db.query(Farm).filter(Farm.farmer_name == "Elsewhere").all()]
+
+    # One escalated case on each of the two neighbours, then one of our own.
+    for fid in other_ids:
+        diagnose(client, fid, "unsure")
+    mine = diagnose(client, 1, "unsure")["case"]
+
+    assert mine["queue_position"] == 1, (
+        "a farmer was told to wait behind cases in another district, or across the demo line")
+    from app.services import CASE_ETA_MINUTES_PER_POSITION
+    assert mine["eta_minutes"] == CASE_ETA_MINUTES_PER_POSITION
+
+
+def test_a_spread_warning_does_not_cross_the_demo_line_or_reach_a_cleared_field(client):
+    """propagate() warns every farm of the crop within the radius. Without the
+    two lines the rest of the app keeps, a real case warned the demonstration
+    fields the next visitor walks into (and a demo case warned real farmers) —
+    and a field whose crop is already off was told to go and inspect it."""
+    from app.models import Alert, Farm
+
+    with SessionLocal() as db:
+        origin = db.get(Farm, 1)   # a real field, so it can be diagnosed on
+        # A demonstration field and a harvested one, both next door, same crop.
+        made = {}
+        for tag, is_demo, status in (("demo", True, "growing"), ("off", False, "harvested")):
+            f = Farm(farmer_name=f"Neighbour {tag}", phone=f"90000000{len(made)}", lang="en",
+                     crop=origin.crop, sowing_date=origin.sowing_date, date_basis=origin.date_basis,
+                     state=origin.state, district=origin.district, village=origin.village,
+                     lat=origin.lat, lon=origin.lon, area_acres=1.0,
+                     is_demo=is_demo, status=status)
+            db.add(f)
+            db.flush()
+            made[tag] = f.id
+        db.commit()
+        before = {a.id for a in db.query(Alert).all()}
+
+    _officers(2)
+    case_id = diagnose(client, 1, "unsure")["case"]["id"]
+    client.post(f"/api/cases/{case_id}/resolve", json={
+        "verdict": "confirmed", "final_label": "rice_brown_spot", "expert_name": "Dr. Kale"})
+
+    with SessionLocal() as db:
+        fresh = [a for a in db.query(Alert).all() if a.id not in before and a.trigger == "spread"]
+        warned = {a.farm_id for a in fresh}
+    assert made["demo"] not in warned, "a real case warned a demonstration field"
+    assert made["off"] not in warned, "a field whose crop is already off was told to inspect it"
+
+
+def test_a_healthy_verdict_is_shown_to_the_farmer_not_left_as_a_dash(client):
+    """"healthy" and "something else" are not knowledge-base labels, so
+    resolving a case to one clears problem.target — which left the farmer's own
+    history showing a dash. "Your crop is fine" is the most reassuring thing
+    this app can say and it was the one verdict rendered as nothing."""
+    _officers(2)
+    case_id = diagnose(client, 1, "unsure")["case"]["id"]
+    client.post(f"/api/cases/{case_id}/resolve", json={
+        "verdict": "confirmed", "final_label": "healthy", "expert_name": "Dr. Kale"})
+
+    home = client.get("/api/farms/1/home?lang=en").json()
+    rows = [p for p in home["problems"] if p["target"] is None]
+    assert rows, "the resolved problem should be in the farmer's history"
+    assert rows[0]["name"], "the farmer is shown a dash where the verdict should be"
+    assert "healthy" in rows[0]["name"].lower()
 
 
 def test_expert_can_record_a_healthy_plant(client):
@@ -543,11 +763,38 @@ def test_a_far_away_phone_fix_needs_the_farmer_to_confirm_it(client):
 
 
 def test_a_demo_farm_never_moves_to_the_viewers_location(client):
+    """Whoever opened the shared demo is not standing in that field.
+
+    The refusal now comes from the write gate rather than from the location
+    code: changing a shared demo field's language or its spot is editing what
+    the next visitor walks into, so it is refused the same way sowing and
+    harvesting on it are, with the one code the app already understands."""
     with SessionLocal() as db:
-        db.get(Farm, 2).is_demo = True
+        farm = db.get(Farm, 2)
+        farm.is_demo, farm.user_id = True, None   # shared: belongs to nobody
+        before = (farm.lat, farm.lon)
         db.commit()
     r = client.patch("/api/farms/2", json={"lat": 21.181, "lon": 79.661})
-    assert r.status_code == 409 and r.json()["detail"]["code"] == "demo_farm"
+    assert r.status_code == 403 and r.json()["detail"]["code"] == "demo_read_only"
+    with SessionLocal() as db:
+        assert (db.get(Farm, 2).lat, db.get(Farm, 2).lon) == before
+
+
+def test_a_field_is_not_relanguaged_or_relocated_by_somebody_else(client, monkeypatch):
+    """Reading a farm is not writing to it. An officer may open any field in
+    their district; that must not let them move it to another one, or switch
+    the language its owner is written to in."""
+    monkeypatch.setattr(config, "AUTH_ENFORCE", True)
+    with SessionLocal() as db:
+        farm = db.get(Farm, 2)
+        farm.is_demo, farm.lang = False, "mr"   # a real field, with a holder
+        db.commit()
+    # 401 from the router's own gate, 403/404 from the farm's: refused either
+    # way, and the field is untouched. Which of the two answers first is not
+    # the point — that neither lets the write through is.
+    assert client.patch("/api/farms/2", json={"lang": "ta"}).status_code in (401, 403, 404)
+    with SessionLocal() as db:
+        assert db.get(Farm, 2).lang == "mr"
 
 
 # --------------------------------------------------------------------------

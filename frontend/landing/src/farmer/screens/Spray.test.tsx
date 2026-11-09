@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import type { Farm, Home, LabelVerdict, WeatherView } from '../../api/types'
+import { clearCache } from '../../lib/hooks'
 import { FarmerProvider } from '../FarmerContext'
 import Spray from './Spray'
 
@@ -11,6 +12,10 @@ import Spray from './Spray'
 const labelCheck = vi.fn()
 const labelNote = vi.fn()
 const logSpray = vi.fn()
+// Which field is being looked at. `read_only` is what marks the shared
+// demonstration data, and it is the whole difference between a verdict that
+// is about somebody's crop and one that is about nobody's.
+let farmRows: Partial<Farm>[] = [{ id: 7, read_only: false }]
 vi.mock('../../api/client', async (orig) => {
   const real = await orig<typeof import('../../api/client')>()
   return {
@@ -19,7 +24,7 @@ vi.mock('../../api/client', async (orig) => {
       ...real.api,
       // Only the parts this screen reads; the rest of these shapes is not
       // what the spray check is about.
-      farms: async () => [{ id: 7, read_only: false }] as unknown as Farm[],
+      farms: async () => farmRows as Farm[],
       home: async () => ({ problems: [] }) as unknown as Home,
       weather: async () => ({
         spray: { now: null, windows: [], reasons_text: null },
@@ -55,6 +60,10 @@ beforeEach(() => {
   labelCheck.mockReset()
   labelNote.mockReset()
   logSpray.mockReset()
+  farmRows = [{ id: 7, read_only: false }]
+  // The farm list is shared through the request cache, so without this a
+  // later test reads the field the previous one was looking at.
+  clearCache()
 })
 
 describe('the spray check', () => {
@@ -106,5 +115,41 @@ describe('the spray check', () => {
     const card = message.closest('section')
     expect(card).not.toBeNull()
     expect(card!.textContent).not.toMatch(/\bsafe\b/i)
+  })
+})
+
+describe('the spray check on the demonstration field', () => {
+  // Every answer this screen gives is about one field: whether the product
+  // suits that crop, against that diagnosis, at a dose for that plot. The
+  // demonstration field is shared by everyone trying the app and has none of
+  // those, so a verdict here would be a guess in the clothes of advice — on
+  // the one screen where being wrong is bought at the counter and sprayed.
+  it('asks for a real field instead of taking a product', async () => {
+    farmRows = [{ id: 7, read_only: true }]
+    screenUnderTest()
+
+    expect(await screen.findByText(/demonstration field/i)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /add your own field/i }))
+      .toHaveAttribute('href', '/signup/farmer')
+    // The box is the whole screen; leaving it would be leaving the feature on.
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+  })
+
+  it('never reaches the label check from the demonstration field', async () => {
+    farmRows = [{ id: 7, read_only: true }]
+    screenUnderTest()
+    await screen.findByText(/demonstration field/i)
+
+    expect(labelCheck).not.toHaveBeenCalled()
+  })
+
+  it('still works on a field of your own', async () => {
+    // The gate must be the demonstration field, not every field.
+    labelCheck.mockResolvedValue(verdict({ tone: 'ok', message: 'No objection found in our records.' }))
+    screenUnderTest()
+    await check()
+
+    expect(await screen.findByText('No objection found in our records.')).toBeInTheDocument()
+    expect(screen.queryByText(/demonstration field/i)).not.toBeInTheDocument()
   })
 })

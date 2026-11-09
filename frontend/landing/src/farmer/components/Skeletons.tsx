@@ -254,11 +254,13 @@ export function ProblemDetailSkeleton() {
 /** The farm picker, before we know which fields this farmer has. */
 export function FarmPickerSkeleton() {
   return (
-    <div className="space-y-3">
+    // The shape of a field tile: a photograph beside the words on a phone,
+    // above them from lg.
+    <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-5">
       {Array.from({ length: 2 }, (_, i) => (
-        <Card key={i} className="p-4 flex items-center gap-3">
-          <Bone className="w-10 h-10 rounded-xl shrink-0" />
-          <div className="flex-1 space-y-2">
+        <Card key={i} className="overflow-hidden flex lg:flex-col min-h-[112px] lg:rounded-3xl">
+          <Bone className="w-28 sm:w-36 lg:w-full lg:aspect-[16/9] shrink-0 rounded-none" />
+          <div className="flex-1 space-y-2 p-4">
             <Bone className="h-4 w-32" />
             <Bone className="h-2.5 w-44 rounded-full" />
           </div>

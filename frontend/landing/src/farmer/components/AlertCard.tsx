@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Bug, CalendarClock, CheckCircle2, CloudRain, Eye, Loader2, Radar, Search } from 'lucide-react'
+import { AlertTriangle, Bug, CalendarClock, CheckCircle2, CloudRain, Eye, Loader2, Radar, Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../api/client'
 import ReportSheet from './ReportSheet'
+import { useReadOnlyFarm } from './DemoNotice'
 import type { AlertView } from '../../api/types'
 import { ListenButton, Pill } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
@@ -24,10 +25,15 @@ const LEVEL_STYLE = {
 /** An alert is a task, not a notification: it stays until the farmer records
  *  what they found. There is no dismiss button on purpose. */
 export default function AlertCard({ alert, onDone }: { alert: AlertView; onDone: () => void }) {
+  // A shared demo field is everybody's, so answering its warning would edit
+  // what the next visitor walks into — the server refuses it. Offering the
+  // buttons anyway would be a control that can only fail.
+  const readOnly = useReadOnlyFarm() !== null
   const { lang, t } = useFarmer()
   const navigate = useNavigate()
   const [busy, setBusy] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
+  const [failed, setFailed] = useState(false)
   const Icon = TRIGGER_ICON[alert.trigger] ?? Eye
   const style = LEVEL_STYLE[alert.level]
   const answered = alert.outcome === 'nothing_found' || alert.outcome === 'found'
@@ -42,6 +48,7 @@ export default function AlertCard({ alert, onDone }: { alert: AlertView; onDone:
   const answer = async (outcome: 'nothing_found' | 'found' | 'snoozed',
                         evidence?: { photo: Blob | null; note: string }) => {
     setBusy(outcome)
+    setFailed(false)
     try {
       const r = await api.alertOutcome(alert.id, outcome, lang, evidence)
       setReporting(false)
@@ -52,6 +59,11 @@ export default function AlertCard({ alert, onDone }: { alert: AlertView; onDone:
       if (r.message) setNote(r.message)
       else onDone()
       if (r.message) setTimeout(onDone, 2500)
+    } catch {
+      // Walking the field and reporting what was there is the farmer's half of
+      // this. Dropping it silently closes the card as though it was recorded.
+      setFailed(true)
+      setNote(t('notSaved'))
     } finally {
       setBusy(null)
     }
@@ -100,12 +112,14 @@ export default function AlertCard({ alert, onDone }: { alert: AlertView; onDone:
         </div>
 
         {note ? (
-          <p className="mt-3 text-sm text-leaf-deep flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4" />
+          <p className={`mt-3 text-sm flex items-center gap-2 ${failed ? 'text-ember' : 'text-leaf-deep'}`}>
+            {failed ? <AlertTriangle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
             {note}
           </p>
         ) : answered ? (
           <p className="mt-3 text-xs text-soil-dark/50">{t('answered')}</p>
+        ) : readOnly ? (
+          <p className="mt-3 text-xs text-soil-dark/50">{t('demoReadOnlyShort')}</p>
         ) : (
           <div className="mt-3 grid grid-cols-3 gap-2">
             {([

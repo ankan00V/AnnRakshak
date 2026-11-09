@@ -51,6 +51,12 @@ export function TourProvider({ children }: { children: ReactNode }) {
     if (me.is_demo || age <= NEW_ACCOUNT_DAYS) setAsking(true)
   }, [me, farmId, seenKey])
 
+  // ...but not over the live field check. That screen takes the whole display
+  // and the camera with it, and a farmer standing in their field with the phone
+  // up is the one person who should not be handed a card about a tour. The ask
+  // is held, not spent: it returns when they come back from the call.
+  const onCall = pathname.startsWith('/app/live')
+
   const bar = (pct: number) => {
     const fill = live.current.pop?.wrapper.querySelector<HTMLElement>('.ar-tour-bar > span')
     if (fill) fill.style.width = `${Math.min(100, pct)}%`
@@ -194,7 +200,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={{ start }}>
       {children}
-      {asking && (
+      {asking && !onCall && (
         <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-soil-dark/55 p-4 animate-fadein"
           role="dialog" aria-modal="true" aria-labelledby="tour-ask-title">
           <section className="relative w-full max-w-md rounded-3xl bg-leaf-deep text-cream p-6 overflow-hidden shadow-2xl">

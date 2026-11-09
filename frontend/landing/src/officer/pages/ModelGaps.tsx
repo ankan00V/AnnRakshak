@@ -1,8 +1,8 @@
 import { FlaskConical } from 'lucide-react'
 import { api } from '../../api/client'
 import { useAsync } from '../../lib/hooks'
-import { Card, Pill } from '../../ui/kit'
-import { AccuracyPanel, GatePanel, KccPanel, ModelPanel, PageHead, PanelBone, PesticidePanel } from '../panels'
+import { Card, ErrorBox, Pill } from '../../ui/kit'
+import { AccuracyPanel, GatePanel, KccPanel, ModelPanel, PageHead, Panel, PanelBone, PesticidePanel } from '../panels'
 
 /** How the system is doing, and — the part that decides what gets built next —
  *  what officers keep seeing that the model has no name for. */
@@ -18,8 +18,8 @@ export default function ModelGaps() {
       <PageHead title="Model & gaps"
         purpose="What the model gets right, what it could not name, and where it still needs photographs." />
       <div className="grid gap-5 lg:grid-cols-2">
-        {summary.data ? <GatePanel s={summary.data} /> : !summary.error && <PanelBone rows={4} />}
-        {model.data ? <ModelPanel m={model.data} /> : <PanelBone rows={6} />}
+        <Panel q={summary} rows={4}>{(s) => <GatePanel s={s} />}</Panel>
+        <Panel q={model} rows={6}>{(m) => <ModelPanel m={m} />}</Panel>
       </div>
 
       <Card className="p-4 md:p-5">
@@ -30,7 +30,8 @@ export default function ModelGaps() {
           Cases an officer closed as “something else”, in their words. A problem that keeps appearing
           here is the next class worth training — and the reason the app never guessed at it.
         </p>
-        {!gaps.data ? <div className="mt-4"><PanelBone rows={4} /></div>
+        {gaps.error && !gaps.data ? <div className="mt-4"><ErrorBox error={gaps.error} onRetry={gaps.reload} /></div>
+          : !gaps.data ? <div className="mt-4"><PanelBone rows={4} /></div>
           : gaps.data.length === 0 ? (
             <p className="mt-4 text-sm text-soil-dark/70">
               Nothing yet. Every case so far fitted a problem the knowledge base knows.
