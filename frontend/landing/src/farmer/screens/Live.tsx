@@ -27,6 +27,19 @@ const INFLIGHT_TIMEOUT_MS = 6000
 const FINISH_TIMEOUT_MS = 25000
 const MIN_FRAME_SIDE = 64        // a stopped or starting track gives 0-2 px frames
 const GRAB_EVERY_S = 1           // one frame a second out of an uploaded video
+/** What the server says a thin video hit, and the sentence the farmer gets for
+ *  it. Each one names the thing to do differently, because "it did not work"
+ *  is the same screen for a recording of somebody else's video as for a crop
+ *  filmed at dusk, and the two need opposite advice. */
+const WHY_VIDEO: Record<string, string> = {
+  not_crop: 'videoNotCrop',
+  move_a_little: 'videoOneSpot',
+  too_dark: 'videoTooDark',
+  too_bright: 'videoTooDark',
+  hold_steady: 'videoBlurry',
+  show_crop: 'videoTooFar',
+  come_closer: 'videoTooFar',
+}
 /** How long to keep trying to get a dropped call back, and the gaps between
  *  tries. A field edge with one bar drops a socket often; walking the whole
  *  field again because of it is not an answer. */
@@ -527,7 +540,8 @@ export default function Live() {
   const live = phase === 'starting' || phase === 'live' || phase === 'finishing'
 
   if (phase === 'summary' && summary) {
-    return <SummaryView s={summary} onAgain={() => { setSummary(null); setPhase('intro') }} onDone={() => navigate('/app')} />
+    return <SummaryView s={summary} whyThin={source === 'video' ? guide?.why_thin ?? null : null}
+      onAgain={() => { setSummary(null); setPhase('intro') }} onDone={() => navigate('/app')} />
   }
 
   if (readOnly) {
@@ -677,6 +691,16 @@ export default function Live() {
               {t('liveVideoRead').replace('{n}', String(guide.read ?? 0)).replace('{k}', String(guide.kept ?? 0))}
             </p>
           )}
+          {/* A video that gave the model almost nothing to read says which wall
+              it hit. Without this the farmer watched a good-looking video
+              produce "0 clear close-ups" and had no idea what to do about it —
+              a screen recording and a crop filmed at dusk fail identically on
+              screen and need opposite advice. */}
+          {source === 'video' && WHY_VIDEO[guide?.why_thin ?? ''] && (
+            <p className="mx-auto max-w-sm rounded-2xl bg-ochre/90 px-3 py-2 text-sm leading-snug text-soil-dark">
+              {t(WHY_VIDEO[guide!.why_thin!])}
+            </p>
+          )}
           {phase === 'live' && source === 'camera' && quality && (
             <p className={`mx-auto w-fit rounded-full px-3 py-1 text-sm font-medium ${quality.ok ? 'bg-leaf/90' : 'bg-ochre/90 text-soil-dark'}`}>
               {quality.ok ? t('liveKeep') : quality.hint_text}
@@ -767,7 +791,9 @@ const VERDICT = {
 
 const LEVEL_TONE = { high: 'ember', medium: 'ochre', low: 'neutral' } as const
 
-function SummaryView({ s, onAgain, onDone }: { s: LiveSummary; onAgain: () => void; onDone: () => void }) {
+function SummaryView({ s, whyThin, onAgain, onDone }: {
+  s: LiveSummary; whyThin: string | null; onAgain: () => void; onDone: () => void
+}) {
   const { t, lang } = useFarmer()
   const v = VERDICT[s.verdict]
   const c = s.context
@@ -792,7 +818,15 @@ function SummaryView({ s, onAgain, onDone }: { s: LiveSummary; onAgain: () => vo
           </div>
           <ListenButton text={s.speech} lang={lang} label={t('listen')} stopLabel={t('stop')} compact tone="light" />
         </div>
-        {(s.verdict === 'unclear' || s.verdict === 'no_model') && (
+        {/* A video that gave almost nothing knows which wall it hit, and the
+            general advice is wrong for most of them: telling somebody whose
+            screen recording the model cannot read as a crop to "hold the phone
+            close to a leaf, in daylight" sends them out to film the same
+            unusable thing again. Where the reading says why, it replaces the
+            general line rather than sitting under it. */}
+        {whyThin && WHY_VIDEO[whyThin] ? (
+          <p className="mt-3 text-sm leading-snug opacity-90">{t(WHY_VIDEO[whyThin])}</p>
+        ) : (s.verdict === 'unclear' || s.verdict === 'no_model') && (
           <p className="mt-3 text-sm leading-snug opacity-90">
             {s.verdict === 'unclear' ? t('liveUnclearHint') : t('liveNoModelHint').replace('{crop}', c.crop.name)}
           </p>

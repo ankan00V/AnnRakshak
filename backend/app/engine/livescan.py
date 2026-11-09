@@ -235,6 +235,10 @@ BASE_STEPS = [("overview", "scene", 3), ("plant", "plant", 2), ("leaf_top", "clo
 CONFIRM_NEED = 3
 MAX_EVIDENCE_FRAMES = 3
 MIN_SHARE_OF_STRONG = 0.25
+MIN_VIDEO_VIEWS = 2
+"""Readable frames below which a video is worth explaining rather than only
+reporting. Two is the bar a disease must clear anyway, so under it the farmer
+was never going to get an answer and deserves to know why."""
 VIDEO_KIND = "close"
 """A file is read for usable close-ups of the crop and nothing else: there is no
 one to coach towards the other views, so there is no point measuring against
@@ -290,7 +294,13 @@ class LiveSession:
     mode: str = "walk"     # "walk": a camera being guided; "video": a file being read
     skipped: list[str] = field(default_factory=list)  # views the farmer could not get
     ended: bool = False    # video: the caller says there are no more frames
-    kept: int = 0          # video: frames clear enough to be worth reading
+    kept: int = 0          # video: frames the model could actually read
+    clear: int = 0         # video: frames that passed the quality gate
+    #: Why frames were passed over, counted. A video that yields nothing has to
+    #: be able to say which wall it hit: a farmer told "nothing close enough"
+    #: refilms closer, and one whose footage the model cannot recognise as a
+    #: crop at all needs to hear something completely different.
+    passed_over_why: dict[str, int] = field(default_factory=dict)
     _last_thumb: np.ndarray | None = None
 
     def __post_init__(self):
@@ -309,7 +319,8 @@ class LiveSession:
         # what the caller wants to show is how much of the video has been read
         # and how much of it was worth reading.
         if self.mode == "video":
-            return {"step": None, "index": 0, "total": 0, "read": self.frames, "kept": self.kept}
+            return {"step": None, "index": 0, "total": 0, "read": self.frames,
+                    "clear": self.clear, "kept": self.kept, "why_thin": self.why_thin()}
         if self.done:
             return {"step": None, "index": len(self.steps), "total": len(self.steps)}
         s = self.steps[self.idx]
@@ -371,22 +382,51 @@ class LiveSession:
         out: dict = {"quality": q.__dict__ | {"hint_text": None}, "counted": False,
                      "advanced": False, "live": None}
         if not q.ok:
+            self._passed_over(q.hint or "unclear")
             return out | {"guide": self.guide()}
+        self.clear += 1
         self._last_thumb = _thumb(img)
         self.good_frames += 1
         self.closeups.append((q.sharp, jpeg))
         self.closeups = sorted(self.closeups, key=lambda x: -x[0])[:MAX_EVIDENCE_FRAMES]
         if classify is not None and self.can_classify:
             preds = classify(img)
-            if not preds:  # the model says this is not a crop view at all
+            if not preds:
+                # Sharp, green and close enough, and still not something the
+                # model recognises as a crop it has been taught. A screen
+                # recording of a video player is the honest example: a
+                # watermark, playback chrome and two rounds of compression over
+                # footage that is a crop underneath. The gate is right to
+                # refuse it — it is what stops a confident disease name on a
+                # photograph of something else — but the farmer has to be told,
+                # because from where they stand a good video simply did nothing.
                 self.good_frames -= 1
                 self.closeups = [c for c in self.closeups if c[1] is not jpeg]
+                self._passed_over("not_crop")
                 return out | {"guide": self.guide()}
             self.classified += 1
             out["live"] = self._record(preds, jpeg)
         self.kept += 1
         out["counted"] = True
         return out | {"guide": self.guide()}
+
+    def _passed_over(self, why: str) -> None:
+        self.passed_over_why[why] = self.passed_over_why.get(why, 0) + 1
+
+    def why_thin(self) -> str | None:
+        """The one thing most worth telling a farmer whose video gave little.
+
+        Not a tally — a sentence's worth of cause. "not_crop" outranks the rest
+        even when it is not the commonest: a video the model cannot read at all
+        needs different advice from one that was merely dark, and hearing "too
+        dark" about footage that was never going to be read would send the
+        farmer out to refilm the same unusable thing.
+        """
+        if self.kept >= MIN_VIDEO_VIEWS or not self.passed_over_why:
+            return None
+        if self.passed_over_why.get("not_crop"):
+            return "not_crop"
+        return max(self.passed_over_why.items(), key=lambda kv: kv[1])[0]
 
     def skip(self) -> bool:
         """Move past the view being asked for.

@@ -688,10 +688,16 @@ export interface LiveGuide {
   need?: number
   got?: number
   text?: string
-  /** Video mode: frames read so far, and how many were clear enough to keep.
-   *  A video has no steps to be at, so these stand in for the step counter. */
+  /** Video mode: frames read so far, how many passed the quality gate, and how
+   *  many the model could actually read. A video has no steps to be at, so
+   *  these stand in for the step counter. */
   read?: number
+  clear?: number
   kept?: number
+  /** Why a video gave almost nothing, when it did: 'not_crop', 'too_dark',
+   *  'hold_steady', 'show_crop'/'come_closer', 'move_a_little'. Null when the
+   *  reading was good enough that there is nothing to explain. */
+  why_thin?: string | null
 }
 
 export interface LiveFrameReply {
