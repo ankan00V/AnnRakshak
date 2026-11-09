@@ -42,19 +42,19 @@ offer only what the signed-in desk can actually do.
 | PS asks for | Where it lives |
 |---|---|
 | Image-based symptom identification | `ml/train.py` → EfficientNetV2-S, **46 classes over 45 advisory targets, all four crops** (rice, maize, cotton, soybean); `/api/farms/{id}/diagnose` |
-| Real-time field scouting | **Live field check** (`/app/live`): a video call with the AI over a WebSocket — it tells the farmer where to point the camera (field, plant, leaf top and underside, base, a second spot), coaches bad frames, and reports only problems seen in two or more separate close-ups, with weather now, soil pH (sensor → Soil Health Card → SoilGrids), modelled soil moisture, and forecast risks. Nothing is recorded except evidence photos of a problem. |
+| Real-time field scouting | **Live field check** (`/app/live`), one route per device. On a phone, a video call with the AI over a WebSocket: it tells the farmer where to point the camera (field, plant, leaf top and underside, base, a second spot) and coaches bad frames — spoken, in all ten languages. On a laptop, where there is no camera to carry down a row, the same engine reads an uploaded clip instead: frames straight through, no steps indoors that nobody can follow, and when a clip yields nothing it names the wall it hit (not a crop, one spot only, too dark, blurry, too far) rather than reporting a clean field. Either way it reports only problems seen in two or more separate close-ups — a video gets no easier bar than a walk — with weather now, soil pH (sensor → Soil Health Card → SoilGrids), modelled soil moisture, and forecast risks. Nothing is recorded except evidence photos of a problem. |
 | Pest-trap or sensor inputs | Trap counts vs ICAR-CICR action levels; field-sensor readings override the district forecast (`/traps`, `/sensor`) |
 | Weather-based risk forecasting | `engine/risk.py` — Open-Meteo window + crop stage + farm history + IMD rainfall normals |
 | When the crop will actually be ready | `engine/phenology.py` — growing-degree-days from this field's own temperatures, not a flat "rice is 160 days". Observed (the satellite saw the canopy go) beats thermal beats calendar, and a thermal guess is clamped to the crop calendar's range |
 | Geospatial hotspot mapping | Officials' map: confirmed / awaiting-expert / AI-advised cases, 5 km spread radius, active risk alerts |
-| Expert validation | `/officer/queue`: pre-packed case bundles with Grad-CAM and the farm's history, confirm / correct / refer to a lab, a three-minute timer. Cases route by district, speciality and current load |
-| Multilingual advisories | Ten languages, following the farmer's saved choice: Marathi, Hindi, English (hand-authored) + Bengali, Tamil, Telugu, Kannada, Malayalam, Gujarati, Punjabi (machine translated once with AI4Bharat IndicTrans2 / Sarvam-Translate, placeholders checked, pending native review). Voice in each: Bhashini (MeitY), Sarvam as fallback |
+| Expert validation | `/officer/queue`: pre-packed case bundles with Grad-CAM and the farm's history, confirm / correct / refer to a lab, a three-minute timer. Cases route by district, speciality and current load, and the farmer is told what the expert said — in the app the same second and as a phone notification, in their own language, whatever the hour — instead of having to reopen the app and find History themselves |
+| Multilingual advisories | Ten languages, following the farmer's saved choice: Marathi, Hindi, English (hand-authored) + Bengali, Tamil, Telugu, Kannada, Malayalam, Gujarati, Punjabi (machine translated once with AI4Bharat IndicTrans2 / Sarvam-Translate, placeholders checked, pending native review). The live call's camera guidance and its coaching hints are in the same ten, not English-for-seven. Voice in each: Bhashini (MeitY), Sarvam as fallback |
 | Weather-based alerts in real time | Hour-by-hour weather and **15 weather→action rules** (lightning, heavy rain, gusts, frost, heat at flowering, fungal weather, spray window, irrigation by FAO-56 water balance…) — in the app instantly, as phone notifications and by email |
 | Crop health from space | Satellite greenness (NDVI, Sentinel-2/Landsat 8) and soil moisture per field; a greenness drop becomes an alert, and a canopy collapse ends the season |
 | Farmer demand signal | 262,778 Kisan Call Centre plant-protection calls from Maharashtra, 2010–2025 (cotton 182,376 · soybean 54,675 · maize 17,748 · rice 7,979), 135,342 of them matched to a pest group — when and where farmers actually ask about each one |
 | IPM + safe input usage | Advice ladder is cultural → biological → chemical, enforced at load and at composition; veto-only spray check |
 | Referral to extension / labs | Escalation queue with ETA, lab-referral flag, Kisan Call Centre one-tap call |
-| Follow-up monitoring | Day-4 check-in; "got worse" re-escalates automatically |
+| Follow-up monitoring | Day-4 check-in, and the question is actually asked: on the day it falls due the farmer is reminded once, outside quiet hours, in the app and on their phone. "Got worse" re-escalates automatically — an answer that used to arrive only from whoever happened to open the app on the right day |
 | Learns from field confirmations | Capped per-district prior + confirmed-vs-corrected field accuracy (not retraining — stated as such) |
 | Dashboards for officials | `/officer`: seven tabs plus Darpan — Today, Queue, Map, Advisories, Inputs, Model & gaps, and Officers (supervisors only). KPIs, gate breakdown, risk outlook, district table, IMD rainfall vs normal, MoSPI pesticide baseline, input indent, model card |
 | Linking a diagnosis to the wider world | 43 of 48 knowledge-base targets carry their **EPPO code** — the identifier that survives a scientific name changing, and what links a verdict to pesticide registrations. The five without one have no single organism to name |
@@ -133,7 +133,7 @@ backend/            FastAPI app (port 8010)
   kb/               48 targets with EPPO codes, 48 advisories, 25 cues, 30 pesticides,
                     risk rules, IMD rainfall normals, MoSPI pesticide baseline,
                     ICAR technologies, KCC signals, Krishi's 55 topics
-  tests/            519 tests for the guarantees above (7 skip off Postgres)
+  tests/            586 tests for the guarantees above (7 skip off Postgres)
   seed.py           demo districts, farms and officers
   demo_story.py     plays a history through the real API on held-out ICAR photos
 frontend/landing/   React 19 + Vite: landing (/), farmer PWA (/app),
@@ -160,6 +160,17 @@ cp .env.example .env              # add SARVAM_API_KEY for voice
 .venv/bin/uvicorn app.main:app --port 8010 --app-dir backend
 npm install && npm run dev:landing   # http://localhost:5173
 ```
+
+The live field call needs the camera, and `getUserMedia` only runs in a secure
+context — so to try it on a real phone over the LAN, give Vite a certificate:
+
+```bash
+mkdir -p frontend/landing/.certs && cd frontend/landing/.certs && mkcert -cert-file dev-cert.pem -key-file dev-key.pem localhost 127.0.0.1 ::1 <your LAN IP>
+```
+
+Vite serves HTTPS when those two files exist and plain HTTP when they do not,
+so nobody who only wants the dashboards has to bother. The desktop route is
+video upload, which needs no camera and no certificate.
 
 Optional: `.venv/bin/python backend/demo_story.py` to fill the dashboards by
 running the real flows.
