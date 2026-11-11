@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { CheckCircle2, Loader2, Megaphone, Search, Send } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { CheckCircle2, History, Loader2, Megaphone, Search, Send } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../../api/client'
 import type { AdvisoryDraft, AdvisoryPreview } from '../../api/types'
@@ -7,7 +7,7 @@ import { useAuth } from '../../auth/AuthContext'
 import { useAsync } from '../../lib/hooks'
 import { MAIN, SIDE, SPLIT } from '../../ui/layout'
 import { Card, ErrorBox, Pill } from '../../ui/kit'
-import { many, OutlookPanel, PageHead, Panel, PanelBone } from '../panels'
+import { CardHead, many, OutlookPanel, PageHead, Panel, PanelBone, shortDate, targetName } from '../panels'
 
 // Every language the app sends in. This list was three, so an officer could
 // check the Marathi, Hindi and English of what they were about to send and had
@@ -39,6 +39,17 @@ export default function Advisories() {
   const [busy, setBusy] = useState(false)
   const [sent, setSent] = useState<{ sent: number; skipped: number } | null>(null)
   const [error, setError] = useState<Error | null>(null)
+  const formRef = useRef<HTMLDivElement>(null)
+  const [allSent, setAllSent] = useState(false)
+
+  /* The outlook says what is building; this turns a row of it into the
+     advisory about it. It used to be two screens' worth of copying a disease
+     name from a table into a dropdown by hand. */
+  const draftFrom = (r: { crop: string; target: string }) => {
+    setCrop(r.crop)
+    setTarget(r.target)
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   const draft: AdvisoryDraft = useMemo(
     () => ({ target, crop, districts, kind, level, note: note || null, audience }),
@@ -105,7 +116,8 @@ export default function Advisories() {
       <PageHead title="Advisories"
         purpose="Tell every farm of one crop what is building — in their own language, with the checks it carries." />
       <div className={`gap-5 ${SPLIT}`}>
-      <Card className={`p-4 md:p-5 ${MAIN}`}>
+      <div ref={formRef} className={`scroll-mt-24 ${MAIN}`}>
+      <Card className="p-4 md:p-5">
         <h2 className="font-semibold flex items-center gap-2"><Megaphone className="w-4 h-4 text-leaf" /> Issue an advisory</h2>
         <p className="text-xs text-soil-dark/60 mt-0.5">
           Every farm of this crop in the districts you pick gets it, in their own language, with the
@@ -279,58 +291,73 @@ export default function Advisories() {
           </button>
         )}
       </Card>
+      </div>
 
-      <div className={`space-y-5 ${SIDE}`}>
+      <div className={SIDE}>
         <Card className="p-4 md:p-5">
-          <h2 className="font-semibold">Issued before</h2>
-          {history.error && !history.data ? <div className="mt-3"><ErrorBox error={history.error} onRetry={history.reload} /></div>
-            : !history.data ? <div className="mt-3"><PanelBone rows={4} /></div>
+          <CardHead icon={History} title="Sent from this office"
+            sub="What went out, to how many farms, and what came back." />
+          {history.error && !history.data ? <div className="mt-4"><ErrorBox error={history.error} onRetry={history.reload} /></div>
+            : !history.data ? <div className="mt-4"><PanelBone rows={4} /></div>
             : history.data.length === 0 ? (
-              <p className="mt-3 text-sm text-soil-dark/70">Nothing has been issued from this office yet.</p>
+              <p className="mt-4 text-sm text-soil-dark/60">Nothing has been issued from this office yet.</p>
             ) : (
-              <ul className="mt-3 divide-y divide-soil-dark/10">
-                {history.data.map((h) => (
-                  <li key={h.id} className="py-2.5 flex items-start justify-between gap-3">
-                    <span className="min-w-0">
-                      <span className="block text-sm font-medium truncate">
-                        {h.target.replace(/_/g, ' ')} <span className="text-soil-dark/50">· {h.kind}</span>
-                      </span>
-                      {/* Wraps rather than truncates. Who sent an advisory and
-                          when are the two things this list is consulted for —
-                          "was this already gone out, and by whom?" — and on one
-                          line they are the first to go: in a narrow window this
-                          read "every district…" and dropped both. Two lines of
-                          11px cost less than a second trip to ask. */}
-                      <span className="block text-[11px] text-soil-dark/60 [overflow-wrap:anywhere]">
-                        {h.districts.length > 0 ? h.districts.join(', ') : 'every district'} · {h.issued_by}
-                        {h.issued_at ? ` · ${h.issued_at.slice(0, 10)}` : ''}
-                      </span>
-                      {h.note && <span className="block text-[11px] text-soil-dark/50 truncate">“{h.note}”</span>}
-                    </span>
-                    <span className="text-right shrink-0">
-                      <span className="block text-xs tabular-nums text-soil-dark/70">{many(h.farms, 'farm')}</span>
-                      {h.farms > 0 && (
-                        <span className="mt-1 block text-[11px] tabular-nums">
-                          {h.inspected === 0 ? (
-                            <span className="text-ember">none checked yet</span>
-                          ) : (
-                            <>
-                              <span className="text-leaf-deep">{h.inspected} checked</span>
-                              {h.found > 0 && <span className="text-ember"> · {h.found} found it</span>}
-                            </>
-                          )}
-                        </span>
+              <ul className="mt-3 divide-y divide-soil-dark/[0.07]">
+                {(allSent ? history.data : history.data.slice(0, 5)).map((h) => {
+                  const checked = h.farms > 0 ? Math.min(1, h.inspected / h.farms) : 0
+                  return (
+                    <li key={h.id} className="py-3" title={`Issued by ${h.issued_by}`}>
+                      {/* The name without its crop prefix, which the crop label
+                          below already says: "rice brown planthopper ·
+                          advis..." was cut off on every row. */}
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="min-w-0 text-sm font-medium leading-snug">
+                          {targetName(h.target, h.crop)}
+                        </p>
+                        <Pill tone={h.kind === 'inspection' ? 'sky' : 'leaf'} className="shrink-0 !py-0.5 capitalize">{h.kind}</Pill>
+                      </div>
+                      <p className="mt-0.5 text-[11px] text-soil-dark/55">
+                        <span className="capitalize">{h.crop}</span>
+                        {' · '}{h.districts.length > 0 ? h.districts.join(', ') : 'every district'}
+                        {' · '}{shortDate(h.issued_at)}
+                        {h.level === 'high' && <span className="text-ember"> · high</span>}
+                      </p>
+                      {h.note && (
+                        <p className="mt-1.5 text-xs leading-snug text-soil-dark/70 border-l-2 border-soil-dark/10 pl-2 line-clamp-2">
+                          {h.note}
+                        </p>
                       )}
-                    </span>
-                  </li>
-                ))}
+                      <div className="mt-2 flex items-center gap-2">
+                        <div className="flex-1 h-1 rounded-full bg-soil-dark/[0.07]" aria-hidden>
+                          <span className="block h-full rounded-full bg-leaf" style={{ width: `${checked * 100}%` }} />
+                        </div>
+                        <span className="shrink-0 text-[11px] tabular-nums text-soil-dark/60">
+                          {h.inspected === 0
+                            ? <>{many(h.farms, 'farm')} · <span className="text-ember">none checked yet</span></>
+                            : <>{h.inspected} of {many(h.farms, 'farm')} checked{h.found > 0 && <span className="text-ember font-medium"> · {h.found} found it</span>}</>}
+                        </span>
+                      </div>
+                    </li>
+                  )
+                })}
               </ul>
             )}
+          {/* Five, so the list ends about where the form beside it does. All
+              eight left a column of empty page under the form. */}
+          {history.data && history.data.length > 5 && (
+            <button type="button" onClick={() => setAllSent((v) => !v)}
+              className="mt-2 text-xs font-medium text-leaf-deep hover:underline underline-offset-2">
+              {allSent ? 'Show fewer' : `Show all ${history.data.length}`}
+            </button>
+          )}
         </Card>
+      </div>
+      </div>
 
-        <Panel q={outlook} rows={6}>{(rows) => <OutlookPanel rows={rows} />}</Panel>
-      </div>
-      </div>
+      {/* Full width: seven columns of what is building, and the one table on
+          this page that needs the room. In the side column it squeezed until
+          its own headers ran together. */}
+      <Panel q={outlook} rows={6}>{(rows) => <OutlookPanel rows={rows} onDraft={draftFrom} />}</Panel>
     </>
   )
 }
