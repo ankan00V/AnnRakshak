@@ -69,6 +69,9 @@ OPENING_SECONDS = 15
 #: let go whatever it claims to be doing, so a stream of pings cannot hold a
 #: place in the queue for ever.
 HARD_SECONDS = MAX_SECONDS + 180
+#: Past HARD_SECONDS only the farmer's last word is taken — and only for this
+#: long. After it nothing is, so the edge holds whatever a caller sends.
+LAST_WORD_SECONDS = 60
 #: Messages that are not messages — not JSON, not an object — a call will put
 #: up with before it is let go. A phone on a bad link garbles the odd one; a
 #: client that sends nothing else is not a call.
@@ -474,7 +477,16 @@ async def live_ws(ws: WebSocket, farm_id: int):
                 # over a long look-alike question, used to be refused at the
                 # very end: the finish was dropped at this gate, the walk was
                 # held, handed back, and refused again until the phone gave up.
-                if time.monotonic() - began > HARD_SECONDS and kind not in ("finish", "answer"):
+                elapsed = time.monotonic() - began
+                # The last word is the finish, or the one answer to a question
+                # still waiting for it. Not "answer" as such: let through any
+                # number of times, that was a way to hold a place in the queue
+                # for ever past the edge meant to end exactly that.
+                last_word = kind == "finish" or (
+                    kind == "answer" and sess.asked is not None and sess.answer is None)
+                if elapsed > HARD_SECONDS + LAST_WORD_SECONDS:
+                    break
+                if elapsed > HARD_SECONDS and not last_word:
                     if not over_time:
                         over_time = True
                         await ws.send_json({"type": "error", "code": "SESSION_LIMIT"})

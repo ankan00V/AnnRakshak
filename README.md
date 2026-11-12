@@ -133,7 +133,7 @@ backend/            FastAPI app (port 8010)
   kb/               48 targets with EPPO codes, 48 advisories, 25 cues, 30 pesticides,
                     risk rules, IMD rainfall normals, MoSPI pesticide baseline,
                     ICAR technologies, KCC signals, Krishi's 55 topics
-  tests/            619 tests for the guarantees above (7 skip off Postgres)
+  tests/            620 tests for the guarantees above (7 skip off Postgres)
   seed.py           demo districts, farms and officers
   demo_story.py     plays a history through the real API on held-out ICAR photos
 frontend/landing/   React 19 + Vite: landing (/), farmer PWA (/app),

@@ -1003,10 +1003,11 @@ def test_a_walk_past_its_time_can_still_be_finished_and_is_not_held_for_ever(cli
         ws.send_json({"type": "start", "lang": "en", "mode": "video"})
         token = ws.receive_json()["resume"]
         read_video(ws, range(1070, 1074))
-        monkeypatch.setattr(router, "HARD_SECONDS", -10_000)  # long, long past it
+        monkeypatch.setattr(router, "HARD_SECONDS", -1)       # just past the edge
         ws.send_json({"type": "ping"})
         assert ws.receive_json()["code"] == "SESSION_LIMIT"   # told once
-        ws.send_json({"type": "ping"})                         # and then let go
+        monkeypatch.setattr(router, "HARD_SECONDS", -10_000)  # and now long, long past it
+        ws.send_json({"type": "ping"})                         # let go
     with client.websocket_connect("/api/live/1") as ws:
         ws.send_json({"type": "resume", "token": token})
         assert ws.receive_json()["code"] == "RESUME_UNKNOWN", "a call that can only time out was held"
@@ -1074,3 +1075,31 @@ def test_the_second_that_was_in_flight_when_the_line_dropped_is_read_once():
     assert (s.frames, s.kept, len(s.marks)) == (2, 2, 2)
     blur_retry = s.on_frame(leaf(1102), b"c", ok, at=32.5)  # a second look is not a repeat
     assert blur_retry["counted"] and s.frames == 3
+
+
+def test_past_the_edge_only_a_real_last_word_is_taken(client, monkeypatch):
+    """Past the time limit the finish, and an answer to a question actually
+    waiting, are still taken. Anything else — an answer to nothing, or the
+    same answer over and over — is not a way to keep the place in the queue."""
+    import app.routers.live as router
+
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "en", "mode": "video"})
+        ws.receive_json()
+        read_video(ws, range(1120, 1124))
+        monkeypatch.setattr(router, "HARD_SECONDS", -1)
+        ws.send_json({"type": "answer", "cue_id": "nothing", "answer": "yes"})   # no question was asked
+        assert ws.receive_json()["code"] == "SESSION_LIMIT"
+        ws.send_json({"type": "answer", "cue_id": "nothing", "answer": "yes"})
+        with pytest.raises(Exception):  # noqa: B017, PT011  let go
+            ws.receive_json()
+
+    monkeypatch.setattr(router, "HARD_SECONDS", 600)
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "en", "mode": "video"})
+        ws.receive_json()
+        read_video(ws, range(1130, 1134))
+        monkeypatch.setattr(router, "HARD_SECONDS", -1 - router.LAST_WORD_SECONDS - 5)
+        ws.send_json({"type": "finish"})                   # even the finish, once the grace is spent
+        with pytest.raises(Exception):  # noqa: B017, PT011
+            ws.receive_json()
