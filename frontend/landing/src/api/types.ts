@@ -708,6 +708,29 @@ export interface LiveFrameReply {
   advanced: boolean
   live: { top: { target: string; name: string; confidence: number }[] } | null
   guide: LiveGuide
+  /** Video mode: what this frame came to. */
+  mark?: LiveMark
+}
+
+/** What one frame of a video came to: 'h' a healthy reading, 'p' a problem
+ *  glimpsed, 'c' a clear close-up with no model to read it, 'o' another crop,
+ *  'x' passed over (dark, blurred, too far, the same view again, not a crop). */
+export type LiveMark = 'h' | 'p' | 'c' | 'o' | 'x'
+
+/** How the looking itself went, kept with the result. */
+export interface LiveReading {
+  mode: 'walk' | 'video'
+  /** Walk: views the farmer could not get. */
+  skipped?: string[]
+  /** Video: frames read, frames that passed the quality gate, frames the model could read. */
+  read?: number
+  clear?: number
+  kept?: number
+  why_thin?: string | null
+  /** Video: [seconds into the file, mark] for every frame read, in order. */
+  marks?: [number, LiveMark][]
+  /** What the camera mostly showed, when it was not this field's crop. */
+  other_crop: { crop: string; name: string; views: number; text: string } | null
 }
 
 export interface LiveFinding {
@@ -718,6 +741,8 @@ export interface LiveFinding {
   confidence: number
   problem_id: number
   evidence?: string[]
+  /** Video: seconds into the file where this was seen. */
+  moments?: number[]
   advisory?: Advisory
   settled_by_answer?: boolean
   reason?: string
@@ -735,6 +760,7 @@ export interface LiveSummary {
   model_version: string
   photo_model: boolean
   speech: string
+  reading: LiveReading
 }
 
 // --- Weather, notices and notifications -------------------------------------

@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   AlertTriangle, CameraOff, CheckCircle2, CloudSun, Droplets, Eye, Leaf, Loader2, MapPin, Monitor, ScanSearch,
-  Flashlight, ShieldAlert, SkipForward, Sprout, Stethoscope, Upload, Video, Volume2, VolumeX, X,
+  Flashlight, ShieldAlert, SignalLow, SkipForward, Sprout, Stethoscope, Upload, Video, Volume2, VolumeX, X,
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../../api/client'
-import type { LiveContext, LiveFrameReply, LiveGuide, LiveSummary, TargetView } from '../../api/types'
+import type { LiveContext, LiveFrameReply, LiveGuide, LiveMark, LiveSummary, TargetView } from '../../api/types'
 import { useAsync, useCarryable } from '../../lib/hooks'
 import { Speaker } from '../../lib/speaker'
 import type { Grabber } from '../../lib/videoframes'
@@ -24,7 +24,12 @@ type Source = 'camera' | 'video'
 const FRAME_EVERY_MS = 650   // ~1.5 frames/s, each ~20-40 KB: works on a 3G/4G link
 const FRAME_MAX_SIDE = 512
 const INFLIGHT_TIMEOUT_MS = 6000
-const FINISH_TIMEOUT_MS = 25000
+/** How long to wait for the result once it is asked for. Longer than the
+ *  server can take to give it: a save that waits on a busy database pool (up
+ *  to thirty seconds), or a reconnection waiting for a save already under way
+ *  on the line it replaced. Timing out first told the farmer their walk was
+ *  lost while it was being written. */
+const FINISH_TIMEOUT_MS = 45000
 const MIN_FRAME_SIDE = 64        // a stopped or starting track gives 0-2 px frames
 const GRAB_EVERY_S = 1           // one frame a second out of an uploaded video
 /** What the server says a thin video hit, and the sentence the farmer gets for
@@ -44,6 +49,10 @@ const WHY_VIDEO: Record<string, string> = {
  *  tries. A field edge with one bar drops a socket often; walking the whole
  *  field again because of it is not an answer. */
 const REDIAL_WAITS_MS = [800, 1500, 3000, 5000, 8000]
+/** Drops one call will ride out in all, however quickly each was mended. A
+ *  line that falls over every time it is picked up is not a bad patch of
+ *  signal, and dialling it for ever only keeps a farmer standing in a field. */
+const MAX_DROPS = 12
 /** A view that has not advanced in this long is one the farmer may simply not
  *  be able to get: offer them the way past it rather than coach forever. */
 const STUCK_MS = 20000
@@ -51,7 +60,49 @@ const STUCK_MS = 20000
  *  whether to send a case: without it, thinking looks exactly like a phone that
  *  has gone flat, and the server lets the call go. */
 const PING_EVERY_MS = 20000
-const MAX_UPLOAD_FRAMES = 200    // the walk needs ~16 good frames; the server stops at 600
+const MAX_UPLOAD_FRAMES = 260    // three minutes at one a second, and room for second looks
+/** A second whose sampled instant was motion-blurred usually has a sharp frame
+ *  half a second later: a hand-held phone smears while it moves and settles
+ *  when it stops. One second look, only when the server called the first one
+ *  blurred — it can add a readable frame and never takes one away. */
+const RETRY_BLUR_S = 0.5
+/** On a slow link a frame is sent smaller. Measured on 160 leaf photos from
+ *  the datasets, each against its own full-size reading by the real model: 384 px at quality 0.6 is 40% fewer bytes,
+ *  keeps the same top answer on 158 of them and passes the "is this a crop"
+ *  gate on 157 against 159. One step smaller (320 px, 0.5) loses twelve to
+ *  that gate, so there is no third tier. */
+const SLOW_FRAME_MAX_SIDE = 384
+const SLOW_RTT_MS = 2500         // replies slower than this: send smaller frames
+const FAST_RTT_MS = 1200         // and faster than this: go back to full size
+const SAVE_RETRIES = 2
+/** What each frame of a video came to, as a colour on its timeline. */
+const MARK_TONE: Record<LiveMark, string> = {
+  h: 'bg-leaf', c: 'bg-leaf', p: 'bg-ember', o: 'bg-sky-400', x: 'bg-white/25',
+}
+
+/** m:ss into a video. */
+function clock(at: number): string {
+  const s = Math.max(0, Math.round(at))
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}
+
+/** A tap you can feel. A farmer on a guided walk is looking at the leaf, not at
+ *  the phone, and in a field at noon cannot read the screen anyway: the buzz is
+ *  how they know a view counted without looking down. Not every phone has it. */
+function buzz(pattern: number | number[]) {
+  try {
+    navigator.vibrate?.(pattern)
+  } catch {
+    /* blocked until the page has been touched, or not there at all */
+  }
+}
+
+/** What is read aloud at the end. A video that gave nothing says which wall it
+ *  hit on the screen; someone who cannot read that screen has to hear it too. */
+function spoken(s: LiveSummary, t: (k: string) => string): string {
+  const why = s.reading?.why_thin
+  return why && WHY_VIDEO[why] && !s.reading.other_crop ? `${s.speech} ${t(WHY_VIDEO[why])}` : s.speech
+}
 
 function position(timeoutMs = 6000): Promise<GeolocationPosition | null> {
   return new Promise((resolve) => {
@@ -89,6 +140,10 @@ export default function Live() {
   const [stuck, setStuck] = useState(false)
   const [torch, setTorch] = useState<boolean | null>(null)   // null: this camera has no light
   const [videoCut, setVideoCut] = useState(false)      // longer than we watch
+  const [videoLen, setVideoLen] = useState(0)          // seconds of the file being read
+  const [marks, setMarks] = useState<[number, LiveMark][]>([])   // what each frame read so far came to
+  const [slow, setSlow] = useState(false)              // replies are slow: frames go smaller
+  const [dragging, setDragging] = useState(false)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -98,14 +153,22 @@ export default function Live() {
   const loopRef = useRef<number | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const grabRef = useRef<Grabber | null>(null)
-  const walk = useRef({ at: 0, pass: 0, frames: 0 })
+  const freshWalk = () => ({ at: 0, frames: 0, last: 0, retry: null as number | null, retried: false })
+  const walk = useRef(freshWalk())
+  /** Which reading of the file is current. Bumped whenever the line drops or
+   *  comes back: a frame still being cut from the video for the old line is
+   *  then thrown away, not sent alongside the new line's — two pumps used to
+   *  run from then on, sending every second twice and stopping half-way. */
+  const pumpGen = useRef(0)
   const resumeRef = useRef<string | null>(null)
-  const redial = useRef({ tries: 0, timer: 0 })
+  const redial = useRef({ tries: 0, timer: 0, drops: 0 })
   const wakeRef = useRef<WakeLockSentinel | null>(null)
   const closedRef = useRef<() => void>(() => undefined)
+  const messageRef = useRef<(ev: MessageEvent) => void>(() => undefined)
   const stepSince = useRef(0)
   const fresh = () => ({ seq: 0, inflight: false, sentAt: 0, capturing: false, photoModel: true,
-                         finishing: false, done: false, stepsDone: false, source: 'camera' as Source })
+                         finishing: false, done: false, stepsDone: false, source: 'camera' as Source,
+                         rtt: 0, slow: false, toExpert: false, saves: 0 })
   const st = useRef(fresh())
   const finishTimer = useRef<number | null>(null)
 
@@ -145,6 +208,9 @@ export default function Live() {
   }, [letSleep])
 
   useEffect(() => () => {
+    // Leaving the screen ends the call for good: nothing still on a timer —
+    // a redial, a second ask for the result — may pick it back up.
+    st.current.done = true
     stopSource()
     if (finishTimer.current) window.clearTimeout(finishTimer.current)
     if (wsRef.current) {
@@ -160,6 +226,11 @@ export default function Live() {
     st.current.done = true
     if (finishTimer.current) window.clearTimeout(finishTimer.current)
     stopSource()
+    // Hang up the line being given up on, rather than leave it open for the
+    // server to notice in a minute and a half.
+    const ws = wsRef.current
+    wsRef.current = null
+    if (ws && ws.readyState <= WebSocket.OPEN) ws.close()
     speakerRef.current?.stop()
     setAsk(null)
     setExpertChoice(false)
@@ -167,17 +238,26 @@ export default function Live() {
     setPhase('error')
   }, [stopSource, t])
 
+  /** Ask for the result. Also how it is asked for again: after a save that
+   *  failed, and after the line dropped while the answer was on its way. */
+  const askForSummary = useCallback(() => {
+    const ws = wsRef.current
+    if (!ws || ws.readyState !== WebSocket.OPEN) return false
+    ws.send(JSON.stringify({ type: 'finish', send_to_expert: st.current.toExpert }))
+    if (finishTimer.current) window.clearTimeout(finishTimer.current)
+    finishTimer.current = window.setTimeout(lost, FINISH_TIMEOUT_MS)
+    return true
+  }, [lost])
+
   const finish = useCallback((sendToExpert: boolean) => {
     if (st.current.finishing) return
     st.current.finishing = true
     st.current.capturing = false
+    st.current.toExpert = sendToExpert
     setPhase('finishing')
     speakerRef.current?.stop()
-    const ws = wsRef.current
-    if (!ws || ws.readyState !== WebSocket.OPEN) return lost()
-    ws.send(JSON.stringify({ type: 'finish', send_to_expert: sendToExpert }))
-    finishTimer.current = window.setTimeout(lost, FINISH_TIMEOUT_MS)
-  }, [lost])
+    if (!askForSummary()) lost()
+  }, [askForSummary, lost])
 
   const sendFrame = useCallback(() => {
     const s = st.current
@@ -189,11 +269,19 @@ export default function Live() {
     const now = Date.now()
     if (s.inflight && now - s.sentAt < INFLIGHT_TIMEOUT_MS) return
     if (now - s.sentAt < FRAME_EVERY_MS) return
-    const scale = Math.min(1, FRAME_MAX_SIDE / Math.max(v.videoWidth, v.videoHeight))
+    if (s.inflight && !s.slow) {
+      // The last frame was never answered in time. Its reply, if it comes, is
+      // for an old frame and is not timed — so a link this bad would otherwise
+      // never be noticed as slow at all.
+      s.rtt = INFLIGHT_TIMEOUT_MS
+      s.slow = true
+      setSlow(true)
+    }
+    const scale = Math.min(1, (s.slow ? SLOW_FRAME_MAX_SIDE : FRAME_MAX_SIDE) / Math.max(v.videoWidth, v.videoHeight))
     c.width = Math.round(v.videoWidth * scale)
     c.height = Math.round(v.videoHeight * scale)
     c.getContext('2d')!.drawImage(v, 0, 0, c.width, c.height)
-    const data = c.toDataURL('image/jpeg', 0.72).split(',')[1]
+    const data = c.toDataURL('image/jpeg', s.slow ? 0.6 : 0.72).split(',')[1]
     s.seq += 1
     s.inflight = true
     s.sentAt = now
@@ -222,22 +310,36 @@ export default function Live() {
     const s = st.current
     const w = walk.current
     if (!g || s.source !== 'video' || !s.capturing || s.finishing) return
+    const gen = pumpGen.current
     // Loops rather than recurses: a position the decoder cannot give us is
     // stepped over, not treated as the end of the video.
     for (;;) {
-      if (w.frames >= MAX_UPLOAD_FRAMES || w.at > g.duration - 0.01) return endVideo()
-      const at = w.at
-      w.at = at + GRAB_EVERY_S
+      // A second look at a second the server called blurred comes before the
+      // next second, and is the only thing allowed past the end of the count.
+      const again = w.retry
+      w.retry = null
+      if (again == null && (w.frames >= MAX_UPLOAD_FRAMES || w.at > g.duration - 0.01)) return endVideo()
+      const at = again ?? w.at
       setWatched(Math.min(1, at / g.duration))
       const data = await g.grab(at)
       const ws = wsRef.current
-      if (!s.capturing || s.finishing || !ws || ws.readyState !== WebSocket.OPEN) return
+      if (gen !== pumpGen.current || !s.capturing || s.finishing || !ws || ws.readyState !== WebSocket.OPEN) {
+        // The line went while this frame was being cut. Nothing has moved on:
+        // the same second is read again once the call is back.
+        w.retry = again
+        return
+      }
+      if (again == null) w.at = at + GRAB_EVERY_S
       if (!data) continue
       w.frames += 1
+      w.last = at
+      w.retried = again != null
       s.seq += 1
       s.inflight = true
       s.sentAt = Date.now()
-      ws.send(JSON.stringify({ type: 'frame', seq: s.seq, data }))
+      // Where in the file this frame is from: it is how the result can say
+      // "seen at 0:12" and the farmer can go back and look.
+      ws.send(JSON.stringify({ type: 'frame', seq: s.seq, data, at: Math.round(at * 10) / 10 }))
       return
     }
   }, [endVideo])
@@ -254,17 +356,60 @@ export default function Live() {
       setRedialling(false)
       setStuck(false)
       stepSince.current = Date.now()
+      // The line dropped while the answer was on its way back. The walk was
+      // held; ask for the answer again rather than walk any of it twice.
+      if (st.current.finishing) {
+        askForSummary()
+        return
+      }
       setPhase('live')
+      // Back from a drop after every view was in — the farmer is reading the
+      // look-alike question, or deciding whether to send photos. Sending
+      // frames again would have the server announce the walk done a second
+      // time, and that second "done" finished the call underneath the
+      // question, throwing their answer away.
+      if (st.current.stepsDone) return
       st.current.capturing = true
       // Coming back from a drop, the step is the one they were already on:
       // repeat it, so they know what to point at without reading the screen.
       void sp?.prompt(m.guide.text)
-      if (st.current.source === 'video') void pumpVideo()
+      if (st.current.source === 'video') {
+        pumpGen.current += 1
+        void pumpVideo()
+      }
     } else if (m.type === 'frame') {
       const r = m as LiveFrameReply
-      st.current.inflight = false
+      const s = st.current
+      // How long the reply took, for the frame just sent and no other: a reply
+      // to an older frame says nothing about the link now.
+      if (r.seq === s.seq && s.sentAt) {
+        const took = Date.now() - s.sentAt
+        s.rtt = s.rtt ? s.rtt * 0.7 + took * 0.3 : took
+        const nowSlow = s.slow ? s.rtt > FAST_RTT_MS : s.rtt > SLOW_RTT_MS
+        if (nowSlow !== s.slow) {
+          s.slow = nowSlow
+          setSlow(nowSlow)
+        }
+      }
+      // A late reply to an older frame frees nothing: the frame in flight is
+      // still in flight. Clearing it here let two frames ride at once and,
+      // since no reply then matched the newest frame, the link was never
+      // timed again and stayed "slow" for the rest of the walk. What the late
+      // reply says is still shown — the server answers frames in order, so it
+      // is the latest word on the walk.
+      if (r.seq === s.seq) s.inflight = false
       setQuality(r.quality)
       if (r.counted) setFlash((f) => f + 1)
+      if (s.source === 'camera' && r.counted) buzz(r.advanced ? [40, 60, 40] : 25)
+      if (s.source === 'video') {
+        const w = walk.current
+        if (r.mark) setMarks((prev) => [...prev, [w.last, r.mark!]])
+        const g = grabRef.current
+        if (r.quality && !r.quality.ok && r.quality.hint === 'hold_steady' && !w.retried
+            && g && w.last + RETRY_BLUR_S < g.duration) {
+          w.retry = w.last + RETRY_BLUR_S
+        }
+      }
       if (r.live?.top?.length) {
         const top = r.live.top[0]
         const healthy = top.target.endsWith('_healthy')
@@ -297,7 +442,7 @@ export default function Live() {
       stopSource()
       setSummary(m.summary)
       setPhase('summary')
-      void sp?.prompt(m.summary.speech)
+      void sp?.prompt(spoken(m.summary, t))
     } else if (m.type === 'guide') {
       // A view was skipped: the walk has moved on to the next one.
       setGuide(m.guide)
@@ -311,9 +456,26 @@ export default function Live() {
       setGuide(m.guide)
       void sp?.prompt(m.guide.text)
     } else if (m.type === 'error') {
-      st.current.inflight = false
+      if (m.seq == null || m.seq === st.current.seq) st.current.inflight = false
       if (m.code === 'SESSION_LIMIT') finish(false)
-      else if (m.code === 'RESUME_UNKNOWN') {
+      else if (m.code === 'SAVE_FAILED') {
+        // Nothing was written and the walk is still held: ask again, a little
+        // later each time, before telling anybody their walk is gone.
+        const run = st.current
+        if (finishTimer.current) window.clearTimeout(finishTimer.current)
+        if (run.saves >= SAVE_RETRIES) lost()
+        else {
+          run.saves += 1
+          // This call's retry, and only this call's: a farmer who has since
+          // given up and started again must not have the new call finished
+          // or ended by the old one's timer.
+          window.setTimeout(() => {
+            if (st.current === run && !run.done && !askForSummary()) lost()
+          }, 1500 * run.saves)
+        }
+      } else if (m.code === 'BAD_MESSAGE') {
+        /* ours are well formed; nothing to do about one that was not */
+      } else if (m.code === 'RESUME_UNKNOWN') {
         // The walk was waiting too long, or came back to a different server.
         resumeRef.current = null
         lost()
@@ -324,7 +486,8 @@ export default function Live() {
         setPhase('error')
       } else if (st.current.source === 'video') void pumpVideo()  // skip the bad frame, keep going
     }
-  }, [finish, lost, pumpVideo, stopSource, t])
+  }, [askForSummary, finish, lost, pumpVideo, stopSource, t])
+  useEffect(() => { messageRef.current = onMessage }, [onMessage])
 
   // A language change takes effect at once: mid-call the server switches the
   // guidance and context; after the call the summary is re-rendered from what was saved.
@@ -344,17 +507,23 @@ export default function Live() {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws'
     const ws = new WebSocket(`${proto}://${location.host}/api/live/${farmId}`)
     wsRef.current = ws
-    ws.onopen = () => open(ws)
-    ws.onmessage = onMessage
-    ws.onclose = () => closedRef.current()   // also fires after onerror
+    // Only the call's current socket speaks for it. A socket left behind — the
+    // one a "call dropped" screen never closed, which the server only lets go
+    // ninety seconds later — used to land its close on whatever call came
+    // next and set that one redialling, or end it. And the handler is read at
+    // the moment of each message, not captured when the socket opened, so a
+    // language switch mid-call is heard in the words of the summary too.
+    ws.onopen = () => { if (wsRef.current === ws) open(ws) }
+    ws.onmessage = (e) => { if (wsRef.current === ws) messageRef.current(e) }
+    ws.onclose = () => { if (wsRef.current === ws) closedRef.current() }   // also fires after onerror
     return ws
-  }, [farmId, onMessage])
+  }, [farmId])
 
   /** Dial back in and ask for the walk we were on. The camera is left running
    *  throughout: the farmer is still standing in front of the same leaf. */
   const redialNow = useCallback(() => {
     const token = resumeRef.current
-    if (!token || st.current.finishing || st.current.done) return
+    if (!token || st.current.done) return
     socket((ws) => ws.send(JSON.stringify({ type: 'resume', token })))
   }, [socket])
 
@@ -363,12 +532,31 @@ export default function Live() {
    *  before telling the farmer their walk is gone. */
   const dropped = useCallback(() => {
     const s = st.current
-    if (s.done || s.finishing) return
-    if (s.source !== 'camera' || !resumeRef.current || redial.current.tries >= REDIAL_WAITS_MS.length) {
-      return lost()
+    if (s.done) return
+    redial.current.drops += 1
+    if (!resumeRef.current || redial.current.tries >= REDIAL_WAITS_MS.length
+        || redial.current.drops > MAX_DROPS) return lost()
+    // A frame that was on its way when the line went may never have arrived:
+    // go back to it, so the second of video it came from is not skipped.
+    if (s.source === 'video' && s.inflight) {
+      const w = walk.current
+      // A second look is asked for again as a second look; a regular second
+      // puts the reading back on it. Rewinding the clock to a half-second
+      // second look used to shift every later frame half a second off the grid.
+      if (w.retried) w.retry = w.last
+      else {
+        w.retry = null
+        w.at = Math.min(w.at, w.last)
+      }
+      w.frames = Math.max(0, w.frames - 1)
     }
     s.capturing = false
     s.inflight = false
+    pumpGen.current += 1
+    // While the line is being got back, the wait for the result is paused:
+    // the redials are bounded on their own, and a result held on the server
+    // is asked for again the moment the line is back.
+    if (finishTimer.current) window.clearTimeout(finishTimer.current)
     setRedialling(true)
     const wait = REDIAL_WAITS_MS[redial.current.tries]
     redial.current.tries += 1
@@ -440,13 +628,16 @@ export default function Live() {
     setError(null)
     st.current = fresh()
     st.current.source = from
-    walk.current = { at: 0, pass: 0, frames: 0 }
+    walk.current = freshWalk()
     setSource(from)
     setWatched(0)
+    setMarks([])
+    setVideoLen(0)
+    setSlow(false)
     setRedialling(false)
     setStuck(false)
     resumeRef.current = null
-    redial.current = { tries: 0, timer: 0 }
+    redial.current = { tries: 0, timer: 0, drops: 0 }
     setVideoCut(false)
     setTally({})
     setAsk(null)
@@ -469,23 +660,48 @@ export default function Live() {
 
   const start = async () => {
     begin('camera')
+    // This attempt, so that anything still on its way when the farmer backs
+    // out can tell it has been left behind. Without it the camera opened after
+    // they had already hung up — light on, nobody watching — and a call was
+    // then dialled for a screen that was no longer there.
+    const run = st.current
+    const gone = () => run.done || st.current !== run
     const where = position()
     try {
-      streamRef.current = await navigator.mediaDevices.getUserMedia({
+      const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       })
-    } catch {
-      setError(t('liveNoCamera'))
+      if (gone()) {
+        stream.getTracks().forEach((tr) => tr.stop())
+        return
+      }
+      streamRef.current = stream
+    } catch (e) {
+      if (gone()) return
+      // "Camera not available" is three different problems with three different
+      // things to do about them: a permission refused once is refused silently
+      // ever after, and nobody finds that setting unprompted.
+      const name = e instanceof DOMException ? e.name : ''
+      setError(t(name === 'NotAllowedError' || name === 'SecurityError' ? 'liveCamDenied'
+        : name === 'NotReadableError' || name === 'AbortError' ? 'liveCamBusy' : 'liveNoCamera'))
       setPhase('error')
       return
     }
     // another app taking the camera, or the OS revoking it, ends the track without an error
     streamRef.current.getVideoTracks()[0]?.addEventListener('ended', () => {
-      if (st.current.finishing) return
+      if (st.current.finishing || st.current !== run) return
+      // Ended for good, before the line is let go — otherwise its close was
+      // read as a drop, the call redialled, and the farmer was put back into
+      // a "live" call with a black screen and a voice telling them where to
+      // point a camera that was no longer there.
+      run.done = true
       stopSource()
-      wsRef.current?.close()
-      setError(t('liveNoCamera'))
+      const ws = wsRef.current
+      wsRef.current = null
+      ws?.close()
+      speakerRef.current?.stop()
+      setError(t('liveCamBusy'))
       setPhase('error')
     })
     const track = streamRef.current.getVideoTracks()[0]
@@ -496,7 +712,9 @@ export default function Live() {
     v.srcObject = streamRef.current
     await v.play().catch(() => undefined)
     void keepAwake()
-    connect(await where, 'camera')
+    const pos = await where
+    if (gone()) return
+    connect(pos, 'camera')
     loopRef.current = window.setInterval(sendFrame, 150)
   }
 
@@ -505,19 +723,39 @@ export default function Live() {
    *  frames the walk asks for are sent, exactly as a phone sends them. */
   const startUpload = async (file: File) => {
     begin('video')
-    const where = position()
+    const run = st.current
     try {
       const g = await openVideo(file, videoRef.current!, FRAME_MAX_SIDE, 0.72)
+      if (run.done || st.current !== run) return g.close()   // backed out while it was opening
       grabRef.current = g
       setVideoCut(g.full > g.duration + 1)
+      setVideoLen(g.duration)
     } catch (e) {
+      if (run.done || st.current !== run) return
       const reason = e instanceof VideoError ? e.reason : 'unreadable'
       setError(t(reason === 'too_big' ? 'liveVideoBig' : reason === 'not_video' ? 'liveVideoNot' : 'liveVideoBad')
         .replace('{mb}', String(Math.round(MAX_VIDEO_BYTES / (1024 * 1024)))))
       setPhase('error')
       return
     }
-    connect(await where, 'video')
+    // No location is asked for: where this computer sits says nothing about
+    // a field that was filmed earlier. The field's own position is used.
+    connect(null, 'video')
+  }
+
+  /** Leave before there is anything to finish: the camera would not open, the
+   *  line would not connect. Marked done first, so the socket closing is not
+   *  read as a call that dropped. */
+  const hangUp = () => {
+    st.current.done = true
+    stopSource()
+    const ws = wsRef.current
+    if (ws) {
+      ws.onclose = null
+      ws.close()
+    }
+    speakerRef.current?.stop()
+    setPhase('intro')
   }
 
   const answer = (a: 'yes' | 'no' | 'unknown') => {
@@ -540,7 +778,7 @@ export default function Live() {
   const live = phase === 'starting' || phase === 'live' || phase === 'finishing'
 
   if (phase === 'summary' && summary) {
-    return <SummaryView s={summary} whyThin={source === 'video' ? guide?.why_thin ?? null : null}
+    return <SummaryView s={summary}
       onAgain={() => { setSummary(null); setPhase('intro') }} onDone={() => navigate('/app')} />
   }
 
@@ -588,11 +826,25 @@ export default function Live() {
               camera. A computer cannot, and its camera faces a desk, so there
               the walk is a video of the field — offering the webcam as well
               would only be a button that wastes the farmer's time. */}
-          <button onClick={carryable ? start : () => fileRef.current?.click()}
-            className="w-full min-h-[56px] rounded-full bg-leaf-deep text-cream text-base font-medium flex items-center justify-center gap-2 shadow-lg shadow-leaf-deep/25">
-            {carryable ? <Video className="w-5 h-5" /> : <Upload className="w-5 h-5" />}
-            {carryable ? t('liveStart') : t('liveUpload')}
-          </button>
+          <div
+            onDragOver={(e) => { if (!carryable) { e.preventDefault(); setDragging(true) } }}
+            onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false) }}
+            onDrop={(e) => {
+              if (carryable) return
+              e.preventDefault()
+              setDragging(false)
+              const f = e.dataTransfer.files?.[0]
+              if (f) void startUpload(f)
+            }}
+            className={carryable ? '' : `rounded-3xl border-2 border-dashed p-4 transition-colors ${
+              dragging ? 'border-leaf-deep bg-leaf/10' : 'border-soil-dark/20'}`}>
+            <button onClick={carryable ? start : () => fileRef.current?.click()}
+              className="w-full min-h-[56px] rounded-full bg-leaf-deep text-cream text-base font-medium flex items-center justify-center gap-2 shadow-lg shadow-leaf-deep/25">
+              {carryable ? <Video className="w-5 h-5" /> : <Upload className="w-5 h-5" />}
+              {carryable ? t('liveStart') : t('liveUpload')}
+            </button>
+            {!carryable && <p className="mt-2 text-center text-xs text-soil-dark/50">{t('liveDropHere')}</p>}
+          </div>
           <input ref={fileRef} type="file" accept="video/*" className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0]
@@ -624,7 +876,9 @@ export default function Live() {
             )}
             {torch !== null && (
               <button onClick={() => { void flipTorch() }} aria-label={t('liveTorch')} aria-pressed={torch}
-                className={`w-9 h-9 rounded-full flex items-center justify-center ${torch ? 'bg-ochre text-soil-dark' : 'bg-white/15'}`}>
+                className={`w-9 h-9 rounded-full flex items-center justify-center ${torch ? 'bg-ochre text-soil-dark' : 'bg-white/15'} ${
+                  // "Too dark" is not advice while the phone is holding the only lamp there is.
+                  !torch && quality?.hint === 'too_dark' ? 'ring-2 ring-ochre animate-pulse' : ''}`}>
                 <Flashlight className="w-4 h-4" />
               </button>
             )}
@@ -644,6 +898,7 @@ export default function Live() {
               <span className="mt-1 block h-1 rounded-full bg-white/25">
                 <span className="block h-1 rounded-full bg-ochre transition-[width] duration-200" style={{ width: `${Math.round(watched * 100)}%` }} />
               </span>
+              <Timeline marks={marks} length={videoLen} className="mt-1.5" />
             </div>
           )}
           {guide?.step && (
@@ -651,7 +906,7 @@ export default function Live() {
               <p className="mt-3 text-[11px] uppercase tracking-wide text-white/60">
                 {t('liveStep').replace('{i}', String(guide.index + 1)).replace('{n}', String(guide.total))}
               </p>
-              <p className="mt-0.5 text-lg font-semibold leading-snug">{guide.text}</p>
+              <p aria-live="polite" className="mt-0.5 text-lg font-semibold leading-snug">{guide.text}</p>
               {guide.need ? (
                 <div className="mt-2 flex gap-1.5">
                   {Array.from({ length: guide.need }).map((_, i) => (
@@ -673,6 +928,11 @@ export default function Live() {
                 {ctx.location.source === 'gps'
                   ? t('liveGps').replace('{m}', String(Math.round(ctx.location.accuracy_m ?? 0)))
                   : t('liveFarmLoc')}
+              </span>
+            )}
+            {slow && source === 'camera' && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-ochre/90 text-soil-dark px-2 py-0.5">
+                <SignalLow className="w-3 h-3" /> {t('liveSlowNet')}
               </span>
             )}
           </div>
@@ -702,7 +962,7 @@ export default function Live() {
             </p>
           )}
           {phase === 'live' && source === 'camera' && quality && (
-            <p className={`mx-auto w-fit rounded-full px-3 py-1 text-sm font-medium ${quality.ok ? 'bg-leaf/90' : 'bg-ochre/90 text-soil-dark'}`}>
+            <p role="status" className={`mx-auto w-fit rounded-full px-3 py-1 text-sm font-medium ${quality.ok ? 'bg-leaf/90' : 'bg-ochre/90 text-soil-dark'}`}>
               {quality.ok ? t('liveKeep') : quality.hint_text}
             </p>
           )}
@@ -726,7 +986,7 @@ export default function Live() {
             </div>
           )}
           <div className="flex justify-center">
-            <button onClick={() => (phase === 'live' ? finish(false) : (stopSource(), wsRef.current?.close(), setPhase('intro')))}
+            <button onClick={() => (phase === 'live' ? finish(false) : hangUp())}
               className="min-h-[48px] px-6 rounded-full bg-ember text-white font-medium flex items-center gap-2">
               <X className="w-4 h-4" /> {t('liveEnd')}
             </button>
@@ -737,13 +997,20 @@ export default function Live() {
           <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-3 px-8 text-center">
             <Loader2 className="w-8 h-8 animate-spin text-ochre" />
             <p className="text-sm">{t('liveRedial')}</p>
-            <p className="text-xs text-white/60">{t('liveRedialStay')}</p>
+            {source === 'camera' && <p className="text-xs text-white/60">{t('liveRedialStay')}</p>}
           </div>
         )}
         {(phase === 'starting' || phase === 'finishing') && (
           <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-ochre" />
             <p className="text-sm">{phase === 'starting' ? t('liveStarting') : t('liveAnalysing')}</p>
+            {/* A line that will not connect can take a browser a minute to give
+                up on. This is over the End button, so it needs its own way out. */}
+            {phase === 'starting' && (
+              <button onClick={hangUp} className="mt-2 min-h-[44px] px-5 rounded-full border border-white/40 text-sm font-medium flex items-center gap-2">
+                <X className="w-4 h-4" /> {t('liveEnd')}
+              </button>
+            )}
           </div>
         )}
 
@@ -778,6 +1045,25 @@ export default function Live() {
   )
 }
 
+/** A video, as a strip: one tick per frame read, placed where in the file it
+ *  came from and coloured by what it came to. It is the difference between
+ *  "2 clear close-ups" and seeing that both were in the first ten seconds and
+ *  the rest of the walk down the row gave nothing. */
+function Timeline({ marks, length, className = '', light = false }: {
+  marks: [number, LiveMark][]; length: number; className?: string; light?: boolean
+}) {
+  const end = Math.max(length, ...marks.map(([at]) => at), 1)
+  return (
+    <span aria-hidden className={`relative block h-2.5 rounded-full overflow-hidden ${light ? 'bg-soil-dark/10' : 'bg-white/10'} ${className}`}>
+      {marks.map(([at, mark], i) => (
+        <span key={i} style={{ left: `${(at / end) * 100}%` }}
+          className={`absolute top-0 h-full w-[3px] -translate-x-1/2 rounded-full ${
+            mark === 'x' && light ? 'bg-soil-dark/20' : MARK_TONE[mark]}`} />
+      ))}
+    </span>
+  )
+}
+
 const VERDICT = {
   all_good: { tone: 'bg-leaf-deep text-cream', icon: CheckCircle2, key: 'verdict_all_good' },
   risk: { tone: 'bg-ochre text-soil-dark', icon: AlertTriangle, key: 'verdict_risk' },
@@ -791,8 +1077,8 @@ const VERDICT = {
 
 const LEVEL_TONE = { high: 'ember', medium: 'ochre', low: 'neutral' } as const
 
-function SummaryView({ s, whyThin, onAgain, onDone }: {
-  s: LiveSummary; whyThin: string | null; onAgain: () => void; onDone: () => void
+function SummaryView({ s, onAgain, onDone }: {
+  s: LiveSummary; onAgain: () => void; onDone: () => void
 }) {
   const { t, lang } = useFarmer()
   const v = VERDICT[s.verdict]
@@ -802,6 +1088,30 @@ function SummaryView({ s, whyThin, onAgain, onDone }: {
   const moist = c.soil.moisture
   const seenTargets = new Set(s.seen.map((x) => x.target))
   const [allRisks, setAllRisks] = useState(false)
+  const [zoom, setZoom] = useState<{ src: string; name: string } | null>(null)
+  // Kept with the result, not remembered from the call: it has to survive a
+  // language switch, a reload, and being opened again next week.
+  const reading = s.reading
+  const whyThin = reading?.why_thin ?? null
+  const marks = reading?.marks ?? []
+  const readable = marks.filter(([, m]) => m !== 'x').length
+  const zoomFrom = useRef<HTMLElement | null>(null)
+  const zoomClose = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (!zoom) return
+    // A screen reader is told a dialog opened by landing in it, and the page
+    // underneath stops scrolling; closing goes back to the photo it came from.
+    zoomClose.current?.focus()
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setZoom(null) }
+    window.addEventListener('keydown', esc)
+    return () => {
+      window.removeEventListener('keydown', esc)
+      document.body.style.overflow = overflow
+      zoomFrom.current?.focus()
+    }
+  }, [zoom])
   const pending = c.risks.filter((r) => !seenTargets.has(r.target))
   const risks = allRisks ? pending : pending.slice(0, 3)
 
@@ -816,7 +1126,7 @@ function SummaryView({ s, whyThin, onAgain, onDone }: {
               <h1 className="text-2xl font-semibold leading-tight">{t(v.key)}</h1>
             </div>
           </div>
-          <ListenButton text={s.speech} lang={lang} label={t('listen')} stopLabel={t('stop')} compact tone="light" />
+          <ListenButton text={spoken(s, t)} lang={lang} label={t('listen')} stopLabel={t('stop')} compact tone="light" />
         </div>
         {/* A video that gave almost nothing knows which wall it hit, and the
             general advice is wrong for most of them: telling somebody whose
@@ -824,7 +1134,11 @@ function SummaryView({ s, whyThin, onAgain, onDone }: {
             close to a leaf, in daylight" sends them out to film the same
             unusable thing again. Where the reading says why, it replaces the
             general line rather than sitting under it. */}
-        {whyThin && WHY_VIDEO[whyThin] ? (
+        {reading?.other_crop ? (
+          // Read well enough — as a crop this field is not growing. Neither
+          // "could not see your plants" nor a refilming tip is true of that.
+          <p className="mt-3 text-sm leading-snug opacity-90">{reading.other_crop.text}</p>
+        ) : whyThin && WHY_VIDEO[whyThin] ? (
           <p className="mt-3 text-sm leading-snug opacity-90">{t(WHY_VIDEO[whyThin])}</p>
         ) : (s.verdict === 'unclear' || s.verdict === 'no_model') && (
           <p className="mt-3 text-sm leading-snug opacity-90">
@@ -841,6 +1155,43 @@ function SummaryView({ s, whyThin, onAgain, onDone }: {
           <p className="mt-2 text-xs opacity-80">{t('liveFar').replace('{km}', String(c.location.km_from_farm))}</p>
         )}
       </section>
+
+      {/* How much was actually looked at. A verdict on top of forty clear
+          close-ups and one on top of two are different claims, and the screen
+          used to show them identically. */}
+      {reading?.mode === 'video' && marks.length > 0 && (
+        <Card className="p-4">
+          <p className="text-[11px] uppercase tracking-wide text-soil-dark/50 flex items-center gap-1">
+            <Video className="w-3 h-3" /> {t('liveReadTitle')}
+          </p>
+          <p className="mt-1 text-sm">
+            {t('liveReadLine').replace('{k}', String(readable)).replace('{n}', String(marks.length))}
+          </p>
+          <Timeline marks={marks} length={0} light className="mt-2" />
+          <div className="mt-1 flex justify-between text-[10px] text-soil-dark/40">
+            <span>0:00</span><span>{clock(Math.max(...marks.map(([at]) => at)))}</span>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-soil-dark/70">
+            {marks.some(([, m]) => m === 'h' || m === 'c') && (
+              <span className="inline-flex items-center gap-1"><i className="w-2 h-2 rounded-full bg-leaf" /> {t('liveMarkOk')}</span>
+            )}
+            {marks.some(([, m]) => m === 'p') && (
+              <span className="inline-flex items-center gap-1"><i className="w-2 h-2 rounded-full bg-ember" /> {t('liveMarkProblem')}</span>
+            )}
+            {marks.some(([, m]) => m === 'x') && (
+              <span className="inline-flex items-center gap-1"><i className="w-2 h-2 rounded-full bg-soil-dark/20" /> {t('liveMarkSkip')}</span>
+            )}
+            {marks.some(([, m]) => m === 'o') && reading.other_crop && (
+              <span className="inline-flex items-center gap-1"><i className="w-2 h-2 rounded-full bg-sky-400" /> {reading.other_crop.name}</span>
+            )}
+          </div>
+        </Card>
+      )}
+      {reading?.mode === 'walk' && (reading.skipped?.length ?? 0) > 0 && (
+        <p className="rounded-2xl bg-ochre/15 px-3 py-2 text-xs text-soil-dark/80">
+          {t('liveSkippedN').replace('{n}', String(reading.skipped!.length))}
+        </p>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <Card className="p-3">
@@ -895,8 +1246,18 @@ function SummaryView({ s, whyThin, onAgain, onDone }: {
               </div>
               {x.evidence && x.evidence.length > 0 && (
                 <div className="mt-2 flex gap-2">
-                  {x.evidence.map((u) => <img key={u} src={u} alt="" className="w-16 h-16 rounded-xl object-cover" />)}
+                  {x.evidence.map((u) => (
+                    <button key={u} onClick={(e) => { zoomFrom.current = e.currentTarget; setZoom({ src: u, name: x.name }) }}
+                      className="rounded-xl overflow-hidden focus-visible:ring-2 focus-visible:ring-leaf-deep">
+                      <img src={u} alt={x.name} className="w-16 h-16 object-cover" />
+                    </button>
+                  ))}
                 </div>
+              )}
+              {x.moments && x.moments.length > 0 && (
+                <p className="mt-2 text-xs text-soil-dark/60">
+                  {t('liveSeenAt')}: {x.moments.map(clock).join(' · ')}
+                </p>
               )}
               {x.advisory && (
                 <div className="mt-2 space-y-1.5 text-sm">
@@ -918,9 +1279,14 @@ function SummaryView({ s, whyThin, onAgain, onDone }: {
         <section className="space-y-2">
           <h2 className="text-sm font-semibold">{t('livePossible')}</h2>
           {s.possible.map((x) => (
-            <Card key={x.target} className="p-3 flex items-center justify-between gap-2">
-              <span className="text-sm font-medium">{x.name}</span>
-              {x.case && <Pill tone="sky">~{x.case.eta_minutes} min</Pill>}
+            <Card key={x.target} className="p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium">{x.name}</span>
+                {x.case && <Pill tone="sky">~{x.case.eta_minutes} min</Pill>}
+              </div>
+              {x.moments && x.moments.length > 0 && (
+                <p className="mt-1 text-xs text-soil-dark/60">{t('liveSeenAt')}: {x.moments.map(clock).join(' · ')}</p>
+              )}
             </Card>
           ))}
         </section>
@@ -968,6 +1334,20 @@ function SummaryView({ s, whyThin, onAgain, onDone }: {
         <button onClick={onAgain} className="min-h-[48px] rounded-full border border-soil-dark/20 bg-white text-sm font-medium">{t('liveAgain')}</button>
         <button onClick={onDone} className="min-h-[48px] rounded-full bg-leaf-deep text-cream text-sm font-medium">{t('liveDone')}</button>
       </div>
+
+      {/* The photograph the finding rests on, large enough to check against
+          the leaf in your hand. */}
+      {zoom && (
+        <div role="dialog" aria-modal="true" aria-label={zoom.name} onClick={() => setZoom(null)}
+          className="fixed inset-0 z-[80] bg-black/90 flex flex-col items-center justify-center p-4">
+          <img src={zoom.src} alt={zoom.name} className="max-w-full max-h-[80vh] rounded-2xl object-contain" />
+          <p className="mt-3 text-sm text-white">{zoom.name}</p>
+          <button ref={zoomClose} onClick={() => setZoom(null)} aria-label={t('liveClosePhoto')}
+            className="absolute top-4 right-4 w-11 h-11 rounded-full bg-white/15 text-white flex items-center justify-center">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      )}
     </div>
   )
 }

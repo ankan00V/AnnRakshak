@@ -3,7 +3,8 @@
 Protocol (JSON messages):
   client -> {"type": "start", "lang": "mr", "mode": "walk"|"video", "lat": ..., "lon": ...}
   server -> {"type": "ready", "context": {...}, "guide": {...}, "photo_model": true}
-  client -> {"type": "frame", "seq": 7, "data": "<base64 JPEG, <=400 KB>"}
+  client -> {"type": "frame", "seq": 7, "data": "<base64 JPEG, <=400 KB>", "at": 12.0}
+             ("at": seconds into the file, video only — where a finding was seen)
   server -> {"type": "frame", "seq": 7, "quality": {...}, "counted": bool, "advanced": bool,
              "live": {"top": [...]} | null, "guide": {...}}
   server -> {"type": "ask", "cue_id", "question", "candidates"}      (at most once)
@@ -13,7 +14,9 @@ Protocol (JSON messages):
   client -> {"type": "finish", "send_to_expert": false}
   server -> {"type": "summary", "summary": {...}}  and closes.
 
-A disconnect before "finish" saves nothing. Frames are decoded in memory and
+A disconnect before "finish" saves nothing, but the session waits a few minutes
+for the caller to dial back in ({"type": "resume", "token": ...}) — a walk and a
+video alike. Frames are decoded in memory and
 dropped; only evidence frames for a finding are written, as problem photos.
 
 Two sources feed the same machinery. A phone walks the field and is guided view
@@ -29,6 +32,8 @@ import asyncio
 import base64
 import binascii
 import contextlib
+import logging
+import math
 import secrets
 import time
 from dataclasses import dataclass
@@ -64,9 +69,47 @@ OPENING_SECONDS = 15
 #: let go whatever it claims to be doing, so a stream of pings cannot hold a
 #: place in the queue for ever.
 HARD_SECONDS = MAX_SECONDS + 180
+#: Messages that are not messages — not JSON, not an object — a call will put
+#: up with before it is let go. A phone on a bad link garbles the odd one; a
+#: client that sends nothing else is not a call.
+MAX_BAD_MESSAGES = 20
+#: The longest position in a file a frame may claim to come from. The client
+#: reads three minutes; this is only what stops a made-up number being stored.
+MAX_AT_SECONDS = 3600.0
 from app.i18n import LANGS  # noqa: E402
 
 T = TypeVar("T")
+log = logging.getLogger(__name__)
+
+
+def _number(v: object, lo: float, hi: float) -> float | None:
+    """`v` as a finite number within [lo, hi], or None.
+
+    What arrives on the socket is whatever the other end chose to send, and
+    JSON as Python reads it allows NaN, Infinity and true where a number was
+    expected. A latitude of NaN goes on to be rounded, stored and handed to a
+    weather service; it is cheaper to refuse it at the door."""
+    if isinstance(v, bool) or not isinstance(v, int | float):
+        return None
+    try:
+        f = float(v)          # a 400-digit integer is valid JSON and no float
+    except OverflowError:
+        return None
+    return f if math.isfinite(f) and lo <= f <= hi else None
+
+
+async def _receive(ws: WebSocket, seconds: float) -> dict | None:
+    """The next message, or None for something that was not one.
+
+    receive_json raises on text that is not JSON and on a binary frame, and a
+    list or a bare string parses perfectly well and then has no .get. Any of
+    them used to end the call with an unhandled error — and, because the error
+    skipped the parking below, took the farmer's walk with it."""
+    try:
+        msg = await asyncio.wait_for(ws.receive_json(), seconds)
+    except (ValueError, KeyError):
+        return None
+    return msg if isinstance(msg, dict) else None
 
 
 @contextmanager
@@ -98,12 +141,21 @@ def _db() -> Iterator[Session]:
 #:
 #: Each parked call holds its evidence frames — three per problem, three
 #: close-ups — so a couple of megabytes at worst, and the number of them is
-#: capped. They live in this worker's memory: with more than one worker a
-#: reconnection may land elsewhere and find nothing, which is simply today's
-#: behaviour, so nothing is lost by trying.
+#: capped, in all and per caller. They live in this worker's memory: with more
+#: than one worker a reconnection may land elsewhere and find nothing, which is
+#: simply today's behaviour, so nothing is lost by trying.
 _parked: dict[str, "_Parked"] = {}
 RESUME_SECONDS = 180
 MAX_PARKED = 24
+#: Held calls one caller may have at once. Calls are capped per caller while
+#: they run; without this, the same account could open, drop and re-open its
+#: way through every held place and push out a farmer's real walk.
+MAX_PARKED_PER_CALLER = 3
+#: Answers that were saved but may not have arrived, kept apart from the walks
+#: above. Every finished call leaves one, and none of them may cost a dropped
+#: walk its place.
+_answered: dict[str, "_Parked"] = {}
+MAX_ANSWERED = 64
 
 
 @dataclass
@@ -115,21 +167,44 @@ class _Parked:
     ctx: dict
     lang: str
     spent: float
+    #: A call that was saved, kept only so its answer can be given again. The
+    #: line that drops in the second between the save and the summary arriving
+    #: used to leave the farmer told their walk was lost, with the result of it
+    #: sitting in their history.
+    summary: dict | None = None
+    #: Every token this call can be picked up with. Usually one; two while a
+    #: reconnection has been handed a new token but not yet shown it arrived.
+    aliases: tuple[str, ...] = ()
+
+
+def _drop_held(table: dict[str, "_Parked"], p: "_Parked") -> None:
+    for t in p.aliases:
+        table.pop(t, None)
 
 
 def _sweep_parked(now: float) -> None:
-    for tok in [t for t, p in _parked.items() if now - p.at > RESUME_SECONDS]:
-        _parked.pop(tok, None)
-    while len(_parked) > MAX_PARKED:
-        _parked.pop(min(_parked, key=lambda t: _parked[t].at), None)
+    for table, cap in ((_parked, MAX_PARKED), (_answered, MAX_ANSWERED)):
+        for p in {id(p): p for p in table.values() if now - p.at > RESUME_SECONDS}.values():
+            _drop_held(table, p)
+        # Counted per call, not per token: one call held under two names is
+        # still one place.
+        held = sorted({id(p): p for p in table.values()}.values(), key=lambda p: p.at)
+        for p in held[:max(0, len(held) - cap)]:
+            _drop_held(table, p)
 
 
-def _park(farm_id: int, user_id: int | None, sess, ctx: dict, lang: str, spent: float) -> str:
-    now = time.monotonic()
-    _sweep_parked(now)
-    token = secrets.token_urlsafe(24)
-    _parked[token] = _Parked(now, farm_id, user_id, sess, ctx, lang, spent)
-    return token
+def _hold(tokens: tuple[str, ...], parked: "_Parked") -> None:
+    """Keep a call for dialling back in, under each token that may come back."""
+    parked.aliases = tuple(t for t in tokens if t)
+    table = _answered if parked.summary is not None else _parked
+    if table is _parked:
+        mine = sorted({id(p): p for p in _parked.values() if p.user_id == parked.user_id}.values(),
+                      key=lambda p: p.at)
+        for p in mine[:max(0, len(mine) - MAX_PARKED_PER_CALLER + 1)]:
+            _drop_held(_parked, p)
+    for t in parked.aliases:
+        table[t] = parked
+    _sweep_parked(parked.at)
 
 
 def _unpark(token: str, farm_id: int, user_id: int | None) -> "_Parked | None":
@@ -138,10 +213,57 @@ def _unpark(token: str, farm_id: int, user_id: int | None) -> "_Parked | None":
     to anybody else."""
     now = time.monotonic()
     _sweep_parked(now)
-    p = _parked.get(token)
-    if p is None or p.farm_id != farm_id or p.user_id != user_id or now - p.at > RESUME_SECONDS:
-        return None
-    return _parked.pop(token)
+    for table in (_parked, _answered):
+        p = table.get(token)
+        if p is None or p.farm_id != farm_id or p.user_id != user_id or now - p.at > RESUME_SECONDS:
+            continue
+        # Picked up once, under whichever name: none of them may pick it up
+        # again, or two connections would be driving the one walk.
+        _drop_held(table, p)
+        return p
+    return None
+
+
+@dataclass
+class _OnTheLine:
+    """A call whose connection is still open, as far as this server knows.
+
+    A phone that moves from wifi to its mobile network leaves the old
+    connection half-open: nothing on it says it has gone, and the server only
+    finds out when it has heard nothing for a minute and a half. Its
+    reconnection arrives long before that, finds no held call — the walk is
+    still attached to the dead connection — and used to be told the walk was
+    gone. With this, the reconnection takes the call over instead."""
+    task: asyncio.Task
+    farm_id: int
+    user_id: int | None
+    gone: asyncio.Event
+    #: Saving: the answer is being written and must be let finish, not cut off.
+    saving: bool = False
+    #: Asked to hand over to a reconnection, rather than ended by anything else.
+    taken: bool = False
+
+
+_on_the_line: dict[str, _OnTheLine] = {}
+#: How long a reconnection waits for the connection it is replacing to let go:
+#: a save under way included (the pool waits up to thirty seconds for a
+#: connection), and then a little.
+TAKEOVER_SECONDS = 35.0
+
+
+async def _take_over(token: str, farm_id: int, user_id: int | None) -> None:
+    """If this token's call is still attached to an open connection, have that
+    connection hand it over, and wait until it has."""
+    line = _on_the_line.get(token)
+    if line is None or line.farm_id != farm_id or line.user_id != user_id:
+        return
+    deadline = time.monotonic() + TAKEOVER_SECONDS
+    while not line.gone.is_set() and time.monotonic() < deadline:
+        if not line.saving and not line.taken:
+            line.taken = True
+            line.task.cancel()
+        with contextlib.suppress(TimeoutError):
+            await asyncio.wait_for(line.gone.wait(), 0.2)
 
 
 _calls: Counter[int | None] = Counter()
@@ -232,11 +354,12 @@ async def live_ws(ws: WebSocket, farm_id: int):
     # charged as one: counting it would let anyone hold every place in the
     # queue just by opening connections and going quiet.
     try:
-        start = await asyncio.wait_for(ws.receive_json(), OPENING_SECONDS)
+        start = await _receive(ws, OPENING_SECONDS)
     except (TimeoutError, WebSocketDisconnect):
         with contextlib.suppress(Exception):
             await ws.close(code=1000)
         return
+    start = start or {}
     opening = start.get("type")
     if opening not in ("start", "resume"):
         await ws.send_json({"type": "error", "code": "EXPECTED_START"})
@@ -255,11 +378,14 @@ async def live_ws(ws: WebSocket, farm_id: int):
     # Set before the try, because a drop part-way through setting a call up
     # lands in the handler below with none of this assigned.
     sess, ctx, lang, resume_token, settled = None, {}, farm_lang, "", True
+    presented, heard, began = "", False, time.monotonic()
+    line = _OnTheLine(asyncio.current_task(), farm_id, user_id, asyncio.Event())
 
     with _one_more_call(user_id):
         try:
 
             if opening == "resume":
+                await _take_over(str(start.get("token") or ""), farm_id, user_id)
                 picked = _unpark(str(start.get("token") or ""), farm_id, user_id)
                 if picked is None:
                     # Too long ago, a different worker, or not theirs. Nothing is
@@ -267,14 +393,24 @@ async def live_ws(ws: WebSocket, farm_id: int):
                     await ws.send_json({"type": "error", "code": "RESUME_UNKNOWN"})
                     await ws.close()
                     return
+                if picked.summary is not None:
+                    # Already saved; only the answer went missing on the way.
+                    await ws.send_json({"type": "summary", "summary": picked.summary})
+                    await ws.close()
+                    return
                 sess, ctx, lang, spent = picked.sess, picked.ctx, picked.lang, picked.spent
+                presented = str(start.get("token"))
             else:
                 lang = start.get("lang") if start.get("lang") in LANGS else farm_lang
                 mode = "video" if start.get("mode") == "video" else "walk"
-                lat, lon = start.get("lat"), start.get("lon")
-                if not (isinstance(lat, int | float) and isinstance(lon, int | float)):
+                lat, lon = _number(start.get("lat"), -90, 90), _number(start.get("lon"), -180, 180)
+                # A video was filmed in the field and is being read at a desk.
+                # Where the desk is says nothing about the crop: the weather
+                # "right now" would be the town's, and a farmer at home would
+                # be told they are forty kilometres from their own field.
+                if lat is None or lon is None or mode == "video":
                     lat = lon = None
-                accuracy = start.get("accuracy")
+                accuracy = _number(start.get("accuracy"), 0, 1_000_000) if lat is not None else None
 
                 def begin(db: Session):
                     farm = db.get(Farm, farm_id)
@@ -287,13 +423,20 @@ async def live_ws(ws: WebSocket, farm_id: int):
             # What a dropped connection would come back with. Spent on first
             # use, so every reconnection is handed a fresh one.
             resume_token = secrets.token_urlsafe(24)
-            await ws.send_json({"type": "ready", "context": ctx, "guide": sess.guide(),
-                                "photo_model": sess.can_classify, "resume": resume_token,
-                                "resumed": opening == "resume"})
+            for t in (resume_token, presented):
+                if t:
+                    _on_the_line[t] = line
             # Time already spent carries across a reconnection, so a call cannot
             # be stretched past its limit by dropping and dialling back in.
             began, announced_done = time.monotonic() - spent, False
-            settled = False  # finished, or refused: nothing left worth parking
+            # From here the call is worth holding if the line goes — including
+            # while "ready" is still on its way. A walk taken off the shelf for
+            # a reconnection that drops again in that instant used to be held
+            # nowhere at all.
+            settled = False
+            await ws.send_json({"type": "ready", "context": ctx, "guide": sess.guide(),
+                                "photo_model": sess.can_classify, "resume": resume_token,
+                                "resumed": opening == "resume"})
 
             async def announce_done() -> None:
                 """Everything that is going to be looked at has been. Ask the Doubt
@@ -310,17 +453,33 @@ async def live_ws(ws: WebSocket, farm_id: int):
                 await ws.send_json({"type": "steps_done", "asked": bool(cue)})
                 announced_done = True
 
+            bad, over_time = 0, False
             while True:
                 try:
-                    msg = await asyncio.wait_for(ws.receive_json(), IDLE_SECONDS)
+                    msg = await _receive(ws, IDLE_SECONDS)
                 except TimeoutError:
                     break   # gone quiet: hold the walk, hand the place back
-                # Past this point a call is let go whatever it is sending. The
-                # frame limit below still lets a farmer at MAX_SECONDS finish
-                # and keep what they walked; this is the outside edge.
-                if time.monotonic() - began > HARD_SECONDS:
-                    break
+                if not heard and presented:
+                    _on_the_line.pop(presented, None)   # "ready", and its token, arrived
+                heard = True   # the other end is there, so "ready" reached it
+                if msg is None:
+                    bad += 1
+                    if bad > MAX_BAD_MESSAGES:
+                        break
+                    await ws.send_json({"type": "error", "code": "BAD_MESSAGE"})
+                    continue
                 kind = msg.get("type")
+                # Past this point a call is let go whatever it is sending —
+                # except the farmer's own last word. A walk finished slowly,
+                # over a long look-alike question, used to be refused at the
+                # very end: the finish was dropped at this gate, the walk was
+                # held, handed back, and refused again until the phone gave up.
+                if time.monotonic() - began > HARD_SECONDS and kind not in ("finish", "answer"):
+                    if not over_time:
+                        over_time = True
+                        await ws.send_json({"type": "error", "code": "SESSION_LIMIT"})
+                        continue
+                    break
                 if kind == "frame":
                     if sess.frames >= MAX_FRAMES or time.monotonic() - began > MAX_SECONDS:
                         await ws.send_json({"type": "error", "code": "SESSION_LIMIT"})
@@ -339,7 +498,8 @@ async def live_ws(ws: WebSocket, farm_id: int):
                         await ws.send_json({"type": "error", "code": "BAD_FRAME", "seq": msg.get("seq")})
                         continue
                     out = await run_in_threadpool(sess.on_frame, img, jpeg,
-                                                  live.classify if sess.can_classify else None)
+                                                  live.classify if sess.can_classify else None,
+                                                  _number(msg.get("at"), 0, MAX_AT_SECONDS))
                     await ws.send_json({"type": "frame", "seq": msg.get("seq")} | out)
                     if sess.done:
                         await announce_done()
@@ -371,12 +531,33 @@ async def live_ws(ws: WebSocket, farm_id: int):
                             return None
                         return live.finish(db, kb, farm, sess, ctx, lang, to_expert)
 
-                    summary = await _in_db(save)
+                    try:
+                        # Not to be cut off by a reconnection mid-write: it
+                        # waits for this instead (see _take_over).
+                        line.saving = True
+                        try:
+                            summary = await asyncio.shield(_in_db(save))
+                        finally:
+                            line.saving = False
+                    except asyncio.CancelledError:
+                        raise
+                    except Exception:  # noqa: BLE001
+                        # The database blinked at the one moment that mattered.
+                        # Nothing was written (the session rolled back), and the
+                        # walk is still here in memory — so say so and stay on
+                        # the line. Ending the call would throw away five
+                        # minutes in a field over a connection reset.
+                        log.exception("live: could not save the call for farm %s", farm_id)
+                        await ws.send_json({"type": "error", "code": "SAVE_FAILED"})
+                        continue
                     settled = True
                     if summary is None:
                         await ws.send_json({"type": "error", "code": "NOT_ALLOWED"})
                         await ws.close(code=1008)
                         return
+                    # Held for a few minutes under the token the phone already
+                    # has, in case this send is the one that does not arrive.
+                    _hold((resume_token,), _Parked(time.monotonic(), farm_id, user_id, None, {}, lang, 0.0, summary))
                     await ws.send_json({"type": "summary", "summary": summary})
                     await ws.close()
                     return
@@ -389,14 +570,54 @@ async def live_ws(ws: WebSocket, farm_id: int):
                     await ws.send_json({"type": "pong"})
         except WebSocketDisconnect:
             pass  # nothing was written, so there is nothing to undo
-
-        # Dropped, gone quiet, or simply out of time. Either way the walk itself
-        # is worth something: a farmer halfway down a field on a patchy network
-        # should not have to start again at the gate, so the session waits a few
-        # minutes for them to dial back in.
-        if not settled and sess is not None and sess.mode == "walk" and sess.good_frames:
+        except asyncio.CancelledError:
+            if not line.taken:
+                raise   # the server is stopping, not a reconnection
+            # A reconnection is taking this call over: hold it for that, below.
+            # The cancel was ours and has been answered; without taking it
+            # back, the timeouts awaited below would read it as still pending.
+            task = asyncio.current_task()
+            if task is not None:
+                task.uncancel()
+        except Exception:  # noqa: BLE001
+            # Something broke that was not the network — a frame the model
+            # choked on, say. The call ends, but not the walk: it is parked
+            # below like any other drop, and the phone dials straight back in.
+            log.exception("live: the call for farm %s ended on an error", farm_id)
+        finally:
+            # Every way out of a call comes through here, the early ones too:
+            # one that skipped this left its line registered as still open,
+            # and the next reconnection with its token sat waiting on a call
+            # that had already ended. Nothing in here waits, so nothing — a
+            # reconnection's takeover included — can interrupt it half-done.
+            #
+            # Dropped, gone quiet, or simply out of time: the walk itself is
+            # worth something. A farmer halfway down a field on a patchy
+            # network should not have to start again at the gate, so the
+            # session waits a few minutes for them to dial back in. A video is
+            # held the same way: three minutes of footage read to the last ten
+            # seconds is not something to make anybody sit through twice.
+            #
+            # Held under the token "ready" handed over — and, when nothing has
+            # been heard since, under the one the phone dialled in with too: a
+            # "ready" sent into a line that had already gone never told the
+            # phone its new token, and it will come back with the old one.
+            #
+            # Only a call with something in it is held — a frame that was worth
+            # reading — and only one that could still be finished: well past
+            # the outside edge, holding it would only hand back a call that can
+            # do nothing but run out of time again.
             now = time.monotonic()
-            _parked[resume_token] = _Parked(now, farm_id, user_id, sess, ctx, lang, now - began)
-            _sweep_parked(now)
+            if (not settled and sess is not None and sess.good_frames
+                    and now - began < HARD_SECONDS + RESUME_SECONDS):
+                tokens = (resume_token,) + ((presented,) if presented and not heard else ())
+                _hold(tokens, _Parked(now, farm_id, user_id, sess, ctx, lang, now - began))
+            for t, held in list(_on_the_line.items()):
+                if held is line:
+                    _on_the_line.pop(t, None)
+            line.gone.set()
+
         with contextlib.suppress(Exception):
-            await ws.close(code=1001)
+            # A connection that has gone half-open will not answer a close;
+            # do not wait on it.
+            await asyncio.wait_for(ws.close(code=1001), 2)
