@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Bell, BookmarkPlus, CheckSquare, Clock, Filter, Keyboard, Loader2, Search, Square, Timer, Users, X,
+  AlertTriangle, ArrowRight, ArrowUpDown, Bell, BookmarkPlus, CheckSquare, Clock, Filter, Keyboard, Loader2, Search, Square, Timer, Users, X,
 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../../api/client'
-import type { CaseBrief, CaseQuery } from '../../api/types'
+import type { CaseBrief, CaseListItem, CaseQuery } from '../../api/types'
 import { useAsync } from '../../lib/hooks'
 import { Card, ErrorBox } from '../../ui/kit'
 import { useToast } from '../../ui/Toast'
-import { PageHead } from '../panels'
+import { many, PageHead } from '../panels'
 import { useAuth } from '../../auth/AuthContext'
-import { CaseRow, CaseView, QueueSkeleton } from '../../expert/ExpertConsole'
+import { CaseView, QueueSkeleton, reasonText, RespondBy } from '../../expert/ExpertConsole'
 
 const VIEWS_KEY = 'ar.officer.views'
 const POLL_MS = 30000
@@ -213,112 +213,111 @@ export default function Queue() {
 
   const split = selected !== null
 
+  const field = 'min-h-[44px] w-full rounded-2xl bg-[#f8f6f0] px-3.5 text-[14px] ring-1 ring-soil-dark/10 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#4b8b3b]'
+  const chip = (on: boolean, tone = 'leaf') => `flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl px-4 text-[14px] font-medium ring-1 transition-colors ${
+    on ? (tone === 'ember' ? 'bg-[#fdf0ed] text-[#b5381c] ring-[#b5381c]/30' : 'bg-[#e3efd9] text-leaf-deep ring-[#4b8b3b]/40') : 'bg-white text-soil-dark/80 ring-soil-dark/10 hover:bg-[#f8f6f0]'}`
+
   return (
     <>
-      <PageHead title="Queue"
-        purpose="Every case a farmer escalated. Each arrives pre-packed: the photographs, the model's ranked guesses, the farmer's own answers, trap counts, the field's greenness and the alerts it has already had.">
-        <p className="text-[11px] text-soil-dark/50">
-          <kbd className="font-semibold">j</kbd>/<kbd className="font-semibold">k</kbd> walk ·
-          <kbd className="font-semibold"> a</kbd> take · <kbd className="font-semibold">s</kbd> set aside ·
-          <kbd className="font-semibold"> ?</kbd> keys
-        </p>
+      <PageHead title="Queue" purpose="Every case a farmer escalated, pre-packed: the photographs, the model's guesses, the farmer's own answers and the field's history.">
+        <button onClick={() => setShowKeys((v) => !v)}
+          className="flex min-h-[40px] items-center gap-2 rounded-full bg-white px-4 text-[13px] font-medium text-soil-dark/80 shadow-sm ring-1 ring-soil-dark/10 hover:bg-[#f8f6f0]">
+          <Keyboard className="h-4 w-4" aria-hidden /> Shortcuts
+        </button>
       </PageHead>
-    <div className={`grid gap-4 items-start ${split ? 'lg:grid-cols-[minmax(320px,400px)_1fr]' : ''}`}>
-      <div className="space-y-3">
-        <Card className="p-3 space-y-3">
-          <div className="flex rounded-full bg-cream/60 p-0.5 text-xs">
+    <div className={`grid items-start gap-5 ${split ? 'lg:grid-cols-[minmax(340px,420px)_1fr]' : ''}`}>
+      {/* With a case open, the list stays in view and scrolls on its own, so a
+          long case does not leave an empty column beside it. */}
+      <div className={`min-w-0 space-y-4 ${split ? 'no-scrollbar lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pb-4' : ''}`}>
+        <Card className="space-y-3 p-4 lg:p-5">
+          <div className="grid grid-cols-3 gap-1 rounded-full bg-[#f1ede2] p-1">
             {([['all', 'All'], ['mine', 'My desk'], ['unassigned', 'Unassigned']] as const).map(([k, label]) => (
               <button key={k} onClick={() => set('scope', k)}
-                className={`flex-1 rounded-full py-1.5 font-medium ${query.scope === k ? 'bg-leaf-deep text-cream' : 'text-soil-dark/60'}`}>
-                {label}
+                className={`min-h-[40px] rounded-full text-[14px] font-semibold transition-colors ${
+                  query.scope === k ? 'bg-[#1d4a2c] text-white shadow-sm' : 'text-soil-dark/70 hover:text-soil-dark'}`}>
+                {label}{query.scope === k && list.data ? ` (${rows.length})` : ''}
               </button>
             ))}
           </div>
 
           <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-soil-dark/40" />
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-soil-dark/70" aria-hidden />
             <input value={params.get('q') ?? ''} onChange={(e) => set('q', e.target.value)}
-              placeholder="Farmer, village or district"
-              className="w-full min-h-[38px] rounded-xl border border-soil-dark/15 bg-cream/40 pl-9 pr-3 text-sm" />
+              placeholder="Search by farmer, village or district" aria-label="Search cases"
+              className={`${field} pl-10`} />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <select value={params.get('district') ?? ''} onChange={(e) => set('district', e.target.value)}
-              className="min-h-[36px] rounded-xl border border-soil-dark/15 bg-cream/40 px-2 text-xs">
+          <div className={`grid gap-2 ${split ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-[1fr_1fr_auto_auto_auto]'}`}>
+            <select value={params.get('district') ?? ''} onChange={(e) => set('district', e.target.value)} aria-label="District" className={field}>
               <option value="">Every district</option>
               {districts.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
-            <select value={params.get('crop') ?? ''} onChange={(e) => set('crop', e.target.value)}
-              className="min-h-[36px] rounded-xl border border-soil-dark/15 bg-cream/40 px-2 text-xs">
+            <select value={params.get('crop') ?? ''} onChange={(e) => set('crop', e.target.value)} aria-label="Crop" className={field}>
               <option value="">Every crop</option>
-              {CROPS.map((c) => <option key={c} value={c}>{c}</option>)}
+              {CROPS.map((c) => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
             </select>
-          </div>
-
-          <div className="flex items-center justify-between gap-2">
-            <button onClick={() => set('overdue', query.overdue ? null : '1')}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium border ${
-                query.overdue ? 'bg-ember/10 text-ember border-ember/30' : 'border-soil-dark/15 text-soil-dark/70'}`}>
-              <Timer className="w-3.5 h-3.5" /> Past {SLA_HOURS} h
+            <button onClick={() => set('overdue', query.overdue ? null : '1')} className={chip(!!query.overdue, 'ember')}>
+              <Timer className="h-4 w-4" aria-hidden /> Past {SLA_HOURS} h
             </button>
-            <select value={params.get('status') ?? 'open'} onChange={(e) => set('status', e.target.value)}
-              className="min-h-[32px] rounded-full border border-soil-dark/15 bg-cream/40 px-2.5 text-xs">
+            <button onClick={() => set('sort', query.sort === 'newest' ? null : 'newest')} className={chip(query.sort === 'newest')}>
+              <ArrowUpDown className="h-4 w-4" aria-hidden /> {query.sort === 'newest' ? 'Newest' : 'Oldest'}
+            </button>
+            <select value={params.get('status') ?? 'open'} onChange={(e) => set('status', e.target.value)} aria-label="Status" className={field}>
               <option value="open">Open</option>
               <option value="resolved">Resolved</option>
               <option value="all">All</option>
             </select>
           </div>
 
-          {activeFilters.length > 0 && (
-            <button onClick={() => { setParams(new URLSearchParams(), { replace: true }); setPicked(new Set()) }}
-              className="flex items-center gap-1 text-xs text-soil-dark/60 hover:text-soil-dark">
-              <X className="w-3 h-3" /> Clear {activeFilters.length} filter{activeFilters.length === 1 ? '' : 's'}
-            </button>
+          {(activeFilters.length > 0 || views.length > 0) && (
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              {activeFilters.length > 0 && (
+                <button onClick={() => { setParams(new URLSearchParams(), { replace: true }); setPicked(new Set()) }}
+                  className="flex min-h-[34px] items-center gap-1 rounded-full bg-soil-dark/5 px-3 text-[13px] text-soil-dark/80 hover:bg-soil-dark/10">
+                  <X className="h-3.5 w-3.5" /> Clear {many(activeFilters.length, 'filter')}
+                </button>
+              )}
+              {views.map((v) => (
+                <button key={v.name} onClick={() => { setParams(new URLSearchParams(v.query), { replace: true }) }}
+                  className="min-h-[34px] rounded-full bg-white px-3 text-[13px] ring-1 ring-soil-dark/15 hover:ring-[#4b8b3b]/50">
+                  {v.name}
+                </button>
+              ))}
+              <button onClick={saveView}
+                className="flex min-h-[34px] items-center gap-1 rounded-full px-2 text-[13px] text-soil-dark/70 hover:text-soil-dark">
+                <BookmarkPlus className="h-4 w-4" /> Save this view
+              </button>
+            </div>
           )}
         </Card>
 
-        {(views.length > 0 || activeFilters.length > 0) && (
-          <div className="flex flex-wrap items-center gap-1.5 px-1">
-            {views.map((v) => (
-              <button key={v.name} onClick={() => { setParams(new URLSearchParams(v.query), { replace: true }) }}
-                className="rounded-full border border-soil-dark/15 bg-white px-2.5 py-1 text-xs hover:border-leaf/50">
-                {v.name}
-              </button>
-            ))}
-            <button onClick={saveView}
-              className="flex items-center gap-1 rounded-full px-2 py-1 text-xs text-soil-dark/60 hover:text-soil-dark">
-              <BookmarkPlus className="w-3.5 h-3.5" /> Save this view
-            </button>
-          </div>
-        )}
-
         {fresh > 0 && (
           <button onClick={() => { setFresh(0); list.reload() }}
-            className="w-full flex items-center justify-center gap-2 rounded-full bg-leaf-deep text-cream text-xs font-medium py-2">
-            <Bell className="w-3.5 h-3.5" /> {fresh} new case{fresh === 1 ? '' : 's'} — show
+            className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-[#2f6a39] text-[14px] font-semibold text-white">
+            <Bell className="h-4 w-4" /> {many(fresh, 'new case')} — show
           </button>
         )}
 
         {picked.size > 0 && (
-          <Card className="p-3 border-leaf/40 bg-leaf/5">
-            <p className="text-xs font-medium flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5" /> {picked.size} selected
+          <Card className="bg-[#eef6ea] p-4">
+            <p className="flex items-center gap-1.5 text-[14px] font-semibold">
+              <Users className="h-4 w-4" /> {picked.size} selected
             </p>
             {mayMoveOthers ? (
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 <button onClick={() => move(null)} disabled={busy}
-                  className="rounded-full bg-leaf-deep text-cream text-xs font-medium px-3 py-1.5 disabled:opacity-60 flex items-center gap-1.5">
-                  {busy && <Loader2 className="w-3 h-3 animate-spin" />} Route to whoever is freest
+                  className="flex min-h-[38px] items-center gap-1.5 rounded-full bg-[#2f6a39] px-4 text-[13px] font-semibold text-white disabled:opacity-60">
+                  {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Route to whoever is freest
                 </button>
                 {(officers.data ?? []).slice(0, 3).map((o) => (
                   <button key={o.user_id} onClick={() => move(o.user_id)} disabled={busy}
-                    className="rounded-full border border-soil-dark/20 text-xs px-3 py-1.5 disabled:opacity-60">
-                    → {o.name} <span className="text-soil-dark/50">({o.open_cases})</span>
+                    className="min-h-[38px] rounded-full bg-white px-4 text-[13px] ring-1 ring-soil-dark/15 disabled:opacity-60">
+                    → {o.name} <span className="text-soil-dark/70">({o.open_cases})</span>
                   </button>
                 ))}
               </div>
             ) : (
-              <p className="mt-2 text-xs text-soil-dark/65">
+              <p className="mt-2 text-[13px] text-soil-dark/75">
                 Only a supervisor — the Agriculture Officer or the KVK scientist — can hand these to
                 another desk. Open a case and press <span className="font-medium">Take it</span> to
                 put it on yours.
@@ -328,62 +327,55 @@ export default function Queue() {
         )}
 
         {showKeys && (
-          <Card className="p-3 text-xs text-soil-dark/75 space-y-1">
+          <Card className="space-y-1.5 p-4 text-[13px] text-soil-dark/80">
             <p><kbd className="font-semibold">j</kbd> / <kbd className="font-semibold">k</kbd> — next, previous case</p>
             <p><kbd className="font-semibold">a</kbd> — put it on my desk · <kbd className="font-semibold">s</kbd> — set aside until tomorrow</p>
             <p><kbd className="font-semibold">x</kbd> — pick for a bulk move · <kbd className="font-semibold">Esc</kbd> — close the case</p>
           </Card>
         )}
 
-        <div className="flex items-center justify-between px-1">
-          <span className="text-xs text-soil-dark/60 flex items-center gap-1.5">
-            <Filter className="w-3.5 h-3.5" />
-            {list.data ? `${rows.length} case${rows.length === 1 ? '' : 's'}` : 'Loading…'}
-          </span>
-          <span className="flex items-center gap-3">
-            <button onClick={() => set('snoozed', params.get('snoozed') ? null : '1')}
-              className={`flex items-center gap-1 text-xs ${params.get('snoozed') ? 'text-ochre font-medium' : 'text-soil-dark/60 hover:text-soil-dark'}`}>
-              <Clock className="w-3.5 h-3.5" /> Set aside
-            </button>
-            <button onClick={() => setShowKeys((v) => !v)} aria-label="Keyboard shortcuts"
-              className="text-xs text-soil-dark/60 hover:text-soil-dark flex items-center gap-1">
-              <Keyboard className="w-3.5 h-3.5" /> keys
-            </button>
-            {rows.length > 0 && (
-              <button onClick={() => setPicked(picked.size === rows.length ? new Set() : new Set(rows.map((c) => c.id)))}
-                className="text-xs text-soil-dark/60 hover:text-soil-dark flex items-center gap-1">
-                {picked.size === rows.length ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
-                Select all
+        <Card className="p-2 sm:p-3">
+          <div className="flex items-center justify-between px-2 pb-2 pt-1">
+            <span className="flex items-center gap-1.5 text-[14px] font-medium text-soil-dark/80">
+              <Filter className="h-4 w-4" aria-hidden />
+              {list.data ? many(rows.length, 'case') : 'Loading…'}
+            </span>
+            <span className="flex items-center gap-3">
+              <button onClick={() => set('snoozed', params.get('snoozed') ? null : '1')}
+                className={`flex items-center gap-1 text-[13px] ${params.get('snoozed') ? 'font-semibold text-[#9a6210]' : 'text-soil-dark/70 hover:text-soil-dark'}`}>
+                <Clock className="h-4 w-4" /> Set aside
               </button>
-            )}
-          </span>
-        </div>
+              {rows.length > 0 && (
+                <button onClick={() => setPicked(picked.size === rows.length ? new Set() : new Set(rows.map((c) => c.id)))}
+                  className="flex items-center gap-1 text-[13px] text-soil-dark/70 hover:text-soil-dark">
+                  {picked.size === rows.length ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                  Select all
+                </button>
+              )}
+            </span>
+          </div>
 
-        {list.error && <ErrorBox error={list.error} onRetry={list.reload} />}
-        {list.loading && !list.data && <QueueSkeleton />}
-        {list.data && rows.length === 0 && (
-          <Card className="p-6 text-center text-sm text-soil-dark/60">
-            Nothing matches. {activeFilters.length > 0 ? 'Try clearing a filter.' : 'The queue is clear.'}
-          </Card>
-        )}
+          {list.error && <ErrorBox error={list.error} onRetry={list.reload} />}
+          {list.loading && !list.data && <QueueSkeleton />}
+          {list.data && rows.length === 0 && (
+            <p className="m-2 rounded-2xl bg-[#f8f6f0] p-6 text-center text-[14px] text-soil-dark/75">
+              Nothing matches. {activeFilters.length > 0 ? 'Try clearing a filter.' : 'The queue is clear.'}
+            </p>
+          )}
 
-        <ul className={split ? 'space-y-2' : 'space-y-2 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0'}>
-          {rows.map((c) => (
-            <li key={c.id} className="flex items-start gap-2">
-              <button onClick={() => toggle(c.id)} aria-label={`Select case ${c.id}`}
-                className="mt-4 shrink-0 text-soil-dark/40 hover:text-leaf-deep">
-                {picked.has(c.id) ? <CheckSquare className="w-4 h-4 text-leaf-deep" /> : <Square className="w-4 h-4" />}
-              </button>
-              <span className="flex-1 min-w-0">
-                <CaseRow c={c} active={selected === c.id} onClick={() => setSelected(c.id)} />
-              </span>
-            </li>
-          ))}
-        </ul>
+          <ul className="divide-y divide-soil-dark/[0.06]">
+            {rows.map((c) => (
+              <li key={c.id}>
+                <QueueRow c={c} compact={split} active={selected === c.id} picked={picked.has(c.id)}
+                  onPick={() => toggle(c.id)} onOpen={() => setSelected(c.id)} />
+              </li>
+            ))}
+          </ul>
+        </Card>
       </div>
 
       {split && (
-        <div className="lg:sticky lg:top-20">
+        <div className="min-w-0">
           <CaseView id={selected!} onBack={() => setSelected(null)} onHandedOff={handedOff}
             onResolved={() => { list.reload() }} />
         </div>
@@ -393,3 +385,68 @@ export default function Queue() {
   )
 }
 
+const RISK = {
+  high: { cls: 'bg-[#fdf0ed] text-[#b5381c]', label: 'High risk' },
+  medium: { cls: 'bg-[#fdf5e6] text-[#9a6210]', label: 'Moderate' },
+  low: { cls: 'bg-[#eef6ea] text-[#2f6a39]', label: 'Low' },
+} as const
+
+/** "54 min ago", "3 h ago", "2 days ago". */
+function ago(iso: string | null) {
+  if (!iso) return ''
+  const m = (Date.now() - new Date(iso).getTime()) / 6e4
+  if (m < 60) return `${Math.max(1, Math.round(m))} min ago`
+  if (m < 48 * 60) return `${Math.round(m / 60)} h ago`
+  return `${Math.round(m / 1440)} days ago`
+}
+
+/** One case on the list: the photo, who and where, why it is here, how long it
+ *  has waited, and the way into it. */
+function QueueRow({ c, compact, active, picked, onPick, onOpen }: {
+  c: CaseListItem; compact: boolean; active: boolean; picked: boolean; onPick: () => void; onOpen: () => void
+}) {
+  const risk = RISK[(c.severity as keyof typeof RISK)] ?? RISK.medium
+  const hours = c.created_at ? (Date.now() - new Date(c.created_at).getTime()) / 3.6e6 : 0
+  const late = c.status === 'open' && hours > SLA_HOURS
+  return (
+    <div className={`flex items-center gap-3 rounded-2xl px-2 py-2.5 transition-colors ${active ? 'bg-[#e3efd9]' : 'hover:bg-[#f8f6f0]'}`}>
+      <button onClick={onPick} aria-label={`Select case ${c.id}`} aria-pressed={picked}
+        className="shrink-0 text-soil-dark/70 hover:text-leaf-deep">
+        {picked ? <CheckSquare className="h-5 w-5 text-leaf-deep" /> : <Square className="h-5 w-5" />}
+      </button>
+      <button onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+        <span className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-[#eef3e6]">
+          {c.photo && <img src={c.photo} alt="" loading="lazy" className="h-full w-full object-cover" />}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[15px] font-semibold">#{c.id} · {c.farmer_name}</span>
+          <span className="block truncate text-[13px] text-soil-dark/70">
+            <span className="capitalize">{c.crop}</span> · {c.district}
+            {c.model_top ? ` · ${c.model_top.name} ${Math.round((c.model_top.confidence ?? 0) * 100)}%` : ''}
+          </span>
+          <span className="mt-1 flex flex-wrap gap-1.5">
+            <span className="rounded-full bg-sky-50 px-2.5 py-0.5 text-[12px] font-medium text-sky-800">{reasonText(c.reason)}</span>
+            <span className={`rounded-full px-2.5 py-0.5 text-[12px] font-medium ${c.assigned_name ? 'bg-[#eef6ea] text-[#2f6a39]' : 'bg-[#fdf5e6] text-[#9a6210]'}`}>
+              {c.assigned_name ?? 'Unassigned'}
+            </span>
+            <RespondBy c={c} />
+          </span>
+        </span>
+      </button>
+      {!compact && (
+        <>
+          <span className={`hidden w-24 shrink-0 text-right text-[13px] tabular-nums md:block ${late ? 'font-semibold text-[#b5381c]' : 'text-soil-dark/70'}`}>
+            {ago(c.created_at)}
+          </span>
+          <span className={`hidden shrink-0 items-center gap-1 rounded-full px-3 py-1 text-[13px] font-semibold sm:inline-flex ${risk.cls}`}>
+            {c.severity === 'high' && <AlertTriangle className="h-3.5 w-3.5" aria-hidden />}{risk.label}
+          </span>
+          <button onClick={onOpen}
+            className="hidden min-h-[40px] shrink-0 items-center gap-1.5 rounded-full bg-[#1d4a2c] px-4 text-[14px] font-semibold text-white hover:bg-[#245a35] sm:flex">
+            Review <ArrowRight className="h-4 w-4" aria-hidden />
+          </button>
+        </>
+      )}
+    </div>
+  )
+}

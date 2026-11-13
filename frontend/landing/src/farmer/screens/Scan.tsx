@@ -1,12 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Camera, CheckCircle2, ImagePlus, Loader2, ScanLine, Video, X } from 'lucide-react'
+import {
+  ArrowRight, Camera, CheckCircle2, CloudOff, Focus, Hand, ImagePlus, Loader2, ScanLine, Sun, Video, X,
+} from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
-import { api } from '../../api/client'
-import { useAsync, useWide } from '../../lib/hooks'
-import { ErrorBox, Pill } from '../../ui/kit'
+import { api, ApiError } from '../../api/client'
+import type { ProblemView } from '../../api/types'
+import { useAsync } from '../../lib/hooks'
+import { EVENT, pendingPhotos, queuePhoto, type OutboxChange } from '../../lib/outbox'
+import { ErrorBox } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
 import DemoNotice, { useReadOnlyFarm } from '../components/DemoNotice'
-import { MAIN, SIDE, SPLIT } from '../layout'
+import ProblemRow from '../components/ProblemRow'
+import { PanelHead } from '../ui'
+import { PANEL } from '../tokens'
 
 /** Downscale on the phone before upload: field networks are slow and the model
  *  only needs ~300 px anyway. */
@@ -38,16 +44,20 @@ export default function Scan() {
   const { farmId, lang, t, setResult } = useFarmer()
   const demoFarm = useReadOnlyFarm()
   const navigate = useNavigate()
-  const wide = useWide()
-  const fileRef = useRef<HTMLInputElement>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
+  const galleryRef = useRef<HTMLInputElement>(null)
   const [blob, setBlob] = useState<Blob | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [step, setStep] = useState(0)
   const [error, setError] = useState<Error | null>(null)
+  const [saved, setSaved] = useState(false)
+  const [waiting, setWaiting] = useState(0)
   const [scenario, setScenario] = useState('')
   const home = useAsync(() => api.home(farmId!, lang), [farmId, lang], ['home', farmId!, lang].join(':'))
   const farm = home.data?.farm
+  const reloadHome = useRef(home.reload)
+  useEffect(() => { reloadHome.current = home.reload })
   // Unknown until Home loads: never claim the demo model before we know.
   const isStub = home.data?.model.is_stub ?? false
   // Sample photos are scaffolding for showing the app without a sick plant at
@@ -57,9 +67,7 @@ export default function Scan() {
   const sampleCrop = demoFarm?.crop ?? (farm?.is_demo ? farm.crop : null)
   const samples = useAsync(() => (sampleCrop ? api.samples(sampleCrop) : Promise.resolve([])),
     [sampleCrop])
-  // A handful, one per problem, not the whole scoring set: these are here so
-  // somebody without a sick plant to hand can see what an answer looks like.
-  // All two hundred of them is a slow screen and a worse explanation.
+  // A handful, one per problem, not the whole scoring set.
   const shown = useMemo(() => {
     const seen = new Set<string>()
     return (samples.data ?? []).filter((x) => !seen.has(x.true_class) && seen.add(x.true_class)).slice(0, 8)
@@ -76,11 +84,37 @@ export default function Scan() {
     return () => clearInterval(id)
   }, [busy, steps.length])
 
+  // Photos from this field still waiting for signal, kept current as the
+  // outbox sends them (the shell sends; this only counts).
+  useEffect(() => {
+    if (farmId == null) return
+    let on = true
+    const count = () => void pendingPhotos(farmId).then((p) => { if (on) setWaiting(p.length) }).catch(() => undefined)
+    count()
+    const changed = (e: Event) => {
+      count()
+      if ((e as CustomEvent<OutboxChange>).detail?.sent?.farmId === farmId) {
+        setSaved(false)
+        reloadHome.current()   // the answer joins "Your earlier photos"
+      }
+    }
+    window.addEventListener(EVENT, changed)
+    return () => {
+      on = false
+      window.removeEventListener(EVENT, changed)
+    }
+  }, [farmId])
+
   const pick = async (f: Blob) => {
     setError(null)
+    setSaved(false)
     const small = await shrink(f)
     setBlob(small)
     setPreview(URL.createObjectURL(small))
+  }
+  const clear = () => {
+    setBlob(null)
+    setPreview(null)
   }
 
   const run = async () => {
@@ -96,173 +130,71 @@ export default function Scan() {
       setResult(r)
       navigate('/app/result')
     } catch (e) {
+      // No signal at the edge of the field: keep the photo on the phone and
+      // send it when there is, rather than losing what they walked out to take.
+      if (e instanceof ApiError && e.status === 0 && !isStub) {
+        try {
+          await queuePhoto(farmId!, blob, lang)
+          clear()
+          setSaved(true)
+          setBusy(false)
+          return
+        } catch { /* storage refused: fall through to the error */ }
+      }
       setError(e as Error)
       setBusy(false)
     }
   }
 
-  const titleEl = (
-    <h1 className="font-instrument-serif text-3xl leading-tight">{t('takePhoto')}</h1>
-  )
-  const liveEl = (
-    <Link to="/app/live" className="flex items-center gap-3 rounded-2xl border border-leaf/30 bg-white p-3 text-sm">
-      <span className="shrink-0 w-9 h-9 rounded-full bg-ember/10 text-ember flex items-center justify-center"><Video className="w-4 h-4" /></span>
-      <span className="flex-1"><span className="font-medium">{t('liveCta')}</span><span className="block text-xs text-soil-dark/60">{t('liveTitle')}</span></span>
-      <span className="text-leaf-deep">→</span>
-    </Link>
-  )
-  const laterEl = farm && !farm.photo_diagnosis && (
-    <p className="text-sm rounded-2xl bg-sky-50 text-sky-900 p-3">{t('photoLater')}</p>
-  )
-  const frameEl = (
+  const inputs = (
     <>
-        <div className="relative aspect-square lg:aspect-[4/3] w-full rounded-3xl overflow-hidden bg-soil-dark">
-          {preview ? (
-            <>
-              <img src={preview} alt="" className="w-full h-full object-cover" />
-              {busy && (
-                <>
-                  <div className="absolute inset-0 bg-leaf-deep/40" />
-                  <div className="absolute inset-x-0 h-24 bg-gradient-to-b from-transparent via-ochre/60 to-transparent animate-[scan_1.6s_ease-in-out_infinite]" />
-                </>
-              )}
-              {!busy && (
-                <button
-                  onClick={() => {
-                    setBlob(null)
-                    setPreview(null)
-                  }}
-                  aria-label="Remove photo"
-                  className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </>
-          ) : (
-            <button onClick={() => fileRef.current?.click()} className="w-full h-full flex flex-col items-center justify-center gap-3 text-cream">
-              <span className="relative w-24 h-24 rounded-full border-2 border-dashed border-ochre/60 flex items-center justify-center">
-                <Camera className="w-10 h-10 text-ochre" />
-              </span>
-              <span className="text-base font-medium">{t('takePhoto')}</span>
-              <span className="text-xs text-cream/60 max-w-[240px] text-center">{t('retakeTips')}</span>
-            </button>
-          )}
-          <span aria-hidden className="pointer-events-none absolute inset-6 border-2 border-cream/20 rounded-2xl" />
-        </div>
-        <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0]
-            if (f) pick(f)
-            e.target.value = ''
-          }} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) void pick(f)
+          e.target.value = ''
+        }} />
+      <input ref={galleryRef} type="file" accept="image/*" className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) void pick(f)
+          e.target.value = ''
+        }} />
     </>
   )
-  const actionEl = (
-    busy ? (
-      <ol className="rounded-2xl bg-white border border-soil-dark/10 p-4 space-y-2">
-        {steps.map((s, i) => (
-          <li key={s} className={`flex items-center gap-2 text-sm transition-opacity ${i <= step ? 'opacity-100' : 'opacity-30'}`}>
-            {i < step ? <CheckCircle2 className="w-4 h-4 text-leaf" /> : i === step ? <Loader2 className="w-4 h-4 animate-spin text-ochre" /> : <ScanLine className="w-4 h-4" />}
-            {s}
-          </li>
-        ))}
-      </ol>
-    ) : preview ? (
-      <button onClick={run} className="w-full min-h-[56px] rounded-full bg-leaf-deep text-cream text-base font-medium flex items-center justify-center gap-2 shadow-lg shadow-leaf-deep/20">
-        <ScanLine className="w-5 h-5" />
-        {t('scan')}
-      </button>
-    ) : (
-      <button onClick={() => fileRef.current?.click()} className="w-full min-h-[52px] rounded-full border border-soil-dark/20 text-sm font-medium flex items-center justify-center gap-2 bg-white">
-        <ImagePlus className="w-4 h-4" />
-        {t('takePhoto')}
-      </button>
-    )
-  )
-  const stubEl = (
-    <>
-        {!busy && isStub && (
-          <div className="rounded-2xl border border-dashed border-ochre/50 p-3">
-            <p className="text-[11px] text-[#8a5a17]">{t('demoModel')}</p>
-            <div className="mt-2 flex gap-1.5 flex-wrap">
-              {SCENARIOS.map((s) => (
-                <button key={s.id} onClick={() => setScenario(s.id)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium ${scenario === s.id ? 'bg-ochre text-cream' : 'bg-white border border-soil-dark/15'}`}>
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-    </>
-  )
-  const samplesEl = (
-    <>
-        {!busy && (demoFarm ? true : !preview) && shown.length > 0 && (
-          <div>
-            <p className="text-xs text-soil-dark/50 mb-2">{t('samplesTitle')}</p>
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 lg:grid lg:grid-cols-4 lg:gap-3 lg:overflow-visible">
-              {shown.map((s) => {
-                const Frame = demoFarm ? 'span' : 'button'
-                return (
-                <Frame key={s.url}
-                  {...(demoFarm ? {} : { onClick: async () => pick(await (await fetch(s.url)).blob()) })}
-                  className="shrink-0 w-20 text-left lg:w-auto block">
-                  <span className="relative block">
-                    <img src={s.url} alt={s.true_class} className="w-20 h-20 lg:w-full lg:h-auto lg:aspect-square rounded-xl object-cover border border-soil-dark/10" loading="lazy" />
-                    {s.expected && s.expected !== 'advise' && (
-                      <span className={`absolute bottom-1 inset-x-1 rounded-md px-1 py-0.5 text-[8.5px] leading-tight font-semibold text-center ${EXPECT_TINT[s.expected]}`}>
-                        {t(`expect_${s.expected}`)}
-                      </span>
-                    )}
+
+  const samplesEl = !busy && (demoFarm ? true : !preview) && shown.length > 0 && (
+    <section className={`${PANEL} p-5`}>
+      <PanelHead title={t('samplesTitle')} />
+      <div className="mt-4 grid grid-cols-4 gap-2.5">
+        {shown.map((s) => {
+          const Frame = demoFarm ? 'span' : 'button'
+          return (
+            <Frame key={s.url}
+              {...(demoFarm ? {} : { onClick: async () => pick(await (await fetch(s.url)).blob()) })}
+              className="block text-left">
+              <span className="relative block">
+                <img src={s.url} alt={s.true_class} loading="lazy" className="aspect-square w-full rounded-2xl object-cover ring-1 ring-soil-dark/10" />
+                {s.expected && s.expected !== 'advise' && (
+                  <span className={`absolute inset-x-1 bottom-1 rounded-md px-1 py-0.5 text-center text-[9px] font-semibold leading-tight ${EXPECT_TINT[s.expected]}`}>
+                    {t(`expect_${s.expected}`)}
                   </span>
-                  <Pill className="mt-1 !text-[9px] !px-1.5">{s.true_class.replace(/^(rice|maize)_/, '').replace(/_/g, ' ')}</Pill>
-                </Frame>
-                )
-              })}
-            </div>
-          </div>
-        )}
-    </>
+                )}
+              </span>
+              <span className="mt-1 block truncate text-[11px] text-soil-dark/75">
+                {s.true_class.replace(/^(rice|maize|cotton|soybean)_/, '').replace(/_/g, ' ')}
+              </span>
+            </Frame>
+          )
+        })}
+      </div>
+    </section>
   )
 
-  // Desktop: the photo and its button on the left; the live call, notes and
-  // test photos beside it, on the same 8 | 4 grid as the other tab screens.
-  if (wide) {
-    if (demoFarm) {
-      return (
-        <div className="space-y-5">
-          {titleEl}
-          <DemoNotice title={t('demoScanTitle')} body={t('demoScanBody')} />
-          {samplesEl}
-        </div>
-      )
-    }
-    return (
-      <div className="space-y-6">
-        {titleEl}
-        <div className={SPLIT}>
-          <div className={`${MAIN} space-y-4`}>
-            {frameEl}
-            {actionEl}
-            {error && <ErrorBox error={error} />}
-          </div>
-          <aside className={`${SIDE} space-y-4`}>
-            {liveEl}
-            {laterEl}
-            {stubEl}
-            {samplesEl}
-          </aside>
-        </div>
-      </div>
-    )
-  }
-
+  // A shared demo field cannot take a photo: the samples are the screen.
   if (demoFarm) {
     return (
-      <div className="space-y-4">
-        {titleEl}
+      <div className="space-y-6">
         <DemoNotice title={t('demoScanTitle')} body={t('demoScanBody')} />
         {samplesEl}
       </div>
@@ -270,22 +202,200 @@ export default function Scan() {
   }
 
   return (
-    <div className="space-y-4">
-      {titleEl}
-
-      {liveEl}
-
-      {laterEl}
-
-      {frameEl}
-
-      {actionEl}
-
-      {error && <ErrorBox error={error} />}
-
-      {stubEl}
-
-      {samplesEl}
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="min-w-0 space-y-6">
+        {farm && !farm.photo_diagnosis && (
+          <p className="rounded-[20px] bg-sky-50 p-4 text-[15px] text-sky-950/85">{t('photoLater')}</p>
+        )}
+        {saved && (
+          <div role="status" className="flex items-start gap-3 rounded-[20px] bg-[#fbf0dc] p-4">
+            <CloudOff className="mt-0.5 h-6 w-6 shrink-0 text-[#8a5a17]" aria-hidden />
+            <div>
+              <p className="text-[16px] font-semibold text-[#7a4f12]">{t('scanSavedTitle')}</p>
+              <p className="mt-0.5 text-[15px] text-soil-dark/80">{t('scanSavedBody')}</p>
+            </div>
+          </div>
+        )}
+        <section className={`${PANEL} p-2`}>
+          <div className="relative aspect-[4/5] overflow-hidden rounded-[22px] bg-leaf-deep sm:aspect-[16/11]">
+            {preview ? (
+              <>
+                <img src={preview} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                {busy && (
+                  <>
+                    <div className="absolute inset-0 bg-leaf-deep/35" />
+                    <div className="absolute inset-x-0 h-24 bg-gradient-to-b from-transparent via-ochre/60 to-transparent motion-safe:animate-[scan_1.6s_ease-in-out_infinite]" />
+                  </>
+                )}
+                {!busy && (
+                  <button onClick={clear} aria-label={t('scanRemove')}
+                    className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white">
+                    <X className="h-5 w-5" />
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                {/* A leaf held up to the light: what the photo should look like. */}
+                <img src="/photos/leaf-dew.webp" alt="" width={950} height={442}
+                  className="absolute inset-0 h-full w-full object-cover" />
+                <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
+                <button onClick={() => cameraRef.current?.click()}
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 text-center text-white">
+                  <span className="flex h-24 w-24 items-center justify-center rounded-full bg-white/95 text-[#2f6a39] shadow-[0_12px_30px_-10px_rgba(0,0,0,0.6)] ring-8 ring-white/25">
+                    <Camera className="h-11 w-11" strokeWidth={1.8} aria-hidden />
+                  </span>
+                  <span>
+                    <span className="block font-instrument-serif text-[32px] leading-tight drop-shadow sm:text-[38px]">{t('takePhoto')}</span>
+                    <span className="mt-1 block text-[15px] text-white/90 drop-shadow">{t('takePhotoSub')}</span>
+                  </span>
+                </button>
+              </>
+            )}
+            {/* The corners of a viewfinder, so the leaf is put in the middle. */}
+            <span aria-hidden className="pointer-events-none absolute inset-5">
+              <span className="absolute left-0 top-0 h-8 w-8 rounded-tl-2xl border-l-[3px] border-t-[3px] border-white/80" />
+              <span className="absolute right-0 top-0 h-8 w-8 rounded-tr-2xl border-r-[3px] border-t-[3px] border-white/80" />
+              <span className="absolute bottom-0 left-0 h-8 w-8 rounded-bl-2xl border-b-[3px] border-l-[3px] border-white/80" />
+              <span className="absolute bottom-0 right-0 h-8 w-8 rounded-br-2xl border-b-[3px] border-r-[3px] border-white/80" />
+            </span>
+          </div>
+          {inputs}
+          <div className="p-3 sm:p-4">
+            {busy ? (
+              <ol className="space-y-2.5 rounded-[20px] bg-[#f5f7f1] p-4" aria-live="polite">
+                {steps.map((s, i) => (
+                  <li key={s} className={`flex items-center gap-2.5 text-[15px] transition-opacity ${i <= step ? 'opacity-100' : 'opacity-40'}`}>
+                    {i < step ? <CheckCircle2 className="h-5 w-5 text-[#4b8b3b]" />
+                      : i === step ? <Loader2 className="h-5 w-5 animate-spin text-ochre" /> : <ScanLine className="h-5 w-5" />}
+                    {s}
+                  </li>
+                ))}
+              </ol>
+            ) : preview ? (
+              <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                <button onClick={run}
+                  className="flex min-h-[56px] items-center justify-center gap-2 rounded-full bg-[#2f6a39] text-[17px] font-semibold text-white shadow-[0_12px_24px_-14px_rgba(29,74,44,0.8)] transition-colors hover:bg-[#2a5f33]">
+                  <ScanLine className="h-5 w-5" aria-hidden /> {t('scanCheck')}
+                </button>
+                <button onClick={() => cameraRef.current?.click()}
+                  className="flex min-h-[56px] items-center justify-center gap-2 rounded-full bg-[#eef3e6] px-6 text-[15px] font-semibold text-leaf-deep ring-1 ring-[#4b8b3b]/15 hover:bg-[#e6eedb]">
+                  <Camera className="h-5 w-5" aria-hidden /> {t('scanRetake')}
+                </button>
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button onClick={() => cameraRef.current?.click()}
+                  className="flex min-h-[56px] items-center justify-center gap-2 rounded-full bg-[#2f6a39] text-[17px] font-semibold text-white shadow-[0_12px_24px_-14px_rgba(29,74,44,0.8)] transition-colors hover:bg-[#2a5f33]">
+                  <Camera className="h-5 w-5" aria-hidden /> {t('scanOpenCamera')}
+                </button>
+                <button onClick={() => galleryRef.current?.click()}
+                  className="flex min-h-[56px] items-center justify-center gap-2 rounded-full bg-[#eef3e6] text-[15px] font-semibold text-leaf-deep ring-1 ring-[#4b8b3b]/15 hover:bg-[#e6eedb]">
+                  <ImagePlus className="h-5 w-5" aria-hidden /> {t('scanGallery')}
+                </button>
+              </div>
+            )}
+            {error && <div className="mt-3"><ErrorBox error={error} /></div>}
+            {waiting > 0 && !saved && (
+              <p className="mt-3 flex items-center gap-2 text-[14px] text-[#7a4f12]">
+                <CloudOff className="h-4 w-4 shrink-0" aria-hidden />
+                {t('scanWaiting').replace('{n}', String(waiting))}
+              </p>
+            )}
+          </div>
+        </section>
+        {!busy && isStub && (
+          <div className="rounded-[20px] border border-dashed border-ochre/50 p-4">
+            <p className="text-[13px] text-[#8a5a17]">{t('demoModel')}</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {SCENARIOS.map((s) => (
+                <button key={s.id} onClick={() => setScenario(s.id)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium ${scenario === s.id ? 'bg-ochre text-cream' : 'bg-white ring-1 ring-soil-dark/15'}`}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <Tips />
+      </div>
+      <aside className="min-w-0 space-y-6">
+        <LivePanel />
+        <RecentScans problems={home.data?.problems ?? []} />
+        {samplesEl}
+      </aside>
     </div>
+  )
+}
+
+/** Three things that decide whether a photo can be read at all. */
+function Tips() {
+  const { t } = useFarmer()
+  const tips = [
+    [Focus, t('scanTip1')],
+    [Sun, t('scanTip2')],
+    [Hand, t('scanTip3')],
+  ] as const
+  return (
+    <section className={`${PANEL} p-5 lg:p-6`}>
+      <h2 className="text-[20px] font-semibold tracking-tight sm:text-[22px]">{t('scanTipsTitle')}</h2>
+      <ul className="mt-4 grid gap-3 sm:grid-cols-3">
+        {tips.map(([Icon, text]) => (
+          <li key={text} className="flex items-center gap-3 rounded-[20px] bg-[#f5f7f1] p-3.5 sm:flex-col sm:items-start">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#e3efd9] text-[#2f6a39]">
+              <Icon className="h-6 w-6" aria-hidden />
+            </span>
+            <span className="text-[15px] leading-snug">{text}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+/** The other way to ask: show the field on a video call. */
+function LivePanel() {
+  const { t } = useFarmer()
+  return (
+    <Link to="/app/live"
+      className="group relative block overflow-hidden rounded-[28px] bg-[#1d4a2c] text-white shadow-[0_14px_30px_-16px_rgba(29,74,44,0.8)]">
+      <img src="/photos/panicle-closeup.webp" alt="" width={940} height={442} loading="lazy"
+        className="absolute inset-0 h-full w-full object-cover opacity-45" />
+      <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-[#1d4a2c] via-[#1d4a2c]/80 to-[#1d4a2c]/30" />
+      <div className="relative p-5">
+        <div className="flex items-start justify-between">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
+            <Video className="h-7 w-7" aria-hidden />
+          </span>
+          <span className="rounded-full bg-ember px-2.5 py-0.5 text-[12px] font-bold tracking-wide">LIVE</span>
+        </div>
+        <h2 className="mt-8 text-[22px] font-semibold leading-tight">{t('liveCta')}</h2>
+        <p className="mt-1.5 text-[15px] leading-snug text-white/85">{t('liveCtaSub')}</p>
+        <span className="mt-4 inline-flex min-h-[48px] items-center gap-2 rounded-full bg-white px-5 text-[15px] font-semibold text-[#1d4a2c] transition-transform group-hover:translate-x-0.5">
+          {t('scanStartLive')} <ArrowRight className="h-4 w-4" aria-hidden />
+        </span>
+      </div>
+    </Link>
+  )
+}
+
+/** What this field's earlier photos found, so a farmer can see an answer is
+ *  already waiting before taking another. */
+function RecentScans({ problems }: { problems: ProblemView[] }) {
+  const { t } = useFarmer()
+  const recent = problems.filter((p) => p.gate_outcome !== 'retake').slice(0, 3)
+  if (recent.length === 0) return null
+  return (
+    <section className={`${PANEL} p-5`}>
+      <PanelHead title={t('scanRecent')}
+        action={(
+          <Link to="/app/history" className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[15px] font-medium text-leaf-deep hover:underline">
+            {t('seeAll')} <ArrowRight className="h-4 w-4" aria-hidden />
+          </Link>
+        )} />
+      <ul className="mt-3 space-y-2">
+        {recent.map((p) => <li key={p.id}><ProblemRow p={p} size="sm" /></li>)}
+      </ul>
+    </section>
   )
 }

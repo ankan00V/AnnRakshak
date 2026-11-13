@@ -38,14 +38,14 @@ export default function ModelGaps() {
       <div className="grid gap-5 lg:grid-cols-12 lg:items-start">
         <div className="lg:col-span-7"><Panel q={summary} rows={8}>{(s) => <AccuracyPanel s={s} />}</Panel></div>
         <div className="lg:col-span-5">
-          <Card className="p-4 md:p-5">
+          <Card className="p-5 lg:p-6">
             <CardHead icon={HelpCircle} tone="text-ochre" title="What it could not name"
               sub="Cases an officer closed as “something else”, in their own words. A problem that keeps turning up here is the next class worth training — and the reason the app never guessed at it."
               aside={gaps.data && gaps.data.length > 0 ? <Pill tone="ochre" className="shrink-0">{gaps.data.length}</Pill> : undefined} />
             {gaps.error && !gaps.data ? <div className="mt-4"><ErrorBox error={gaps.error} onRetry={gaps.reload} /></div>
               : !gaps.data ? <div className="mt-4"><PanelBone rows={4} /></div>
               : gaps.data.length === 0 ? (
-                <p className="mt-4 text-sm text-soil-dark/60">
+                <p className="mt-4 text-sm text-soil-dark/70">
                   Nothing yet. Every case so far fitted a problem the knowledge base knows.
                 </p>
               ) : <Gaps rows={gaps.data} />}
@@ -55,7 +55,7 @@ export default function ModelGaps() {
 
       {(kcc.data?.available || spray.data?.available) && (
         <>
-          <h2 className="pt-2 text-[11px] font-semibold uppercase tracking-wide text-soil-dark/50">
+          <h2 className="pt-2 text-[14px] font-semibold text-soil-dark/85">
             Outside measures — is any of it working?
           </h2>
           <div className="grid gap-5 lg:grid-cols-2 lg:items-stretch">
@@ -79,15 +79,15 @@ function Gaps({ rows }: { rows: GapRow[] }) {
       <ul className="mt-3 divide-y divide-soil-dark/[0.07]">
         {shown.map((g) => (
           <li key={g.id} className="py-3 flex gap-3">
-            <span className="w-11 shrink-0 pt-0.5 text-[11px] tabular-nums text-soil-dark/50">{shortDate(g.on)}</span>
+            <span className="w-11 shrink-0 pt-0.5 text-[12px] tabular-nums text-soil-dark/70">{shortDate(g.on)}</span>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span className="text-sm font-medium">{g.district}</span>
-                <span className="text-[11px] capitalize text-soil-dark/50">{g.crop}</span>
+                <span className="text-[12px] capitalize text-soil-dark/70">{g.crop}</span>
                 {g.referred_to_lab && <Pill tone="sky" className="!py-0.5">sent to a lab</Pill>}
               </div>
               {g.note && <p className="mt-1 text-sm leading-snug text-soil-dark/80 text-pretty">“{g.note}”</p>}
-              <p className="mt-1 text-[11px] text-soil-dark/50">
+              <p className="mt-1 text-[12px] text-soil-dark/70">
                 {g.model_label && <>Model said <span className="text-soil-dark/70">{labelName(g.model_label)}</span> · </>}
                 {g.expert}
               </p>
@@ -97,7 +97,7 @@ function Gaps({ rows }: { rows: GapRow[] }) {
       </ul>
       {rows.length > 5 && (
         <button type="button" onClick={() => setAll((v) => !v)}
-          className="mt-2 text-xs font-medium text-leaf-deep hover:underline underline-offset-2">
+          className="mt-2 text-[13px] font-medium text-leaf-deep hover:underline underline-offset-2">
           {all ? 'Show fewer' : `Show all ${rows.length}`}
         </button>
       )}

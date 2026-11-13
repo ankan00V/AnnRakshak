@@ -10,9 +10,11 @@ import { useAsync, useCarryable } from '../../lib/hooks'
 import { Speaker } from '../../lib/speaker'
 import type { Grabber } from '../../lib/videoframes'
 import { MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS, VideoError, openVideo } from '../../lib/videoframes'
-import { Card, ErrorBox, ListenButton, Pill } from '../../ui/kit'
+import { ErrorBox, ListenButton } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
 import DemoNotice, { useReadOnlyFarm } from '../components/DemoNotice'
+import { PANEL, PRIMARY, RISK, SECONDARY } from '../tokens'
+import { PanelHead, PhotoCurve } from '../ui'
 
 type Phase = 'intro' | 'starting' | 'live' | 'finishing' | 'summary' | 'error'
 type Ask = { cue_id: string; question: string; candidates: TargetView[] }
@@ -782,76 +784,86 @@ export default function Live() {
       onAgain={() => { setSummary(null); setPhase('intro') }} onDone={() => navigate('/app')} />
   }
 
-  if (readOnly) {
-    return (
-      <div className="space-y-4">
-        <h1 className="font-instrument-serif text-3xl">{t('liveTitle')}</h1>
-        <DemoNotice />
-      </div>
-    )
-  }
+  if (readOnly) return <DemoNotice />
+
+  const how = carryable
+    ? [[Video, t('liveHow1')], [Eye, t('liveHow2')], [ShieldAlert, t('liveHow3')]] as const
+    : [[Monitor, t('liveOnComputer')], [Upload, t('liveUploadSub')], [Eye, t('liveFilmTips')]] as const
 
   return (
-    <div className="space-y-4">
+    <div>
       {!live && (
-        <>
-          <div className="pt-1">
-            <p className="inline-flex items-center gap-1.5 rounded-full bg-ember/10 text-ember text-[11px] font-semibold px-2.5 py-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-ember animate-pulse" /> LIVE
-            </p>
-            <h1 className="mt-2 font-instrument-serif text-3xl leading-tight">{t('liveTitle')}</h1>
-            <p className="mt-1 text-sm text-soil-dark/60">{t('liveCtaSub')}</p>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="min-w-0 space-y-6">
+            <section className={`${PANEL} p-2`}>
+              <div className="relative h-[230px] overflow-hidden rounded-[22px] bg-[#1d4a2c] sm:h-[260px]">
+                <img src="/photos/panicle-closeup.webp" alt="" width={940} height={442}
+                  className="absolute inset-0 h-full w-full object-cover" />
+                <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
+                <div className="relative flex h-full flex-col justify-between p-5 text-white lg:p-6">
+                  <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-ember px-3 py-1 text-[13px] font-bold tracking-wide">
+                    <span className="h-2 w-2 rounded-full bg-white motion-safe:animate-pulse" /> LIVE
+                  </span>
+                  <div className="pb-3">
+                    <h1 className="font-instrument-serif text-[36px] leading-none drop-shadow-sm lg:text-[44px]">{t('liveTitle')}</h1>
+                    <p className="mt-2 max-w-xl text-[15px] leading-snug drop-shadow">{t('liveCtaSub')}</p>
+                  </div>
+                </div>
+                <PhotoCurve />
+              </div>
+              <div className="space-y-3 p-3 sm:p-4">
+                {farm && !farm.photo_diagnosis && (
+                  <p className="rounded-[18px] bg-sky-50 p-3.5 text-[15px] text-sky-950/85">{t('liveNoModel')}</p>
+                )}
+                {phase === 'error' && error && <ErrorBox error={new Error(error)} />}
+                {/* One route per device, not two. A phone walks the field with its
+                    camera. A computer cannot, and its camera faces a desk, so there
+                    the walk is a video of the field — offering the webcam as well
+                    would only be a button that wastes the farmer's time. */}
+                <div
+                  onDragOver={(e) => { if (!carryable) { e.preventDefault(); setDragging(true) } }}
+                  onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false) }}
+                  onDrop={(e) => {
+                    if (carryable) return
+                    e.preventDefault()
+                    setDragging(false)
+                    const f = e.dataTransfer.files?.[0]
+                    if (f) void startUpload(f)
+                  }}
+                  className={carryable ? '' : `rounded-[22px] border-2 border-dashed p-4 transition-colors ${
+                    dragging ? 'border-[#4b8b3b] bg-[#e3efd9]' : 'border-soil-dark/15 bg-[#f5f7f1]'}`}>
+                  <button onClick={carryable ? start : () => fileRef.current?.click()}
+                    className={`${PRIMARY} min-h-[56px] text-[17px] shadow-[0_12px_24px_-14px_rgba(29,74,44,0.8)]`}>
+                    {carryable ? <Video className="h-5 w-5" /> : <Upload className="h-5 w-5" />}
+                    {carryable ? t('liveStart') : t('liveUpload')}
+                  </button>
+                  {!carryable && <p className="mt-2.5 text-center text-[14px] text-soil-dark/70">{t('liveDropHere')}</p>}
+                </div>
+              </div>
+              <input ref={fileRef} type="file" accept="video/*" className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  e.target.value = ''
+                  if (f) void startUpload(f)
+                }} />
+            </section>
           </div>
-          <Card className="p-4 space-y-3">
-            {(carryable
-              ? [[Video, t('liveHow1')], [Eye, t('liveHow2')], [ShieldAlert, t('liveHow3')]]
-              : [[Monitor, t('liveOnComputer')], [Upload, t('liveUploadSub')], [Eye, t('liveFilmTips')]]
-            ).map(([Icon, text], i) => {
-              const I = Icon as typeof Video
-              return (
-                <p key={i} className="flex gap-3 text-sm">
-                  <span className="shrink-0 w-8 h-8 rounded-full bg-leaf/10 text-leaf-deep flex items-center justify-center"><I className="w-4 h-4" /></span>
-                  <span className="pt-1">{text as string}</span>
-                </p>
-              )
-            })}
-          </Card>
-          {farm && !farm.photo_diagnosis && (
-            <p className="text-sm rounded-2xl bg-sky-50 text-sky-900 p-3">{t('liveNoModel')}</p>
-          )}
-          {phase === 'error' && error && (
-            <ErrorBox error={new Error(error)} />
-          )}
-          {/* One route per device, not two. A phone walks the field with its
-              camera. A computer cannot, and its camera faces a desk, so there
-              the walk is a video of the field — offering the webcam as well
-              would only be a button that wastes the farmer's time. */}
-          <div
-            onDragOver={(e) => { if (!carryable) { e.preventDefault(); setDragging(true) } }}
-            onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false) }}
-            onDrop={(e) => {
-              if (carryable) return
-              e.preventDefault()
-              setDragging(false)
-              const f = e.dataTransfer.files?.[0]
-              if (f) void startUpload(f)
-            }}
-            className={carryable ? '' : `rounded-3xl border-2 border-dashed p-4 transition-colors ${
-              dragging ? 'border-leaf-deep bg-leaf/10' : 'border-soil-dark/20'}`}>
-            <button onClick={carryable ? start : () => fileRef.current?.click()}
-              className="w-full min-h-[56px] rounded-full bg-leaf-deep text-cream text-base font-medium flex items-center justify-center gap-2 shadow-lg shadow-leaf-deep/25">
-              {carryable ? <Video className="w-5 h-5" /> : <Upload className="w-5 h-5" />}
-              {carryable ? t('liveStart') : t('liveUpload')}
-            </button>
-            {!carryable && <p className="mt-2 text-center text-xs text-soil-dark/50">{t('liveDropHere')}</p>}
-          </div>
-          <input ref={fileRef} type="file" accept="video/*" className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0]
-              e.target.value = ''
-              if (f) void startUpload(f)
-            }} />
-        </>
+          <aside className="min-w-0 space-y-6">
+            <section className={`${PANEL} p-5`}>
+              <h2 className="text-[20px] font-semibold tracking-tight">{t('liveHowTitle')}</h2>
+              <ol className="mt-4 space-y-3">
+                {how.map(([Icon, text], i) => (
+                  <li key={i} className="flex items-start gap-3 rounded-[20px] bg-[#f5f7f1] p-3.5">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#e3efd9] text-[#2f6a39]">
+                      <Icon className="h-6 w-6" aria-hidden />
+                    </span>
+                    <span className="pt-0.5 text-[15px] leading-snug">{text}</span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          </aside>
+        </div>
       )}
 
       {/* The call: full screen over the app chrome while it runs. */}
@@ -1065,17 +1077,15 @@ function Timeline({ marks, length, className = '', light = false }: {
 }
 
 const VERDICT = {
-  all_good: { tone: 'bg-leaf-deep text-cream', icon: CheckCircle2, key: 'verdict_all_good' },
-  risk: { tone: 'bg-ochre text-soil-dark', icon: AlertTriangle, key: 'verdict_risk' },
-  found: { tone: 'bg-ember text-white', icon: ShieldAlert, key: 'verdict_found' },
-  check: { tone: 'bg-sky-700 text-white', icon: Stethoscope, key: 'verdict_check' },
+  all_good: { tone: 'bg-[#2f6a39] text-white', icon: CheckCircle2, key: 'verdict_all_good' },
+  risk: { tone: 'bg-[#fbf0dc] text-[#5c3a0c] ring-1 ring-ochre/30', icon: AlertTriangle, key: 'verdict_risk' },
+  found: { tone: 'bg-[#9a2f17] text-white', icon: ShieldAlert, key: 'verdict_found' },
+  check: { tone: 'bg-sky-800 text-white', icon: Stethoscope, key: 'verdict_check' },
   // The walk may only claim what the camera saw: not enough confident views of
   // the plant is its own answer, never "healthy" by default.
-  unclear: { tone: 'bg-soil-dark text-cream', icon: ScanSearch, key: 'verdict_unclear' },
-  no_model: { tone: 'bg-soil-dark text-cream', icon: CameraOff, key: 'verdict_no_model' },
+  unclear: { tone: 'bg-[#1d4a2c] text-white', icon: ScanSearch, key: 'verdict_unclear' },
+  no_model: { tone: 'bg-[#1d4a2c] text-white', icon: CameraOff, key: 'verdict_no_model' },
 } as const
-
-const LEVEL_TONE = { high: 'ember', medium: 'ochre', low: 'neutral' } as const
 
 function SummaryView({ s, onAgain, onDone }: {
   s: LiveSummary; onAgain: () => void; onDone: () => void
@@ -1115,225 +1125,238 @@ function SummaryView({ s, onAgain, onDone }: {
   const pending = c.risks.filter((r) => !seenTargets.has(r.target))
   const risks = allRisks ? pending : pending.slice(0, 3)
 
+  const tile = 'rounded-[20px] bg-[#f5f7f1] p-4'
+  const tileHead = 'flex items-center gap-1.5 text-[13px] font-medium text-soil-dark/75'
   return (
-    <div className="space-y-4">
-      <section className={`rounded-3xl p-5 ${v.tone}`}>
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <v.icon className="w-8 h-8 shrink-0" />
-            <div>
-              <p className="text-[11px] uppercase tracking-wide opacity-70">{t('liveTitle')}</p>
-              <h1 className="text-2xl font-semibold leading-tight">{t(v.key)}</h1>
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="min-w-0 space-y-6">
+        <section className={`rounded-[28px] p-5 lg:p-6 ${v.tone}`}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15">
+                <v.icon className="h-7 w-7" aria-hidden />
+              </span>
+              <div>
+                <p className="text-[14px] opacity-80">{t('liveTitle')}</p>
+                <h1 className="font-instrument-serif text-[32px] leading-tight lg:text-[36px]">{t(v.key)}</h1>
+              </div>
             </div>
+            <ListenButton text={spoken(s, t)} lang={lang} label={t('listen')} stopLabel={t('stop')} compact tone="light" />
           </div>
-          <ListenButton text={spoken(s, t)} lang={lang} label={t('listen')} stopLabel={t('stop')} compact tone="light" />
-        </div>
-        {/* A video that gave almost nothing knows which wall it hit, and the
-            general advice is wrong for most of them: telling somebody whose
-            screen recording the model cannot read as a crop to "hold the phone
-            close to a leaf, in daylight" sends them out to film the same
-            unusable thing again. Where the reading says why, it replaces the
-            general line rather than sitting under it. */}
-        {reading?.other_crop ? (
-          // Read well enough — as a crop this field is not growing. Neither
-          // "could not see your plants" nor a refilming tip is true of that.
-          <p className="mt-3 text-sm leading-snug opacity-90">{reading.other_crop.text}</p>
-        ) : whyThin && WHY_VIDEO[whyThin] ? (
-          <p className="mt-3 text-sm leading-snug opacity-90">{t(WHY_VIDEO[whyThin])}</p>
-        ) : (s.verdict === 'unclear' || s.verdict === 'no_model') && (
-          <p className="mt-3 text-sm leading-snug opacity-90">
-            {s.verdict === 'unclear' ? t('liveUnclearHint') : t('liveNoModelHint').replace('{crop}', c.crop.name)}
-          </p>
-        )}
-        {s.verdict === 'unclear' && (
-          <button onClick={onAgain}
-            className="mt-4 w-full min-h-[48px] rounded-full bg-cream text-soil-dark text-sm font-semibold">
-            {t('liveTryAgain')}
-          </button>
-        )}
-        {c.location.far_from_farm && (
-          <p className="mt-2 text-xs opacity-80">{t('liveFar').replace('{km}', String(c.location.km_from_farm))}</p>
-        )}
-      </section>
-
-      {/* How much was actually looked at. A verdict on top of forty clear
-          close-ups and one on top of two are different claims, and the screen
-          used to show them identically. */}
-      {reading?.mode === 'video' && marks.length > 0 && (
-        <Card className="p-4">
-          <p className="text-[11px] uppercase tracking-wide text-soil-dark/50 flex items-center gap-1">
-            <Video className="w-3 h-3" /> {t('liveReadTitle')}
-          </p>
-          <p className="mt-1 text-sm">
-            {t('liveReadLine').replace('{k}', String(readable)).replace('{n}', String(marks.length))}
-          </p>
-          <Timeline marks={marks} length={0} light className="mt-2" />
-          <div className="mt-1 flex justify-between text-[10px] text-soil-dark/40">
-            <span>0:00</span><span>{clock(Math.max(...marks.map(([at]) => at)))}</span>
-          </div>
-          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-soil-dark/70">
-            {marks.some(([, m]) => m === 'h' || m === 'c') && (
-              <span className="inline-flex items-center gap-1"><i className="w-2 h-2 rounded-full bg-leaf" /> {t('liveMarkOk')}</span>
-            )}
-            {marks.some(([, m]) => m === 'p') && (
-              <span className="inline-flex items-center gap-1"><i className="w-2 h-2 rounded-full bg-ember" /> {t('liveMarkProblem')}</span>
-            )}
-            {marks.some(([, m]) => m === 'x') && (
-              <span className="inline-flex items-center gap-1"><i className="w-2 h-2 rounded-full bg-soil-dark/20" /> {t('liveMarkSkip')}</span>
-            )}
-            {marks.some(([, m]) => m === 'o') && reading.other_crop && (
-              <span className="inline-flex items-center gap-1"><i className="w-2 h-2 rounded-full bg-sky-400" /> {reading.other_crop.name}</span>
-            )}
-          </div>
-        </Card>
-      )}
-      {reading?.mode === 'walk' && (reading.skipped?.length ?? 0) > 0 && (
-        <p className="rounded-2xl bg-ochre/15 px-3 py-2 text-xs text-soil-dark/80">
-          {t('liveSkippedN').replace('{n}', String(reading.skipped!.length))}
-        </p>
-      )}
-
-      <div className="grid grid-cols-2 gap-3">
-        <Card className="p-3">
-          <p className="text-[11px] uppercase tracking-wide text-soil-dark/50 flex items-center gap-1"><CloudSun className="w-3 h-3" /> {t('liveNow')}</p>
-          {w?.temp_c != null ? (
-            <>
-              <p className="mt-1 text-2xl font-semibold">{Math.round(w.temp_c)}°C</p>
-              <p className="text-xs text-soil-dark/70">{w.rh_pct}% · {w.text ?? ''}{w.rain_mm_1h ? ` · ${w.rain_mm_1h} mm` : ''}</p>
-            </>
-          ) : <p className="mt-1 text-sm text-soil-dark/50">—</p>}
-        </Card>
-        <Card className="p-3">
-          <p className="text-[11px] uppercase tracking-wide text-soil-dark/50">{t('liveNext')}</p>
-          {c.forecast ? (
-            <>
-              <p className="mt-1 text-sm"><span className="font-semibold">{c.forecast.rain_mm} mm</span> {t('liveRain')}</p>
-              <p className="text-xs text-soil-dark/70">{c.forecast.t_min != null ? `${Math.round(c.forecast.t_min)}–${Math.round(c.forecast.t_max ?? 0)}°C` : ''} · RH ≤{c.forecast.rh_max ?? '—'}%</p>
-            </>
-          ) : <p className="mt-1 text-sm text-soil-dark/50">—</p>}
-        </Card>
-        <Card className="p-3">
-          <p className="text-[11px] uppercase tracking-wide text-soil-dark/50 flex items-center gap-1"><Sprout className="w-3 h-3" /> {t('liveSoil')}</p>
-          {ph ? (
-            <>
-              <p className="mt-1 text-sm"><span className="text-xl font-semibold">{t('livePh')} {ph.value}</span></p>
-              <p className="text-xs text-soil-dark/70">{ph.band}</p>
-              <Pill tone={ph.how === 'estimated' ? 'ochre' : 'leaf'} className="mt-1 !text-[10px]">{t(`how_${ph.how}`)}</Pill>
-            </>
-          ) : <p className="mt-1 text-sm text-soil-dark/50">—</p>}
-          {moist && (
-            <p className="mt-1.5 text-xs text-soil-dark/70">
-              <Droplets className="inline w-3 h-3 -mt-0.5 mr-1" />{t('liveMoisture')} {moist.value_pct}%
-              <span className="block text-[10px] text-soil-dark/40">{moist.how === 'measured' ? t('how_measured') : t('how_modelled')}</span>
+          {/* A video that gave almost nothing knows which wall it hit, and the
+              general advice is wrong for most of them: telling somebody whose
+              screen recording the model cannot read as a crop to "hold the phone
+              close to a leaf, in daylight" sends them out to film the same
+              unusable thing again. Where the reading says why, it replaces the
+              general line rather than sitting under it. */}
+          {reading?.other_crop ? (
+            // Read well enough — as a crop this field is not growing. Neither
+            // "could not see your plants" nor a refilming tip is true of that.
+            <p className="mt-4 text-[15px] leading-snug opacity-90">{reading.other_crop.text}</p>
+          ) : whyThin && WHY_VIDEO[whyThin] ? (
+            <p className="mt-4 text-[15px] leading-snug opacity-90">{t(WHY_VIDEO[whyThin])}</p>
+          ) : (s.verdict === 'unclear' || s.verdict === 'no_model') && (
+            <p className="mt-4 text-[15px] leading-snug opacity-90">
+              {s.verdict === 'unclear' ? t('liveUnclearHint') : t('liveNoModelHint').replace('{crop}', c.crop.name)}
             </p>
           )}
-        </Card>
-        <Card className="p-3">
-          <p className="text-[11px] uppercase tracking-wide text-soil-dark/50 flex items-center gap-1"><Leaf className="w-3 h-3" /> {t('liveStage')}</p>
-          <p className="mt-1 text-sm font-semibold">{c.crop.name}</p>
-          <p className="text-xs text-soil-dark/70">{c.crop.stage_name} · {c.crop.das} {t('daysOld')}</p>
-        </Card>
-      </div>
-
-      {s.seen.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="text-sm font-semibold">{t('liveSeen')}</h2>
-          {s.seen.map((x) => (
-            <Card key={x.target} className="p-4 border-ember/30">
-              <div className="flex items-center justify-between gap-2">
-                <p className="font-semibold">{x.name}</p>
-                <Pill tone="ember">{t('liveViews').replace('{n}', String(x.views))} · {Math.round(x.confidence * 100)}%</Pill>
-              </div>
-              {x.evidence && x.evidence.length > 0 && (
-                <div className="mt-2 flex gap-2">
-                  {x.evidence.map((u) => (
-                    <button key={u} onClick={(e) => { zoomFrom.current = e.currentTarget; setZoom({ src: u, name: x.name }) }}
-                      className="rounded-xl overflow-hidden focus-visible:ring-2 focus-visible:ring-leaf-deep">
-                      <img src={u} alt={x.name} className="w-16 h-16 object-cover" />
-                    </button>
-                  ))}
-                </div>
-              )}
-              {x.moments && x.moments.length > 0 && (
-                <p className="mt-2 text-xs text-soil-dark/60">
-                  {t('liveSeenAt')}: {x.moments.map(clock).join(' · ')}
-                </p>
-              )}
-              {x.advisory && (
-                <div className="mt-2 space-y-1.5 text-sm">
-                  {x.advisory.what_to_avoid[0] && <p className="text-ember font-medium">✕ {x.advisory.what_to_avoid[0]}</p>}
-                  {x.advisory.ladder.filter((r) => r.tier !== 'chemical').slice(0, 2).map((r, i) => (
-                    <p key={i} className="text-soil-dark/80">• {r.action}</p>
-                  ))}
-                </div>
-              )}
-              <Link to={`/app/history/${x.problem_id}`} className="mt-2 inline-block text-sm text-leaf-deep font-medium underline underline-offset-2">
-                {t('liveOpenAdvice')} →
-              </Link>
-            </Card>
-          ))}
-        </section>
-      )}
-
-      {s.possible.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="text-sm font-semibold">{t('livePossible')}</h2>
-          {s.possible.map((x) => (
-            <Card key={x.target} className="p-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-medium">{x.name}</span>
-                {x.case && <Pill tone="sky">~{x.case.eta_minutes} min</Pill>}
-              </div>
-              {x.moments && x.moments.length > 0 && (
-                <p className="mt-1 text-xs text-soil-dark/60">{t('liveSeenAt')}: {x.moments.map(clock).join(' · ')}</p>
-              )}
-            </Card>
-          ))}
-        </section>
-      )}
-
-      {risks.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="text-sm font-semibold flex items-center gap-1.5"><AlertTriangle className="w-4 h-4 text-ochre" /> {t('liveRisks')}</h2>
-          {risks.map((r) => (
-            <Card key={r.target + r.trigger} className="p-4">
-              <div className="flex items-center justify-between gap-2">
-                <p className="font-semibold">{r.name}</p>
-                <Pill tone={LEVEL_TONE[r.level]}>{t(`level_${r.level}`)}</Pill>
-              </div>
-              <p className="mt-1 text-xs text-soil-dark/70">{r.reason}</p>
-              {r.prevention.do.length > 0 && (
-                <div className="mt-2">
-                  <p className="text-[11px] uppercase tracking-wide text-leaf-deep font-semibold">{t('livePrevent')}</p>
-                  {r.prevention.do.map((d, i) => <p key={i} className="text-sm">• {d}</p>)}
-                  {r.prevention.avoid[0] && <p className="text-sm text-ember">✕ {r.prevention.avoid[0]}</p>}
-                </div>
-              )}
-              {r.check.length > 0 && (
-                <div className="mt-2">
-                  <p className="text-[11px] uppercase tracking-wide text-soil-dark/50 font-semibold">{t('liveCheck')}</p>
-                  {r.check.map((d, i) => <p key={i} className="text-xs text-soil-dark/80">• {d}</p>)}
-                </div>
-              )}
-              {r.prevention.icar.length > 0 && <p className="mt-2 text-[11px] text-leaf-deep">ICAR: {r.prevention.icar.join(' · ')}</p>}
-            </Card>
-          ))}
-          {pending.length > risks.length && (
-            <button onClick={() => setAllRisks(true)} className="w-full min-h-[44px] rounded-full border border-soil-dark/15 bg-white text-sm">
-              {t('liveMoreRisks').replace('{n}', String(pending.length - risks.length))}
+          {s.verdict === 'unclear' && (
+            <button onClick={onAgain}
+              className="mt-4 min-h-[52px] w-full rounded-full bg-white text-[16px] font-semibold text-soil-dark">
+              {t('liveTryAgain')}
             </button>
           )}
+          {c.location.far_from_farm && (
+            <p className="mt-3 text-[14px] opacity-85">{t('liveFar').replace('{km}', String(c.location.km_from_farm))}</p>
+          )}
         </section>
-      )}
 
-      <p className="text-[11px] text-soil-dark/50 text-center">
-        {t('liveStats').replace('{f}', String(s.stats.frames)).replace('{c}', String(s.stats.classified_views))}
-        {s.photo_model ? ` · ${s.model_version}` : ''}
-      </p>
-      <div className="grid grid-cols-2 gap-2">
-        <button onClick={onAgain} className="min-h-[48px] rounded-full border border-soil-dark/20 bg-white text-sm font-medium">{t('liveAgain')}</button>
-        <button onClick={onDone} className="min-h-[48px] rounded-full bg-leaf-deep text-cream text-sm font-medium">{t('liveDone')}</button>
+        {s.seen.length > 0 && (
+          <section className={`${PANEL} p-5 lg:p-6`}>
+            <PanelHead icon={ShieldAlert} title={t('liveSeen')} />
+            <div className="mt-4 space-y-3">
+              {s.seen.map((x) => (
+                <article key={x.target} className="rounded-[20px] bg-[#fdf0ed] p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-[17px] font-semibold">{x.name}</p>
+                    <span className="rounded-full bg-[#f9dcd5] px-2.5 py-0.5 text-[13px] font-medium text-[#9a2f17]">
+                      {t('liveViews').replace('{n}', String(x.views))} · {Math.round(x.confidence * 100)}%
+                    </span>
+                  </div>
+                  {x.evidence && x.evidence.length > 0 && (
+                    <div className="mt-3 flex gap-2">
+                      {x.evidence.map((u) => (
+                        <button key={u} onClick={(e) => { zoomFrom.current = e.currentTarget; setZoom({ src: u, name: x.name }) }}
+                          className="overflow-hidden rounded-2xl focus-visible:ring-2 focus-visible:ring-leaf-deep">
+                          <img src={u} alt={x.name} className="h-20 w-20 object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {x.moments && x.moments.length > 0 && (
+                    <p className="mt-2 text-[13px] text-soil-dark/75">
+                      {t('liveSeenAt')}: {x.moments.map(clock).join(' · ')}
+                    </p>
+                  )}
+                  {x.advisory && (
+                    <div className="mt-3 space-y-1.5 rounded-[16px] bg-white/80 p-3.5 text-[15px]">
+                      {x.advisory.what_to_avoid[0] && <p className="font-medium text-[#9a2f17]">✕ {x.advisory.what_to_avoid[0]}</p>}
+                      {x.advisory.ladder.filter((r) => r.tier !== 'chemical').slice(0, 2).map((r, i) => (
+                        <p key={i} className="text-soil-dark/85">• {r.action}</p>
+                      ))}
+                    </div>
+                  )}
+                  <Link to={`/app/history/${x.problem_id}`} className="mt-3 inline-flex min-h-[44px] items-center gap-1 text-[15px] font-semibold text-leaf-deep">
+                    {t('liveOpenAdvice')} →
+                  </Link>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {s.possible.length > 0 && (
+          <section className={`${PANEL} p-5`}>
+            <PanelHead icon={Stethoscope} title={t('livePossible')} />
+            <ul className="mt-3 space-y-2">
+              {s.possible.map((x) => (
+                <li key={x.target} className="rounded-[18px] bg-[#f5f7f1] p-3.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[15px] font-semibold">{x.name}</span>
+                    {x.case && <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-[13px] font-medium text-sky-800">~{x.case.eta_minutes} {t('minutes')}</span>}
+                  </div>
+                  {x.moments && x.moments.length > 0 && (
+                    <p className="mt-1 text-[13px] text-soil-dark/75">{t('liveSeenAt')}: {x.moments.map(clock).join(' · ')}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {risks.length > 0 && (
+          <section className={`${PANEL} p-5 lg:p-6`}>
+            <PanelHead icon={AlertTriangle} title={t('liveRisks')} />
+            <div className="mt-4 space-y-3">
+              {risks.map((r) => (
+                <article key={r.target + r.trigger} className={`rounded-[20px] p-4 ${RISK[r.level].row}`}>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-[16px] font-semibold">{r.name}</p>
+                    <span className={`rounded-full px-2.5 py-0.5 text-[13px] font-medium ${RISK[r.level].pill}`}>{t(RISK[r.level].key)}</span>
+                  </div>
+                  <p className="mt-1 text-[14px] text-soil-dark/80">{r.reason}</p>
+                  {r.prevention.do.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-[14px] font-semibold text-leaf-deep">{t('livePrevent')}</p>
+                      {r.prevention.do.map((d, i) => <p key={i} className="mt-1 text-[15px]">• {d}</p>)}
+                      {r.prevention.avoid[0] && <p className="mt-1 text-[15px] text-[#9a2f17]">✕ {r.prevention.avoid[0]}</p>}
+                    </div>
+                  )}
+                  {r.check.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-[14px] font-semibold text-soil-dark/80">{t('liveCheck')}</p>
+                      {r.check.map((d, i) => <p key={i} className="mt-1 text-[14px] text-soil-dark/85">• {d}</p>)}
+                    </div>
+                  )}
+                  {r.prevention.icar.length > 0 && <p className="mt-2 text-[13px] text-leaf-deep">ICAR: {r.prevention.icar.join(' · ')}</p>}
+                </article>
+              ))}
+              {pending.length > risks.length && (
+                <button onClick={() => setAllRisks(true)} className={`${SECONDARY} w-full`}>
+                  {t('liveMoreRisks').replace('{n}', String(pending.length - risks.length))}
+                </button>
+              )}
+            </div>
+          </section>
+        )}
       </div>
+
+      <aside className="min-w-0 space-y-6">
+        {/* How much was actually looked at. A verdict on top of forty clear
+            close-ups and one on top of two are different claims, and the screen
+            used to show them identically. */}
+        {reading?.mode === 'video' && marks.length > 0 && (
+          <section className={`${PANEL} p-5`}>
+            <PanelHead icon={Video} title={t('liveReadTitle')}
+              sub={t('liveReadLine').replace('{k}', String(readable)).replace('{n}', String(marks.length))} />
+            <Timeline marks={marks} length={0} light className="mt-4" />
+            <div className="mt-1 flex justify-between text-[12px] text-soil-dark/60 tabular-nums">
+              <span>0:00</span><span>{clock(Math.max(...marks.map(([at]) => at)))}</span>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-soil-dark/80">
+              {marks.some(([, m]) => m === 'h' || m === 'c') && (
+                <span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-leaf" /> {t('liveMarkOk')}</span>
+              )}
+              {marks.some(([, m]) => m === 'p') && (
+                <span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-ember" /> {t('liveMarkProblem')}</span>
+              )}
+              {marks.some(([, m]) => m === 'x') && (
+                <span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-soil-dark/20" /> {t('liveMarkSkip')}</span>
+              )}
+              {marks.some(([, m]) => m === 'o') && reading.other_crop && (
+                <span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-sky-400" /> {reading.other_crop.name}</span>
+              )}
+            </div>
+          </section>
+        )}
+        {reading?.mode === 'walk' && (reading.skipped?.length ?? 0) > 0 && (
+          <p className="rounded-[20px] bg-[#fbf0dc] p-4 text-[14px] text-soil-dark/85">
+            {t('liveSkippedN').replace('{n}', String(reading.skipped!.length))}
+          </p>
+        )}
+
+        <section className={`${PANEL} p-5`}>
+          <PanelHead icon={CloudSun} title={t('liveFieldNow')} />
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className={tile}>
+              <p className={tileHead}><CloudSun className="h-4 w-4" aria-hidden /> {t('liveNow')}</p>
+              {w?.temp_c != null ? (
+                <>
+                  <p className="mt-1 text-[24px] font-semibold tabular-nums">{Math.round(w.temp_c)}°C</p>
+                  <p className="text-[13px] text-soil-dark/75">{w.rh_pct}% · {w.text ?? ''}{w.rain_mm_1h ? ` · ${w.rain_mm_1h} mm` : ''}</p>
+                </>
+              ) : <p className="mt-1 text-[15px] text-soil-dark/60">—</p>}
+            </div>
+            <div className={tile}>
+              <p className={tileHead}>{t('liveNext')}</p>
+              {c.forecast ? (
+                <>
+                  <p className="mt-1 text-[15px]"><span className="text-[20px] font-semibold tabular-nums">{c.forecast.rain_mm} mm</span> {t('liveRain')}</p>
+                  <p className="text-[13px] text-soil-dark/75">{c.forecast.t_min != null ? `${Math.round(c.forecast.t_min)}–${Math.round(c.forecast.t_max ?? 0)}°C` : ''}</p>
+                </>
+              ) : <p className="mt-1 text-[15px] text-soil-dark/60">—</p>}
+            </div>
+            <div className={tile}>
+              <p className={tileHead}><Sprout className="h-4 w-4" aria-hidden /> {t('liveSoil')}</p>
+              {ph ? (
+                <>
+                  <p className="mt-1 text-[20px] font-semibold">{t('livePh')} {ph.value}</p>
+                  <p className="text-[13px] text-soil-dark/75">{ph.band} · {t(`how_${ph.how}`)}</p>
+                </>
+              ) : <p className="mt-1 text-[15px] text-soil-dark/60">—</p>}
+              {moist && (
+                <p className="mt-1.5 text-[13px] text-soil-dark/75">
+                  <Droplets className="-mt-0.5 mr-1 inline h-3.5 w-3.5" />{t('liveMoisture')} {moist.value_pct}%
+                </p>
+              )}
+            </div>
+            <div className={tile}>
+              <p className={tileHead}><Leaf className="h-4 w-4" aria-hidden /> {t('liveStage')}</p>
+              <p className="mt-1 text-[15px] font-semibold">{c.crop.name}</p>
+              <p className="text-[13px] text-soil-dark/75">{c.crop.stage_name} · {c.crop.das} {t('daysOld')}</p>
+            </div>
+          </div>
+        </section>
+
+        <div className="grid grid-cols-2 gap-3">
+          <button onClick={onAgain} className={SECONDARY}>{t('liveAgain')}</button>
+          <button onClick={onDone} className={PRIMARY}>{t('liveDone')}</button>
+        </div>
+        <p className="text-center text-[12px] text-soil-dark/60">
+          {t('liveStats').replace('{f}', String(s.stats.frames)).replace('{c}', String(s.stats.classified_views))}
+          {s.photo_model ? ` · ${s.model_version}` : ''}
+        </p>
+      </aside>
 
       {/* The photograph the finding rests on, large enough to check against
           the leaf in your hand. */}

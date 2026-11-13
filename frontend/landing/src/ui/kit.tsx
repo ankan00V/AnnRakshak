@@ -80,7 +80,7 @@ export function Pill({ children, tone = 'neutral', className = '' }: {
     dark: 'bg-leaf-deep text-cream',
   }
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium ${tones[tone]} ${className}`}>
+    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-medium ${tones[tone]} ${className}`}>
       {children}
     </span>
   )
@@ -93,9 +93,10 @@ export function Card({ children, className = '', ...rest }: { children: ReactNod
   // bg-white happens to win it. A dark card asked for with `bg-soil-dark`
   // came out white, which on a card that also sets `text-cream` means a
   // panel of invisible text.
-  const base = /(^|\s)bg-/.test(className)
-    ? 'rounded-2xl border border-soil-dark/10'
-    : 'rounded-2xl bg-white border border-soil-dark/10'
+  // The white card both apps are built from: lifted off the page by a soft
+  // shadow and a hairline ring rather than a drawn border.
+  const shell = 'rounded-[22px] shadow-[0_10px_30px_-20px_rgba(43,29,18,0.4)] ring-1 ring-soil-dark/[0.07]'
+  const base = /(^|\s)bg-/.test(className) ? shell : `${shell} bg-white`
   return <div {...rest} className={`${base} ${className}`}>{children}</div>
 }
 

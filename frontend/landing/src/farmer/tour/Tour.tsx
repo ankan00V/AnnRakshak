@@ -234,7 +234,7 @@ export function TourButton({ variant }: { variant: 'sidebar' | 'row' }) {
   if (variant === 'sidebar') {
     return (
       <button onClick={start}
-        className="hidden lg:flex mx-4 mt-auto mb-2 items-center gap-2.5 rounded-xl bg-ochre/15 border border-ochre/30 px-3 py-2.5 text-left text-[13px] font-medium text-cream hover:bg-ochre/25">
+        className="relative hidden lg:flex mx-4 mt-auto mb-2 items-center gap-2.5 rounded-xl bg-ochre/15 border border-ochre/30 px-3 py-2.5 text-left text-[13px] font-medium text-cream hover:bg-ochre/25">
         <Headphones className="w-4 h-4 shrink-0 text-ochre" />
         <span className="flex-1">{t('tourMenu')}</span>
       </button>

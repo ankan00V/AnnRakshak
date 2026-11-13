@@ -15,7 +15,8 @@ export interface FieldPhoto {
 }
 
 const STANDING: Record<string, FieldPhoto> = {
-  rice: { src: '/field/rice.webp' },
+  // The paddy in full ear from the app's own photo set, the same one Home leads with.
+  rice: { src: '/photos/rice-banner.webp' },
   maize: { src: '/field/maize.webp' },
   cotton: { src: '/field/cotton.webp' },
   soybean: { src: '/field/soybean.webp' },

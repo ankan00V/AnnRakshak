@@ -30,9 +30,12 @@ export default {
         'cta-scrim': 'linear-gradient(to bottom, #1f3d2b 0%, #1f3d2b 30%, rgba(31,61,43,0.10) 58%, rgba(31,61,43,0.70) 78%, #1f3d2b 94%)',
       },
       keyframes: {
+        // Movement only, never opacity: a screen that starts invisible stays
+        // invisible wherever the animation does not run to its end — a
+        // background tab, a throttled phone, a screenshot.
         fadein: {
-          from: { opacity: '0', transform: 'translateY(4px)' },
-          to: { opacity: '1', transform: 'translateY(0)' },
+          from: { transform: 'translateY(4px)' },
+          to: { transform: 'translateY(0)' },
         },
         scan: {
           '0%': { top: '-20%' },

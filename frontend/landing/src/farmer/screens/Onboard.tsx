@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { AlertTriangle, ArrowRight, Plus } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { AlertTriangle, ArrowRight, Languages, Plus, Tractor } from 'lucide-react'
 import { api, ApiError } from '../../api/client'
 import type { CropInfo, Farm } from '../../api/types'
 import WherePicker, { type Where } from '../../auth/WherePicker'
 import { useAsync } from '../../lib/hooks'
-import { Card, ErrorBox, ListenButton } from '../../ui/kit'
+import { ErrorBox, ListenButton } from '../../ui/kit'
 import { FarmPickerSkeleton } from '../components/Skeletons'
 import LanguagePicker from '../components/LanguagePicker'
 import { useFarmer } from '../FarmerContext'
@@ -12,7 +13,8 @@ import { useAuth } from '../../auth/AuthContext'
 import { Chips } from '../../auth/parts'
 import type { Irrigation } from '../../api/types'
 import type { TKey } from '../../lib/i18n'
-import { SPLIT } from '../layout'
+import { FIELD, LABEL, PANEL, PRIMARY } from '../tokens'
+import { PanelHead, PhotoCurve } from '../ui'
 import { fieldPhoto } from '../fieldPhoto'
 
 /** A field's title with the speaker that reads its help aloud — the same
@@ -46,8 +48,8 @@ function Standing({ alert, className = '' }: { alert: Farm['alert']; className?:
     : alert.level === 'high' ? 'bg-ember text-cream'
       : alert.level === 'medium' ? 'bg-ochre text-soil-dark' : 'bg-cream text-leaf-deep ring-1 ring-leaf/20'
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium leading-none shadow-sm ${tone} ${className}`}>
-      {!alert.answered && alert.level === 'high' && <AlertTriangle className="w-3 h-3 shrink-0" />}
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium leading-none shadow-sm ${tone} ${className}`}>
+      {!alert.answered && alert.level === 'high' && <AlertTriangle className="h-3.5 w-3.5 shrink-0" />}
       {t(`level_${alert.level}` as TKey)} · {alert.name}
     </span>
   )
@@ -71,43 +73,43 @@ function FieldTile({ f, onOpen }: { f: Farm; onOpen: () => void }) {
   return (
     <button
       onClick={onOpen}
-      className={`group w-full h-full min-h-[112px] text-left flex lg:flex-col overflow-hidden rounded-2xl lg:rounded-3xl bg-white
-        ring-1 transition-[box-shadow,transform] duration-300 ease-out hover:-translate-y-0.5
-        hover:shadow-[0_20px_44px_-26px_rgba(43,29,18,0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-leaf ${
-        urgent ? 'ring-ember/45' : 'ring-soil-dark/10'}`}
+      className={`group flex h-full min-h-[120px] w-full gap-1 overflow-hidden rounded-[24px] bg-white p-2 text-left
+        shadow-[0_10px_30px_-18px_rgba(43,29,18,0.35)] ring-1 transition-[box-shadow,transform] duration-300 ease-out hover:-translate-y-0.5
+        hover:shadow-[0_20px_44px_-26px_rgba(43,29,18,0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-leaf lg:flex-col lg:rounded-[28px] ${
+        urgent ? 'ring-ember/45' : 'ring-soil-dark/[0.06]'}`}
     >
-      <span className="relative shrink-0 w-28 sm:w-36 lg:w-full lg:aspect-[16/9] overflow-hidden bg-leaf/10">
+      <span className="relative w-28 shrink-0 overflow-hidden rounded-[18px] bg-[#e3efd9] sm:w-36 lg:aspect-[16/9] lg:w-full lg:rounded-[22px]">
         {photo && (
           <img src={photo.src} alt="" loading="lazy" decoding="async"
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]" />
         )}
-        <span className="absolute inset-0 hidden lg:block bg-gradient-to-t from-soil-dark/75 via-soil-dark/10 to-soil-dark/5" />
+        <span className="absolute inset-0 hidden bg-gradient-to-t from-black/65 via-black/10 to-transparent lg:block" />
         {f.is_demo && (
-          <span className="absolute left-2 top-2 lg:left-3 lg:top-3 rounded-full bg-cream/95 px-2 py-0.5 text-[10px] lg:text-[11px] font-medium text-soil-dark shadow-sm">
+          <span className="absolute left-2 top-2 lg:left-3 lg:top-3 rounded-full bg-white/95 px-2.5 py-0.5 text-[12px] font-medium text-soil-dark shadow-sm">
             {t('demoFarm')}
           </span>
         )}
         <Standing alert={f.alert} className="hidden lg:inline-flex absolute right-3 top-3 max-w-[60%]" />
-        <span className="absolute inset-x-0 bottom-0 hidden lg:block p-4 text-cream">
-          <span className="block font-instrument-serif text-[30px] leading-none">{f.crop_name}</span>
-          <span className="mt-1.5 block text-[13px] text-cream/85">{place}</span>
+        <span className="absolute inset-x-0 bottom-0 hidden p-4 text-white lg:block">
+          <span className="block font-instrument-serif text-[34px] leading-none drop-shadow-sm">{f.crop_name}</span>
+          <span className="mt-1.5 block text-[15px] drop-shadow">{place}</span>
         </span>
       </span>
 
-      <span className="flex min-w-0 flex-1 flex-col p-3.5 sm:p-4">
-        <span className="lg:hidden block text-[15px] font-semibold leading-snug">{f.crop_name}</span>
-        <span className="lg:hidden block text-xs text-soil-dark/60">{place}</span>
-        <span className="mt-1 lg:mt-0 block text-[13px] leading-snug text-soil-dark/70">
+      <span className="flex min-w-0 flex-1 flex-col p-2.5 sm:p-3 lg:px-3 lg:pb-3 lg:pt-2">
+        <span className="block text-[17px] font-semibold leading-snug lg:hidden">{f.crop_name}</span>
+        <span className="block text-[14px] text-soil-dark/75 lg:hidden">{place}</span>
+        <span className="mt-1 block text-[14px] leading-snug text-soil-dark/80 lg:mt-0">
           {where}
-          {f.status === 'fallow' && <span className="text-soil-dark/50"> · {t('seasonFallowTag')}</span>}
+          {f.status === 'fallow' && <span className="text-soil-dark/70"> · {t('seasonFallowTag')}</span>}
         </span>
         {/* The farmer's name earns a line only when the list holds more than
             one person's fields; on your own three it is the same word. */}
         {f.farmer_name !== me?.name && (
-          <span className="mt-0.5 block truncate text-[12px] text-soil-dark/50">{f.farmer_name}</span>
+          <span className="mt-0.5 block truncate text-[13px] text-soil-dark/70">{f.farmer_name}</span>
         )}
         <Standing alert={f.alert} className="lg:hidden mt-2 self-start" />
-        <span className="mt-auto hidden lg:flex items-center justify-between pt-4 text-sm font-medium text-leaf-deep">
+        <span className="mt-auto hidden items-center justify-between pt-4 text-[15px] font-semibold text-leaf-deep lg:flex">
           {t('openLabel')}
           <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
         </span>
@@ -122,6 +124,15 @@ export default function Onboard() {
   const farms = useAsync(() => api.farms(lang), [lang], ['farms', lang].join(':'))
   const crops = useAsync(() => api.crops(lang), [lang], ['crops', lang].join(':'))
   const [adding, setAdding] = useState(false)
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
+  // Opened from the sidebar's "My fields" the list is its own page: picking a
+  // field takes the farmer to it. Before any field is chosen this is Home.
+  const inApp = pathname === '/app/fields'
+  const open = (id: number) => {
+    setFarmId(id)
+    if (pathname !== '/app' && pathname !== '/app/') navigate('/app')
+  }
   const [cropFilter, setCropFilter] = useState<string | null>(null)
   // The question this screen asks is which field we are protecting today, so
   // the field with the worst week answers it first.
@@ -135,39 +146,31 @@ export default function Onboard() {
   const filterable = (farms.data?.length ?? 0) > 6 && grown.length > 1
 
   return (
-    /* Explicit cells rather than two stacked columns: on a phone the order on
-       screen is the order below — greeting, language, then the fields, exactly
-       as it was — while a laptop puts the language in the side rail beside the
-       greeting without moving a line of it. */
-    <div className={`space-y-5 ${SPLIT}`}>
-      <div className="pt-2 lg:col-span-8 lg:col-start-1 lg:row-start-1">
-        <h1 className="font-instrument-serif text-[2rem] lg:text-[44px] leading-[1.08] text-balance">{t('welcome')}</h1>
-        <p className="mt-2 max-w-xl text-sm text-soil-dark/65 lg:text-[15px] leading-relaxed">
-          {me?.is_demo ? t('welcomeSubDemo') : t('welcomeSub')}
-        </p>
-      </div>
+    <div className={`grid gap-6 pt-2 ${inApp ? '' : 'lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]'}`}>
+      <div className="min-w-0 space-y-6">
+        <section className={`${PANEL} p-2`}>
+          <div className="relative h-[200px] overflow-hidden rounded-[22px] bg-leaf-deep sm:h-[230px]">
+            <img src="/photos/landscape.webp" alt="" width={934} height={442}
+              className="absolute inset-0 h-full w-full object-cover object-[center_45%]" />
+            <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-black/5" />
+            <div className="relative flex h-full flex-col justify-end p-5 pb-8 text-white lg:p-6 lg:pb-9">
+              <h1 className="font-instrument-serif text-[34px] leading-[1.05] drop-shadow-sm text-balance lg:text-[46px]">{t('welcome')}</h1>
+              <p className="mt-2 max-w-xl text-[15px] leading-relaxed drop-shadow lg:text-[16px]">
+                {me?.is_demo ? t('welcomeSubDemo') : t('welcomeSub')}
+              </p>
+            </div>
+            <PhotoCurve />
+          </div>
+        </section>
 
-      {/* The language belongs on this screen — it is the first thing a farmer
-          may need to change — but not as ten tiles across a laptop, louder
-          than the fields they came here to open. */}
-      <section className="space-y-2.5 lg:col-span-4 lg:col-start-9 lg:row-start-1 lg:row-span-2">
-        <h2 className="text-sm font-semibold text-soil-dark/80">
-          {t('chooseLanguage')}
-        </h2>
-        <div className="lg:rounded-2xl lg:bg-white lg:border lg:border-soil-dark/10 lg:p-3">
-          <LanguagePicker variant="grid" wide={false} onPick={setLang} />
-        </div>
-      </section>
-
-      <div className="space-y-5 lg:col-span-8 lg:col-start-1 lg:row-start-2">
         {farms.loading && !farms.data && <FarmPickerSkeleton />}
         {farms.error && <ErrorBox error={farms.error} onRetry={farms.reload} retryLabel={t('retry')} />}
 
         {filterable && (
-          <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0 lg:flex-wrap">
-            {[{ id: null as string | null, name: 'All' }, ...grown.map((c) => ({ id: c.id as string | null, name: c.name }))].map((c) => (
+          <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 lg:mx-0 lg:flex-wrap lg:px-0">
+            {[{ id: null as string | null, name: t('allCrops') }, ...grown.map((c) => ({ id: c.id as string | null, name: c.name }))].map((c) => (
               <button key={c.id ?? 'all'} onClick={() => setCropFilter(c.id)}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border ${cropFilter === c.id ? 'bg-leaf-deep text-cream border-leaf-deep' : 'bg-white border-soil-dark/15'}`}>
+                className={`min-h-[40px] shrink-0 rounded-full px-4 text-[14px] font-medium ring-1 ${cropFilter === c.id ? 'bg-[#2f6a39] text-white ring-[#2f6a39]' : 'bg-white ring-soil-dark/15'}`}>
                 {c.name}{c.id ? ` · ${farms.data!.filter((f) => f.crop === c.id).length}` : ''}
               </button>
             ))}
@@ -177,13 +180,11 @@ export default function Onboard() {
         {farms.data && (
           /* The fields and the way to add one are the same kind of thing — a
              tile you press to get to a field — so on a laptop they belong in
-             the same grid. A dashed bar ruled across the whole page under them
-             was the widest, loudest thing on a screen whose job is to let you
-             pick one of three farms. */
-          <ul className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-5 lg:items-stretch">
+             the same grid. */
+          <ul className={`space-y-3 lg:grid lg:items-stretch lg:gap-5 lg:space-y-0 ${inApp ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
             {shown.map((f: Farm) => (
               <li key={f.id} className="lg:h-full">
-                <FieldTile f={f} onOpen={() => setFarmId(f.id)} />
+                <FieldTile f={f} onOpen={() => open(f.id)} />
               </li>
             ))}
             {/* The demo account is shared and its four fields are the demo.
@@ -195,9 +196,9 @@ export default function Onboard() {
               <li className="lg:h-full">
                 <button
                   onClick={() => setAdding(true)}
-                  className="w-full h-full min-h-[56px] lg:min-h-[120px] rounded-2xl lg:rounded-3xl border-2 border-dashed border-leaf/40 text-leaf-deep text-sm font-medium flex items-center justify-center gap-2 hover:bg-leaf/5"
+                  className="flex h-full min-h-[64px] w-full items-center justify-center gap-2 rounded-[24px] border-2 border-dashed border-[#4b8b3b]/40 bg-white/60 text-[16px] font-semibold text-leaf-deep hover:bg-[#eef3e6] lg:min-h-[140px] lg:rounded-[28px]"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="h-5 w-5" />
                   {(farms.data?.length ?? 0) > 0 ? t('authAddField') : t('registerFarm')}
                 </button>
               </li>
@@ -205,8 +206,20 @@ export default function Onboard() {
           </ul>
         )}
 
-        {adding && crops.data && <RegisterForm crops={crops.data} onDone={(id) => setFarmId(id)} />}
+        {adding && crops.data && <RegisterForm crops={crops.data} onDone={open} />}
       </div>
+
+      {/* Before a field is chosen the language belongs on this screen — it is
+          the first thing a farmer may need to change. Opened from "My fields"
+          inside the app, the language menu is already in the top bar. */}
+      {!inApp && <aside className="min-w-0">
+        <section className={`${PANEL} p-5 lg:sticky lg:top-6`}>
+          <PanelHead icon={Languages} title={t('chooseLanguage')} />
+          <div className="mt-4">
+            <LanguagePicker variant="grid" wide={false} onPick={setLang} />
+          </div>
+        </section>
+      </aside>}
     </div>
   )
 }
@@ -285,7 +298,6 @@ function RegisterForm({ crops, onDone }: {
     }
   }
 
-  const field = 'w-full min-h-[48px] rounded-xl border border-soil-dark/20 px-3 bg-cream/50 text-sm focus:outline-none focus:border-leaf'
   const selected = crops.find((c) => c.id === crop)
   const phOk = !ph || (parseFloat(ph) >= 3 && parseFloat(ph) <= 11)
   // Where the field is, which this form left out of its own gate: the three
@@ -298,44 +310,44 @@ function RegisterForm({ crops, onDone }: {
     || where.lat === null || where.lon === null
 
   return (
-    <Card className="p-4 space-y-3">
-      <h2 className="font-medium">{t('registerFarm')}</h2>
-      <label className="block text-xs text-soil-dark/60">
+    <section className={`${PANEL} space-y-4 p-5 lg:p-6`}>
+      <PanelHead icon={Tractor} title={t('registerFarm')} />
+      <label className={LABEL}>
         {t('farmerName')}
-        <input className={field} value={name} onChange={(e) => setName(e.target.value)} />
+        <input className={FIELD} value={name} onChange={(e) => setName(e.target.value)} />
       </label>
-      <div className="grid grid-cols-2 gap-2">
-        <label className="block text-xs text-soil-dark/60">
+      <div className="grid grid-cols-2 gap-3">
+        <label className={LABEL}>
           <Ask label={t('crop')} say="helpCrop" />
-          <select className={field} value={crop} onChange={(e) => { setCrop(e.target.value); setBasis('') }}>
+          <select className={FIELD} value={crop} onChange={(e) => { setCrop(e.target.value); setBasis('') }}>
             {crops.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
         </label>
-        <label className="block text-xs text-soil-dark/60">
+        <label className={LABEL}>
           <Ask label={t('area')} say="helpArea" />
-          <input className={field} type="number" inputMode="decimal" min="0.1" step="0.1" value={area}
+          <input className={FIELD} type="number" inputMode="decimal" min="0.1" step="0.1" value={area}
             onChange={(e) => setArea(e.target.value)} />
         </label>
       </div>
       {selected && !selected.photo_diagnosis && (
-        <p className="text-xs rounded-xl bg-sky-50 text-sky-800 p-2.5">{t('photoLater')}</p>
+        <p className="rounded-[18px] bg-sky-50 p-3.5 text-[14px] text-sky-950/85">{t('photoLater')}</p>
       )}
       {!!selected?.nursery_days && (
-        <div className="text-xs text-soil-dark/60">
-          <p className="mb-1"><Ask label={t('dateBasisAsk')} say="dateBasisWhy" /></p>
+        <div className={LABEL}>
+          <p className="mb-1.5"><Ask label={t('dateBasisAsk')} say="dateBasisWhy" /></p>
           <Chips columns={2} value={basis ? [basis] : []} onChange={([v]) => setBasis(v)}
             options={[{ id: 'sown' as const, label: t('dateBasisSown') },
                       { id: 'transplanted' as const, label: t('dateBasisTransplanted') }]} />
-          <p className="mt-1 text-[11px] text-soil-dark/45">{t('dateBasisWhy')}</p>
+          <p className="mt-1.5 text-[13px] font-normal text-soil-dark/70">{t('dateBasisWhy')}</p>
         </div>
       )}
-      <label className="block text-xs text-soil-dark/60">
+      <label className={LABEL}>
         {selected?.nursery_days
           ? (basis === 'transplanted' ? t('transplantDate') : t('sowingDateOnly'))
           : <Ask label={t('sowingDateOnly')} say="helpSowing" />}
-        <input className={field} type="date" value={sowing} onChange={(e) => setSowing(e.target.value)} />
+        <input className={FIELD} type="date" value={sowing} onChange={(e) => setSowing(e.target.value)} />
       </label>
       {/* The picker is the only place this form asks where the field is. A
           second location button below used to set coordinates it could not
@@ -345,27 +357,27 @@ function RegisterForm({ crops, onDone }: {
           button and it is disabled while anything is missing, so they have to
           be on screen before the farmer presses anything. */}
       <WherePicker value={where} onChange={setWhere} showErrors needPoint />
-      <div className="text-xs text-soil-dark/60">
-        <p className="mb-1"><Ask label={t('authIrrigation')} say="helpIrrigation" /></p>
+      <div className={LABEL}>
+        <p className="mb-1.5"><Ask label={t('authIrrigation')} say="helpIrrigation" /></p>
         <Chips columns={2} value={[irrigation]} onChange={([v]) => setIrrigation(v)}
           options={(['rainfed', 'canal', 'borewell', 'open_well', 'farm_pond', 'drip', 'sprinkler'] as const).map((id) => ({ id, label: t(`irr_${id}`) }))} />
       </div>
-      <label className="block text-xs text-soil-dark/60">
+      <label className={LABEL}>
         <Ask label={t('soilPhCard')} say="helpSoilPh" />
-        <input className={field} type="number" inputMode="decimal" min="3" max="11" step="0.1" value={ph}
+        <input className={FIELD} type="number" inputMode="decimal" min="3" max="11" step="0.1" value={ph}
           placeholder="6.8" onChange={(e) => setPh(e.target.value)} />
-        <span className="block mt-1 text-[11px] text-soil-dark/45">{t('soilPhCardHint')}</span>
+        <span className="mt-1 block text-[13px] font-normal text-soil-dark/70">{t('soilPhCardHint')}</span>
       </label>
       {error && <ErrorBox error={error} />}
-      {whereBad && <p className="text-[12px] text-soil-dark/60 leading-snug">{t('authNeedWhere')}</p>}
+      {whereBad && <p className="text-[14px] leading-snug text-soil-dark/75">{t('authNeedWhere')}</p>}
       <button
         onClick={submit}
         disabled={busy || !name.trim() || !(parseFloat(area) > 0) || !phOk || whereBad
           || (!!selected?.nursery_days && !basis)}
-        className="w-full min-h-[48px] rounded-full bg-leaf-deep text-cream text-sm font-medium disabled:opacity-50"
+        className={PRIMARY}
       >
         {t('save')}
       </button>
-    </Card>
+    </section>
   )
 }

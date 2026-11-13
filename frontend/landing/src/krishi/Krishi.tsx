@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ArrowRight, RotateCcw, Send, Sprout, X } from 'lucide-react'
+import { ArrowRight, Bot, RotateCcw, Send, Sprout, X } from 'lucide-react'
 import { api } from '../api/client'
 import type { KrishiAnswer, KrishiChip, Lang } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { useFarmer } from '../farmer/FarmerContext'
+import { KRISHI_EVENT } from './bus'
 import { ListenButton, VoiceButton } from '../ui/kit'
 
 /** Which screen the farmer is on, in the names Krishi's knowledge base uses. */
@@ -137,6 +138,21 @@ export default function Krishi({ aboveNav = false, anchor = 'float' }:
     if (q) void ask({ text: q }, q)
   }
 
+  // Opened from elsewhere on the screen — the search button, a quick action,
+  // the sidebar — and asked straight away when a question came with it.
+  const askRef = useRef(ask)
+  useEffect(() => { askRef.current = ask })
+  useEffect(() => {
+    const onAsk = (e: Event) => {
+      const text = (e as CustomEvent<{ text?: string }>).detail?.text?.trim()
+      setOpen(true)
+      if (text) void askRef.current({ text }, text)
+      else window.setTimeout(() => inputRef.current?.focus(), 50)
+    }
+    window.addEventListener(KRISHI_EVENT, onAsk)
+    return () => window.removeEventListener(KRISHI_EVENT, onAsk)
+  }, [])
+
   if (screen === 'live') return null // the camera call is full screen
 
   const offset = aboveNav ? 'bottom-[calc(76px+env(safe-area-inset-bottom))] lg:bottom-6 lg:right-6' : 'bottom-5'
@@ -160,15 +176,14 @@ export default function Krishi({ aboveNav = false, anchor = 'float' }:
         <button
           data-tour="krishi" onClick={() => setOpen(true)}
           aria-label={t('krishiAsk')}
-          className={`fixed right-4 ${offset} z-40 flex items-center gap-2 rounded-full bg-ochre text-soil-dark pl-1.5 pr-4 py-1.5 shadow-lg shadow-soil-dark/20 ring-2 ring-cream hover:brightness-105 transition animate-fadein`}
+          className={`fixed right-4 ${offset} z-40 flex items-center gap-2.5 rounded-full bg-[#1d4a2c] text-cream p-1.5 shadow-[0_14px_30px_-12px_rgba(29,74,44,0.7)] ring-2 ring-white/70 hover:brightness-110 transition-[filter]
+                      sm:pr-4`}
         >
-          <span className="w-9 h-9 rounded-full bg-leaf-deep text-cream flex items-center justify-center">
-            <Sprout className="w-5 h-5" />
+          <span className="w-11 h-11 rounded-full bg-[#4b8b3b] text-white flex items-center justify-center shrink-0">
+            <Bot className="w-6 h-6" aria-hidden />
           </span>
-          <span className="text-left leading-tight">
-            <span className="block text-[13px] font-bold">{t('krishiName')}</span>
-            <span className="block text-[10px] font-medium opacity-75">{t('krishiAsk')}</span>
-          </span>
+          {/* The name is enough: what it does is in the tour and one tap away. */}
+          <span className="hidden sm:block text-[16px] font-semibold">{t('krishiName')}</span>
         </button>
       )}
 

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Check, Languages, X } from 'lucide-react'
+import { Check, ChevronDown, Languages, X } from 'lucide-react'
 import type { Lang } from '../../api/types'
 import { AUTHORED, LANGS } from '../../lib/i18n'
 import { useFarmer } from '../FarmerContext'
@@ -10,9 +10,11 @@ import { useFarmer } from '../FarmerContext'
  *
  *  `wide` is whether the grid has a page to spread across: five abreast under
  *  a sign-up form, two in a side column that is a third of one. */
-export default function LanguagePicker({ onPick, variant = 'button', wide = true }: {
+export default function LanguagePicker({ onPick, variant = 'button', wide = true, light = false }: {
   onPick: (lang: Lang) => void
   variant?: 'button' | 'grid'
+  /** On a light top bar: a white pill with dark text instead of a glass one. */
+  light?: boolean
   wide?: boolean
 }) {
   const { lang, t } = useFarmer()
@@ -64,10 +66,12 @@ export default function LanguagePicker({ onPick, variant = 'button', wide = true
           which is the screen that has to be readable without English, not
           this button. */}
       <button data-tour="lang" onClick={() => setOpen(true)} aria-label={t('chooseLanguage')}
-        className="flex items-center gap-1.5 rounded-full bg-cream/10 hover:bg-cream/20
-                   px-2.5 sm:px-3 min-w-[36px] min-h-[36px] justify-center text-xs font-medium">
+        className={`flex items-center gap-1.5 rounded-full px-2.5 sm:px-3.5 min-w-[40px] min-h-[40px] justify-center font-medium transition-colors ${
+          light ? 'bg-white text-soil-dark text-sm shadow-[0_4px_14px_-8px_rgba(43,29,18,0.35)] ring-1 ring-soil-dark/5 hover:bg-cream'
+            : 'bg-cream/10 hover:bg-cream/20 text-xs'}`}>
         <Languages className="w-4 h-4 shrink-0" />
         <span className="hidden sm:inline">{current?.label}</span>
+        {light && <ChevronDown className="hidden sm:block w-3.5 h-3.5 shrink-0 opacity-70" aria-hidden />}
       </button>
       {open && createPortal(
         <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center" onClick={() => setOpen(false)}>

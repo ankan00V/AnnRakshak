@@ -45,11 +45,14 @@ export function CardHead({ icon: Icon, title, sub, tone = 'text-leaf', aside }: 
 }) {
   return (
     <div className="flex items-start justify-between gap-3">
-      <div className="min-w-0">
-        <h2 className="font-semibold flex items-center gap-2">
-          <Icon className={`w-4 h-4 shrink-0 ${tone}`} /> {title}
-        </h2>
-        {sub && <p className="mt-1 text-xs leading-relaxed text-soil-dark/60 text-pretty">{sub}</p>}
+      <div className="flex min-w-0 items-start gap-3">
+        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eef3e6] ${tone}`}>
+          <Icon className="h-5 w-5" aria-hidden />
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-[18px] font-semibold leading-tight tracking-tight">{title}</h2>
+          {sub && <p className="mt-1 text-[13px] leading-relaxed text-soil-dark/70 text-pretty">{sub}</p>}
+        </div>
       </div>
       {aside}
     </div>
@@ -107,8 +110,8 @@ export function OfficerLoadPanel() {
   return (
     <Card className="p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-semibold flex items-center gap-2"><Users className="w-4 h-4 text-leaf" /> District officers</h2>
-        <span className="text-xs text-soil-dark/60">
+        <h2 className="flex items-center gap-2 text-[18px] font-semibold tracking-tight"><Users className="w-4 h-4 text-leaf" /> District officers</h2>
+        <span className="text-[13px] text-soil-dark/70">
           {many(officers.length, 'officer')} · {many(districts, 'district')} · {w.data.open_total} open
         </span>
       </div>
@@ -125,7 +128,7 @@ export function OfficerLoadPanel() {
             <li key={o.user_id} className="flex items-center gap-3">
               <span className="w-40 shrink-0 truncate text-sm">
                 {o.name}
-                <span className="block text-[11px] text-soil-dark/60 truncate">
+                <span className="block text-[12px] text-soil-dark/70 truncate">
                   {o.districts.length > 2 ? `${o.districts.slice(0, 2).join(', ')} +${o.districts.length - 2}` : (o.districts.join(', ') || 'no district')}
                 </span>
               </span>
@@ -134,10 +137,10 @@ export function OfficerLoadPanel() {
                 <span className={`block h-full rounded-full ${o.open_cases >= busiest && busiest > 1 ? 'bg-ember' : 'bg-leaf'}`}
                   style={{ width: `${(o.open_cases / busiest) * 100}%` }} />
               </span>
-              <span className="w-24 shrink-0 text-right text-xs tabular-nums text-soil-dark/70">
+              <span className="w-24 shrink-0 text-right text-[13px] tabular-nums text-soil-dark/70">
                 {o.open_cases} open
                 {o.oldest_wait_hours != null && (
-                  <span className={`block ${o.oldest_wait_hours > 24 ? 'text-ember' : 'text-soil-dark/50'}`}>
+                  <span className={`block ${o.oldest_wait_hours > 24 ? 'text-ember' : 'text-soil-dark/70'}`}>
                     {o.oldest_wait_hours < 1 ? 'under an hour' : `${Math.round(o.oldest_wait_hours)} h waiting`}
                   </span>
                 )}
@@ -148,25 +151,25 @@ export function OfficerLoadPanel() {
       )}
 
       {idle > 0 && carrying.length > 0 && (
-        <p className="mt-3 text-xs text-soil-dark/60">
+        <p className="mt-3 text-[13px] text-soil-dark/70">
           {idle} other officer{idle === 1 ? '' : 's'} holding nothing.
         </p>
       )}
 
       {w.data.unassigned > 0 && (mayRoute ? (
         <button onClick={route} disabled={busy}
-          className="mt-4 w-full min-h-[44px] rounded-full bg-leaf-deep text-cream text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-60">
+          className="mt-4 w-full min-h-[44px] rounded-full bg-[#1d4a2c] text-white text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-60">
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           Route {w.data.unassigned} waiting case{w.data.unassigned === 1 ? '' : 's'}
         </button>
       ) : (
-        <p className="mt-4 text-xs text-soil-dark/60">
+        <p className="mt-4 text-[13px] text-soil-dark/70">
           {w.data.unassigned} case{w.data.unassigned === 1 ? '' : 's'} waiting to be routed. Your supervisor
           — the Agriculture Officer or the KVK scientist — places these.
         </p>
       ))}
-      {said && <p className="mt-2 text-xs text-leaf-deep">{said}</p>}
-      {failed && <p className="mt-2 text-xs text-ember">{failed}</p>}
+      {said && <p className="mt-2 text-[13px] text-leaf-deep">{said}</p>}
+      {failed && <p className="mt-2 text-[13px] text-ember">{failed}</p>}
     </Card>
   )
 }
@@ -188,7 +191,7 @@ export function Panel<T>({ q, rows = 4, children }: {
 }) {
   if (q.data) return <>{children(q.data)}</>
   if (q.error) {
-    return <Card className="p-4 md:p-5"><ErrorBox error={q.error} onRetry={q.reload} /></Card>
+    return <Card className="p-5 lg:p-6"><ErrorBox error={q.error} onRetry={q.reload} /></Card>
   }
   return <PanelBone rows={rows} />
 }
@@ -250,10 +253,10 @@ export function PageHead({ title, purpose, children }: {
   title: string; purpose: string; children?: ReactNode
 }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+    <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
       <div className="min-w-0">
-        <h1 className="font-instrument-serif text-[27px] lg:text-[32px] leading-tight">{title}</h1>
-        <p className="mt-0.5 text-sm text-soil-dark/60 text-pretty">{purpose}</p>
+        <h1 className="font-instrument-serif text-[36px] leading-none text-[#1d3a24] lg:text-[44px]">{title}</h1>
+        <p className="mt-2 max-w-3xl text-[15px] text-soil-dark/75 text-pretty">{purpose}</p>
       </div>
       {children}
     </div>
@@ -289,15 +292,15 @@ export function PesticidePanel({ p }: { p: PesticideBaseline }) {
   const labelled = new Set([shown, ...(Math.abs(peak - shown) > 1 ? [peak] : [])])
 
   return (
-    <Card className="p-4 md:p-5 h-full">
+    <Card className="p-5 lg:p-6 h-full">
       <CardHead icon={FlaskConical} tone="text-ember" title={`Pesticide use — ${p.state}`}
         sub={<>The number &ldquo;more targeted pesticide use&rdquo; has to move.</>} />
 
       <div className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <p className="text-[28px] font-semibold tabular-nums leading-none">
-          {tonnes(series[last][1])}<span className="text-base font-medium text-soil-dark/60"> t</span>
+          {tonnes(series[last][1])}<span className="text-base font-medium text-soil-dark/70"> t</span>
         </p>
-        <p className="text-xs text-soil-dark/60">
+        <p className="text-[13px] text-soil-dark/70">
           chemical pesticide in {series[last][0]}
           {p.latest_share_pct != null && <> · <b className="font-semibold text-soil-dark/80">{p.latest_share_pct}%</b> of India</>}
           {p.rank != null && <> · <b className="font-semibold text-soil-dark/80">#{p.rank}</b> of {p.states_ranked} states</>}
@@ -309,7 +312,7 @@ export function PesticidePanel({ p }: { p: PesticideBaseline }) {
           + series.map(([y, v]) => `${y} ${tonnes(v)} tonnes`).join(', ')}>
         <div className="relative w-7 shrink-0 h-36" aria-hidden>
           {ticks.map((t) => (
-            <span key={t} className="absolute right-0 translate-y-1/2 text-[10px] tabular-nums text-soil-dark/45"
+            <span key={t} className="absolute right-0 translate-y-1/2 text-[12px] tabular-nums text-soil-dark/70"
               style={{ bottom: `${(t / top) * 100}%` }}>{compact(t)}</span>
           ))}
         </div>
@@ -329,7 +332,7 @@ export function PesticidePanel({ p }: { p: PesticideBaseline }) {
                   aria-label={`${year}: ${tonnes(v)} tonnes`}
                   className="relative h-full outline-none focus-visible:bg-soil-dark/[0.04] rounded">
                   {labelled.has(i) && (
-                    <span className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold tabular-nums text-soil-dark"
+                    <span className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[12px] font-semibold tabular-nums text-soil-dark"
                       style={{ bottom: `calc(${h}% + 4px)` }}>
                       {compact(Math.round(v / 100) * 100)}
                     </span>
@@ -345,21 +348,21 @@ export function PesticidePanel({ p }: { p: PesticideBaseline }) {
       </div>
       <div className="mt-1.5 ml-9 grid" aria-hidden style={{ gridTemplateColumns: `repeat(${series.length}, minmax(0, 1fr))` }}>
         {series.map(([year], i) => (
-          <span key={year} className={`text-center text-[10px] tabular-nums ${i === shown ? 'text-soil-dark font-medium' : 'text-soil-dark/45'}`}>
+          <span key={year} className={`text-center text-[12px] tabular-nums ${i === shown ? 'text-soil-dark font-medium' : 'text-soil-dark/70'}`}>
             {year.slice(2)}
           </span>
         ))}
       </div>
-      <p className="mt-1 text-center text-[11px] text-soil-dark/55 tabular-nums" aria-live="polite">
+      <p className="mt-1 text-center text-[12px] text-soil-dark/70 tabular-nums" aria-live="polite">
         {series[shown][0]}: {tonnes(series[shown][1])} t{shown === peak ? ' · the peak' : ''}
       </p>
 
-      <p className="mt-4 text-xs leading-relaxed text-soil-dark/70 text-pretty">
+      <p className="mt-4 text-[13px] leading-relaxed text-soil-dark/70 text-pretty">
         AnnRakshak&apos;s lever: chemical rungs come last and collapsed, advice only above the
         confidence gate, and the spray check vetoes wrong-class, wrong-crop and herbicide sprays
         before they happen.
       </p>
-      <p className="mt-3 text-[10px] leading-relaxed text-soil-dark/40">{p.source}. {p.unit_note}</p>
+      <p className="mt-3 text-[12px] leading-relaxed text-soil-dark/70">{p.source}. {p.unit_note}</p>
     </Card>
   )
 }
@@ -376,11 +379,11 @@ export function KccPanel({ k }: { k: KccData }) {
   const top = k.groups.slice(0, 6)
   const most = Math.max(1, ...top.map((g) => g.expected_this_month))
   return (
-    <Card className="p-4 md:p-5">
-      <h2 className="font-semibold flex items-center gap-2">
+    <Card className="p-5 lg:p-6">
+      <h2 className="flex items-center gap-2 text-[18px] font-semibold tracking-tight">
         <PhoneCall className="w-4 h-4 text-leaf" /> What farmers ring about in {MONTH[k.month]}
       </h2>
-      <p className="text-xs text-soil-dark/60 mt-0.5">
+      <p className="text-[13px] text-soil-dark/70 mt-0.5">
         Kisan Call Centre plant-protection calls, {k.years[0]}–{k.years[1]}, as a check on the risk
         calendar: these are the months farmers themselves raised each problem. Calls are demand, not
         incidence — they also follow phone access and awareness.
@@ -390,7 +393,7 @@ export function KccPanel({ k }: { k: KccData }) {
           <li key={g.id}>
             <div className="flex items-baseline justify-between gap-3">
               <span className="text-sm font-medium">{g.label}</span>
-              <span className="text-xs tabular-nums text-soil-dark/60 shrink-0">
+              <span className="text-[13px] tabular-nums text-soil-dark/70 shrink-0">
                 ~{g.expected_this_month.toLocaleString('en-IN')} calls
               </span>
             </div>
@@ -398,7 +401,7 @@ export function KccPanel({ k }: { k: KccData }) {
               <span className="block h-full rounded-full bg-leaf/60"
                 style={{ width: `${Math.max(3, (g.expected_this_month / most) * 100)}%` }} />
             </div>
-            <p className="mt-1 text-[11px] text-soil-dark/55">
+            <p className="mt-1 text-[12px] text-soil-dark/70">
               {g.crop} · peaks {g.peak_months.map((m) => MONTH[m]).join(', ')}
               {g.top_districts.length > 0 && ` · most from ${g.top_districts.slice(0, 2).map((d) => d.district).join(', ')}`}
             </p>
@@ -406,11 +409,11 @@ export function KccPanel({ k }: { k: KccData }) {
         ))}
       </ul>
       {k.groups.length > top.length && (
-        <p className="mt-3 text-[11px] text-soil-dark/50">
+        <p className="mt-3 text-[12px] text-soil-dark/70">
           {k.groups.length - top.length} more pest groups in the same record.
         </p>
       )}
-      <p className="mt-3 text-[10px] text-soil-dark/40">{k.source}</p>
+      <p className="mt-3 text-[12px] text-soil-dark/70">{k.source}</p>
     </Card>
   )
 }
@@ -430,11 +433,13 @@ export function Kpis({ s }: { s: Summary }) {
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {items.map(({ icon: Icon, label, value, sub, to }) => (
         <Link key={label} to={to} className="group">
-          <Card className="p-4 h-full transition-colors group-hover:border-leaf/40 group-hover:bg-leaf/[0.03]">
-            <Icon className="w-4 h-4 text-leaf" />
-            <p className="mt-2 text-3xl font-semibold leading-none">{value}</p>
-            <p className="mt-1 text-xs font-medium">{label}</p>
-            <p className="text-[11px] text-soil-dark/60 mt-0.5">{sub}</p>
+          <Card className="h-full p-4 transition-[transform,box-shadow] duration-200 group-hover:-translate-y-0.5 group-hover:shadow-[0_16px_30px_-18px_rgba(43,29,18,0.45)] lg:p-5">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eef3e6] text-[#2f6a39]">
+              <Icon className="h-5 w-5" aria-hidden />
+            </span>
+            <p className="mt-3 text-[30px] font-semibold leading-none tabular-nums">{value}</p>
+            <p className="mt-1.5 text-[14px] font-semibold">{label}</p>
+            <p className="mt-0.5 text-[13px] text-soil-dark/70">{sub}</p>
           </Card>
         </Link>
       ))}
@@ -455,6 +460,9 @@ const REASON_LABEL: Record<string, string> = {
   LAB_CLASS_BELOW_GATE: 'Lab-trained class, below its higher bar',
   NOT_PHOTO_DIAGNOSABLE: 'Not something a photo can settle',
   FOLLOWUP_WORSE: 'The farmer said it got worse',
+  LIVE_FEW_VIEWS: 'Live call: too few clear views',
+  NOT_A_CROP_PHOTO: 'Not a photo of a crop',
+  LAB_CLASS_CONFIRM: 'Lab-trained class, asked to confirm',
 }
 const reasonLabel = (r: string) =>
   REASON_LABEL[r] ?? r.charAt(0) + r.slice(1).toLowerCase().replace(/_/g, ' ')
@@ -473,14 +481,14 @@ export function GatePanel({ s }: { s: Summary }) {
   const share = (n: number) => (total ? Math.round((n / total) * 100) : 0)
 
   return (
-    <Card className="p-4 md:p-5 h-full">
+    <Card className="p-5 lg:p-6 h-full">
       <CardHead icon={Gauge} title="The gate, on farmers' photos"
         sub="Every photo sent so far: answered, settled with one question, handed to a person, or sent back for a better picture — instead of a guess." />
-      {total === 0 ? <p className="mt-4 text-sm text-soil-dark/60">No photographs yet.</p> : (
+      {total === 0 ? <p className="mt-4 text-sm text-soil-dark/70">No photographs yet.</p> : (
         <>
           <p className="mt-4 text-sm">
             <b className="text-[28px] font-semibold tabular-nums leading-none">{total}</b>
-            <span className="ml-2 text-soil-dark/60">photos</span>
+            <span className="ml-2 text-soil-dark/70">photos</span>
           </p>
           {/* Two-pixel gaps rather than borders: neighbours read apart by the
               space between them, not by ink drawn around them. */}
@@ -493,22 +501,22 @@ export function GatePanel({ s }: { s: Summary }) {
           </div>
           <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
             {seg.map(([k, l, cls]) => (
-              <li key={k} className="flex items-center gap-2 text-xs">
+              <li key={k} className="flex items-center gap-2 text-[13px]">
                 <span className={`w-2.5 h-2.5 rounded-sm shrink-0 ${cls}`} />
                 <span className="min-w-0 flex-1 text-soil-dark/75">{l}</span>
                 <span className="tabular-nums font-semibold">{g[k] ?? 0}</span>
-                <span className="w-8 text-right tabular-nums text-soil-dark/45">{share(g[k] ?? 0)}%</span>
+                <span className="w-8 text-right tabular-nums text-soil-dark/70">{share(g[k] ?? 0)}%</span>
               </li>
             ))}
           </ul>
 
           {reasons.length > 0 && (
             <div className="mt-5 pt-4 border-t border-soil-dark/10">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-soil-dark/50">Why it handed one over</h3>
+              <h3 className="text-[14px] font-semibold text-soil-dark/85">Why it handed one over</h3>
               <ul className="mt-3 space-y-2.5">
                 {reasons.map(([r, n]) => (
                   <li key={r}>
-                    <div className="flex items-baseline justify-between gap-3 text-xs">
+                    <div className="flex items-baseline justify-between gap-3 text-[13px]">
                       <span className="text-soil-dark/80">{reasonLabel(r)}</span>
                       <span className="tabular-nums font-semibold shrink-0">{n}</span>
                     </div>
@@ -529,7 +537,7 @@ export function GatePanel({ s }: { s: Summary }) {
 export function ModelPanel({ m }: { m: ModelCard }) {
   if (m.is_stub) {
     return (
-      <Card className="p-4 md:p-5 h-full border-ochre/40">
+      <Card className="p-5 lg:p-6 h-full border-ochre/40">
         <CardHead icon={BrainCircuit} tone="text-ochre" title="Vision model"
           sub={<>Running the labelled demo stub — train with <code>ml/train.py</code> to load the ICAR model.</>} />
       </Card>
@@ -541,7 +549,7 @@ export function ModelPanel({ m }: { m: ModelCard }) {
   const trained = m.trained_at ? new Date(m.trained_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : null
 
   return (
-    <Card className="p-4 md:p-5 h-full">
+    <Card className="p-5 lg:p-6 h-full">
       <CardHead icon={BrainCircuit} title="The model, on photos it has never seen"
         sub={<>Scored on {m.split?.test ?? '—'} held-out ICAR photographs, kept out of training entirely.
           {m.classes?.length ? <> It knows {m.classes.length} problems across the four crops.</> : null}</>}
@@ -561,9 +569,9 @@ export function ModelPanel({ m }: { m: ModelCard }) {
 
       {m.benchmark && m.benchmark.length > 0 && (
         <div className="mt-5">
-          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-soil-dark/50">Approaches compared on the ICAR test set</h3>
-          <table className="mt-2 w-full text-xs">
-            <thead className="text-soil-dark/50">
+          <h3 className="text-[14px] font-semibold text-soil-dark/85">Approaches compared on the ICAR test set</h3>
+          <table className="mt-2 w-full text-[13px]">
+            <thead className="text-soil-dark/70">
               <tr>
                 <th className="text-left font-medium py-1.5">Approach</th>
                 <th className="text-right font-medium w-16">Accuracy</th>
@@ -589,7 +597,7 @@ export function ModelPanel({ m }: { m: ModelCard }) {
         </div>
       )}
 
-      <details className="mt-4 group text-[11px] text-soil-dark/55">
+      <details className="mt-4 group text-[12px] text-soil-dark/70">
         <summary className="cursor-pointer select-none hover:text-soil-dark/80">
           What it was trained on{trained ? ` · trained ${trained}` : ''}
         </summary>
@@ -599,7 +607,7 @@ export function ModelPanel({ m }: { m: ModelCard }) {
             {m.split.train.toLocaleString('en-IN')} training · {m.split.val.toLocaleString('en-IN')} validation · {m.split.test} test photographs
           </p>
         )}
-        <p className="mt-1 break-all text-soil-dark/40">{m.model_version}</p>
+        <p className="mt-1 break-all text-soil-dark/70">{m.model_version}</p>
       </details>
     </Card>
   )
@@ -609,36 +617,36 @@ export function ModelPanel({ m }: { m: ModelCard }) {
  *  is, then the one qualifier that keeps it honest. */
 function Figure({ value, label, sub, strong }: { value: string; label: string; sub?: string; strong?: boolean }) {
   return (
-    <div className={`rounded-2xl px-3 py-3 ${strong ? 'bg-leaf/10 ring-1 ring-leaf/20' : 'bg-cream'}`}>
-      <p className={`text-[22px] font-semibold tabular-nums leading-none ${strong ? 'text-leaf-deep' : ''}`}>{value}</p>
-      <p className="mt-1.5 text-[11px] font-medium leading-tight text-soil-dark/75">{label}</p>
-      {sub && <p className="mt-0.5 text-[10px] leading-tight text-soil-dark/50 tabular-nums">{sub}</p>}
+    <div className={`rounded-2xl px-4 py-3.5 ${strong ? 'bg-[#e3efd9] ring-1 ring-[#4b8b3b]/20' : 'bg-[#fdf5e6]'}`}>
+      <p className={`text-[26px] font-semibold tabular-nums leading-none ${strong ? 'text-[#2f6a39]' : 'text-[#7a4f12]'}`}>{value}</p>
+      <p className="mt-1.5 text-[12px] font-medium leading-tight text-soil-dark/75">{label}</p>
+      {sub && <p className="mt-0.5 text-[12px] leading-tight text-soil-dark/70 tabular-nums">{sub}</p>}
     </div>
   )
 }
 
 export function Stat({ v, l, strong }: { v: string; l: string; strong?: boolean }) {
   return (
-    <div className={`rounded-xl p-2 ${strong ? 'bg-leaf/10' : 'bg-cream'}`}>
+    <div className={`rounded-xl p-2.5 ${strong ? 'bg-[#e3efd9]' : 'bg-[#f8f6f0]'}`}>
       <p className={`text-xl font-semibold ${strong ? 'text-leaf-deep' : ''}`}>{v}</p>
-      <p className="text-[10px] text-soil-dark/60 leading-tight">{l}</p>
+      <p className="text-[12px] text-soil-dark/70 leading-tight">{l}</p>
     </div>
   )
 }
 
 export function DistrictTable({ s }: { s: Summary }) {
   return (
-    <Card className="p-4">
-      <h2 className="font-semibold flex items-center gap-2"><Target className="w-4 h-4 text-leaf" /> Districts</h2>
-      <div className="mt-3 overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="text-xs text-soil-dark/50">
-            <tr><th className="text-left font-medium py-1">District</th><th className="text-right font-medium">Farms</th><th className="text-right font-medium">Confirmed</th><th className="text-right font-medium">AI-advised</th><th className="text-right font-medium">Queue</th><th className="text-right font-medium">High alerts</th></tr>
+    <Card className="p-5 lg:p-6">
+      <CardHead icon={Target} title="Districts" sub="Farms, cases and this week's high alerts in each district." />
+      <div className="mt-4 overflow-x-auto">
+        <table className="w-full text-[14px]">
+          <thead className="text-[13px] text-soil-dark/70">
+            <tr className="border-b border-soil-dark/10"><th className="py-2 text-left font-semibold">District</th><th className="text-right font-semibold">Farms</th><th className="text-right font-semibold">Confirmed</th><th className="text-right font-semibold">AI-advised</th><th className="text-right font-semibold">Queue</th><th className="text-right font-semibold">High alerts</th></tr>
           </thead>
           <tbody>
             {s.by_district.map((d) => (
-              <tr key={d.district} className="border-t border-soil-dark/5">
-                <td className="py-1.5">
+              <tr key={d.district} className="border-t border-soil-dark/[0.06] tabular-nums">
+                <td className="py-2.5 font-medium">
                   <Link to={`/officer/queue?district=${encodeURIComponent(d.district)}`}
                     className="hover:text-leaf-deep hover:underline underline-offset-2">{d.district}</Link>
                 </td>
@@ -668,12 +676,12 @@ export function AccuracyPanel({ s }: { s: Summary }) {
     .filter((a) => a.n > 0)
     .sort((a, b) => a.confirmed / a.n - b.confirmed / b.n || b.n - a.n)
   return (
-    <Card className="p-4 md:p-5 h-full">
+    <Card className="p-5 lg:p-6 h-full">
       <CardHead icon={ShieldCheck} title="Where experts corrected it"
         sub="Experts only see the cases the gate was unsure of, so this is agreement on the hard ones, not overall accuracy. Weakest first — these are the classes that need field photographs." />
-      {rows.length === 0 ? <p className="mt-4 text-sm text-soil-dark/60">No expert verdicts yet.</p> : (
+      {rows.length === 0 ? <p className="mt-4 text-sm text-soil-dark/70">No expert verdicts yet.</p> : (
         <table className="mt-4 w-full text-sm">
-          <thead className="text-[11px] uppercase tracking-wide text-soil-dark/50">
+          <thead className="text-[13px] font-semibold text-soil-dark/75">
             <tr>
               <th className="text-left font-semibold pb-2">Model said</th>
               <th className="text-right font-semibold pb-2 w-16">Agreed</th>
@@ -688,17 +696,17 @@ export function AccuracyPanel({ s }: { s: Summary }) {
                 <tr key={a.model_label} className="border-t border-soil-dark/[0.07]">
                   <td className="py-2 pr-2">
                     <span className="font-medium">{labelName(a.model_label, a.name)}</span>
-                    {a.n === 1 && <span className="ml-1.5 text-[11px] text-soil-dark/45">one case</span>}
+                    {a.n === 1 && <span className="ml-1.5 text-[12px] text-soil-dark/70">one case</span>}
                   </td>
                   <td className="text-right tabular-nums text-leaf-deep">{a.confirmed}</td>
-                  <td className={`text-right tabular-nums ${a.corrected ? 'text-ember font-semibold' : 'text-soil-dark/40'}`}>{a.corrected}</td>
+                  <td className={`text-right tabular-nums ${a.corrected ? 'text-ember font-semibold' : 'text-soil-dark/70'}`}>{a.corrected}</td>
                   <td className="pl-4">
                     <div className="flex items-center gap-2">
                       <div className="flex-1 flex h-1.5 gap-[2px]" aria-hidden>
                         {a.confirmed > 0 && <span className="rounded-l-full last:rounded-r-full bg-leaf" style={{ width: `${agree * 100}%` }} />}
                         {a.corrected > 0 && <span className="rounded-r-full first:rounded-l-full bg-ember/80" style={{ width: `${(1 - agree) * 100}%` }} />}
                       </div>
-                      <span className="w-9 text-right text-[11px] tabular-nums text-soil-dark/55">{Math.round(agree * 100)}%</span>
+                      <span className="w-9 text-right text-[12px] tabular-nums text-soil-dark/70">{Math.round(agree * 100)}%</span>
                     </div>
                   </td>
                 </tr>
@@ -709,17 +717,17 @@ export function AccuracyPanel({ s }: { s: Summary }) {
       )}
       {s.top_targets.length > 0 && (
         <div className="mt-5 pt-4 border-t border-soil-dark/10">
-          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-soil-dark/50">Most reported in the field</h3>
+          <h3 className="text-[14px] font-semibold text-soil-dark/85">Most reported in the field</h3>
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {s.top_targets.slice(0, 8).map((t) => (
-              <span key={t.target} className="inline-flex items-center gap-1.5 rounded-full bg-soil-dark/[0.05] px-2.5 py-1 text-[11px] text-soil-dark/80">
+              <span key={t.target} className="inline-flex items-center gap-1.5 rounded-full bg-soil-dark/[0.05] px-2.5 py-1 text-[12px] text-soil-dark/80">
                 {t.confirmed > 0 && <span className="w-1.5 h-1.5 rounded-full bg-ember" title="confirmed by an expert" />}
                 {labelName(t.target, t.name)}
                 <span className="font-semibold tabular-nums">{t.confirmed + t.suspected}</span>
               </span>
             ))}
           </div>
-          <p className="mt-2 text-[10px] text-soil-dark/45 flex items-center gap-1.5">
+          <p className="mt-2 text-[12px] text-soil-dark/70 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-ember" /> at least one confirmed by an expert
           </p>
         </div>
@@ -747,17 +755,17 @@ const TRIGGER_LABEL: Record<string, string> = {
 export function OutlookPanel({ rows, onDraft }: { rows: OutlookRow[]; onDraft?: (r: OutlookRow) => void }) {
   const shown = rows.slice(0, 10)
   return (
-    <Card className="p-4 md:p-5">
+    <Card className="p-5 lg:p-6">
       <CardHead icon={CalendarRange} title="Risk outlook — what is building this week"
         sub="From weather, crop stage, trap counts and confirmed cases nearby. Where to send scouts, and which ICAR bio-inputs to stock — Tricho-cards need a 45-day indent, so order when the risk starts building, not when it arrives."
         aside={rows.length > 0 ? <Pill tone="neutral" className="shrink-0">{many(rows.length, 'problem')}</Pill> : undefined} />
       {rows.length === 0 ? (
-        <p className="mt-4 text-sm text-soil-dark/60">Nothing is building this week — no alert has been raised in seven days.</p>
+        <p className="mt-4 text-sm text-soil-dark/70">Nothing is building this week — no alert has been raised in seven days.</p>
       ) : (
         <div className="mt-4 -mx-4 md:-mx-5 overflow-x-auto">
           <table className="w-full min-w-[880px] text-sm">
             <thead>
-              <tr className="text-[11px] uppercase tracking-wide text-soil-dark/50 whitespace-nowrap">
+              <tr className="text-[13px] font-semibold text-soil-dark/75 whitespace-nowrap">
                 <th className="text-left font-semibold py-2 pl-4 md:pl-5">Pest or disease</th>
                 <th className="text-right font-semibold py-2 px-3">Farms</th>
                 <th className="text-right font-semibold py-2 px-3">High alerts</th>
@@ -773,35 +781,35 @@ export function OutlookPanel({ rows, onDraft }: { rows: OutlookRow[]; onDraft?: 
                 <tr key={r.target} className="border-t border-soil-dark/[0.07] align-top hover:bg-soil-dark/[0.02]">
                   <td className="py-3 pl-4 md:pl-5 pr-3">
                     <p className="font-medium leading-snug">{r.name}</p>
-                    <p className="text-[11px] text-soil-dark/50 capitalize">{r.crop}</p>
+                    <p className="text-[12px] text-soil-dark/70 capitalize">{r.crop}</p>
                   </td>
                   <td className="py-3 px-3 text-right tabular-nums">{r.farms}</td>
                   <td className="py-3 px-3 text-right tabular-nums">
                     {r.high > 0
                       ? <span className="inline-flex items-center gap-1.5 font-semibold text-ember"><span className="w-1.5 h-1.5 rounded-full bg-ember" />{r.high}</span>
-                      : <span className="text-soil-dark/40">0</span>}
+                      : <span className="text-soil-dark/70">0</span>}
                   </td>
-                  <td className="py-3 px-3 text-xs text-soil-dark/75">{r.districts.join(', ')}</td>
+                  <td className="py-3 px-3 text-[13px] text-soil-dark/75">{r.districts.join(', ')}</td>
                   <td className="py-3 px-3">
                     <div className="flex flex-wrap gap-1">
                       {Object.keys(r.triggers).map((k) => (
-                        <span key={k} className="rounded-full bg-soil-dark/[0.05] px-2 py-0.5 text-[11px] text-soil-dark/70 whitespace-nowrap">
+                        <span key={k} className="rounded-full bg-soil-dark/[0.05] px-2 py-0.5 text-[12px] text-soil-dark/70 whitespace-nowrap">
                           {TRIGGER_LABEL[k] ?? k}
                         </span>
                       ))}
                     </div>
                   </td>
-                  <td className="py-3 px-3 text-right text-xs tabular-nums whitespace-nowrap">
+                  <td className="py-3 px-3 text-right text-[13px] tabular-nums whitespace-nowrap">
                     {r.inspected
-                      ? <><span className={r.found ? 'text-ember font-semibold' : ''}>{r.found}</span><span className="text-soil-dark/45"> of {r.inspected} found it</span></>
-                      : <span className="text-soil-dark/40">not yet</span>}
+                      ? <><span className={r.found ? 'text-ember font-semibold' : ''}>{r.found}</span><span className="text-soil-dark/70"> of {r.inspected} found it</span></>
+                      : <span className="text-soil-dark/70">not yet</span>}
                   </td>
                   <td className="py-3 px-3">
-                    {r.icar_inputs.length === 0 ? <span className="text-xs text-soil-dark/40">—</span> : (
+                    {r.icar_inputs.length === 0 ? <span className="text-[13px] text-soil-dark/70">—</span> : (
                       <div className="flex flex-wrap gap-1 max-w-[260px]">
                         {r.icar_inputs.map((x) => (
                           <span key={x.id} title={`${x.source_name} — ${x.institute.name}, ${x.institute.city}${x.institute.phone ? `, ${x.institute.phone}` : ''}`}
-                            className={`text-[11px] rounded-full px-2 py-0.5 ${x.lead_time_days ? 'bg-ochre/15 text-[#8a5a17]' : 'bg-leaf/10 text-leaf-deep'}`}>
+                            className={`text-[12px] rounded-full px-2 py-0.5 ${x.lead_time_days ? 'bg-ochre/15 text-[#8a5a17]' : 'bg-leaf/10 text-leaf-deep'}`}>
                             {x.short}{x.lead_time_days ? ` · order ${x.lead_time_days} d ahead` : ''}
                           </span>
                         ))}
@@ -811,7 +819,7 @@ export function OutlookPanel({ rows, onDraft }: { rows: OutlookRow[]; onDraft?: 
                   {onDraft && (
                     <td className="py-2.5 pr-4 md:pr-5 text-right">
                       <button type="button" onClick={() => onDraft(r)}
-                        className="whitespace-nowrap inline-flex items-center gap-1.5 min-h-[34px] px-3 rounded-full border border-leaf-deep/25 text-xs font-medium text-leaf-deep hover:bg-leaf-deep hover:text-cream transition-colors">
+                        className="whitespace-nowrap inline-flex items-center gap-1.5 min-h-[34px] px-3 rounded-full border border-leaf-deep/25 text-[13px] font-medium text-leaf-deep hover:bg-leaf-deep hover:text-cream transition-colors">
                         <Megaphone className="w-3.5 h-3.5" /> Draft advisory
                       </button>
                     </td>
@@ -823,8 +831,39 @@ export function OutlookPanel({ rows, onDraft }: { rows: OutlookRow[]; onDraft?: 
         </div>
       )}
       {rows.length > shown.length && (
-        <p className="mt-3 text-[11px] text-soil-dark/50">{rows.length - shown.length} more with lower risk this week.</p>
+        <p className="mt-3 text-[12px] text-soil-dark/70">{rows.length - shown.length} more with lower risk this week.</p>
       )}
     </Card>
   )
+}
+
+const STAT_TONE = {
+  red: { card: 'bg-[#fdf0ed]', icon: 'bg-[#f9dcd5] text-[#b5381c]' },
+  amber: { card: 'bg-[#fdf5e6]', icon: 'bg-[#fbe5bd] text-[#9a6210]' },
+  green: { card: 'bg-[#eef6ea]', icon: 'bg-[#d6ebcd] text-[#2f6a39]' },
+  violet: { card: 'bg-[#f3f0fb]', icon: 'bg-[#e3dcf6] text-[#5b45a8]' },
+} as const
+
+/** One district number, and the screen that settles it. */
+export function StatCard({ icon: Icon, tone, value, label, to }: {
+  icon: typeof Gauge; tone: keyof typeof STAT_TONE; value: number | null | undefined; label: string; to?: string
+}) {
+  const s = STAT_TONE[tone]
+  const cls = `group flex flex-col items-start gap-3 rounded-[22px] p-4 sm:flex-row sm:items-center sm:gap-3.5 shadow-[0_10px_26px_-20px_rgba(43,29,18,0.45)] ring-1 ring-soil-dark/[0.06] lg:p-5 ${s.card}`
+  const body = (
+    <>
+      <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${s.icon}`}>
+        <Icon className="h-6 w-6" aria-hidden />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-[28px] font-semibold leading-none tabular-nums">
+          {value == null ? <span className="inline-block h-6 w-10 animate-pulse rounded bg-soil-dark/10" /> : value}
+        </span>
+        <span className="mt-1 block text-[14px] font-medium leading-snug text-soil-dark/80">{label}</span>
+      </span>
+    </>
+  )
+  return to
+    ? <Link to={to} className={`${cls} transition-transform duration-200 hover:-translate-y-0.5`}>{body}</Link>
+    : <div className={cls}>{body}</div>
 }

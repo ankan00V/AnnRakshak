@@ -2,6 +2,8 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Landing from './Landing'
 import FarmerApp from './farmer/FarmerApp'
+// Already in the farmer app's own bundle (it is the field picker before a field is chosen).
+import FarmerFields from './farmer/screens/Onboard'
 import Home from './farmer/screens/Home'
 import { AuthProvider } from './auth/AuthContext'
 import RequireRole from './auth/RequireRole'
@@ -59,6 +61,7 @@ export default function App() {
               <Route path="history" element={<History />} />
               <Route path="history/:id" element={<ProblemDetail />} />
               <Route path="profile" element={<FarmerProfile />} />
+              <Route path="fields" element={<FarmerFields />} />
             </Route>
             {/* One queue, not two: the district office's is the better of the pair. */}
             <Route path="/expert" element={<Navigate to="/officer/queue" replace />} />

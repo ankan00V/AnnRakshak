@@ -44,3 +44,10 @@ body {
 .leaflet-tile-pane {
   filter: saturate(0.3) brightness(1.04) contrast(0.92);
 }
+
+/* Anyone who asked their system for less motion gets the screen as it is. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fadein {
+    animation: none;
+  }
+}
