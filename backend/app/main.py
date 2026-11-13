@@ -28,6 +28,7 @@ from app import voice
 from app import cache, mosdac, notify, runtime, watch
 from app import krishi as krishi_kb
 from app.routers import auth, darpan, expert, farmer, geo, krishi, live, officials, weather
+from app.routers import sms as sms_replies
 
 
 logging.basicConfig(
@@ -60,6 +61,13 @@ async def lifespan(_: FastAPI):
     # waits for every connection to close. Tell them first, or the process
     # sits here until each one reaches its own deadline.
     runtime.begin()
+    # A live call whose connection just closed is on its way into Redis, where
+    # the farmer's reconnection to another container will look for it. Let
+    # those moves land before the loop goes; the release listener goes with
+    # the other background tasks. Without REDIS_URL both are no-ops.
+    await live.drain(5)
+    if live._listener is not None and not live._listener.done():
+        tasks.append(live._listener)
     for task in tasks:
         task.cancel()
     # Background loops talk to the network; one stuck on a dead socket must not
@@ -139,6 +147,8 @@ app.include_router(officials.router)
 app.include_router(live.router)
 app.include_router(weather.router)
 app.include_router(voice.router)
+# Replies by SMS from farmers without the app (the provider's callback).
+app.include_router(sms_replies.router)
 
 
 @app.get("/health")

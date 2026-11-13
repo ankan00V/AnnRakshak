@@ -1103,3 +1103,41 @@ def test_past_the_edge_only_a_real_last_word_is_taken(client, monkeypatch):
         ws.send_json({"type": "finish"})                   # even the finish, once the grace is spent
         with pytest.raises(Exception):  # noqa: B017, PT011
             ws.receive_json()
+
+
+# --- one farm, one age -----------------------------------------------------------
+
+@pytest.mark.parametrize("state", [None, "Tamil Nadu"])
+def test_a_transplanted_rice_farm_has_one_age_on_the_whole_screen(client, state):
+    """The crop card and the warnings under it describe the same crop.
+
+    A rice farmer gives the transplanting date, and the weeks in the nursery are
+    added back to get the crop's age. The card did that; the risk rules counted
+    from the bare date, so one screen said "Flowering · 81 days old" and, right
+    below it, "Your crop is 60 days old (Panicle initiation)". Three weeks is a
+    whole stage, and the rules are keyed to the stage."""
+    kb, today = get_kb(), date.today()
+    with SessionLocal() as db:
+        farm = Farm(farmer_name="tp", crop="rice", sowing_date=today - timedelta(days=60),
+                    date_basis="transplanted", state=state, district="Bhandara",
+                    lat=21.17, lon=79.65, area_acres=2, lang="en")
+        db.add(farm)
+        db.commit()
+
+        stage, das = kb.stage_of(farm, today)
+        assert das == 60 + kb.nursery_days("rice", state) and das != 60
+
+        window = services.weather_for(db, farm)
+        scores = services.risk_scores(db, kb, farm, today, window)
+        aged = [s for s in scores if "das" in s.detail]
+        assert aged, "no rule fired, so nothing here was checked"
+        assert {(s.detail["stage"], s.detail["das"]) for s in aged} == {(stage, das)}
+
+        ctx = live.context(db, kb, farm, None, None, None, "en")
+        assert (ctx["crop"]["stage"], ctx["crop"]["das"]) == (stage, das)
+        said = f"Your crop is {das} days old ({ctx['crop']['stage_name']})"
+        by_stage = [r for r in ctx["risks"] if r["trigger"] == "phenology"]
+        assert all(r["reason"].startswith(said) for r in by_stage)
+        assert not any("60 days old" in r["reason"] for r in ctx["risks"])
+        if state is None:  # 81 days: inside the stem borer's window, so the sentence is on screen
+            assert by_stage

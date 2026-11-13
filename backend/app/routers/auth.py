@@ -1,7 +1,7 @@
 """Sign-up, sign-in and sign-out for the two roles.
 
   GET  /api/auth/options          choices for the sign-up forms (districts, crops, designations ...)
-  POST /api/auth/otp              email a one-time code (sign-up, or login by mobile number or email)
+  POST /api/auth/otp              send a one-time code by SMS or email (sign-up, or login by mobile or email)
   POST /api/auth/signup/farmer    verify the code; create the farmer, their profile and first farm
   POST /api/auth/signup/expert    verify the code; create the expert and their profile
   POST /api/auth/login            verify the code; start a session
@@ -18,8 +18,18 @@ answers decide which cases reach them and whether their verdicts can be trusted
 districts and crops they cover, their specialities and the languages they can
 answer farmers in.
 
-Both give a mobile number and an email. There is no free SMS gateway yet, so
-every code goes to the email (config.OTP_CHANNEL).
+Both give a mobile number. Where the code goes follows who is signing in:
+
+- A farmer's mobile number gets the code by SMS whenever a provider is
+  configured (app/sms.py), and then the mobile number is all a farmer needs:
+  most smallholders have no email, and an app that demanded one turned them
+  away at the door. An email they give is kept for alerts and as the way in
+  when SMS is down.
+- An email address gets the code by email, and so does an officer, always:
+  an officer's account opens farmers' cases, and their work email is what the
+  district office checks them against.
+- When SMS is off, or the SMS did not go, the code falls back to the account's
+  email (config.OTP_CHANNEL), and the answer says which channel it took.
 """
 
 from __future__ import annotations
@@ -33,7 +43,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import auth, config, erasure, geo, mailer, report, services, turnstile
+from app import auth, config, erasure, geo, mailer, notify, report, services, sms, turnstile
 from app.db import SUPERVISOR_DESIGNATIONS, get_db
 from app.i18n import LANGS
 from app.kb import KB, get_kb, tr
@@ -93,9 +103,42 @@ MESSAGES = {
     "mail_failed": {"en": "We could not send the email just now. Please try again.",
                     "hi": "अभी ईमेल नहीं भेज पाए। कृपया फिर से कोशिश करें।",
                     "mr": "आत्ता ईमेल पाठवता आला नाही. कृपया पुन्हा प्रयत्न करा."},
+    "sms_failed": {"en": "We could not send the SMS just now. Please try again.",
+                   "hi": "अभी SMS नहीं भेज पाए। कृपया फिर से कोशिश करें।",
+                   "mr": "आत्ता SMS पाठवता आला नाही. कृपया पुन्हा प्रयत्न करा.",
+                   "bn": "এখন SMS পাঠানো গেল না। আবার চেষ্টা করুন।",
+                   "ta": "இப்போது SMS அனுப்ப முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
+                   "te": "ఇప్పుడు SMS పంపలేకపోయాం. దయచేసి మళ్లీ ప్రయత్నించండి.",
+                   "kn": "ಈಗ SMS ಕಳುಹಿಸಲು ಆಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+                   "ml": "ഇപ്പോൾ SMS അയയ്ക്കാനായില്ല. ദയവായി വീണ്ടും ശ്രമിക്കുക.",
+                   "gu": "અત્યારે SMS મોકલી શક્યા નહીં. કૃપા કરી ફરી પ્રયાસ કરો.",
+                   "pa": "ਹੁਣੇ SMS ਨਹੀਂ ਭੇਜ ਸਕੇ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"},
+    "need_email": {"en": "Codes cannot go by SMS yet. Enter an email to get your code.",
+                   "hi": "अभी कोड SMS से नहीं जा सकता। कोड पाने के लिए ईमेल डालें।",
+                   "mr": "सध्या कोड SMS ने जाऊ शकत नाही. कोड मिळवण्यासाठी ईमेल टाका.",
+                   "bn": "এখনও SMS-এ কোড পাঠানো যায় না। কোড পেতে ইমেল দিন।",
+                   "ta": "இப்போது SMS மூலம் குறியீடு அனுப்ப முடியாது. குறியீட்டைப் பெற மின்னஞ்சலை உள்ளிடவும்.",
+                   "te": "ప్రస్తుతం SMS ద్వారా కోడ్ పంపలేం. కోడ్ పొందడానికి ఈమెయిల్ ఇవ్వండి.",
+                   "kn": "ಸದ್ಯ SMS ಮೂಲಕ ಕೋಡ್ ಕಳುಹಿಸಲು ಆಗದು. ಕೋಡ್ ಪಡೆಯಲು ಇಮೇಲ್ ನೀಡಿ.",
+                   "ml": "ഇപ്പോൾ SMS വഴി കോഡ് അയയ്ക്കാനാവില്ല. കോഡ് ലഭിക്കാൻ ഇമെയിൽ നൽകുക.",
+                   "gu": "હજી SMS દ્વારા કોડ મોકલી શકાતો નથી. કોડ મેળવવા ઇમેઇલ આપો.",
+                   "pa": "ਅਜੇ SMS ਰਾਹੀਂ ਕੋਡ ਨਹੀਂ ਭੇਜਿਆ ਜਾ ਸਕਦਾ। ਕੋਡ ਲੈਣ ਲਈ ਈਮੇਲ ਦਿਓ।"},
+    "code_other_phone": {"en": "This code was sent to a different mobile number. Ask for a new code.",
+                         "hi": "यह कोड किसी दूसरे मोबाइल नंबर पर भेजा गया था। नया कोड माँगें।",
+                         "mr": "हा कोड दुसऱ्या मोबाइल नंबरवर पाठवला होता. नवीन कोड मागा.",
+                         "bn": "এই কোডটি অন্য মোবাইল নম্বরে পাঠানো হয়েছিল। নতুন কোড চান।",
+                         "ta": "இந்தக் குறியீடு வேறு மொபைல் எண்ணுக்கு அனுப்பப்பட்டது. புதிய குறியீட்டைக் கேளுங்கள்.",
+                         "te": "ఈ కోడ్ వేరే మొబైల్ నంబర్‌కు పంపబడింది. కొత్త కోడ్ అడగండి.",
+                         "kn": "ಈ ಕೋಡ್ ಬೇರೆ ಮೊಬೈಲ್ ಸಂಖ್ಯೆಗೆ ಕಳುಹಿಸಲಾಗಿತ್ತು. ಹೊಸ ಕೋಡ್ ಕೇಳಿ.",
+                         "ml": "ഈ കോഡ് മറ്റൊരു മൊബൈൽ നമ്പറിലേക്കാണ് അയച്ചത്. പുതിയ കോഡ് ചോദിക്കുക.",
+                         "gu": "આ કોડ બીજા મોબાઇલ નંબર પર મોકલાયો હતો. નવો કોડ માંગો.",
+                         "pa": "ਇਹ ਕੋਡ ਕਿਸੇ ਹੋਰ ਮੋਬਾਈਲ ਨੰਬਰ ਉੱਤੇ ਭੇਜਿਆ ਗਿਆ ਸੀ। ਨਵਾਂ ਕੋਡ ਮੰਗੋ।"},
     "other_code": {"en": "This code was for a different kind of account. Ask for a new code.",
                    "hi": "यह कोड किसी दूसरे प्रकार के खाते के लिए था। नया कोड माँगें।",
                    "mr": "हा कोड दुसऱ्या प्रकारच्या खात्यासाठी होता. नवीन कोड मागा."},
+    "email_code_other": {"en": "This code was for a different email address. Ask for a new code.",
+                         "hi": "यह कोड किसी दूसरे ईमेल पते के लिए था। नया कोड माँगें।",
+                         "mr": "हा कोड दुसऱ्या ईमेल पत्त्यासाठी होता. नवीन कोड मागा."},
     "declaration": {"en": "Please confirm the undertaking before continuing.",
                     "hi": "जारी रखने से पहले कृपया घोषणा की पुष्टि करें।",
                     "mr": "पुढे जाण्यापूर्वी कृपया घोषणेची खात्री करा."},
@@ -153,7 +196,10 @@ def options(lang: str = "en", kb: KB = Depends(get_kb)):
         "departments": [{"id": k, "name": v} for k, v in DEPARTMENTS.items()],
         "qualifications": [{"id": k, "name": v} for k, v in QUALIFICATIONS.items()],
         "specialities": [{"id": k, "name": v} for k, v in SPECIALITIES.items()],
-        "otp": {"digits": config.OTP_DIGITS, "minutes": config.OTP_TTL_MINUTES, "channel": config.OTP_CHANNEL},
+        # `channel` is where a farmer's code goes; `sms` tells the sign-up form
+        # whether a mobile number alone is enough, or an email is still needed.
+        "otp": {"digits": config.OTP_DIGITS, "minutes": config.OTP_TTL_MINUTES,
+                "channel": "sms" if sms.enabled("otp") else config.OTP_CHANNEL, "sms": sms.enabled("otp")},
         "demo_login": config.DEMO_LOGIN,
         # The widget's public half. Absent means no box is shown at all.
         "turnstile_sitekey": config.TURNSTILE_SITEKEY if turnstile.configured() else None,
@@ -169,6 +215,11 @@ def _email(raw: str | None, lang: str) -> str:
     if e is None:
         raise HTTPException(422, _say("bad_email", lang))
     return e
+
+
+def _optional_email(raw: str | None, lang: str) -> str | None:
+    """An email a farmer may leave out. Left blank is fine; typed wrong is not."""
+    return _email(raw, lang) if (raw or "").strip() else None
 
 
 def _phone(raw: str | None, lang: str) -> str:
@@ -189,16 +240,16 @@ def _lookup(db: Session, identifier: str, lang: str) -> User | None:
     return _by(db, User.phone, _phone(identifier, lang))
 
 
-def _taken(db: Session, email: str, phone: str) -> str | None:
+def _taken(db: Session, email: str | None, phone: str) -> str | None:
     """Which identifier is already on an account, if either is."""
-    if _by(db, User.email, email):
+    if email and _by(db, User.email, email):
         return "email"
     if _by(db, User.phone, phone):
         return "phone"
     return None
 
 
-def _unused(db: Session, email: str, phone: str, lang: str) -> None:
+def _unused(db: Session, email: str | None, phone: str, lang: str) -> None:
     """The last word on a duplicate, held at the moment the account is made.
 
     The sign-up form asks /check first so it can object on the step that owns
@@ -213,16 +264,18 @@ def _unused(db: Session, email: str, phone: str, lang: str) -> None:
 
 
 # --------------------------------------------------------------------------
-# One-time codes — emailed for now (config.OTP_CHANNEL)
+# One-time codes — by SMS to a farmer's mobile, else by email
 # --------------------------------------------------------------------------
 
 class OtpIn(BaseModel):
     role: Role
     purpose: Literal["signup", "login"]
     email: str | None = Field(default=None, max_length=200)
-    """Sign-up: where the code goes."""
+    """Sign-up: an officer's code goes here. A farmer's is optional, and is
+    where their code goes only when SMS cannot carry it."""
     phone: str | None = Field(default=None, max_length=20)
-    """Sign-up: checked for an existing account now, saved at sign-up."""
+    """Sign-up: a farmer's code goes here by SMS when SMS is configured; for
+    everyone it is checked for an existing account now and saved at sign-up."""
     identifier: str | None = Field(default=None, max_length=200)
     """Login: the mobile number or email on the account."""
     turnstile_token: str | None = Field(default=None, max_length=2048)
@@ -249,9 +302,32 @@ def check_identifiers(body: CheckIn, request: Request, db: Session = Depends(get
     """
     limit(f"check:ip:{client_ip(request)}", 40, 900)
     lang = body.lang if body.lang in LANGS else "en"
-    field = _taken(db, _email(body.email, lang), _phone(body.phone, lang))
+    field = _taken(db, _optional_email(body.email, lang), _phone(body.phone, lang))
     return {"free": field is None, "field": field,
             "message": _say(f"{field}_taken", lang) if field else None}
+
+
+def _send_code(db: Session, *, channel: str, dest: str, purpose: str, role: str, lang: str):
+    """Issue one code and send it by one channel. The challenge on success;
+    None when the send failed, with the challenge rolled back so that a code
+    nobody received is not the one the next screen checks against."""
+    limit(f"otp:dest:{dest}", 5, 900)
+    ch, code = auth.issue_otp(db, channel=channel, dest=dest, purpose=purpose, role=role, lang=lang)
+    if channel == "sms":
+        status, err = sms.send(dest, sms.otp_text(code, config.OTP_TTL_MINUTES, lang), kind="otp",
+                               variables={"otp": code, "mins": config.OTP_TTL_MINUTES})
+    else:
+        subject, text, html = mailer.otp_message(code, purpose, config.OTP_TTL_MINUTES, lang)
+        status, err = mailer.send(dest, subject, text, html)
+    ok = status in ("sent", "outbox")
+    if not ok:
+        db.rollback()
+    if channel == "sms":
+        # Never the code, never the number: what an office needs to answer
+        # "I never got it" is when, how, and what the provider said.
+        sms.record(db, number=dest, direction="out", kind="otp", status=status, error=err)
+    db.commit()
+    return ch if ok else None
 
 
 @router.post("/otp")
@@ -262,28 +338,41 @@ def request_otp(body: OtpIn, request: Request, db: Session = Depends(get_db)):
     passed, why = turnstile.verify(body.turnstile_token, client_ip(request))
     if not passed:
         raise HTTPException(403, _say("not_a_person", lang))
+    # Where the code may go, best first. A farmer's mobile number goes by SMS
+    # when SMS can carry it; an email, when there is one, is the way in when
+    # SMS is off or the message did not go.
+    routes: list[tuple[str, str]] = []
     if body.purpose == "signup":
-        email = _email(body.email, lang)
-        _unused(db, email, _phone(body.phone, lang), lang)
+        phone = _phone(body.phone, lang)
+        email = _email(body.email, lang) if body.role == "expert" else _optional_email(body.email, lang)
+        _unused(db, email, phone, lang)
+        if body.role == "farmer" and sms.enabled("otp"):
+            routes.append(("sms", phone))
+        if email:
+            routes.append(("email", email))
+        if not routes:
+            raise HTTPException(422, _say("need_email", lang))
     else:
-        user = _lookup(db, body.identifier or "", lang)
+        identifier = body.identifier or ""
+        user = _lookup(db, identifier, lang)
         if user is None:
             raise HTTPException(404, _say("no_account", lang))
         if user.role != body.role:
             raise HTTPException(409, _say(f"is_{user.role}", lang))
-        if not user.email:
+        if "@" not in identifier and user.role == "farmer" and user.phone and sms.enabled("otp"):
+            routes.append(("sms", user.phone))
+        if user.email:
+            routes.append(("email", user.email))
+        if not routes:
             raise HTTPException(409, _say("no_email", lang))
-        email = user.email
-    limit(f"otp:dest:{email}", 5, 900)
-    ch, code = auth.issue_otp(db, channel=config.OTP_CHANNEL, dest=email, purpose=body.purpose, role=body.role,
-                              lang=lang)
-    subject, text, html = mailer.otp_message(code, body.purpose, config.OTP_TTL_MINUTES, lang)
-    status, _err = mailer.send(email, subject, text, html)
-    if status == "failed":
-        db.rollback()
-        raise HTTPException(502, _say("mail_failed", lang))
-    db.commit()
-    return {"challenge_id": ch.public_id, "channel": config.OTP_CHANNEL, "sent_to": auth.mask("email", email),
+    ch = None
+    for channel, dest in routes:
+        ch = _send_code(db, channel=channel, dest=dest, purpose=body.purpose, role=body.role, lang=lang)
+        if ch is not None:
+            break
+    if ch is None:
+        raise HTTPException(502, _say("sms_failed" if routes[-1][0] == "sms" else "mail_failed", lang))
+    return {"challenge_id": ch.public_id, "channel": ch.channel, "sent_to": auth.mask(ch.channel, ch.destination),
             "expires_in": config.OTP_TTL_MINUTES * 60, "resend_in": config.OTP_RESEND_SECONDS,
             "digits": config.OTP_DIGITS}
 
@@ -319,6 +408,10 @@ class FarmerSignup(BaseModel):
     code: str = Field(min_length=4, max_length=8)
     name: str = Field(min_length=2, max_length=120)
     phone: str = Field(max_length=20)
+    email: str | None = Field(default=None, max_length=200)
+    """Optional when the code came by SMS: kept for email alerts and as a way
+    in. When the code came by email, the address it went to is the one saved
+    and this is ignored."""
     lang: str = "en"
     state: str | None = Field(default=None, max_length=60)
     district: str = Field(min_length=2, max_length=60)
@@ -398,9 +491,15 @@ def _designation_name(designation: str | None) -> str | None:
 
 def _me(db: Session, user: User) -> dict:
     out = {"id": user.id, "role": user.role, "name": user.name, "phone": user.phone, "email": user.email,
+           "pending_email": user.pending_email,
            "lang": user.lang, "is_demo": user.is_demo, "email_pref": user.email_pref or "warnings",
            "created_at": user.created_at.isoformat() if user.created_at else None}
     if user.role == "farmer":
+        # What the farmer chose, or what they get without choosing; and whether
+        # this server can send SMS at all, so a screen offers the switch only
+        # where it does something.
+        out["sms_pref"] = user.sms_pref or notify.default_sms_pref(user.email)
+        out["sms_available"] = sms.enabled("warning")
         p = db.get(FarmerProfile, user.id)
         out["profile"] = {"state": p.state, "district": p.district, "taluka": p.taluka, "village": p.village,
                           "total_land_acres": p.total_land_acres} if p else None
@@ -448,16 +547,27 @@ def signup_farmer(body: FarmerSignup, request: Request, response: Response, db: 
             raise HTTPException(422, _say("no_place", body.lang))
         lat, lon = at["lat"], at["lon"]
     phone = _phone(body.phone, body.lang)
+    given_email = _optional_email(body.email, body.lang)
     ch = _verified(db, body, "signup", "farmer")
-    _unused(db, ch.destination, phone, body.lang)
+    if ch.channel == "sms":
+        # The code proved this number. A different one in the form would be an
+        # account on a phone nobody has shown they hold.
+        if ch.destination != phone:
+            raise HTTPException(400, _say("code_other_phone", body.lang))
+        # The code proved the phone, not the email typed beside it. That one
+        # waits, unused, until a code sent there comes back (/me/email).
+        email, pending = None, given_email
+    else:
+        email, pending = ch.destination, None
+    _unused(db, email, phone, body.lang)
     name, village, taluka = body.name.strip(), body.village.strip(), (body.taluka or "").strip() or None
-    user = User(role="farmer", name=name, phone=phone, email=ch.destination, lang=body.lang)
+    user = User(role="farmer", name=name, phone=phone, email=email, pending_email=pending, lang=body.lang)
     db.add(user)
     db.flush()
     db.add(FarmerProfile(user_id=user.id, state=state, district=district, taluka=taluka, village=village,
                          total_land_acres=body.total_land_acres, consent_at=auth.now()))
     for f in body.farms:  # one row per plot: each has its own crop stage, risks and advice
-        db.add(Farm(user_id=user.id, farmer_name=name, phone=phone, email=ch.destination, lang=body.lang,
+        db.add(Farm(user_id=user.id, farmer_name=name, phone=phone, email=email, lang=body.lang,
                     crop=f.crop, variety=(f.variety or "").strip() or None, sowing_date=f.sowing_date,
                     date_basis=f.date_basis,
                     state=state, district=district, taluka=taluka, village=village, lat=lat, lon=lon,
@@ -484,6 +594,8 @@ def signup_expert(body: ExpertSignup, request: Request, response: Response, db: 
         raise HTTPException(422, _say("pick_lists", lang, items=", ".join(bad[:5])))
     phone = _phone(body.phone, lang)
     ch = _verified(db, body, "signup", "expert")
+    if ch.channel != "email":  # an officer's account is their checked work email; codes never go by SMS
+        raise HTTPException(400, _say("other_code", lang))
     _unused(db, ch.destination, phone, lang)
     user = User(role="expert", name=body.name.strip(), email=ch.destination, phone=phone,
                 lang=body.lang if body.lang in LANGS else "en")
@@ -540,7 +652,9 @@ class LoginIn(BaseModel):
 @router.post("/login")
 def login(body: LoginIn, request: Request, response: Response, db: Session = Depends(get_db)):
     ch = _verified(db, body, "login", body.role)
-    user = _by(db, User.email, ch.destination)
+    # The account is found by what the code was sent to: the number for an SMS,
+    # the address for an email.
+    user = _by(db, User.phone if ch.channel == "sms" else User.email, ch.destination)
     if user is None or user.role != ch.role:
         raise HTTPException(404, _say("no_account", body.lang))
     auth.start_session(db, user, response, request.headers.get("user-agent"))
@@ -624,6 +738,10 @@ class ProfileIn(BaseModel):
     """One switch for every field this person owns. Deliberately on the
     account: a per-field setting means saying "stop emailing me" once per
     field and still hearing from the rest."""
+    sms_pref: Literal["off", "warnings"] | None = None
+    """A farmer's SMS alerts: warnings, the expert's answer and the follow-up
+    question ('warnings'), or none ('off'). On the account for the same reason
+    as email_pref. An officer has none: SMS alerts are about a farmer's field."""
 
     # A farmer: where they are, and how much land they work
     state: str | None = Field(default=None, max_length=60)
@@ -671,6 +789,10 @@ def update_profile(body: ProfileIn, request: Request, db: Session = Depends(get_
         # One switch for every field they own, which is the only way a farmer
         # who says "stop" gets to say it once.
         user.email_pref = sent["email_pref"]
+    if sent.get("sms_pref"):
+        if user.role != "farmer":
+            raise HTTPException(422, _say("pick_lists", user.lang, items="sms_pref"))
+        user.sms_pref = sent["sms_pref"]
 
     if user.role == "farmer":
         p = db.get(FarmerProfile, user.id)
@@ -730,6 +852,63 @@ def me(request: Request, db: Session = Depends(get_db)):
     user = auth.current_user(request, db)
     if user is None:
         raise HTTPException(401, "not signed in")
+    return _me(db, user)
+
+
+class EmailIn(BaseModel):
+    email: str | None = Field(default=None, max_length=200)
+    lang: str = "en"
+
+
+class EmailCodeIn(BaseModel):
+    challenge_id: str = Field(max_length=64)
+    code: str = Field(max_length=12)
+    lang: str = "en"
+
+
+@router.post("/me/email")
+def add_email(body: EmailIn, request: Request, db: Session = Depends(get_db)):
+    """Send a code to an address the signed-in person wants on their account:
+    the one they typed when they signed up by SMS, or a new one. It is only
+    theirs once that code comes back."""
+    user = auth.current_user(request, db)
+    if user is None:
+        raise HTTPException(401, "not signed in")
+    lang = body.lang if body.lang in LANGS else "en"
+    limit(f"email-add:user:{user.id}", 5, 3600)
+    email = _email(body.email or user.pending_email, lang)
+    if email == user.email:
+        raise HTTPException(409, _say("email_taken", lang))
+    if _by(db, User.email, email) is not None:
+        raise HTTPException(409, {"message": _say("email_taken", lang), "field": "email"})
+    user.pending_email = email
+    ch = _send_code(db, channel="email", dest=email, purpose="email", role=user.role, lang=lang)
+    if ch is None:
+        raise HTTPException(502, _say("mail_failed", lang))
+    return {"challenge_id": ch.public_id, "channel": "email", "sent_to": auth.mask("email", email),
+            "expires_in": config.OTP_TTL_MINUTES * 60, "resend_in": config.OTP_RESEND_SECONDS,
+            "digits": config.OTP_DIGITS}
+
+
+@router.post("/me/email/verify")
+def verify_email(body: EmailCodeIn, request: Request, db: Session = Depends(get_db)):
+    """The code came back: the address is proved, and becomes the account's —
+    for signing in, and on the fields that had none, for their emails."""
+    user = auth.current_user(request, db)
+    if user is None:
+        raise HTTPException(401, "not signed in")
+    lang = body.lang if body.lang in LANGS else "en"
+    ch = auth.check_otp(db, body.challenge_id, body.code, purpose="email", lang=lang)
+    # A code for some other address, or one asked for before the address was
+    # changed again, proves nothing about the one now waiting.
+    if ch.destination != user.pending_email:
+        raise HTTPException(400, _say("email_code_other", lang))
+    if _by(db, User.email, ch.destination) is not None:   # taken while the code was on its way
+        raise HTTPException(409, {"message": _say("email_taken", lang), "field": "email"})
+    user.email, user.pending_email = ch.destination, None
+    for farm in db.scalars(select(Farm).where(Farm.user_id == user.id, Farm.email.is_(None))).all():
+        farm.email = user.email
+    db.commit()
     return _me(db, user)
 
 

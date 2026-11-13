@@ -4,7 +4,7 @@
   2. the weather rules for this crop at this stage (app.engine.agromet) ->
      new notices, one per farm, rule and day (unique constraint, not a SELECT race);
   3. the crop's pest and disease risk rules (services.run_risk) -> alerts;
-  4. delivery: in-app at once, phone and email per app.notify's policy;
+  4. delivery: in-app at once, phone, email and SMS per app.notify's policy;
   5. the 6 am summary email.
 
 One failing farm never stops the sweep. In production run exactly one watcher
@@ -113,6 +113,9 @@ def farm_cycle(db: Session, kb: KB, farm: Farm, now: datetime, fetch=agroweather
     # The day-4 check on a treatment that was advised. Without this it was only
     # ever made by a farmer who happened to open the app on the right day.
     out["followups"] += notify.followup_reminders(db, kb, farm, now)
+    # The same warnings and the same question, by SMS, for the farmer whose
+    # phone runs no app. After the reminder, so both channels ask on one pass.
+    out["sms"] += notify.sms_alerts(db, kb, farm, now)
     if bundle and farm.email:
         if notify.email_alerts(db, kb, farm, bundle, now):
             out["alert_emails"] += 1

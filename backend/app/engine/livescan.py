@@ -21,6 +21,8 @@ Pure: no I/O. The caller injects the classifier and persists the result.
 
 from __future__ import annotations
 
+import base64
+import binascii
 import io
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -29,7 +31,7 @@ from statistics import median
 import numpy as np
 from PIL import Image
 
-from app.config import FLOOR, GATE, MARGIN, gate_for
+from app.config import FLOOR, MARGIN, gate_for
 from app.engine.gate import crop_of, is_healthy
 from app.engine.vision import MAX_PIXELS, vegetation_fraction
 from app.kb import tr
@@ -273,6 +275,25 @@ MIN_OTHER_CROP_VIEWS = 2
 two that are also most of what the model could read is the wrong field picked,
 or the wrong crop registered, and neither a disease name nor "could not see
 your plants" is the truth about that footage."""
+STATE_VERSION = 1
+"""The shape of LiveSession.to_state(). A call dropped on one container is
+picked up on another, which during a rolling deploy may be running the next
+release; a state it does not know how to read is refused, never guessed at.
+Bump it whenever a field is added, renamed or changes meaning."""
+THUMB_SIDE = 24
+
+
+def _b64(b: bytes) -> str:
+    return base64.b64encode(b).decode("ascii")
+
+
+def _unb64(s: object) -> bytes:
+    if not isinstance(s, str):
+        raise ValueError("a frame in a held call is not text")
+    try:
+        return base64.b64decode(s, validate=True)
+    except binascii.Error as e:
+        raise ValueError("a frame in a held call is not base64") from e
 
 
 @dataclass
@@ -695,6 +716,87 @@ class LiveSession:
     def hint_text(self, key: str | None) -> str | None:
         return tr(HINTS[key], self.lang) if key else None
 
+    # --- held between containers ----------------------------------------------
+    def to_state(self) -> dict:
+        """Everything the walk is, as plain JSON-ready data.
+
+        A dropped call may be picked back up by a different server than the one
+        it fell off, so the walk has to travel as data. Written out field by
+        field, not pickled: a pickle is a program, and anyone who could write to
+        the shared store would get to run it inside the API. Frames go as
+        base64, the last view's thumbnail as numbers. The one thing that does
+        not travel is `target_name` — a function, rebuilt by whoever reads this
+        back (app.live.restore_session), in the walk's own language.
+
+        Exact, not approximate: the walk picked up must answer the next frame
+        precisely as the one that dropped would have. Floats survive JSON
+        unchanged, and the thumbnail's float32 values are exact as doubles."""
+        return {
+            "v": STATE_VERSION,
+            "crop": self.crop, "lang": self.lang, "can_classify": self.can_classify, "mode": self.mode,
+            "steps": [{"id": s.id, "kind": s.kind, "need": s.need, "got": s.got, "name": s.name}
+                      for s in self.steps],
+            "idx": self.idx, "frames": self.frames, "good_frames": self.good_frames,
+            "classified": self.classified, "other_crop": self.other_crop,
+            "confirm_added": self.confirm_added, "asked": self.asked,
+            "answer": list(self.answer) if self.answer else None,
+            "sightings": [[s.target, float(s.conf), s.frame, None if s.at is None else float(s.at)]
+                          for s in self.sightings],
+            "evidence": {t: [[float(c), _b64(j)] for c, j in ev] for t, ev in self.evidence.items()},
+            "closeups": [[float(sharp), _b64(j)] for sharp, j in self.closeups],
+            "skipped": list(self.skipped), "ended": self.ended, "kept": self.kept, "clear": self.clear,
+            "passed_over_why": dict(self.passed_over_why),
+            "marks": [[float(at), code] for at, code in self.marks],
+            "saved": self.saved,
+            "last_thumb": None if self._last_thumb is None else self._last_thumb.tolist(),
+        }
+
+    @classmethod
+    def from_state(cls, st: dict, target_name: Callable[[str], str] | None = None) -> LiveSession:
+        """The walk to_state() wrote, back as a session. Raises ValueError on
+        anything it does not recognise — another version, a missing field, a
+        step that does not exist — so a held call that cannot be read is
+        refused at the door instead of failing on the farmer's next frame."""
+        if not isinstance(st, dict) or st.get("v") != STATE_VERSION:
+            raise ValueError(f"held call state version {st.get('v') if isinstance(st, dict) else None!r}"
+                             f" is not {STATE_VERSION}")
+        try:
+            steps = [Step(str(s["id"]), str(s["kind"]), int(s["need"]), int(s["got"]),
+                          None if s.get("name") is None else str(s["name"])) for s in st["steps"]]
+            mode = str(st["mode"])
+            if not steps or mode not in ("walk", "video") or any(
+                    s.id not in TEXT or s.kind not in KINDS for s in steps):
+                raise ValueError("a held call names a step or a mode that does not exist")
+            thumb = st.get("last_thumb")
+            if thumb is not None:
+                thumb = np.asarray(thumb, dtype=np.float32)
+                if thumb.shape != (THUMB_SIDE, THUMB_SIDE):
+                    raise ValueError(f"a held call's last view is {thumb.shape}, not a thumbnail")
+            answer = st.get("answer")
+            sess = cls(
+                crop=str(st["crop"]), lang=str(st["lang"]), can_classify=bool(st["can_classify"]),
+                steps=steps, idx=int(st["idx"]), frames=int(st["frames"]),
+                good_frames=int(st["good_frames"]), classified=int(st["classified"]),
+                sightings=[Sighting(str(t), float(c), int(f), None if at is None else float(at))
+                           for t, c, f, at in st["sightings"]],
+                evidence={str(t): [(float(c), _unb64(j)) for c, j in ev] for t, ev in st["evidence"].items()},
+                closeups=[(float(sharp), _unb64(j)) for sharp, j in st["closeups"]],
+                other_crop=int(st["other_crop"]), confirm_added=bool(st["confirm_added"]),
+                asked=None if st.get("asked") is None else str(st["asked"]),
+                answer=None if answer is None else (str(answer[0]), str(answer[1])),
+                mode=mode, skipped=[str(x) for x in st["skipped"]], ended=bool(st["ended"]),
+                kept=int(st["kept"]), clear=int(st["clear"]),
+                passed_over_why={str(k): int(v) for k, v in st["passed_over_why"].items()},
+                marks=[(float(at), str(code)) for at, code in st["marks"]],
+                saved=None if st.get("saved") is None else int(st["saved"]),
+            )
+        except (KeyError, IndexError, TypeError, AttributeError) as e:
+            raise ValueError(f"a held call could not be read: {type(e).__name__}: {e}") from e
+        if target_name is not None:
+            sess.target_name = target_name
+        sess._last_thumb = thumb
+        return sess
+
     # --- internals ------------------------------------------------------------
     def _record(self, preds: list[tuple[str, float]], jpeg: bytes, at: float | None = None) -> dict:
         top, conf = preds[0]
@@ -736,7 +838,7 @@ class LiveSession:
 
 
 def _thumb(img: Image.Image) -> np.ndarray:
-    return np.asarray(img.convert("L").resize((24, 24)), dtype=np.float32)
+    return np.asarray(img.convert("L").resize((THUMB_SIDE, THUMB_SIDE)), dtype=np.float32)
 
 
 def sharpness(gray: np.ndarray) -> float:

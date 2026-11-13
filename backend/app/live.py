@@ -148,6 +148,16 @@ def relang(kb: KB, sess: LiveSession, lang: str) -> None:
     sess.target_name = _namer(kb, lang)
 
 
+def restore_session(kb: KB, state: dict) -> LiveSession:
+    """A walk held as data (LiveSession.to_state), back as a session that can
+    take the next frame. The names it speaks are a function of the language,
+    and functions do not travel: they are rebuilt here, exactly as a language
+    switch rebuilds them. Raises ValueError on a state it cannot read."""
+    sess = LiveSession.from_state(state)
+    relang(kb, sess, sess.lang)
+    return sess
+
+
 def classify(img) -> list[tuple[str, float]]:
     """Top-3 targets for one close-up, calibrated — the same model as the photo path."""
     model = vision._real_model()

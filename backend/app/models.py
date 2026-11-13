@@ -62,8 +62,10 @@ sized by the same number, and test_column_widths keeps them that way."""
 
 class User(Base):
     """A person who signs in: a farmer or an expert (KVK scientist, agriculture
-    officer, agronomist). Both give a mobile number and an email; one-time codes
-    go to the email until an SMS gateway is wired (config.OTP_CHANNEL)."""
+    officer, agronomist). Both give a mobile number. An officer also gives an
+    email and their code goes there; a farmer's email is optional, and their
+    code goes by SMS to the mobile number when SMS is configured (app/sms.py),
+    else to the email (config.OTP_CHANNEL)."""
 
     __tablename__ = "app_user"
 
@@ -72,6 +74,12 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(120))
     phone: Mapped[str | None] = mapped_column(String(16), unique=True)
     email: Mapped[str | None] = mapped_column(String(200), unique=True)
+    pending_email: Mapped[str | None] = mapped_column(String(200))
+    """An address typed but not yet proved — a farmer who signed up by SMS and
+    added an email on the way. Nothing is sent to it and nobody signs in with
+    it until a code sent there comes back (POST /api/auth/me/email/verify):
+    otherwise anyone could put someone else's address on their account, block
+    that person from signing up with it, and have the app write to a stranger."""
     lang: Mapped[str] = mapped_column(String(2), default="en")
     is_demo: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
@@ -83,6 +91,14 @@ class User(Base):
     "stop emailing me" means it, and a per-field switch means saying it once
     per field and still hearing from the other three. Null is a farmer who has
     never been asked, and falls back to whatever their fields were set to."""
+    sms_pref: Mapped[str | None] = mapped_column(String(10))
+    """Whether this farmer wants alerts by SMS: 'warnings' or 'off'.
+
+    On the account for the same reason as email_pref. Null means never asked,
+    and then the answer depends on who they are: a farmer with no email has no
+    other way to hear from us when the app is closed, so SMS is on; one who
+    gave an email already has a channel, and an SMS nobody asked for costs
+    them an interruption and us money (notify.sms_pref_for)."""
 
     __table_args__ = (CheckConstraint("role IN ('farmer', 'expert')", name="ck_user_role"),)
 
@@ -151,8 +167,10 @@ class ExpertProfile(Base):
 
 
 class OtpChallenge(Base):
-    """One one-time code, sent to the account's email (SMS later). Only a salted
-    hash is kept."""
+    """One one-time code. `channel` is how it actually went — 'sms' to a mobile
+    number or 'email' to an address — and `destination` is the number or the
+    address, so a code that fell back from SMS to email says so. Only a salted
+    hash of the code is kept."""
 
     __tablename__ = "otp_challenge"
 
@@ -211,6 +229,9 @@ class Farm(Base):
     email_pref: Mapped[str] = mapped_column(String(10), default="warnings")
     """Which emails: 'warnings' (right away) + daily summary, 'all', 'digest' (summary only) or 'off'."""
     email_token: Mapped[str | None] = mapped_column(String(40))
+    sms_pref: Mapped[str | None] = mapped_column(String(10))
+    """'warnings' or 'off' for a field with no account behind it; a farmer's
+    own choice lives on their account (User.sms_pref) and wins."""
     agro_polygon_id: Mapped[str | None] = mapped_column(String(40))
     user_id: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"), index=True)
     """The farmer who owns this farm; None for seeded demo farms."""
@@ -313,6 +334,11 @@ class Problem(Base):
     severity: Mapped[str] = mapped_column(String(10), default="medium")
     opened_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime)
+    client_ref: Mapped[str | None] = mapped_column(String(64), index=True)
+    """The phone's own name for the photo that opened this, when it was kept
+    for lack of signal and sent later (src/lib/outbox.ts). A send that reached
+    us but whose answer was lost on the way back is sent again with the same
+    name, and gets this problem back instead of a second one."""
 
     farm: Mapped[Farm] = relationship(back_populates="problems")
     diagnoses: Mapped[list[Diagnosis]] = relationship(order_by="Diagnosis.id")
@@ -664,6 +690,50 @@ class EmailLog(Base):
     sent_at: Mapped[datetime] = mapped_column(DateTime)
 
     __table_args__ = (UniqueConstraint("farm_id", "dedupe_key", name="uq_email_key"),)
+
+
+class SmsLog(Base):
+    """Every SMS in or out.
+
+    Three jobs. It is the dedupe: an alert is sent once per field and moment,
+    because a delivered message holds its key (unique per field), and the
+    watcher runs every half hour. It is the cap: the per-day limit counts these
+    rows. And it is the record an office needs when a farmer says "I never got
+    the code".
+
+    The number is kept masked. Nothing reads a full number back from here —
+    replies are matched against the field's own phone — so storing it would
+    only make this table a list of farmers' phone numbers. A sign-in code is
+    never stored, not even its text."""
+
+    __tablename__ = "sms_log"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    farm_id: Mapped[int | None] = mapped_column(ForeignKey("farm.id", ondelete="CASCADE"), index=True)
+    """Null for a sign-in code and for a reply from a number we do not know.
+
+    The log goes with the field (ON DELETE CASCADE): a farmer who removes a
+    field was refused with a foreign-key error once one SMS had been sent
+    about it, and what the messages said is theirs, not the district's."""
+    direction: Mapped[str] = mapped_column(String(3))  # out | in
+    kind: Mapped[str] = mapped_column(String(10))
+    """otp | warning | verdict | followup | reply (ours), or answer | switch |
+    unknown | unparsed (theirs)."""
+    ref: Mapped[str | None] = mapped_column(String(80), index=True)
+    """What the message was about (notice:12, verdict:40:rice_blast,
+    followup:7) — on every attempt, so failed tries can be counted."""
+    dedupe_key: Mapped[str | None] = mapped_column(String(80))
+    """`ref` again, but only on a message that went: the unique constraint is
+    what stops a second one."""
+    number: Mapped[str] = mapped_column(String(20))
+    """Masked: +91 ••••••1234."""
+    body: Mapped[str | None] = mapped_column(String(400))
+    status: Mapped[str] = mapped_column(String(10))
+    """sent | outbox | failed | limited, or for a reply in: matched | unknown | unparsed."""
+    error: Mapped[str | None] = mapped_column(String(200))
+    at: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+    __table_args__ = (UniqueConstraint("farm_id", "dedupe_key", name="uq_sms_key"),)
 
 
 class SatRain(Base):

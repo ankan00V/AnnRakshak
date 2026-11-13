@@ -248,8 +248,10 @@ of the older flows turn it off; the auth tests turn it on."""
 DEMO_LOGIN = _flag("ANNRAKSHAK_DEMO_LOGIN", not PROD)
 """'Try the demo' sign-in to the seeded demo farms / a demo expert. Off in production."""
 OTP_CHANNEL = "email"
-"""Where one-time codes go. Both roles give a mobile number at sign-up, but
-there is no free SMS gateway yet, so every code is emailed (SMTP above)."""
+"""Where a one-time code goes when SMS cannot carry it: an officer's code, a
+code for an email address, and a farmer's code whenever SMS_BACKEND is off or
+the send failed. A farmer who signs in with a mobile number gets their code by
+SMS once a provider is configured (app/sms.py); see the SMS section below."""
 EXPERT_AUTO_VERIFY = _flag("ANNRAKSHAK_EXPERT_AUTO_VERIFY", not PROD)
 """Whether this build takes an officer's sign-up form at its word: both the
 badge and the rank. On, a sign-up is verified and a supervisory post carries a
@@ -349,6 +351,91 @@ EMAIL_FROM = os.environ.get("EMAIL_FROM") or (f"AnnRakshak <{SMTP_USER}>" if SMT
 EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND") or ("smtp" if SMTP_HOST else "outbox")
 """'smtp' sends; 'outbox' writes .eml files to DATA_DIR/outbox (dev and tests)."""
 
+# --- SMS: sign-in codes, alerts and replies for farmers (app/sms.py) -------
+#
+# Most smallholders have a mobile number and no email, and many have no
+# smartphone to run the app on. SMS is the one channel that reaches all of
+# them, so it carries the sign-in code for a farmer's mobile number and the
+# three moments that matter most: a weather warning, the expert's answer, and
+# the day-four question about whether the treatment worked.
+
+SMS_BACKEND = (os.environ.get("SMS_BACKEND") or "off").strip().lower()
+"""'off' (the default), 'outbox', 'msg91' or 'twilio'.
+
+  off     no SMS at all: codes go by email, alerts by the app, push and email.
+  outbox  writes each message as a file under DATA_DIR/sms-outbox, the way the
+          email outbox does. For a laptop; nothing leaves the machine, and
+          production refuses to start on it.
+  msg91   MSG91's Flow API. Indian SMS legally needs a DLT-registered sender ID
+          (header) and a DLT-registered template for every message, so each
+          kind of message names its template id below.
+  twilio  Twilio's Messages API, for a deployment outside India or a trial.
+
+Off by default rather than outbox, unlike email, because a farmer who signs in
+with a mobile number on a laptop would otherwise have their code written to a
+file nobody is looking at."""
+SMS_BACKENDS = ("off", "outbox", "msg91", "twilio")
+
+SMS_SENDER_ID = os.environ.get("SMS_SENDER_ID", "").strip()
+"""The six-letter DLT header the farmer sees as the sender (e.g. ANRKSK)."""
+
+MSG91_AUTH_KEY = os.environ.get("MSG91_AUTH_KEY", "").strip()
+MSG91_FLOW_URL = "https://control.msg91.com/api/v5/flow"
+MSG91_TEMPLATES = {
+    "otp": os.environ.get("MSG91_TEMPLATE_OTP", "").strip(),
+    "warning": os.environ.get("MSG91_TEMPLATE_WARNING", "").strip(),
+    "verdict": os.environ.get("MSG91_TEMPLATE_VERDICT", "").strip(),
+    "followup": os.environ.get("MSG91_TEMPLATE_FOLLOWUP", "").strip(),
+    "reply": os.environ.get("MSG91_TEMPLATE_REPLY", "").strip(),
+}
+"""One MSG91 Flow template per kind of message, each tied to a DLT template.
+
+The message is written here, in the farmer's language, and handed to the
+template as variables: `text` (the whole message), `link` (the app link, when
+there is one) and, for the code, `otp` and `mins`. The template registered on
+DLT decides which of them it shows. A message that does not match its
+registered template is dropped by the operator, not by us, so these are
+checked at start-up rather than discovered by a farmer who never got a code."""
+
+TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "").strip()
+TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "").strip()
+TWILIO_FROM = os.environ.get("TWILIO_FROM", "").strip()
+"""A Twilio number in E.164 (+1...) or a Messaging Service SID (MG...)."""
+
+SMS_INBOUND_SECRET = os.environ.get("SMS_INBOUND_SECRET", "").strip()
+"""The shared secret a provider's inbound callback must carry: as the
+X-AnnRakshak-Secret header, or — for a provider that cannot send headers — as
+the callback URL's last segment, /api/sms/inbound/<secret>. Never as a query
+parameter (?key=), which access logs write down and which is refused.
+Twilio's callbacks are checked by their own signature (TWILIO_AUTH_TOKEN)
+instead. Without either, /api/sms/inbound refuses everything, and the
+follow-up SMS asks the farmer to answer in the app rather than inviting a
+reply nobody will read."""
+
+SMS_TIMEOUT_S = 8.0
+"""A provider that has not answered in this long has not sent the message.
+Short, because a sign-in code is waited for by a person holding a phone."""
+
+SMS_MAX_PARTS = 2
+"""Longest message, in SMS segments. One segment is 160 Latin characters or 70
+in an Indian script; a farmer's alert is trimmed to fit two, because three is a
+message that arrives in pieces on an old handset and costs three times over."""
+
+SMS_MAX_PER_NUMBER_PER_HOUR = 8
+"""Every message to one number, of every kind, in an hour. The backstop under
+every other limit: whatever goes wrong upstream — a loop, a retry storm, a
+stranger texting the inbound number over and over — one phone is never
+flooded and the bill never runs away."""
+
+MAX_ALERT_SMS_PER_FARM_PER_DAY = 3
+"""Alert messages (warnings, verdicts, follow-up questions) to one field in a
+day. Each costs money and each interrupts somebody; three is a bad day."""
+
+SMS_RETRIES = 3
+"""Failed attempts at one message before it is given up on. A provider that is
+down for an hour should not lose a warning; one that refuses a message for
+good should not be asked every half hour for ever."""
+
 FOLLOWUP_DUE_DAYS = 4
 CASE_ETA_MINUTES_PER_POSITION = 20
 
@@ -406,4 +493,35 @@ def start_checks() -> list[str]:
         # to the district's cases.
         problems.append("TURNSTILE_SECRET is one of Cloudflare's test keys: the box on sign-in "
                         "is shown and answered but refuses nobody")
+    problems += sms_problems()
     return problems
+
+
+def sms_problems() -> list[str]:
+    """What is wrong with the SMS settings, if anything.
+
+    'off' is a decision and says nothing. Everything else here is a farmer
+    waiting for a code that is never coming: an outbox file, a provider with
+    no key, or an Indian provider with no DLT template for a kind of message,
+    which the operator drops without telling anyone."""
+    if SMS_BACKEND == "off":
+        return []
+    if SMS_BACKEND not in SMS_BACKENDS:
+        return [f"SMS_BACKEND is {SMS_BACKEND!r}: it must be one of {', '.join(SMS_BACKENDS)}"]
+    if SMS_BACKEND == "outbox":
+        return ["SMS_BACKEND is 'outbox': sign-in codes and alerts by SMS are written to a file, not sent"]
+    missing: list[str] = []
+    if SMS_BACKEND == "msg91":
+        if not MSG91_AUTH_KEY:
+            missing.append("MSG91_AUTH_KEY")
+        if not SMS_SENDER_ID:
+            missing.append("SMS_SENDER_ID")
+        missing += [f"MSG91_TEMPLATE_{kind.upper()}" for kind, tid in MSG91_TEMPLATES.items() if not tid]
+    elif SMS_BACKEND == "twilio":
+        missing += [name for name, value in (("TWILIO_ACCOUNT_SID", TWILIO_ACCOUNT_SID),
+                                             ("TWILIO_AUTH_TOKEN", TWILIO_AUTH_TOKEN),
+                                             ("TWILIO_FROM", TWILIO_FROM)) if not value]
+    if missing:
+        return [f"SMS_BACKEND is {SMS_BACKEND!r} but {', '.join(missing)} "
+                f"{'is' if len(missing) == 1 else 'are'} not set: those messages would never be sent"]
+    return []
