@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type InputHTMLAttributes, type ReactNode } from 'react'
-import { Check, Loader2, MailCheck } from 'lucide-react'
+import { Check, Loader2, MailCheck, MessageSquare } from 'lucide-react'
 import type { OtpSent } from '../api/types'
 import { ErrorBox, ListenButton } from '../ui/kit'
 import { useFarmer } from '../farmer/FarmerContext'
 import type { TKey } from '../lib/i18n'
+import { wentBySms } from './helpers'
 import { usePublishProgress } from './progress'
 
 /** On a phone the page is cream and a white box is the thing you type in. On a
@@ -193,9 +194,13 @@ export function CodeBoxes({ value, onChange, digits = 6, onComplete }: {
   )
 }
 
-/** Send a code, then take it. `request` asks the server to email a code;
- *  `verify` finishes the login or sign-up with it. */
-export function CodePanel({ sendLabel, request, verify, submitLabel, blocked }: {
+/** Send a code, then take it. `request` asks the server to send a code — by
+ *  SMS to a farmer's mobile number where the server can, else by email — and
+ *  `verify` finishes the login or sign-up with it. Once sent, the panel says
+ *  where the code really went, because a farmer's SMS that failed falls back
+ *  to their email, and "check your messages" would send them to the wrong
+ *  place. */
+export function CodePanel({ sendLabel, request, verify, submitLabel, blocked, note }: {
   sendLabel: string
   request: () => Promise<OtpSent>
   verify: (challengeId: string, code: string) => Promise<void>
@@ -203,6 +208,8 @@ export function CodePanel({ sendLabel, request, verify, submitLabel, blocked }: 
   /** Something on this screen is still outstanding — the officer's undertaking.
    *  Sending a code first would spend the code and then refuse the sign-up. */
   blocked?: boolean
+  /** The line under the send button: where the code is going to go. */
+  note?: string
 }) {
   const { t } = useFarmer()
   const [sent, setSent] = useState<OtpSent | null>(null)
@@ -251,17 +258,19 @@ export function CodePanel({ sendLabel, request, verify, submitLabel, blocked }: 
       <div className="space-y-3">
         {error && <ErrorBox error={error} />}
         <Primary busy={busy} disabled={blocked} onClick={send}>{sendLabel}</Primary>
-        <p className="text-[12px] text-soil-dark/50 text-center">{t('authEmailNote')}</p>
+        <p className="text-[12px] text-soil-dark/50 text-center">{note ?? t('authEmailNote')}</p>
       </div>
     )
   }
+  const sms = wentBySms(sent)
+  const Icon = sms ? MessageSquare : MailCheck
   return (
     <div className="space-y-4">
-      <div className="flex gap-3 items-start rounded-2xl bg-leaf/10 text-leaf-deep p-3">
-        <MailCheck className="w-5 h-5 shrink-0 mt-0.5" />
+      <div className="flex gap-3 items-start rounded-2xl bg-leaf/10 text-leaf-deep p-3" role="status">
+        <Icon className="w-5 h-5 shrink-0 mt-0.5" />
         <div className="text-[13px] leading-snug">
-          <p className="font-medium">{t('authCodeSent').replace('{to}', sent.sent_to)}</p>
-          <p className="text-leaf-deep/70 mt-0.5">{t('authCodeCheckSpam')}</p>
+          <p className="font-medium">{t(sms ? 'authCodeSentSms' : 'authCodeSent').replace('{to}', sent.sent_to)}</p>
+          <p className="text-leaf-deep/70 mt-0.5">{t(sms ? 'authCodeSmsWait' : 'authCodeCheckSpam')}</p>
         </div>
       </div>
       <CodeBoxes value={code} onChange={setCode} digits={sent.digits} onComplete={(c) => void submit(c)} />

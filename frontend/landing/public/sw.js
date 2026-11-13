@@ -110,3 +110,98 @@ self.addEventListener('notificationclick', (event) => {
     await self.clients.openWindow(url)
   })())
 })
+
+/* Photographs waiting for signal (src/lib/outbox.ts keeps them; the names and
+ * rules here must match it). A farmer who took a photo with no signal and
+ * closed the app still gets it sent: the browser wakes this worker when the
+ * connection is back, and the answer arrives as a notification. */
+const OUTBOX_DB = 'annrakshak'
+const OUTBOX_STORE = 'outbox'
+const OUTBOX_TAG = 'ar-outbox'
+const OUTBOX_KEEP_MS = 3 * 24 * 3600 * 1000
+const OUTBOX_LEASE_MS = 120000
+
+function outboxReq(req) {
+  return new Promise((resolve, reject) => {
+    req.onsuccess = () => resolve(req.result)
+    req.onerror = () => reject(req.error)
+  })
+}
+
+function outboxOpen() {
+  return new Promise((resolve, reject) => {
+    const r = indexedDB.open(OUTBOX_DB, 1)
+    r.onupgradeneeded = () => {
+      if (!r.result.objectStoreNames.contains(OUTBOX_STORE)) r.result.createObjectStore(OUTBOX_STORE, { keyPath: 'id' })
+    }
+    r.onsuccess = () => resolve(r.result)
+    r.onerror = () => reject(r.error)
+  })
+}
+
+async function outboxStore(mode) {
+  return (await outboxOpen()).transaction(OUTBOX_STORE, mode).objectStore(OUTBOX_STORE)
+}
+
+/* Read and write in one transaction, so this worker and an open app cannot
+ * both find the lease free and send the same photo twice. */
+async function outboxClaim(id) {
+  const s = await outboxStore('readwrite')
+  const q = await outboxReq(s.get(id))
+  if (!q || q.lease > Date.now()) return null
+  q.lease = Date.now() + OUTBOX_LEASE_MS
+  await outboxReq(s.put(q))
+  return q
+}
+
+async function outboxSend() {
+  const all = await outboxReq((await outboxStore('readonly')).getAll())
+  all.sort((a, b) => a.at - b.at)
+  for (const item of all) {
+    if (Date.now() - item.at >= OUTBOX_KEEP_MS) {
+      await outboxReq((await outboxStore('readwrite')).delete(item.id))
+      continue
+    }
+    const q = await outboxClaim(item.id)
+    if (!q) continue
+    const fd = new FormData()
+    fd.append('image', q.blob, 'photo.jpg')
+    fd.append('lang', q.lang)
+    fd.append('client_ref', q.id)
+    let res
+    try {
+      res = await fetch(`/api/farms/${q.farmId}/diagnose`, { method: 'POST', body: fd, credentials: 'include' })
+    } catch (e) {
+      // Still no connection: give the lease back and let the browser try again.
+      q.lease = 0
+      q.tries = (q.tries || 0) + 1
+      await outboxReq((await outboxStore('readwrite')).put(q))
+      throw e
+    }
+    if (res.ok) {
+      const result = await res.json().catch(() => null)
+      await outboxReq((await outboxStore('readwrite')).delete(q.id))
+      const sent = { id: q.id, farmId: q.farmId, result }
+      const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      wins.forEach((w) => w.postMessage({ type: 'outbox-sent', sent }))
+      if (!wins.some((w) => w.visibilityState === 'visible') && result && result.problem_id) {
+        await self.registration.showNotification(result.message || 'AnnRakshak', {
+          body: '', icon: '/icon-192.png', badge: '/favicon-64.png', tag: `outbox-${q.id}`,
+          data: { url: `/app/history/${result.problem_id}` },
+        })
+      }
+    } else if (res.status === 408 || res.status === 429 || res.status >= 500) {
+      q.lease = 0
+      q.tries = (q.tries || 0) + 1
+      await outboxReq((await outboxStore('readwrite')).put(q))
+      throw new Error(`server ${res.status}`)   // the browser retries the sync later
+    } else {
+      // Refused for good (signed out, field deleted): sending again changes nothing.
+      await outboxReq((await outboxStore('readwrite')).delete(q.id))
+    }
+  }
+}
+
+self.addEventListener('sync', (event) => {
+  if (event.tag === OUTBOX_TAG) event.waitUntil(outboxSend())
+})

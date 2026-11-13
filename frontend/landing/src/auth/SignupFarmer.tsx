@@ -8,7 +8,7 @@ import { useFarmer } from '../farmer/FarmerContext'
 import { useAsync } from '../lib/hooks'
 import { Bone, Card, Loading } from '../ui/kit'
 import { useAuth } from './AuthContext'
-import { emailOk, phoneOk } from './helpers'
+import { emailOk, phoneOk, showPhone, smsCodes } from './helpers'
 import { Actions, Chips, CodePanel, Field, FormCard, Input, Primary, Secondary, Steps } from './parts'
 import Turnstile from './Turnstile'
 import WherePicker, { type Where } from './WherePicker'
@@ -75,6 +75,11 @@ export default function SignupFarmer() {
   const { lang, setLang, t } = useFarmer()
   const { signIn } = useAuth()
   const crops = useAsync(() => api.crops(lang), [lang])
+  // Whether the code can go by SMS. When it can, the mobile number is all a
+  // farmer needs: most smallholders have no email, and a form that demanded
+  // one turned them away at the first step.
+  const options = useAsync(() => api.authOptions(lang), [lang])
+  const smsOn = smsCodes(options.data)
   const [step, setStep] = useState(0)
   const [f, setF] = useState(() => ({
     name: '', phone: '', email: '', totalLand: '',
@@ -96,7 +101,7 @@ export default function SignupFarmer() {
   const bad = {
     name: f.name.trim().length < 2,
     phone: !phoneOk(f.phone),
-    email: !emailOk(f.email),
+    email: smsOn ? f.email.trim() !== '' && !emailOk(f.email) : !emailOk(f.email),
     where: !where.state || !where.district || where.village.trim().length < 2,
     totalLand: f.totalLand !== '' && !(parseFloat(f.totalLand) > 0),
     area: !(parseFloat(f.area) > 0 && parseFloat(f.area) <= 1000),
@@ -121,7 +126,7 @@ export default function SignupFarmer() {
   const show = (k: keyof typeof bad) => touched && bad[k]
 
   const payload = () => ({
-    name: f.name.trim(), phone: f.phone, lang,
+    name: f.name.trim(), phone: f.phone, email: f.email.trim() || null, lang,
     state: where.state, district: where.district.trim(), taluka: where.taluka.trim() || null,
     village: where.village.trim(),
     // No coordinates when the farmer refused location: the server looks the
@@ -162,7 +167,8 @@ export default function SignupFarmer() {
             <Field label={t('authName')} error={show('name') && t('authFixField')}>
               <Input value={f.name} onChange={(e) => set('name', e.target.value)} autoComplete="name" invalid={show('name')} />
             </Field>
-            <Field label={t('authMobile')} hint={t('authMobileHint')} error={show('phone') && t('authBadPhone')}>
+            <Field label={t('authMobile')} hint={smsOn ? t('authMobileHintSms') : t('authMobileHint')}
+              error={show('phone') && t('authBadPhone')}>
               <div className="flex gap-2">
                 <span className="min-h-[48px] px-3 rounded-xl border border-soil-dark/20 bg-cream flex items-center text-[15px] text-soil-dark/60">+91</span>
                 <Input value={f.phone} onChange={(e) => set('phone', e.target.value)} type="tel" inputMode="numeric"
@@ -170,7 +176,8 @@ export default function SignupFarmer() {
               </div>
             </Field>
           </div>
-          <Field label={t('authEmail')} hint={t('authEmailHint')} error={show('email') && t('authBadEmail')}>
+          <Field label={t('authEmail')} optional={smsOn} hint={smsOn ? t('authEmailHintOptional') : t('authEmailHint')}
+            error={show('email') && t('authBadEmail')}>
             <Input value={f.email} onChange={(e) => set('email', e.target.value)} type="email" autoComplete="email"
               inputMode="email" placeholder="name@gmail.com" invalid={show('email')} />
           </Field>
@@ -263,8 +270,10 @@ export default function SignupFarmer() {
             <p className="text-[11px] uppercase tracking-wider text-soil-dark/50 font-semibold mb-2">{t('authReview')}</p>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[13px]">
               <dt className="text-soil-dark/55">{t('authName')}</dt><dd className="font-medium">{f.name}</dd>
-              <dt className="text-soil-dark/55">{t('authMobile')}</dt><dd>+91 {f.phone.replace(/\D/g, '').slice(-10)}</dd>
-              <dt className="text-soil-dark/55">{t('authEmail')}</dt><dd className="break-all">{f.email.trim()}</dd>
+              <dt className="text-soil-dark/55">{t('authMobile')}</dt><dd>{showPhone(f.phone)}</dd>
+              {f.email.trim() && (
+                <><dt className="text-soil-dark/55">{t('authEmail')}</dt><dd className="break-all">{f.email.trim()}</dd></>
+              )}
               <dt className="text-soil-dark/55">{t('authVillage')}</dt>
               <dd>{[where.village, where.taluka, where.district, where.state].filter(Boolean).join(', ')}</dd>
               <dt className="text-soil-dark/55">{t('authFieldsTitle')}</dt>
@@ -290,8 +299,9 @@ export default function SignupFarmer() {
             <>
               <Turnstile lang={lang} onToken={setHuman} />
               <CodePanel
-                sendLabel={t('authSendCodeTo').replace('{to}', f.email.trim())}
-                request={() => api.requestOtp({ role: 'farmer', purpose: 'signup', email: f.email.trim(),
+                sendLabel={t('authSendCodeTo').replace('{to}', smsOn ? showPhone(f.phone) : f.email.trim())}
+                note={smsOn ? t('authSmsNote') : undefined}
+                request={() => api.requestOtp({ role: 'farmer', purpose: 'signup', email: f.email.trim() || undefined,
                                                 phone: f.phone, lang, turnstile_token: human })}
                 verify={async (challenge_id, code) => signIn(await api.signupFarmer({ ...payload(), challenge_id, code }))}
                 submitLabel={t('authCreate')}

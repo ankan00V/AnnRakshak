@@ -6,7 +6,7 @@ import type { Role } from '../api/types'
 import { useFarmer } from '../farmer/FarmerContext'
 import { useAsync } from '../lib/hooks'
 import { useAuth } from './AuthContext'
-import { emailOk, phoneOk } from './helpers'
+import { emailOk, phoneOk, smsCodes } from './helpers'
 import { CodePanel, Field, FormCard, Input, Primary } from './parts'
 import Turnstile from './Turnstile'
 
@@ -41,7 +41,14 @@ export default function Login() {
   const [demoError, setDemoError] = useState<Error | null>(null)
   const options = useAsync(() => api.authOptions(lang), [lang])
 
-  const valid = identifier.includes('@') ? emailOk(identifier) : phoneOk(identifier)
+  const byEmail = identifier.includes('@')
+  const valid = byEmail ? emailOk(identifier) : phoneOk(identifier)
+  // Where the code is going, said before it is sent. A farmer's mobile number
+  // gets it by SMS when the server can send one; an email address, an officer,
+  // and everyone while SMS is off get it by email.
+  const smsOn = smsCodes(options.data)
+  const note = role === 'farmer' && !byEmail && smsOn ? t('authSmsNote')
+    : smsOn ? t('authEmailCodeNote') : undefined
   const setRole = (r: Role) => {
     params.set('role', r)
     setParams(params, { replace: true })
@@ -93,6 +100,7 @@ export default function Login() {
                                               turnstile_token: human })}
               verify={async (id, code) => signIn(await api.login(id, code, role, lang))}
               submitLabel={t('authVerify')}
+              note={note}
             />
           </div>
         )}

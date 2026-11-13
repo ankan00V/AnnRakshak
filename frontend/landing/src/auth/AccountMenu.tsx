@@ -19,13 +19,15 @@ export type PrivacyLabels = {
 /** The signed-in person in a dark header: initials, and a menu with who they
  *  are, what they may do with their own data, and Log out. Labels default to
  *  English (the expert screens). */
-export default function AccountMenu({ logoutLabel = 'Log out', demoLabel = 'Demo', extra, privacy, profile }: {
+export default function AccountMenu({ logoutLabel = 'Log out', demoLabel = 'Demo', extra, privacy, profile, light = false }: {
   logoutLabel?: string; demoLabel?: string
   /** Where this role's own record lives, and what to call it. */
   profile?: { to: string; label: string }
   /** One more item above Log out (the farmer app's "App tour"). */
   extra?: { label: string; onClick: () => void }
   privacy?: PrivacyLabels
+  /** On a light top bar: a dark avatar instead of an ochre one. */
+  light?: boolean
 }) {
   const { me, logout } = useAuth()
   const navigate = useNavigate()
@@ -55,7 +57,9 @@ export default function AccountMenu({ logoutLabel = 'Log out', demoLabel = 'Demo
   return (
     <div className="relative" ref={box}>
       <button onClick={() => setOpen((o) => !o)} aria-label={me.name} aria-expanded={open}
-        className="w-9 h-9 rounded-full bg-ochre text-soil-dark text-[13px] font-bold flex items-center justify-center ring-2 ring-cream/20 hover:ring-cream/40">
+        className={light
+          ? 'w-10 h-10 rounded-full bg-leaf-deep text-cream text-[13px] font-semibold flex items-center justify-center ring-2 ring-white hover:brightness-110'
+          : 'w-9 h-9 rounded-full bg-ochre text-soil-dark text-[13px] font-bold flex items-center justify-center ring-2 ring-cream/20 hover:ring-cream/40'}>
         {initials || '•'}
       </button>
       {open && (

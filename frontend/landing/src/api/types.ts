@@ -977,6 +977,12 @@ export interface Me {
   is_demo: boolean
   /** One email switch for every field this person owns. */
   email_pref?: EmailPref
+  /** An address typed at an SMS sign-up and not yet confirmed: nothing is
+   *  sent to it until a code sent there comes back. */
+  pending_email?: string | null
+  /** Farmers only: alerts by SMS, and whether this server can send any. */
+  sms_pref?: 'warnings' | 'off'
+  sms_available?: boolean
   /** When the account was made: a new farmer is offered the app tour. */
   created_at?: string | null
   farm_ids?: number[]
@@ -1019,7 +1025,7 @@ export interface Me {
 
 export interface OtpSent {
   challenge_id: string
-  channel: 'email'
+  channel: 'email' | 'sms'
   sent_to: string
   expires_in: number
   resend_in: number
@@ -1035,7 +1041,7 @@ export interface AuthOptions {
   departments: { id: string; name: string }[]
   qualifications: { id: string; name: string }[]
   specialities: { id: string; name: string }[]
-  otp: { digits: number; minutes: number; channel: 'email' }
+  otp: { digits: number; minutes: number; channel: 'email' | 'sms'; sms?: boolean }
   demo_login: boolean
   /** Cloudflare's public half. Null means no box is shown and none is required. */
   turnstile_sitekey: string | null
