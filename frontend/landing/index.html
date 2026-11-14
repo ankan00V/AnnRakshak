@@ -2,7 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- interactive-widget: Android Chrome shrinks the layout viewport when the
+         keyboard opens, so a fixed panel (Krishi's chat) sits above it, not under it. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="theme-color" content="#1f3d2b" />
     <meta name="description" content="AnnRakshak — early detection and management of crop diseases and pests, in the farmer’s own language." />
     <link rel="manifest" href="./manifest.webmanifest" />
@@ -15,15 +17,16 @@
     <meta property="og:image" content="/og-image.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <title>AnnRakshak — Protector of the Harvest</title>
-    <!-- Served from this origin. Asking fonts.googleapis.com told Google the
-         IP of every visitor on first paint, for files that are Open Font
-         Licence and could always have been served from here. The unicode-range
-         on each face is Google's own: a farmer reading Marathi still fetches
-         the Devanagari pieces and nothing else. -->
-    <link rel="stylesheet" href="/fonts/fonts.css" />
   </head>
   <body>
-    <div id="root"></div>
+    <!-- What a farmer sees while the app's own code is still arriving (on 2G,
+         and while main.tsx waits up to 1.5 s for their language): the name on
+         the app's cream, not a blank white page. Inline and script-free, so it
+         paints with the HTML; React replaces it on its first render. -->
+    <div id="root"><div style="min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#f7f3ec;color:#1f3d2b;font-family:Georgia,'Times New Roman',serif">
+      <img src="/favicon-64.png" alt="" width="56" height="56" style="border-radius:14px" />
+      <span style="font-size:28px;letter-spacing:0.01em">AnnRakshak</span>
+    </div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

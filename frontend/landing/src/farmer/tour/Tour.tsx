@@ -1,8 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { driver, type Driver, type DriveStep, type PopoverDOM } from 'driver.js'
-import 'driver.js/dist/driver.css'
-import './tour.css'
+import type { Driver, DriveStep, PopoverDOM } from 'driver.js'
 import { Headphones } from 'lucide-react'
 import { useAuth } from '../../auth/AuthContext'
 import { useFarmer } from '../FarmerContext'
@@ -45,11 +43,22 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const seenKey = tourSeenKey(me?.id)
 
   // A new account (or a demo one) is asked once, as soon as its farm opens.
+  // Not without signal: the tour reads itself out from the network, and an
+  // offer it cannot keep, made in a field with no bars, reads as broken. It
+  // is made when the signal comes back instead.
+  const [online, setOnline] = useState(() => navigator.onLine)
   useEffect(() => {
-    if (!me || farmId == null || store.get(seenKey) === '1') return
+    const up = () => setOnline(true)
+    const down = () => setOnline(false)
+    window.addEventListener('online', up)
+    window.addEventListener('offline', down)
+    return () => { window.removeEventListener('online', up); window.removeEventListener('offline', down) }
+  }, [])
+  useEffect(() => {
+    if (!me || farmId == null || !online || store.get(seenKey) === '1') return
     const age = me.created_at ? (Date.now() - Date.parse(me.created_at)) / 864e5 : Infinity
     if (me.is_demo || age <= NEW_ACCOUNT_DAYS) setAsking(true)
-  }, [me, farmId, seenKey])
+  }, [me, farmId, seenKey, online])
 
   // ...but not over the live field check. That screen takes the whole display
   // and the camera with it, and a farmer standing in their field with the phone
@@ -161,7 +170,20 @@ export function TourProvider({ children }: { children: ReactNode }) {
       pop.footer.prepend(progress, row)
     }
 
-    const run = () => {
+    const run = async () => {
+      // driver.js and its styles load on the tap, not with the app: most
+      // farmers never take the tour, and it was 8 KB gzip of every first load.
+      // driver.css before tour.css, so the app's look wins the cascade.
+      let driver: typeof import('driver.js').driver
+      try {
+        ;({ driver } = await import('driver.js'))
+        await import('driver.js/dist/driver.css')
+        await import('./tour.css')
+      } catch {
+        stop()   // no signal and never fetched: the tour simply does not open
+        return
+      }
+      tour.current?.destroy()
       tour.current = driver({
         steps,
         showProgress: true,
@@ -186,8 +208,8 @@ export function TourProvider({ children }: { children: ReactNode }) {
     // The tour explains Home first: open it, then start once it has drawn.
     if (where.current !== '/app' && where.current !== '/app/') {
       navigate('/app')
-      window.setTimeout(run, 350)
-    } else run()
+      window.setTimeout(() => void run(), 350)
+    } else void run()
   }, [lang, navigate, seenKey, speak, t])
 
   useEffect(() => () => { tour.current?.destroy(); audio.current?.pause() }, [])

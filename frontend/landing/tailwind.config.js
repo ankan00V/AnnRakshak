@@ -4,7 +4,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        'instrument-serif': ['"Instrument Serif"', '"Noto Serif Devanagari"', 'serif'],
+        // Instrument Serif has no Devanagari. Falling to the sans face the Hindi
+        // or Marathi farmer already has costs nothing; a serif Devanagari font
+        // cost 124 KB to draw one word on Home (the crop name).
+        'instrument-serif': ['"Instrument Serif"', '"Noto Sans Devanagari"', 'serif'],
         sans: ['Inter', '"Noto Sans Devanagari"', '"Noto Sans Bengali"', '"Noto Sans Tamil"', '"Noto Sans Telugu"',
           '"Noto Sans Kannada"', '"Noto Sans Malayalam"', '"Noto Sans Gujarati"', '"Noto Sans Gurmukhi"', '"Noto Sans Oriya"',
           'system-ui', 'sans-serif'],
