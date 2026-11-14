@@ -51,3 +51,30 @@ body {
     animation: none;
   }
 }
+
+/* A phone zooms the whole page in when a typing box under 16px takes focus
+   (Safari on iOS, and some Android keyboards), and leaves it zoomed: the
+   farmer lands in a half-screen form they did not ask for. Sixteen is the
+   floor for every typing box on a touch screen, whatever its own class says. */
+@media (max-width: 1023px), (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Taps go straight through: no 300 ms wait for a double-tap zoom, and no grey
+   flash over every button on Android. */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+a,
+[role='button'],
+label,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}

@@ -18,9 +18,9 @@ export function RoleSwitch({ role, onChange }: { role: Role; onChange: (r: Role)
         const Icon = r === 'farmer' ? Sprout : UserCheck
         return (
           <button key={r} role="tab" aria-selected={role === r} onClick={() => onChange(r)}
-            className={`min-h-[42px] rounded-full text-[13px] font-semibold flex items-center justify-center gap-1.5 transition-colors ${
-              role === r ? 'bg-leaf-deep text-cream' : 'text-soil-dark/60'}`}>
-            <Icon className="w-4 h-4" />
+            className={`min-h-[44px] rounded-full text-[14px] font-semibold flex items-center justify-center gap-1.5 transition-colors ${
+              role === r ? 'bg-leaf-deep text-cream' : 'text-soil-dark/75 active:bg-soil-dark/5'}`}>
+            <Icon className="w-4 h-4" aria-hidden />
             {t(r === 'farmer' ? 'authFarmer' : 'authExpert')}
           </button>
         )
@@ -72,7 +72,7 @@ export default function Login() {
       {/* The side panel carries the welcome on a laptop. */}
       <div className="lg:hidden">
         <h1 className="font-instrument-serif text-[34px] leading-tight">{t('authLoginTitle')}</h1>
-        <p className="mt-1 text-sm text-soil-dark/60">{t('authLoginSub')}</p>
+        <p className="mt-1 text-[15px] text-soil-dark/75">{t('authLoginSub')}</p>
       </div>
 
       <FormCard>
@@ -89,9 +89,10 @@ export default function Login() {
           </form>
         ) : (
           <div className="mt-5 space-y-3">
-            <div className="flex items-center justify-between rounded-xl bg-white lg:bg-cream/50 border border-soil-dark/10 px-3 py-2.5 text-sm">
-              <span className="truncate">{identifier}</span>
-              <button className="text-leaf-deep font-medium" onClick={() => setReady(false)}>{t('authChange')}</button>
+            <div className="flex items-center justify-between gap-2 rounded-xl bg-white lg:bg-cream/50 border border-soil-dark/10 pl-3 pr-1 py-0.5 text-[15px]">
+              <span className="min-w-0 truncate">{identifier}</span>
+              {/* A thumb-sized target: a mistyped number is fixed here. */}
+              <button type="button" className="inline-flex min-h-[44px] shrink-0 items-center px-3 text-leaf-deep font-medium" onClick={() => setReady(false)}>{t('authChange')}</button>
             </div>
             <Turnstile lang={lang} onToken={setHuman} />
             <CodePanel
@@ -105,9 +106,9 @@ export default function Login() {
           </div>
         )}
 
-        <p className="mt-6 lg:mt-7 lg:pt-5 lg:border-t lg:border-soil-dark/10 text-center text-sm text-soil-dark/70">
+        <p className="mt-6 lg:mt-7 lg:pt-5 lg:border-t lg:border-soil-dark/10 text-center text-sm text-soil-dark/75">
           {t('authNoAccount')}{' '}
-          <Link to={`/signup/${role}`} className="text-leaf-deep font-semibold underline underline-offset-2">
+          <Link to={`/signup/${role}`} className="inline-flex min-h-[44px] items-center text-leaf-deep font-semibold underline underline-offset-2">
             {t('authCreateAccount')}
           </Link>
         </p>
@@ -124,7 +125,7 @@ export default function Login() {
               </button>
             ))}
           </div>
-          {demoError && <p className="text-[12px] text-ember">{(demoError as ApiError).message}</p>}
+          {demoError && <p role="alert" className="text-[13px] text-ember">{(demoError as ApiError).message}</p>}
         </div>
       )}
     </div>

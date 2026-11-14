@@ -125,7 +125,7 @@ function ResultView({ r }: { r: DiagnoseResult }) {
                 {escalating ? <Loader2 className="h-5 w-5 animate-spin" /> : <UserRound className="h-5 w-5" aria-hidden />}
                 {t('askExpert')}
               </button>
-              {askFailed && <ErrorBox error={askFailed} onRetry={() => { void askExpert() }} retryLabel={t('retry')} />}
+              {askFailed && <ErrorBox offlineLabel={t('offline')} error={askFailed} onRetry={() => { void askExpert() }} retryLabel={t('retry')} />}
             </section>
           )}
         </div>
@@ -281,8 +281,8 @@ function DoubtDoctor({ r }: { r: DiagnoseResult }) {
         {/* On this card's own dark ground, not an ErrorBox: the buttons are
             still live, so saying what happened is the whole fix. */}
         {failed && (
-          <p className="mt-3 flex items-start gap-2 text-[15px] text-white/90">
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-ochre" />
+          <p role="alert" className="mt-3 flex items-start gap-2 text-[15px] text-white/90">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-ochre" aria-hidden />
             {t('notSaved')}
           </p>
         )}
@@ -318,7 +318,7 @@ function Escalated({ message, kase, alternatives }: { message: string; kase?: Ca
           <PhoneCall className="h-5 w-5" aria-hidden />
           {t('callKcc')}
         </a>
-        {kase && <p className="mt-3 text-center text-[13px] text-soil-dark/60">{t('caseNumber').replace('{n}', String(kase.id))}</p>}
+        {kase && <p className="mt-3 text-center text-[13px] text-soil-dark/75">{t('caseNumber').replace('{n}', String(kase.id))}</p>}
       </div>
       {alternatives.length > 0 && (
         <div className={`${PANEL} p-5`}>
@@ -435,7 +435,7 @@ function CropMismatch({ r, top }: { r: DiagnoseResult; top: TargetView }) {
           </button>
         </div>
       )}
-      {err && <p className="mt-3 text-[14px] text-ember">{err}</p>}
+      {err && <p role="alert" className="mt-3 text-[14px] text-ember">{err}</p>}
     </section>
   )
 }

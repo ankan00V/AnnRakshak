@@ -10,7 +10,7 @@ import { WeatherSkeleton } from '../components/Skeletons'
 import LastKnown from '../components/LastKnown'
 import { bcp47 } from '../../lib/i18n'
 import { useFarmer } from '../FarmerContext'
-import { PanelHead, PestPhoto, PhotoCurve, SkyIcon } from '../ui'
+import { PanelHead, PestPhoto, PhotoCurve, SkyIcon, hideBroken } from '../ui'
 import { PANEL, RISK, wmoKey } from '../tokens'
 import SprayTimes from '../components/SprayTimes'
 
@@ -55,7 +55,7 @@ export default function Weather() {
   // A forecast kept on this phone still tells a farmer what the week looked
   // like when it was fetched, and `fetched_at` dates it. The error takes the
   // screen only when there is nothing kept.
-  if (w.error && !w.data) return <ErrorBox error={w.error} onRetry={w.reload} retryLabel={t('retry')} />
+  if (w.error && !w.data) return <ErrorBox offlineLabel={t('offline')} error={w.error} onRetry={w.reload} retryLabel={t('retry')} />
   const v = w.data!
   const advice = v.advisories.filter((a) => a.rule !== 'spray_window')
 
@@ -101,7 +101,7 @@ function NowPanel({ v }: { v: WeatherView }) {
   return (
     <section className={`${PANEL} p-2`}>
       <div className="relative h-[250px] overflow-hidden rounded-[22px] bg-leaf-deep lg:h-[270px]">
-        <img src={night ? '/photos/sunset.webp' : '/photos/landscape.webp'} alt="" width={934} height={442}
+        <img onError={hideBroken} src={night ? '/photos/sunset.webp' : '/photos/landscape.webp'} alt="" width={934} height={442}
           className="absolute inset-0 h-full w-full object-cover object-[center_40%]" />
         <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-transparent" />
         <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/25" />
@@ -264,7 +264,7 @@ function HoursPanel({ hours }: { hours: WeatherHour[] }) {
             </span>
             <SkyIcon code={h.code} night={h.is_day === 0} className="h-7 w-7" />
             <span className="text-[17px] font-semibold tabular-nums">{deg(h.temp)}</span>
-            <span className={`flex items-center gap-0.5 text-[12px] tabular-nums ${(h.prob ?? 0) >= 20 ? 'text-sky-700' : 'text-soil-dark/45'}`}>
+            <span className={`flex items-center gap-0.5 text-[12px] tabular-nums ${(h.prob ?? 0) >= 20 ? 'text-sky-700' : 'text-soil-dark/70'}`}>
               <Droplets className="h-3 w-3" aria-hidden />{h.prob ?? 0}%
             </span>
           </li>
@@ -342,7 +342,7 @@ function WaterPanel({ v }: { v: WeatherView }) {
   return (
     <section className={`${PANEL} p-2`}>
       <div className="relative h-[110px] overflow-hidden rounded-[22px] bg-leaf-deep">
-        <img src="/photos/field-canal.webp" alt="" width={622} height={468} loading="lazy"
+        <img onError={hideBroken} src="/photos/field-canal.webp" alt="" width={622} height={468} loading="lazy"
           className="absolute inset-0 h-full w-full object-cover object-[center_65%]" />
         <PhotoCurve />
       </div>
@@ -381,10 +381,10 @@ function WaterPanel({ v }: { v: WeatherView }) {
               <span className="text-[17px] font-semibold tabular-nums">{ph.value}</span>{' '}
               <span className="text-[15px] text-soil-dark/80">{ph.band}</span>
             </span>
-            <span className="text-right text-[13px] leading-tight text-soil-dark/65">{t(`ph_${ph.how}`)}</span>
+            <span className="text-right text-[13px] leading-tight text-soil-dark/75">{t(`ph_${ph.how}`)}</span>
           </div>
         )}
-        <p className="mt-3 text-[12px] text-soil-dark/60">{t('modelledNote')}</p>
+        <p className="mt-3 text-[13px] text-soil-dark/75">{t('modelledNote')}</p>
       </div>
     </section>
   )

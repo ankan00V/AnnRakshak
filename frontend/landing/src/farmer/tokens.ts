@@ -37,7 +37,10 @@ export const STATUS_PILL = {
 export const FIELD = 'mt-1.5 w-full min-h-[48px] rounded-2xl bg-[#f5f7f1] px-4 text-[16px] ring-1 ring-soil-dark/10 placeholder:text-soil-dark/55 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#4b8b3b]'
 /** The label above one. */
 export const LABEL = 'block text-[14px] font-medium text-soil-dark/80'
+/** A press that shows at once: on a slow phone the next screen can be a second
+ *  away, and a button that does not move gets pressed again. */
+export const PRESS = 'active:brightness-95 motion-safe:active:scale-[0.98] disabled:active:scale-100 disabled:active:brightness-100'
 /** The one thing to press. */
-export const PRIMARY = 'flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full bg-[#2f6a39] text-[16px] font-semibold text-white transition-colors hover:bg-[#2a5f33] disabled:opacity-50'
+export const PRIMARY = `flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full bg-[#2f6a39] text-[16px] font-semibold text-white transition-[color,background-color,transform] hover:bg-[#2a5f33] disabled:opacity-50 ${PRESS}`
 /** Anything else to press. */
-export const SECONDARY = 'flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-[#eef3e6] px-5 text-[15px] font-semibold text-leaf-deep ring-1 ring-[#4b8b3b]/15 transition-colors hover:bg-[#e6eedb] disabled:opacity-50'
+export const SECONDARY = `flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-[#eef3e6] px-5 text-[15px] font-semibold text-leaf-deep ring-1 ring-[#4b8b3b]/15 transition-[color,background-color,transform] hover:bg-[#e6eedb] disabled:opacity-50 ${PRESS}`

@@ -6,35 +6,29 @@ import { Link, useNavigate } from 'react-router-dom'
 import { api, ApiError } from '../../api/client'
 import type { ProblemView } from '../../api/types'
 import { useAsync } from '../../lib/hooks'
+import { shrink } from '../../lib/image'
 import { EVENT, pendingPhotos, queuePhoto, type OutboxChange } from '../../lib/outbox'
 import { ErrorBox } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
 import DemoNotice, { useReadOnlyFarm } from '../components/DemoNotice'
 import ProblemRow from '../components/ProblemRow'
-import { PanelHead } from '../ui'
+import { PanelHead, hideBroken } from '../ui'
 import { PANEL } from '../tokens'
+import type { Lang } from '../../api/types'
 
-/** Downscale on the phone before upload: field networks are slow and the model
- *  only needs ~300 px anyway. */
-async function shrink(file: Blob, max = 1280): Promise<Blob> {
-  const bmp = await createImageBitmap(file)
-  const scale = Math.min(1, max / Math.max(bmp.width, bmp.height))
-  const c = document.createElement('canvas')
-  c.width = Math.round(bmp.width * scale)
-  c.height = Math.round(bmp.height * scale)
-  c.getContext('2d')!.drawImage(bmp, 0, 0, c.width, c.height)
-  return new Promise((res) => c.toBlob((b) => res(b ?? file), 'image/jpeg', 0.88))
-}
-
-const SCENARIOS = [
-  { id: '', label: 'Auto' },
-  { id: 'clear', label: 'Clear' },
-  { id: 'torn', label: 'Torn' },
-  { id: 'unsure', label: 'Unsure' },
+/** The demo model's forced outcomes. Shown only while the trained model is not
+ *  loaded, under the line saying so, but a farmer may still be the one holding
+ *  the phone, so the chips speak their language. */
+const SCENARIOS: { id: string; label: Record<Lang, string> }[] = [
+  { id: '', label: { en: 'Auto', hi: 'स्वतः', mr: 'आपोआप', bn: 'স্বয়ংক্রিয়', ta: 'தானியங்கி', te: 'ఆటో', kn: 'ಸ್ವಯಂ', ml: 'ഓട്ടോ', gu: 'આપમેળે', pa: 'ਆਪਣੇ-ਆਪ' } },
+  { id: 'clear', label: { en: 'Clear', hi: 'स्पष्ट', mr: 'स्पष्ट', bn: 'স্পষ্ট', ta: 'தெளிவு', te: 'స్పష్టం', kn: 'ಸ್ಪಷ್ಟ', ml: 'വ്യക്തം', gu: 'સ્પષ્ટ', pa: 'ਸਪਸ਼ਟ' } },
+  { id: 'torn', label: { en: 'Torn', hi: 'दुविधा', mr: 'द्विधा', bn: 'দ্বিধা', ta: 'இரண்டில் ஒன்று', te: 'సందిగ్ధం', kn: 'ದ್ವಂದ್ವ', ml: 'ആശയക്കുഴപ്പം', gu: 'દ્વિધા', pa: 'ਦੁਬਿਧਾ' } },
+  { id: 'unsure', label: { en: 'Unsure', hi: 'अनिश्चित', mr: 'अनिश्चित', bn: 'অনিশ্চিত', ta: 'உறுதியில்லை', te: 'అనిశ్చితం', kn: 'ಅನಿಶ್ಚಿತ', ml: 'ഉറപ്പില്ല', gu: 'અનિશ્ચિત', pa: 'ਅਨਿਸ਼ਚਿਤ' } },
 ]
 
+// Dark text on ochre: cream on ochre is under 3:1 in sunlight.
 const EXPECT_TINT = {
-  clarify: 'bg-ochre text-cream',
+  clarify: 'bg-ochre text-soil-dark',
   escalate: 'bg-sky-700 text-white',
   retake: 'bg-soil-dark text-cream',
   advise: '',
@@ -166,7 +160,9 @@ export default function Scan() {
   const samplesEl = !busy && (demoFarm ? true : !preview) && shown.length > 0 && (
     <section className={`${PANEL} p-5`}>
       <PanelHead title={t('samplesTitle')} />
-      <div className="mt-4 grid grid-cols-4 gap-2.5">
+      {/* Three across on a phone: at four, a 12px label has ~60px and "white
+          stem borer" could only be clipped. */}
+      <div className="mt-4 grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:grid-cols-3">
         {shown.map((s) => {
           const Frame = demoFarm ? 'span' : 'button'
           return (
@@ -176,12 +172,12 @@ export default function Scan() {
               <span className="relative block">
                 <img src={s.url} alt={s.true_class} loading="lazy" className="aspect-square w-full rounded-2xl object-cover ring-1 ring-soil-dark/10" />
                 {s.expected && s.expected !== 'advise' && (
-                  <span className={`absolute inset-x-1 bottom-1 rounded-md px-1 py-0.5 text-center text-[9px] font-semibold leading-tight ${EXPECT_TINT[s.expected]}`}>
+                  <span className={`absolute inset-x-1 bottom-1 rounded-md px-1 py-0.5 text-center text-[12px] font-semibold leading-tight ${EXPECT_TINT[s.expected]}`}>
                     {t(`expect_${s.expected}`)}
                   </span>
                 )}
               </span>
-              <span className="mt-1 block truncate text-[11px] text-soil-dark/75">
+              <span className="mt-1 block text-[13px] leading-snug text-soil-dark/80 [overflow-wrap:anywhere]">
                 {s.true_class.replace(/^(rice|maize|cotton|soybean)_/, '').replace(/_/g, ' ')}
               </span>
             </Frame>
@@ -237,7 +233,7 @@ export default function Scan() {
             ) : (
               <>
                 {/* A leaf held up to the light: what the photo should look like. */}
-                <img src="/photos/leaf-dew.webp" alt="" width={950} height={442}
+                <img onError={hideBroken} src="/photos/leaf-dew.webp" alt="" width={950} height={442}
                   className="absolute inset-0 h-full w-full object-cover" />
                 <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
                 <button onClick={() => cameraRef.current?.click()}
@@ -295,9 +291,9 @@ export default function Scan() {
                 </button>
               </div>
             )}
-            {error && <div className="mt-3"><ErrorBox error={error} /></div>}
+            {error && <div className="mt-3"><ErrorBox offlineLabel={t('offline')} error={error} /></div>}
             {waiting > 0 && !saved && (
-              <p className="mt-3 flex items-center gap-2 text-[14px] text-[#7a4f12]">
+              <p role="status" className="mt-3 flex items-center gap-2 text-[14px] text-[#7a4f12]">
                 <CloudOff className="h-4 w-4 shrink-0" aria-hidden />
                 {t('scanWaiting').replace('{n}', String(waiting))}
               </p>
@@ -306,12 +302,12 @@ export default function Scan() {
         </section>
         {!busy && isStub && (
           <div className="rounded-[20px] border border-dashed border-ochre/50 p-4">
-            <p className="text-[13px] text-[#8a5a17]">{t('demoModel')}</p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
+            <p id="scan-demo-model" className="text-[13px] text-[#8a5a17]">{t('demoModel')}</p>
+            <div role="group" aria-labelledby="scan-demo-model" className="mt-2 flex flex-wrap gap-1.5">
               {SCENARIOS.map((s) => (
-                <button key={s.id} onClick={() => setScenario(s.id)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium ${scenario === s.id ? 'bg-ochre text-cream' : 'bg-white ring-1 ring-soil-dark/15'}`}>
-                  {s.label}
+                <button key={s.id} type="button" onClick={() => setScenario(s.id)} aria-pressed={scenario === s.id}
+                  className={`min-h-[44px] rounded-full px-4 text-[13px] font-medium ${scenario === s.id ? 'bg-ochre text-soil-dark' : 'bg-white ring-1 ring-soil-dark/15'}`}>
+                  {s.label[lang]}
                 </button>
               ))}
             </div>
@@ -359,7 +355,7 @@ function LivePanel() {
   return (
     <Link to="/app/live"
       className="group relative block overflow-hidden rounded-[28px] bg-[#1d4a2c] text-white shadow-[0_14px_30px_-16px_rgba(29,74,44,0.8)]">
-      <img src="/photos/panicle-closeup.webp" alt="" width={940} height={442} loading="lazy"
+      <img onError={hideBroken} src="/photos/panicle-closeup.webp" alt="" width={940} height={442} loading="lazy"
         className="absolute inset-0 h-full w-full object-cover opacity-45" />
       <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-[#1d4a2c] via-[#1d4a2c]/80 to-[#1d4a2c]/30" />
       <div className="relative p-5">
@@ -389,7 +385,7 @@ function RecentScans({ problems }: { problems: ProblemView[] }) {
     <section className={`${PANEL} p-5`}>
       <PanelHead title={t('scanRecent')}
         action={(
-          <Link to="/app/history" className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[15px] font-medium text-leaf-deep hover:underline">
+          <Link to="/app/history" className="-my-2 flex min-h-[44px] shrink-0 items-center gap-1 whitespace-nowrap text-[15px] font-medium text-leaf-deep hover:underline">
             {t('seeAll')} <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
         )} />

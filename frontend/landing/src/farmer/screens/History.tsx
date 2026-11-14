@@ -6,6 +6,7 @@ import { bcp47 } from '../../lib/i18n'
 import { ErrorBox } from '../../ui/kit'
 import { HistorySkeleton, ProblemDetailSkeleton } from '../components/Skeletons'
 import AdvisoryView from '../components/AdvisoryView'
+import LastKnown from '../components/LastKnown'
 import ProblemRow, { problemStatus } from '../components/ProblemRow'
 import { useFarmer } from '../FarmerContext'
 import { PANEL, STATUS_PILL } from '../tokens'
@@ -16,7 +17,7 @@ export default function History() {
   const { farmId, lang, t } = useFarmer()
   const home = useAsync(() => api.home(farmId!, lang), [farmId, lang], ['home', farmId!, lang].join(':'))
   if (home.loading && !home.data) return <HistorySkeleton />
-  if (home.error && !home.data) return <ErrorBox error={home.error} onRetry={home.reload} retryLabel={t('retry')} />
+  if (home.error && !home.data) return <ErrorBox offlineLabel={t('offline')} error={home.error} onRetry={home.reload} retryLabel={t('retry')} />
   const problems = home.data!.problems.filter((p) => p.gate_outcome !== 'retake')
   return (
     <section className={`${PANEL} p-5 lg:p-6`}>
@@ -44,9 +45,11 @@ export default function History() {
 export function ProblemDetail() {
   const { id } = useParams()
   const { lang, t } = useFarmer()
-  const p = useAsync(() => api.problem(Number(id), lang), [id, lang])
+  // Kept on the phone like every other screen: a diagnosis the farmer already
+  // received must still open when they are back in the field without signal.
+  const p = useAsync(() => api.problem(Number(id), lang), [id, lang], ['problem', id, lang].join(':'))
   if (p.loading && !p.data) return <ProblemDetailSkeleton />
-  if (p.error && !p.data) return <ErrorBox error={p.error} onRetry={p.reload} retryLabel={t('retry')} />
+  if (p.error && !p.data) return <ErrorBox offlineLabel={t('offline')} error={p.error} onRetry={p.reload} retryLabel={t('retry')} />
   const d = p.data!
   const s = problemStatus(d, t)
   const Icon = s.icon
@@ -55,6 +58,7 @@ export function ProblemDetail() {
     : null
   return (
     <div className="space-y-5">
+      {p.error && <LastKnown at={p.savedAt} onRetry={p.reload} />}
       <Link to="/app/history" className="inline-flex min-h-[44px] items-center gap-1.5 text-[15px] font-medium text-leaf-deep">
         <ArrowLeft className="h-5 w-5" aria-hidden /> {t('historyTitle')}
       </Link>

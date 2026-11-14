@@ -38,7 +38,8 @@ export default function SeasonSwitch({ farm, crops, onChange }: {
     }
   }
 
-  const label = 'rounded-xl border border-soil-dark/20 bg-cream/50 px-3 min-h-[44px] w-full text-sm'
+  // 16px: anything smaller and iOS Safari zooms the page when the field is tapped.
+  const label = 'mt-1 rounded-xl border border-soil-dark/20 bg-cream/50 px-3 min-h-[44px] w-full text-[16px] text-soil-dark'
 
   if (farm.status === 'fallow') {
     return (
@@ -47,15 +48,15 @@ export default function SeasonSwitch({ farm, crops, onChange }: {
         <p className="mt-0.5 text-sm text-soil-dark/65">
           {t('seasonFallowNote').replace('{on}', farm.harvested_on ?? '')}
         </p>
-        {error && <div className="mt-3"><ErrorBox error={error} /></div>}
+        {error && <div className="mt-3"><ErrorBox offlineLabel={t('offline')} error={error} /></div>}
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          <label className="block text-xs text-soil-dark/60">
+          <label className="block text-[13px] text-soil-dark/70">
             {t('crop')}
             <select className={label} value={crop} onChange={(e) => setCrop(e.target.value)}>
               {(crops ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </label>
-          <label className="block text-xs text-soil-dark/60">
+          <label className="block text-[13px] text-soil-dark/70">
             {nursery && basis === 'transplanted' ? t('transplantDate') : t('sowingDateOnly')}
             <input type="date" className={label} value={sown} max={new Date().toISOString().slice(0, 10)}
               onChange={(e) => setSown(e.target.value)} />
@@ -65,7 +66,7 @@ export default function SeasonSwitch({ farm, crops, onChange }: {
           <div className="mt-2 flex gap-2">
             {(['sown', 'transplanted'] as const).map((b) => (
               <button key={b} onClick={() => setBasis(b)}
-                className={`flex-1 min-h-[40px] rounded-xl border text-[13px] font-medium ${
+                className={`flex-1 min-h-[44px] rounded-xl border text-[14px] font-medium ${
                   basis === b ? 'border-leaf-deep bg-leaf/10 text-leaf-deep' : 'border-soil-dark/15 bg-white'}`}>
                 {t(b === 'sown' ? 'dateBasisSown' : 'dateBasisTransplanted')}
               </button>
@@ -86,17 +87,18 @@ export default function SeasonSwitch({ farm, crops, onChange }: {
       <p className="mt-0.5 text-sm text-soil-dark/65">
         {farm.season_over ? t('seasonOverNote') : t('seasonGrowingNote')}
       </p>
-      {error && <div className="mt-3"><ErrorBox error={error} /></div>}
+      {error && <div className="mt-3"><ErrorBox offlineLabel={t('offline')} error={error} /></div>}
+      {/* Dark text on ochre: cream on it was ~2.8:1, unreadable in sunlight. */}
       {!open ? (
         <button onClick={() => setOpen(true)}
           className={`mt-3 w-full min-h-[46px] rounded-full text-sm font-semibold ${
-            farm.season_over ? 'bg-ochre text-cream' : 'border border-soil-dark/20 text-soil-dark/75'}`}>
+            farm.season_over ? 'bg-ochre text-soil-dark' : 'border border-soil-dark/20 text-soil-dark/75'}`}>
           {t('seasonHarvested')}
         </button>
       ) : (
         <div className="mt-3 flex gap-2">
           <button disabled={busy} onClick={() => run(() => api.harvest(farm.id, {}))}
-            className="flex-1 min-h-[46px] rounded-full bg-ochre text-cream text-sm font-semibold disabled:opacity-60">
+            className="flex-1 min-h-[46px] rounded-full bg-ochre text-soil-dark text-sm font-semibold disabled:opacity-60">
             {t('seasonConfirm')}
           </button>
           <button onClick={() => setOpen(false)}
@@ -104,7 +106,7 @@ export default function SeasonSwitch({ farm, crops, onChange }: {
         </div>
       )}
       {!!farm.seasons && (
-        <p className="mt-2 text-[11px] text-soil-dark/50">{t('seasonCount').replace('{n}', String(farm.seasons))}</p>
+        <p className="mt-2 text-[12px] text-soil-dark/70">{t('seasonCount').replace('{n}', String(farm.seasons))}</p>
       )}
     </Card>
   )

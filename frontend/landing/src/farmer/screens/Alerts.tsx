@@ -23,7 +23,7 @@ export default function Alerts() {
   if ((alerts.loading && !alerts.data) || (home.loading && !home.data)) return <AlertsSkeleton />
   // The checks this phone kept are what a farmer with no signal came here for,
   // so the error only takes the screen when there is nothing kept to take it from.
-  if (alerts.error && !alerts.data) return <ErrorBox error={alerts.error} onRetry={alerts.reload} retryLabel={t('retry')} />
+  if (alerts.error && !alerts.data) return <ErrorBox offlineLabel={t('offline')} error={alerts.error} onRetry={alerts.reload} retryLabel={t('retry')} />
   const crop = home.data?.farm.crop ?? ''
   const open = alerts.data!.filter((a) => a.outcome === null || a.outcome === 'snoozed')
   const done = alerts.data!.filter((a) => a.outcome === 'nothing_found' || a.outcome === 'found')
@@ -139,7 +139,7 @@ function TrapForm({ crop, onSaved }: { crop: string; onSaved: () => void }) {
         {busy && <Loader2 className="h-5 w-5 animate-spin" />}
         {t('record')}
       </button>
-      {msg && <p className={`text-center text-[15px] font-medium ${failed ? 'text-ember' : 'text-leaf-deep'}`}>{msg}</p>}
+      {msg && <p role={failed ? 'alert' : 'status'} className={`text-center text-[15px] font-medium ${failed ? 'text-ember' : 'text-leaf-deep'}`}>{msg}</p>}
       {readings.data && readings.data.length > 0 && (
         <div className="flex h-20 items-end gap-1.5 rounded-[20px] bg-[#f5f7f1] px-3 pb-2 pt-3">
           {readings.data.slice(0, 10).reverse().map((r) => {
@@ -148,7 +148,7 @@ function TrapForm({ crop, onSaved }: { crop: string; onSaved: () => void }) {
             return (
               <div key={r.id} className="flex-1 flex flex-col items-center gap-0.5" title={`${r.recorded_on}: ${r.per_trap_night} ${t('perTrapNight')}`}>
                 <span className={`w-full rounded-t-md ${over ? 'bg-ember' : 'bg-[#4b8b3b]/70'}`} style={{ height: `${Math.min(44, Math.max(3, r.per_trap_night * 3))}px` }} />
-                <span className="text-[11px] tabular-nums text-soil-dark/70">{r.per_trap_night}</span>
+                <span className="text-[12px] tabular-nums text-soil-dark/75">{r.per_trap_night}</span>
               </div>
             )
           })}
@@ -205,8 +205,8 @@ function SensorForm({ onSaved }: { onSaved: () => void }) {
             {busy && <Loader2 className="h-5 w-5 animate-spin" />}
             {t('record')}
           </button>
-          {done && <p className="text-center text-[15px] text-leaf-deep">{t('trapRecorded')}</p>}
-          {failed && <p className="text-center text-[15px] text-ember">{t('notSaved')}</p>}
+          {done && <p role="status" className="text-center text-[15px] text-leaf-deep">{t('trapRecorded')}</p>}
+          {failed && <p role="alert" className="text-center text-[15px] text-ember">{t('notSaved')}</p>}
         </div>
       )}
     </section>

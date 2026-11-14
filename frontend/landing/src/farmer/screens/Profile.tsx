@@ -21,12 +21,14 @@ import { PanelHead, PhotoCurve } from '../ui'
  *  are asked to correct a spelling.
  */
 export default function Profile() {
-  const { t, lang } = useFarmer()
+  const { t, lang, farmId } = useFarmer()
   const { me } = useAuth()
   const farms = useAsync(() => api.farms(lang), [lang])
   const crops = useAsync(() => api.crops(lang), [lang])
   const { save, busy, done, error } = useProfileSave()
   const p = me?.profile
+  // The shell's "Profile" h1 shows only once a field is open.
+  const NameHeading = farmId != null ? 'h2' : 'h1'
 
   const [name, setName] = useState(me?.name ?? '')
   const [village, setVillage] = useState(p?.village ?? '')
@@ -62,7 +64,9 @@ export default function Profile() {
           <div className="relative flex h-full items-end gap-4 p-5 pb-7 text-white lg:p-6 lg:pb-8">
             <Monogram name={me?.name ?? ''} />
             <div className="min-w-0 pb-1">
-              <h1 className="font-instrument-serif text-[34px] leading-none drop-shadow-sm [overflow-wrap:anywhere] lg:text-[42px]">{me?.name}</h1>
+              {/* One h1 per screen: the shell titles this screen "Profile" once a
+                  field is open; before there is one, the name is the title. */}
+              <NameHeading className="font-instrument-serif text-[34px] leading-none drop-shadow-sm [overflow-wrap:anywhere] lg:text-[42px]">{me?.name}</NameHeading>
               {place && <p className="mt-2 flex items-center gap-1.5 text-[15px] drop-shadow"><MapPin className="h-4 w-4 shrink-0" aria-hidden />{place}</p>}
             </div>
           </div>
@@ -112,7 +116,7 @@ export default function Profile() {
                 placeholder={t('profileNotSet')} value={land} onChange={(e) => setLand(e.target.value)} />
               <span className="mt-1 block text-[13px] font-normal text-soil-dark/70">{t('profileLandHint')}</span>
             </label>
-            {error && <ErrorBox error={error} />}
+            {error && <ErrorBox offlineLabel={t('offline')} error={error} />}
             <div className="flex flex-wrap items-center gap-3">
               <button disabled={busy || !dirty} className={`${PRIMARY.replace('w-full', 'w-auto')} px-7`}
                 onClick={() => save({
@@ -235,7 +239,7 @@ function EmailConfirm({ pending }: { pending: string | null }) {
           <button onClick={send} disabled={busy} className={`${SECONDARY} w-full`}>{t('authResend')}</button>
         </>
       )}
-      {error && <ErrorBox error={error} />}
+      {error && <ErrorBox offlineLabel={t('offline')} error={error} />}
     </div>
   )
 }
@@ -280,11 +284,12 @@ function Tag({ children }: { children: ReactNode }) {
 
 function Stat({ label, value, loading }: { label: string; value: number; loading: boolean }) {
   return (
-    <div className="rounded-[20px] bg-[#f5f7f1] px-4 py-3">
+    // dt before dd as a description list requires; reversed so the number still sits on top.
+    <div className="flex flex-col-reverse rounded-[20px] bg-[#f5f7f1] px-4 py-3">
+      <dt className="mt-1.5 text-[13px] text-soil-dark/75">{label}</dt>
       <dd className="text-[26px] font-semibold leading-none tabular-nums">
         {loading ? <span className="inline-block h-6 w-8 animate-pulse rounded bg-soil-dark/10" /> : value}
       </dd>
-      <dt className="mt-1.5 text-[13px] text-soil-dark/75">{label}</dt>
     </div>
   )
 }

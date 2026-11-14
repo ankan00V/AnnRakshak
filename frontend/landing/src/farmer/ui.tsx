@@ -61,7 +61,15 @@ export function PestPhoto({ target, className = 'h-16 w-16 sm:h-[76px] sm:w-[88p
     )
   }
   return (
-    <img src={`/api/kb/photo/${target}`} alt="" loading="lazy" onError={() => setFailed(true)}
+    <img src={`/api/kb/photo/${target}`} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)}
       className={`shrink-0 rounded-2xl object-cover ${className}`} />
   )
+}
+
+/** onError for a decorative photograph. Offline, a photo the phone never
+ *  fetched cannot load; the browser then draws its broken-image icon over the
+ *  card. Hidden instead, the card's own colour shows, which is what it was
+ *  designed to fall back to. */
+export const hideBroken = (e: React.SyntheticEvent<HTMLImageElement>) => {
+  e.currentTarget.style.visibility = 'hidden'
 }

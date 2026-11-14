@@ -14,7 +14,7 @@ import { Chips } from '../../auth/parts'
 import type { Irrigation } from '../../api/types'
 import type { TKey } from '../../lib/i18n'
 import { FIELD, LABEL, PANEL, PRIMARY } from '../tokens'
-import { PanelHead, PhotoCurve } from '../ui'
+import { PanelHead, PhotoCurve, hideBroken } from '../ui'
 import { fieldPhoto } from '../fieldPhoto'
 
 /** A field's title with the speaker that reads its help aloud — the same
@@ -80,7 +80,8 @@ function FieldTile({ f, onOpen }: { f: Farm; onOpen: () => void }) {
     >
       <span className="relative w-28 shrink-0 overflow-hidden rounded-[18px] bg-[#e3efd9] sm:w-36 lg:aspect-[16/9] lg:w-full lg:rounded-[22px]">
         {photo && (
-          <img src={photo.src} alt="" loading="lazy" decoding="async"
+          <img onError={hideBroken} src={photo.src} srcSet={photo.srcSet || undefined} alt="" loading="lazy" decoding="async"
+            sizes="(min-width: 1024px) 420px, 144px" width={photo.width} height={photo.height}
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]" />
         )}
         <span className="absolute inset-0 hidden bg-gradient-to-t from-black/65 via-black/10 to-transparent lg:block" />
@@ -149,14 +150,17 @@ export default function Onboard() {
     <div className={`grid gap-6 pt-2 ${inApp ? '' : 'lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]'}`}>
       <div className="min-w-0 space-y-6">
         <section className={`${PANEL} p-2`}>
-          <div className="relative h-[200px] overflow-hidden rounded-[22px] bg-leaf-deep sm:h-[230px]">
-            <img src="/photos/landscape.webp" alt="" width={934} height={442}
+          {/* The height follows the words: at 360 px the welcome runs to three
+              lines in English and more in Tamil, and a fixed height cut its
+              first line off under the top of the photo. */}
+          <div className="relative overflow-hidden rounded-[22px] bg-leaf-deep">
+            <img onError={hideBroken} src="/photos/landscape.webp" alt="" width={934} height={442}
               className="absolute inset-0 h-full w-full object-cover object-[center_45%]" />
             <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-black/5" />
-            <div className="relative flex h-full flex-col justify-end p-5 pb-8 text-white lg:p-6 lg:pb-9">
-              <h1 className="font-instrument-serif text-[34px] leading-[1.05] drop-shadow-sm text-balance lg:text-[46px]">{t('welcome')}</h1>
+            <div className="relative flex min-h-[200px] flex-col justify-end p-5 pb-8 pt-10 text-white sm:min-h-[230px] lg:p-6 lg:pb-9">
+              <h1 className="font-instrument-serif text-[30px] leading-[1.05] drop-shadow-sm text-balance sm:text-[34px] lg:text-[46px]">{t('welcome')}</h1>
               <p className="mt-2 max-w-xl text-[15px] leading-relaxed drop-shadow lg:text-[16px]">
-                {me?.is_demo ? t('welcomeSubDemo') : t('welcomeSub')}
+                {me?.is_demo && (farms.data?.length ?? 0) > 0 ? t('welcomeSubDemo') : t('welcomeSub')}
               </p>
             </div>
             <PhotoCurve />
@@ -164,7 +168,7 @@ export default function Onboard() {
         </section>
 
         {farms.loading && !farms.data && <FarmPickerSkeleton />}
-        {farms.error && <ErrorBox error={farms.error} onRetry={farms.reload} retryLabel={t('retry')} />}
+        {farms.error && <ErrorBox offlineLabel={t('offline')} error={farms.error} onRetry={farms.reload} retryLabel={t('retry')} />}
 
         {filterable && (
           <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 lg:mx-0 lg:flex-wrap lg:px-0">
@@ -316,7 +320,9 @@ function RegisterForm({ crops, onDone }: {
         {t('farmerName')}
         <input className={FIELD} value={name} onChange={(e) => setName(e.target.value)} />
       </label>
-      <div className="grid grid-cols-2 gap-3">
+      {/* One above the other on a narrow phone: side by side at 360 px the
+          crop box cut "Rice (paddy)" to "Rice (padd". */}
+      <div className="grid gap-3 min-[400px]:grid-cols-2">
         <label className={LABEL}>
           <Ask label={t('crop')} say="helpCrop" />
           <select className={FIELD} value={crop} onChange={(e) => { setCrop(e.target.value); setBasis('') }}>
@@ -368,7 +374,7 @@ function RegisterForm({ crops, onDone }: {
           placeholder="6.8" onChange={(e) => setPh(e.target.value)} />
         <span className="mt-1 block text-[13px] font-normal text-soil-dark/70">{t('soilPhCardHint')}</span>
       </label>
-      {error && <ErrorBox error={error} />}
+      {error && <ErrorBox offlineLabel={t('offline')} error={error} />}
       {whereBad && <p className="text-[14px] leading-snug text-soil-dark/75">{t('authNeedWhere')}</p>}
       <button
         onClick={submit}

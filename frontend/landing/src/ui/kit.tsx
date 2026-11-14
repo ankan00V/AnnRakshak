@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type HTMLAttributes, type ReactNode } from 'react'
-import { AlertTriangle, Loader2, Mic, Square, Volume2, WifiOff } from 'lucide-react'
+import { AlertTriangle, Loader2, Mic, MicOff, Square, Volume2, VolumeX, WifiOff } from 'lucide-react'
 import { api } from '../api/client'
 import type { Heatmap, Lang } from '../api/types'
 
@@ -49,17 +49,21 @@ export function PageSkeleton({ label }: { label?: string }) {
   )
 }
 
-export function ErrorBox({ error, onRetry, retryLabel = 'Retry' }: {
+export function ErrorBox({ error, onRetry, retryLabel = 'Retry', offlineLabel = 'Cannot reach the AnnRakshak server.' }: {
   error: Error; onRetry?: () => void; retryLabel?: string
+  /** The no-signal sentence in the reader's language. It was English for
+   *  every farmer, on the screen they most need to understand. */
+  offlineLabel?: string
 }) {
   const offline = error.message === 'offline'
   return (
-    <div className="rounded-2xl border border-ember/30 bg-ember/5 p-4 flex gap-3 items-start">
-      {offline ? <WifiOff className="w-5 h-5 text-ember shrink-0" /> : <AlertTriangle className="w-5 h-5 text-ember shrink-0" />}
-      <div className="flex-1 text-sm">
-        <p className="text-soil-dark/80">{offline ? 'Cannot reach the AnnRakshak server.' : error.message}</p>
+    <div role="alert" className="rounded-2xl border border-ember/30 bg-ember/5 p-4 flex gap-3 items-start">
+      {offline ? <WifiOff className="w-5 h-5 text-ember shrink-0" aria-hidden /> : <AlertTriangle className="w-5 h-5 text-ember shrink-0" aria-hidden />}
+      <div className="flex-1 text-[15px]">
+        <p className="text-soil-dark/85">{offline ? offlineLabel : error.message}</p>
         {onRetry && (
-          <button onClick={onRetry} className="mt-2 text-ember font-medium underline underline-offset-2">
+          <button onClick={onRetry}
+            className="-ml-3 mt-1 inline-flex min-h-[44px] items-center px-3 font-semibold text-ember underline underline-offset-2">
             {retryLabel}
           </button>
         )}
@@ -107,6 +111,19 @@ export function Card({ children, className = '', ...rest }: { children: ReactNod
  *  request, no wait on a weak connection and no voice credit; if it is missing
  *  or will not play, the button falls back to reading `text` live, so the
  *  farmer still hears the same words either way. */
+/** What a Listen button says when the audio will not play, and a Speak
+ *  button when it heard nothing it could use. These used to fail as a tint
+ *  that faded in two seconds — for a farmer who cannot read the screen, the
+ *  button simply did nothing. */
+const PLAY_FAILED: Record<string, string> = {
+  en: 'Could not play', hi: 'चल नहीं पाया', mr: 'वाजवता आले नाही', bn: 'চালানো গেল না', ta: 'இயக்க முடியவில்லை',
+  te: 'ప్లే కాలేదు', kn: 'ಪ್ಲೇ ಆಗಲಿಲ್ಲ', ml: 'പ്ലേ ചെയ്യാനായില്ല', gu: 'વગાડી શકાયું નહીં', pa: 'ਚੱਲ ਨਹੀਂ ਸਕਿਆ', od: 'ବଜାଇ ହେଲା ନାହିଁ',
+}
+const HEARD_NOTHING: Record<string, string> = {
+  en: 'Could not hear you', hi: 'आवाज़ सुनाई नहीं दी', mr: 'आवाज ऐकू आला नाही', bn: 'শুনতে পাইনি', ta: 'கேட்க முடியவில்லை',
+  te: 'వినిపించలేదు', kn: 'ಕೇಳಿಸಲಿಲ್ಲ', ml: 'കേൾക്കാനായില്ല', gu: 'સંભળાયું નહીં', pa: 'ਸੁਣਾਈ ਨਹੀਂ ਦਿੱਤਾ', od: 'ଶୁଣିହେଲା ନାହିଁ',
+}
+
 export function ListenButton({ text, lang, label, stopLabel, src, compact = false, tone = 'dark' }: {
   text: string; lang: Lang; label: string; stopLabel: string; src?: string
   compact?: boolean; tone?: 'dark' | 'light'
@@ -148,21 +165,34 @@ export function ListenButton({ text, lang, label, stopLabel, src, compact = fals
       setState('playing')
     } catch {
       setState('error')
-      setTimeout(() => setState('idle'), 2500)
+      setTimeout(() => setState('idle'), 4000)
     }
   }
 
+  const failed = PLAY_FAILED[lang] ?? PLAY_FAILED.en
   return (
-    <button
-      onClick={toggle}
-      aria-label={state === 'playing' ? stopLabel : label}
-      className={`inline-flex items-center justify-center gap-1.5 rounded-full font-medium transition-colors ${
-        compact ? 'w-9 h-9' : 'min-h-[40px] px-3.5 text-xs'
-      } ${state === 'playing' ? 'bg-ochre text-cream' : state === 'error' ? 'bg-ember/10 text-ember' : tone === 'light' ? 'bg-cream text-leaf-deep' : 'bg-leaf-deep text-cream'}`}
-    >
-      {state === 'loading' ? <Loader2 className="w-4 h-4 animate-spin" /> : state === 'playing' ? <Square className="w-3.5 h-3.5" /> : <Volume2 className="w-4 h-4" />}
-      {!compact && (state === 'playing' ? stopLabel : label)}
-    </button>
+    <span className="relative inline-flex">
+      <button
+        onClick={toggle}
+        aria-label={state === 'playing' ? stopLabel : state === 'error' ? failed : label}
+        className={`inline-flex items-center justify-center gap-1.5 rounded-full font-medium transition-colors ${
+          compact ? 'w-11 h-11 shrink-0' : 'min-h-[44px] px-4 text-[14px]'
+        } ${state === 'playing' ? 'bg-ochre text-soil-dark' : state === 'error' ? 'bg-ember text-white' : tone === 'light' ? 'bg-cream text-leaf-deep' : 'bg-leaf-deep text-cream'}`}
+      >
+        {state === 'loading' ? <Loader2 className="w-5 h-5 animate-spin" aria-hidden />
+          : state === 'playing' ? <Square className="w-4 h-4" aria-hidden />
+          : state === 'error' ? <VolumeX className="w-5 h-5" aria-hidden />
+          : <Volume2 className="w-5 h-5" aria-hidden />}
+        {!compact && (state === 'playing' ? stopLabel : state === 'error' ? failed : label)}
+      </button>
+      {/* Said out loud by a screen reader, and shown beside a round button
+          that has no room for words of its own. */}
+      <span role="status" className={compact && state === 'error'
+        ? 'absolute right-0 top-full z-10 mt-1 whitespace-nowrap rounded-full bg-ember px-2.5 py-1 text-[12px] font-medium text-white shadow'
+        : 'sr-only'}>
+        {state === 'error' ? failed : ''}
+      </span>
+    </span>
   )
 }
 
@@ -188,7 +218,7 @@ export function VoiceButton({ lang, onText, label, recordingLabel, compact = fal
           setState('idle')
         } catch {
           setState('error')
-          setTimeout(() => setState('idle'), 2500)
+          setTimeout(() => setState('idle'), 4000)
         }
       }
       rec.current = r
@@ -197,22 +227,32 @@ export function VoiceButton({ lang, onText, label, recordingLabel, compact = fal
       setTimeout(() => r.state === 'recording' && r.stop(), 15000)
     } catch {
       setState('error')
-      setTimeout(() => setState('idle'), 2500)
+      setTimeout(() => setState('idle'), 4000)
     }
   }
+  const failed = HEARD_NOTHING[lang] ?? HEARD_NOTHING.en
 
   return (
     <button
       type="button"
       onClick={() => (state === 'recording' ? rec.current?.stop() : state === 'idle' && start())}
-      aria-label={state === 'recording' ? recordingLabel : label}
-      className={`inline-flex items-center justify-center gap-1.5 rounded-xl text-sm font-medium border transition-colors ${
+      aria-label={state === 'recording' ? recordingLabel : state === 'error' ? failed : label}
+      className={`relative inline-flex items-center justify-center gap-1.5 rounded-xl text-[15px] font-medium border transition-colors ${
         compact ? 'w-11 h-11 shrink-0' : 'min-h-[48px] px-4'} ${
-        state === 'recording' ? 'bg-ember text-cream border-ember animate-pulse' : 'bg-white border-soil-dark/20 text-soil-dark'
+        state === 'recording' ? 'bg-ember text-cream border-ember motion-safe:animate-pulse'
+          : state === 'error' ? 'bg-ember/10 border-ember text-ember' : 'bg-white border-soil-dark/20 text-soil-dark'
       }`}
     >
-      {state === 'busy' ? <Loader2 className="w-4 h-4 animate-spin" /> : state === 'recording' ? <Square className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-      {!compact && (state === 'recording' ? recordingLabel : label)}
+      {state === 'busy' ? <Loader2 className="w-5 h-5 animate-spin" aria-hidden />
+        : state === 'recording' ? <Square className="w-4 h-4" aria-hidden />
+        : state === 'error' ? <MicOff className="w-5 h-5" aria-hidden />
+        : <Mic className="w-5 h-5" aria-hidden />}
+      {!compact && (state === 'recording' ? recordingLabel : state === 'error' ? failed : label)}
+      <span role="status" className={compact && state === 'error'
+        ? 'absolute bottom-full left-0 z-10 mb-1 whitespace-nowrap rounded-full bg-ember px-2.5 py-1 text-[12px] font-medium text-white shadow'
+        : 'sr-only'}>
+        {state === 'error' ? failed : ''}
+      </span>
     </button>
   )
 }
@@ -232,13 +272,14 @@ export function ConfidenceMeter({ value, label, askLabel = 'ask', adviseLabel = 
       <div className="flex items-baseline justify-between text-xs mb-1">
         <span className="font-semibold text-soil-dark">{pct}% {label}</span>
       </div>
-      <div className="relative h-2.5 rounded-full bg-soil-dark/10 overflow-visible">
+      <div role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={label}
+        className="relative h-2.5 rounded-full bg-soil-dark/10 overflow-visible">
         <div className={`h-full rounded-full ${tone} transition-all duration-700`} style={{ width: `${pct}%` }} />
         {[FLOOR, GATE].map((m) => (
-          <span key={m} className="absolute -top-1 h-4.5 w-px bg-soil-dark/40" style={{ left: `${m * 100}%`, height: 18 }} />
+          <span key={m} className="absolute -top-1 w-0.5 bg-soil-dark/55" style={{ left: `${m * 100}%`, height: 18 }} />
         ))}
       </div>
-      <div className="relative h-4 text-[10px] text-soil-dark/40">
+      <div className="relative mt-0.5 h-5 text-[12px] text-soil-dark/70" aria-hidden>
         <span className="absolute -translate-x-1/2" style={{ left: `${FLOOR * 100}%` }}>{askLabel}</span>
         <span className="absolute -translate-x-1/2" style={{ left: `${GATE * 100}%` }}>{adviseLabel}</span>
       </div>

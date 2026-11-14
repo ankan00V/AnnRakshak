@@ -77,7 +77,7 @@ export default function SprayTimes({ v, toCheck = true }: { v: WeatherView; toCh
           ))}
         </ul>
       )}
-      {toCheck && <Link to="/app/spray" className="mt-4 flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-[#eef3e6] text-[15px] font-semibold text-leaf-deep ring-1 ring-[#4b8b3b]/15 transition-colors hover:bg-[#e6eedb]">
+      {toCheck && <Link to="/app/spray" className="mt-4 flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-[#eef3e6] text-[15px] font-semibold text-leaf-deep ring-1 ring-[#4b8b3b]/15 transition-[color,background-color,transform] hover:bg-[#e6eedb] active:brightness-95 motion-safe:active:scale-[0.98]">
         <FlaskConical className="h-5 w-5" aria-hidden /> {t('qaSpray')}
       </Link>}
     </section>

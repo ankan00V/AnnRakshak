@@ -95,12 +95,12 @@ function Row({ farm, crops, onChange }: { farm: Farm; crops: CropInfo[] | null; 
           </p>
         </div>
         <span className={`shrink-0 whitespace-nowrap px-2.5 py-1 rounded-full text-[13px] font-medium ${
-          fallow ? 'bg-soil-dark/[0.06] text-soil-dark/60' : 'bg-leaf/15 text-leaf-deep'}`}>
+          fallow ? 'bg-soil-dark/[0.06] text-soil-dark/75' : 'bg-leaf/15 text-leaf-deep'}`}>
           {farm.area_acres} {t('acres')}
         </span>
       </div>
 
-      {error && <div className="mt-2.5"><ErrorBox error={error} /></div>}
+      {error && <div className="mt-2.5"><ErrorBox offlineLabel={t('offline')} error={error} /></div>}
 
       {readOnly && (
         <p className="mt-2 pl-[14px] text-[13px] leading-relaxed text-soil-dark/70">
@@ -113,7 +113,7 @@ function Row({ farm, crops, onChange }: { farm: Farm; crops: CropInfo[] | null; 
           <button onClick={() => setMode(fallow ? 'on' : 'off')}
             className={`min-h-[44px] px-3.5 rounded-full text-[14px] font-medium flex items-center gap-1.5 transition-colors ${
               fallow ? 'bg-leaf-deep text-cream'
-              : over ? 'bg-ochre text-cream'
+              : over ? 'bg-ochre text-soil-dark'
               : 'border border-soil-dark/20 text-soil-dark/75 hover:bg-soil-dark/[0.04]'}`}>
             {fallow ? <Sprout className="w-3.5 h-3.5" /> : <Wheat className="w-3.5 h-3.5" />}
             {fallow ? t('profileFieldOn') : t('profileFieldOff')}
@@ -203,7 +203,8 @@ function Buttons({ label, onYes, onCancel, busy, tone }: {
   label: string; onYes: () => void; onCancel: () => void; busy: boolean; tone: 'ochre' | 'ember' | 'leaf'
 }) {
   const { t } = useFarmer()
-  const fill = tone === 'ember' ? 'bg-ember text-cream' : tone === 'leaf' ? 'bg-leaf-deep text-cream' : 'bg-ochre text-cream'
+  // Dark on ochre: cream on it is under 3:1, unreadable in the sun.
+  const fill = tone === 'ember' ? 'bg-ember text-cream' : tone === 'leaf' ? 'bg-leaf-deep text-cream' : 'bg-ochre text-soil-dark'
   return (
     <div className="mt-2.5 flex gap-2">
       <button disabled={busy} onClick={onYes}

@@ -24,10 +24,32 @@ export default function Spray() {
   const weather = useAsync(() => api.weather(farmId!, lang), [farmId, lang], ['weather', farmId!, lang].join(':'))
   const readOnly = useReadOnlyFarm() !== null
   const [logged, setLogged] = useState<string | null>(null)
+  const [logFailed, setLogFailed] = useState(false)
+  // A ref, not only state: two taps in one frame both see the old state, and
+  // the second would log the same spray twice.
+  const logging = useRef(false)
+  const [logBusy, setLogBusy] = useState(false)
   const logSpray = async () => {
-    const r = await api.logSpray(farmId!, v?.product ?? (q.trim() || null), lang)
-    const c = r.check
-    setLogged(c && c.status !== 'good' ? `${t(`spray_${c.status}`)} — ${c.reasons_text ?? ''}. ${t('sprayLogged')}` : t('sprayLogged'))
+    if (logging.current) return
+    logging.current = true
+    setLogBusy(true)
+    setLogFailed(false)
+    // A reply for a product the farmer has since moved on from is dropped, not
+    // shown under the new product's verdict.
+    const id = asked.current
+    try {
+      const r = await api.logSpray(farmId!, v?.product ?? (q.trim() || null), lang)
+      const c = r.check
+      if (id !== asked.current) return
+      setLogged(c && c.status !== 'good' ? `${t(`spray_${c.status}`)} — ${c.reasons_text ?? ''}. ${t('sprayLogged')}` : t('sprayLogged'))
+    } catch {
+      // Without signal the press used to do nothing at all; say it was not saved
+      // and leave the button there to press again.
+      if (id === asked.current) setLogFailed(true)
+    } finally {
+      logging.current = false
+      setLogBusy(false)
+    }
   }
   const current = home.data?.problems.find((p) => p.status === 'open' && p.name)
 
@@ -49,6 +71,9 @@ export default function Spray() {
       const verdict = await api.labelCheck(farmId!, text.trim(), lang)
       if (id !== asked.current) return
       setV(verdict)
+      // A new product starts unlogged: the last one's "logged" is not this one's.
+      setLogged(null)
+      setLogFailed(false)
       setNote(verdict.note_available ? 'loading' : null)
       if (verdict.note_available) {
         api.labelNote(farmId!, text.trim(), lang)
@@ -88,7 +113,7 @@ export default function Spray() {
             </span>
             <span className="min-w-0">
               <span className="block text-[13px] text-soil-dark/75">{t('forProblem')}</span>
-              <span className="block truncate text-[16px] font-semibold">
+              <span className="block text-[16px] font-semibold leading-snug">
                 {current?.name ?? (home.data ? t('noDiagnosisYet') : '…')}
               </span>
             </span>
@@ -120,7 +145,7 @@ export default function Spray() {
             </div>
             <button type="submit" disabled={busy || !q.trim()}
               className="mt-3 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-full bg-[#2f6a39] text-[17px] font-semibold text-white shadow-[0_12px_24px_-14px_rgba(29,74,44,0.8)] transition-colors hover:bg-[#2a5f33] disabled:opacity-50 disabled:shadow-none">
-              {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <FlaskConical className="h-5 w-5" aria-hidden />}
+              {busy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <FlaskConical className="h-5 w-5" aria-hidden />}
               {t('check')}
             </button>
           </form>
@@ -131,65 +156,74 @@ export default function Spray() {
               <button key={p} onClick={() => {
                 setQ(p)
                 check(p)
-              }} className="min-h-[40px] rounded-full bg-white px-4 text-[14px] font-medium ring-1 ring-soil-dark/15 transition-colors hover:bg-[#f5f7f1]">
+              }} className="min-h-[44px] rounded-full bg-white px-4 text-[14px] font-medium ring-1 ring-soil-dark/15 transition-colors hover:bg-[#f5f7f1] active:bg-[#eef3e6]">
                 {p}
               </button>
             ))}
           </div>
         </section>
 
-        {error && <ErrorBox error={error} />}
+        {error && <ErrorBox offlineLabel={t('offline')} error={error} />}
 
-        {/* An unknown product: the AI note is the useful part, so the card waits
-            for it and both appear together. A veto never waits. */}
-        {waiting && (
-          <section className={`${PANEL} flex items-center gap-3 p-5 text-[15px] text-soil-dark/75 animate-fadein`}>
-            <Loader2 className="h-5 w-5 shrink-0 animate-spin text-ochre" />
-            {t('aiNoteLoading')}
-          </section>
-        )}
+        {/* One live region that stays mounted, so a farmer who asked by voice
+            hears the verdict come back, the AI note when it follows, and a
+            failed save. Nothing inside is role=alert: an alert in here is
+            read twice, once by itself and once by this region. */}
+        <div aria-live="polite" className="space-y-6 empty:hidden">
+          {/* An unknown product: the AI note is the useful part, so the card waits
+              for it and both appear together. A veto never waits. */}
+          {waiting && (
+            <section className={`${PANEL} flex items-center gap-3 p-5 text-[15px] text-soil-dark/75 animate-fadein`}>
+              <Loader2 className="h-5 w-5 shrink-0 animate-spin text-ochre" aria-hidden />
+              {t('aiNoteLoading')}
+            </section>
+          )}
 
-        {v && tone && !waiting && (
-          <section className={`rounded-[28px] p-5 animate-fadein lg:p-6 ${tone.box}`}>
-            <div className="flex items-start gap-3">
-              <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${tone.icon}`}>
-                {v.tone === 'stop' ? <Ban className="h-7 w-7" /> : v.tone === 'unknown' ? <HelpCircle className="h-7 w-7" /> : <ShieldCheck className="h-7 w-7" />}
-              </span>
-              <div className="min-w-0 flex-1">
-                <h2 className="text-[22px] font-semibold leading-tight">
-                  {v.title ?? (v.tone === 'stop' ? t('vetoTitle') : v.tone === 'unknown' ? t('unknownTitle') : t('noObjectionTitle'))}
-                </h2>
-                {v.product && <p className={`mt-1 text-[14px] ${tone.sub}`}>{v.product}</p>}
+          {v && tone && !waiting && (
+            <section className={`rounded-[28px] p-5 animate-fadein lg:p-6 ${tone.box}`}>
+              <div className="flex items-start gap-3">
+                <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${tone.icon}`}>
+                  {v.tone === 'stop' ? <Ban className="h-7 w-7" aria-hidden /> : v.tone === 'unknown' ? <HelpCircle className="h-7 w-7" aria-hidden /> : <ShieldCheck className="h-7 w-7" aria-hidden />}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-[22px] font-semibold leading-tight">
+                    {v.title ?? (v.tone === 'stop' ? t('vetoTitle') : v.tone === 'unknown' ? t('unknownTitle') : t('noObjectionTitle'))}
+                  </h2>
+                  {v.product && <p className={`mt-1 text-[14px] ${tone.sub}`}>{v.product}</p>}
+                </div>
+                <ListenButton text={v.message} lang={lang} label={t('listen')} stopLabel={t('stop')} compact tone={v.tone === 'stop' ? 'light' : 'dark'} />
               </div>
-              <ListenButton text={v.message} lang={lang} label={t('listen')} stopLabel={t('stop')} compact tone={v.tone === 'stop' ? 'light' : 'dark'} />
-            </div>
-            <p className="mt-4 text-[16px] leading-relaxed">{v.message}</p>
-            {note && (
-              <div className={`mt-4 rounded-[20px] p-4 ${v.tone === 'stop' ? 'bg-white/10' : 'bg-white/80'}`}>
-                <p className={`flex items-center gap-1.5 text-[13px] font-semibold ${tone.sub}`}>
-                  <Sparkles className="h-4 w-4" aria-hidden /> {t('aiNote')}
-                </p>
-                {note === 'loading' ? (
-                  <p className={`mt-1.5 flex items-center gap-2 text-[14px] ${tone.sub}`}>
-                    <Loader2 className="h-4 w-4 animate-spin" /> {t('aiNoteLoading')}
+              <p className="mt-4 text-[16px] leading-relaxed">{v.message}</p>
+              {note && (
+                <div className={`mt-4 rounded-[20px] p-4 ${v.tone === 'stop' ? 'bg-white/10' : 'bg-white/80'}`}>
+                  <p className={`flex items-center gap-1.5 text-[13px] font-semibold ${tone.sub}`}>
+                    <Sparkles className="h-4 w-4" aria-hidden /> {t('aiNote')}
                   </p>
-                ) : note === 'none' ? (
-                  <p className={`mt-1.5 text-[14px] ${tone.sub}`}>{t('aiNoteNone')}</p>
-                ) : (
-                  <p className="mt-1.5 text-[15px] leading-snug">{note}</p>
-                )}
-              </div>
-            )}
-            {!v.is_veto && (
-              logged
-                ? <p className="mt-4 rounded-[20px] bg-white/80 p-3.5 text-[15px] text-leaf-deep">{logged}</p>
-                : <button onClick={logSpray}
-                    className="mt-4 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full bg-[#2f6a39] text-[16px] font-semibold text-white hover:bg-[#2a5f33]">
-                    <SprayCan className="h-5 w-5" /> {t('sprayingNow')}
-                  </button>
-            )}
-          </section>
-        )}
+                  {note === 'loading' ? (
+                    <p className={`mt-1.5 flex items-center gap-2 text-[14px] ${tone.sub}`}>
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> {t('aiNoteLoading')}
+                    </p>
+                  ) : note === 'none' ? (
+                    <p className={`mt-1.5 text-[14px] ${tone.sub}`}>{t('aiNoteNone')}</p>
+                  ) : (
+                    <p className="mt-1.5 text-[15px] leading-snug">{note}</p>
+                  )}
+                </div>
+              )}
+              {!v.is_veto && (
+                logged
+                  ? <p className="mt-4 rounded-[20px] bg-white/80 p-3.5 text-[15px] text-leaf-deep">{logged}</p>
+                  : <button onClick={logSpray} disabled={logBusy} aria-busy={logBusy || undefined}
+                      className="mt-4 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full bg-[#2f6a39] text-[16px] font-semibold text-white hover:bg-[#2a5f33] motion-safe:active:scale-[0.98] active:brightness-95 disabled:opacity-60">
+                      {logBusy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <SprayCan className="h-5 w-5" aria-hidden />} {t('sprayingNow')}
+                    </button>
+              )}
+              {logFailed && !logged && (
+                <p className={`mt-3 text-[15px] font-medium ${v.tone === 'stop' ? 'text-white' : 'text-ember'}`}>{t('notSaved')}</p>
+              )}
+            </section>
+          )}
+        </div>
       </div>
 
       <aside className="min-w-0 space-y-6">

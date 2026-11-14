@@ -23,7 +23,7 @@ export default function ProblemRow({ p, size = 'md' }: { p: ProblemView; size?: 
   const thumb = size === 'sm' ? 'h-16 w-16' : 'h-[72px] w-[72px]'
   return (
     <Link to={`/app/history/${p.id}`}
-      className="flex items-center gap-3 rounded-[20px] bg-white p-2.5 ring-1 ring-soil-dark/[0.06] transition-colors hover:bg-[#f5f7f1]">
+      className="flex items-center gap-3 rounded-[20px] bg-white p-2.5 ring-1 ring-soil-dark/[0.06] transition-colors hover:bg-[#f5f7f1] active:bg-[#eef3e6]">
       <span className={`${thumb} shrink-0 overflow-hidden rounded-2xl bg-[#eef3e6]`}>
         {p.image_url && <img src={p.image_url} alt="" loading="lazy" className="h-full w-full object-cover" />}
       </span>

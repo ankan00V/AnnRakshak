@@ -104,8 +104,8 @@ export default function AlertCard({ alert, onDone }: { alert: AlertView; onDone:
       </div>
 
       {note ? (
-        <p className={`mt-4 flex items-center gap-2 text-[15px] ${failed ? 'text-ember' : 'text-leaf-deep'}`}>
-          {failed ? <AlertTriangle className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
+        <p role={failed ? 'alert' : 'status'} className={`mt-4 flex items-center gap-2 text-[15px] ${failed ? 'text-ember' : 'text-leaf-deep'}`}>
+          {failed ? <AlertTriangle className="h-5 w-5 shrink-0" aria-hidden /> : <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden />}
           {note}
         </p>
       ) : answered ? (
@@ -123,7 +123,7 @@ export default function AlertCard({ alert, onDone }: { alert: AlertView; onDone:
               key={o}
               onClick={() => choose(o)}
               disabled={busy !== null}
-              className={`flex min-h-[52px] items-center justify-center rounded-2xl px-2 text-[14px] font-semibold leading-tight transition-[filter] hover:brightness-95 disabled:opacity-60 ${cls}`}
+              className={`flex min-h-[52px] items-center justify-center rounded-2xl px-2 text-[14px] font-semibold leading-tight transition-[filter] hover:brightness-95 active:brightness-90 disabled:opacity-60 ${cls}`}
             >
               {busy === o ? <Loader2 className="h-4 w-4 animate-spin" /> : label}
             </button>

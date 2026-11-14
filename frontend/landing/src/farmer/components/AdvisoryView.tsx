@@ -115,7 +115,7 @@ export default function AdvisoryView({ advisory }: { advisory: Advisory }) {
             <li key={i} className="text-soil-dark/70">
               <span className="font-medium text-soil-dark">{c.title}</span> — {c.publisher}
               {c.url && (
-                <a href={c.url} target="_blank" rel="noreferrer" className="ml-1 text-leaf-deep underline">
+                <a href={c.url} target="_blank" rel="noreferrer" className="ml-1 text-leaf-deep underline [overflow-wrap:anywhere]">
                   {c.url.replace(/^https?:\/\//, '')}
                 </a>
               )}
@@ -152,9 +152,9 @@ function Rung({ rung, n }: { rung: LadderRung; n: number }) {
                 {rung.for_field.replace(/^[^:]+:\s*/, '')}
               </p>
             )}
-            {rung.timing && <p className="text-xs text-soil-dark/60">{rung.timing}</p>}
-            <p className="text-xs flex items-start gap-1.5 text-soil-dark/70">
-              <ShieldAlert className="w-3.5 h-3.5 text-ochre shrink-0 mt-px" />
+            {rung.timing && <p className="text-[13px] text-soil-dark/75">{rung.timing}</p>}
+            <p className="text-[13px] flex items-start gap-1.5 text-soil-dark/75">
+              <ShieldAlert className="w-3.5 h-3.5 text-ochre shrink-0 mt-0.5" aria-hidden />
               {rung.label_rule}
             </p>
             {!rung.verified && <Pill tone="ochre">{t('dosePending')}</Pill>}
@@ -178,25 +178,27 @@ function IcarOption({ o }: { o: IcarTech }) {
   const { t } = useFarmer()
   return (
     <li className="rounded-[20px] bg-[#f5f7f1] p-4">
-      <Pill tone="leaf" className="!text-[10px]">{t(ICAR_TYPE_KEY[o.type])}</Pill>
+      <Pill tone="leaf" className="!text-[12px]">{t(ICAR_TYPE_KEY[o.type])}</Pill>
       <p className="mt-2 text-[15px] leading-snug">{o.summary}</p>
       {o.link_reason && (
-        <p className="mt-1 text-xs text-soil-dark/70"><span className="font-medium">{t('icarWhy')}: </span>{o.link_reason}</p>
+        <p className="mt-1 text-[13px] text-soil-dark/75"><span className="font-medium">{t('icarWhy')}: </span>{o.link_reason}</p>
       )}
       {o.claim && (
-        <p className="mt-1 text-xs text-leaf-deep"><span className="font-medium">{t('icarResult')}: </span>{o.claim}</p>
+        <p className="mt-1 text-[13px] text-leaf-deep"><span className="font-medium">{t('icarResult')}: </span>{o.claim}</p>
       )}
       {o.supply && (
-        <p className="mt-1 text-xs text-soil-dark/70"><span className="font-medium">{t('icarSupply')}: </span>{o.supply}</p>
+        <p className="mt-1 text-[13px] text-soil-dark/75"><span className="font-medium">{t('icarSupply')}: </span>{o.supply}</p>
       )}
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-soil-dark/60">
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-[13px] text-soil-dark/75">
         <span>{o.institute.name}, {o.institute.city}</span>
+        {/* A pill a thumb can hit: calling the institute is how a farmer gets the input. */}
         {o.institute.phone && (
-          <a href={`tel:${o.institute.phone.replace(/[^0-9+]/g, '')}`} className="inline-flex items-center gap-1 text-leaf-deep font-medium">
-            <Phone className="w-3 h-3" /> {t('icarCall')} {o.institute.phone}
+          <a href={`tel:${o.institute.phone.replace(/[^0-9+]/g, '')}`}
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full bg-white px-3 text-[14px] font-medium text-leaf-deep ring-1 ring-[#4b8b3b]/20 active:brightness-95">
+            <Phone className="w-4 h-4" aria-hidden /> {t('icarCall')} <span className="tabular-nums">{o.institute.phone}</span>
           </a>
         )}
-        {o.lead_time_days && <Pill tone="ochre" className="!text-[10px]">{t('icarLead').replace('{n}', String(o.lead_time_days))}</Pill>}
+        {o.lead_time_days && <Pill tone="ochre" className="!text-[12px]">{t('icarLead').replace('{n}', String(o.lead_time_days))}</Pill>}
       </div>
     </li>
   )

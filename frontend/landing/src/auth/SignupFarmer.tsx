@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronDown, Plus, X } from 'lucide-react'
 import { api } from '../api/client'
@@ -27,6 +27,21 @@ interface FirstField {
 }
 const today = () => new Date().toISOString().slice(0, 10)
 
+/** After a refused Next: put the farmer on the first field that is wrong, so
+ *  the keyboard and a screen reader start where the fix is. Run after the
+ *  render that shows the errors (Field marks itself data-invalid). */
+function focusFirstInvalid(root: HTMLElement | null) {
+  requestAnimationFrame(() => {
+    const box = root?.querySelector<HTMLElement>('[data-invalid]')
+    // A chip group's first button is its "Listen" one: take a chip instead.
+    const target = box?.matches('input, select, textarea') ? box
+      : box?.querySelector<HTMLElement>('input, select, textarea')
+        ?? box?.querySelector<HTMLElement>('[aria-pressed]') ?? box?.querySelector<HTMLElement>('button')
+    target?.focus()
+    target?.scrollIntoView({ block: 'center' })
+  })
+}
+
 /** The plots added so far, so a farmer can see what they have entered. */
 function FieldList({ fields, crops, onRemove }: {
   fields: FirstField[]; crops?: { id: string; name: string }[] | null; onRemove: (i: number) => void
@@ -38,11 +53,13 @@ function FieldList({ fields, crops, onRemove }: {
         <li key={i} className="flex items-center gap-2 rounded-xl bg-leaf/10 border border-leaf/30 px-3 py-2 text-[13px]">
           <span className="flex-1 min-w-0">
             <span className="font-medium">{crops?.find((c) => c.id === x.crop)?.name ?? x.crop}</span>
-            <span className="text-soil-dark/60"> · {x.area_acres} {t('acres')} · {x.sowing_date}
+            <span className="text-soil-dark/75"> · {x.area_acres} {t('acres')} · {x.sowing_date}
               {x.date_basis === 'transplanted' ? ` (${t('dateBasisTransplanted')})` : ''}</span>
           </span>
-          <button type="button" onClick={() => onRemove(i)} aria-label={t('authRemoveField')} className="p-1 text-soil-dark/45">
-            <X className="w-4 h-4" />
+          {/* -m keeps the row its height while the target is a full 44px. */}
+          <button type="button" onClick={() => onRemove(i)} aria-label={t('authRemoveField')}
+            className="-my-2 -mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-soil-dark/70 active:bg-soil-dark/5">
+            <X className="w-5 h-5" aria-hidden />
           </button>
         </li>
       ))}
@@ -57,9 +74,10 @@ function MoreDetails({ open, onToggle, children }: { open: boolean; onToggle: ()
   return (
     <div className="rounded-2xl border border-soil-dark/10 bg-white/60 lg:bg-cream/40">
       <button type="button" onClick={onToggle}
-        className="w-full flex items-center justify-between px-3 min-h-[48px] text-[13px] font-medium text-soil-dark/70">
+        aria-expanded={open}
+        className="w-full flex items-center justify-between px-3 min-h-[48px] text-[14px] font-medium text-soil-dark/75">
         {open ? t('authMoreHide') : t('authMore')}
-        <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown aria-hidden className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && <div className="px-3 pb-3 space-y-3">{children}</div>}
     </div>
@@ -96,6 +114,7 @@ export default function SignupFarmer() {
   const [more, setMore] = useState(false)
   const [touched, setTouched] = useState(false)
   const [human, setHuman] = useState<string | null>(null)
+  const form = useRef<HTMLDivElement>(null)
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }))
 
   const bad = {
@@ -121,7 +140,7 @@ export default function SignupFarmer() {
       setTouched(false)
       setStep((s) => s + 1)
       window.scrollTo(0, 0)
-    }
+    } else focusFirstInvalid(form.current)
   }
   const show = (k: keyof typeof bad) => touched && bad[k]
 
@@ -145,7 +164,7 @@ export default function SignupFarmer() {
 
   const addAnother = () => {
     setTouched(true)
-    if (!stepOk[2]) return
+    if (!stepOk[2]) return focusFirstInvalid(form.current)
     setFields((list) => [...list, current()])
     setF((x) => ({ ...x, crop: crops.data?.find((c) => c.id !== x.crop)?.id ?? x.crop, variety: '', area: '', ph: '', basis: '' }))
     setTouched(false)
@@ -156,7 +175,7 @@ export default function SignupFarmer() {
   const selectedCrop = crops.data?.find((c) => c.id === f.crop)
 
   return (
-    <div>
+    <div ref={form}>
       <FormCard>
       <Steps step={step} titles={titles} />
 
@@ -169,11 +188,14 @@ export default function SignupFarmer() {
             </Field>
             <Field label={t('authMobile')} hint={smsOn ? t('authMobileHintSms') : t('authMobileHint')}
               error={show('phone') && t('authBadPhone')}>
-              <div className="flex gap-2">
-                <span className="min-h-[48px] px-3 rounded-xl border border-soil-dark/20 bg-cream flex items-center text-[15px] text-soil-dark/60">+91</span>
-                <Input value={f.phone} onChange={(e) => set('phone', e.target.value)} type="tel" inputMode="numeric"
-                  autoComplete="tel-national" maxLength={14} placeholder="98XXXXXXXX" invalid={show('phone')} />
-              </div>
+              {/* Not a lone Input, so Field cannot reach it: it hands the props over. */}
+              {(aria) => (
+                <div className="flex gap-2">
+                  <span className="min-h-[48px] px-3 rounded-xl border border-soil-dark/20 bg-cream flex items-center text-[15px] text-soil-dark/60">+91</span>
+                  <Input {...aria} value={f.phone} onChange={(e) => set('phone', e.target.value)} type="tel" inputMode="numeric"
+                    autoComplete="tel-national" maxLength={14} placeholder="98XXXXXXXX" invalid={show('phone')} />
+                </div>
+              )}
             </Field>
           </div>
           <Field label={t('authEmail')} optional={smsOn} hint={smsOn ? t('authEmailHintOptional') : t('authEmailHint')}
@@ -219,13 +241,14 @@ export default function SignupFarmer() {
             </Field>
           )}
           {selectedCrop && !selectedCrop.photo_diagnosis && (
-            <p className="text-xs rounded-xl bg-sky-50 text-sky-800 p-2.5">{t('photoLater')}</p>
+            <p className="text-[13px] rounded-xl bg-sky-50 text-sky-800 p-2.5">{t('photoLater')}</p>
           )}
           {!!selectedCrop?.nursery_days && (
             <Field group label={t('dateBasisAsk')} say="dateBasisWhy" error={show('basis') && t('dateBasisWhy')}>
               <Chips columns={2} value={f.basis ? [f.basis] : []} onChange={([v]) => set('basis', v)}
                 options={[{ id: 'sown', label: t('dateBasisSown') }, { id: 'transplanted', label: t('dateBasisTransplanted') }]} />
-              <p className="mt-1 text-[11px] text-soil-dark/45">{t('dateBasisWhy')}</p>
+              {/* Said once: when the farmer skipped it, the error above is this same sentence. */}
+              {!show('basis') && <p className="mt-1 text-[13px] text-soil-dark/70">{t('dateBasisWhy')}</p>}
             </Field>
           )}
           <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
@@ -256,8 +279,8 @@ export default function SignupFarmer() {
           </MoreDetails>
           {fields.length < 5 && (
             <button type="button" onClick={addAnother}
-              className="w-full min-h-[48px] rounded-2xl border-2 border-dashed border-leaf/40 text-leaf-deep text-sm font-semibold flex items-center justify-center gap-2 hover:bg-leaf/5">
-              <Plus className="w-4 h-4" />
+              className="w-full min-h-[48px] rounded-2xl border-2 border-dashed border-leaf/40 text-leaf-deep text-sm font-semibold flex items-center justify-center gap-2 hover:bg-leaf/5 active:bg-leaf/10">
+              <Plus className="w-4 h-4" aria-hidden />
               {t('authAddAnother')}
             </button>
           )}
@@ -267,16 +290,16 @@ export default function SignupFarmer() {
       {step === 3 && (
         <div className="space-y-4">
           <Card className="p-4">
-            <p className="text-[11px] uppercase tracking-wider text-soil-dark/50 font-semibold mb-2">{t('authReview')}</p>
+            <p className="text-[12px] uppercase tracking-wider text-soil-dark/70 font-semibold mb-2">{t('authReview')}</p>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[13px]">
-              <dt className="text-soil-dark/55">{t('authName')}</dt><dd className="font-medium">{f.name}</dd>
-              <dt className="text-soil-dark/55">{t('authMobile')}</dt><dd>{showPhone(f.phone)}</dd>
+              <dt className="text-soil-dark/70">{t('authName')}</dt><dd className="font-medium">{f.name}</dd>
+              <dt className="text-soil-dark/70">{t('authMobile')}</dt><dd>{showPhone(f.phone)}</dd>
               {f.email.trim() && (
-                <><dt className="text-soil-dark/55">{t('authEmail')}</dt><dd className="break-all">{f.email.trim()}</dd></>
+                <><dt className="text-soil-dark/70">{t('authEmail')}</dt><dd className="break-all">{f.email.trim()}</dd></>
               )}
-              <dt className="text-soil-dark/55">{t('authVillage')}</dt>
+              <dt className="text-soil-dark/70">{t('authVillage')}</dt>
               <dd>{[where.village, where.taluka, where.district, where.state].filter(Boolean).join(', ')}</dd>
-              <dt className="text-soil-dark/55">{t('authFieldsTitle')}</dt>
+              <dt className="text-soil-dark/70">{t('authFieldsTitle')}</dt>
               <dd>
                 {[...fields, current()].map((x, i) => (
                   <span key={i} className="block">
@@ -286,7 +309,7 @@ export default function SignupFarmer() {
                 ))}
               </dd>
             </dl>
-            <button type="button" onClick={() => setStep(0)} className="mt-3 text-[13px] text-leaf-deep font-medium">
+            <button type="button" onClick={() => setStep(0)} className="mt-1 inline-flex min-h-[44px] items-center text-[14px] text-leaf-deep font-medium">
               {t('authChange')}
             </button>
           </Card>

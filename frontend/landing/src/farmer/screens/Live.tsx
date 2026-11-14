@@ -14,7 +14,8 @@ import { ErrorBox, ListenButton } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
 import DemoNotice, { useReadOnlyFarm } from '../components/DemoNotice'
 import { PANEL, PRIMARY, RISK, SECONDARY } from '../tokens'
-import { PanelHead, PhotoCurve } from '../ui'
+import { PanelHead, PhotoCurve, hideBroken } from '../ui'
+import { lockScroll, onEscape } from '../../lib/sheet'
 
 type Phase = 'intro' | 'starting' | 'live' | 'finishing' | 'summary' | 'error'
 type Ask = { cue_id: string; question: string; candidates: TargetView[] }
@@ -592,6 +593,18 @@ export default function Live() {
     return () => window.clearInterval(t)
   }, [phase])
 
+  // While the call runs, a downward swipe on the camera must not reach the
+  // browser: Chrome on Android reads it as pull-to-refresh, reloads the page
+  // and the call is gone. The overlay is touch-none as well; this covers the
+  // root scroller, which is the one the browser actually refreshes from.
+  useEffect(() => {
+    if (phase !== 'starting' && phase !== 'live' && phase !== 'finishing') return
+    const root = document.documentElement.style
+    const was = root.overscrollBehaviorY
+    root.overscrollBehaviorY = 'none'
+    return () => { root.overscrollBehaviorY = was }
+  }, [phase])
+
   // Offer the way past a view that is not coming. Some fields have no leaf you
   // can turn over and no plant base above the water.
   useEffect(() => {
@@ -797,7 +810,7 @@ export default function Live() {
           <div className="min-w-0 space-y-6">
             <section className={`${PANEL} p-2`}>
               <div className="relative h-[230px] overflow-hidden rounded-[22px] bg-[#1d4a2c] sm:h-[260px]">
-                <img src="/photos/panicle-closeup.webp" alt="" width={940} height={442}
+                <img onError={hideBroken} src="/photos/panicle-closeup.webp" alt="" width={940} height={442}
                   className="absolute inset-0 h-full w-full object-cover" />
                 <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
                 <div className="relative flex h-full flex-col justify-between p-5 text-white lg:p-6">
@@ -815,7 +828,7 @@ export default function Live() {
                 {farm && !farm.photo_diagnosis && (
                   <p className="rounded-[18px] bg-sky-50 p-3.5 text-[15px] text-sky-950/85">{t('liveNoModel')}</p>
                 )}
-                {phase === 'error' && error && <ErrorBox error={new Error(error)} />}
+                {phase === 'error' && error && <ErrorBox offlineLabel={t('offline')} error={new Error(error)} />}
                 {/* One route per device, not two. A phone walks the field with its
                     camera. A computer cannot, and its camera faces a desk, so there
                     the walk is a video of the field — offering the webcam as well
@@ -869,14 +882,14 @@ export default function Live() {
       {/* The call: full screen over the app chrome while it runs. */}
       {/* Above the tour's own z-[60]: while a call is running nothing belongs
           over the camera, whichever mounted first. */}
-      <div className={live ? 'fixed inset-0 z-[70] bg-black text-white' : 'hidden'}>
+      <div className={live ? 'fixed inset-0 z-[70] bg-black text-white touch-none overscroll-none' : 'hidden'}>
         <video ref={videoRef} playsInline muted
           className={`absolute inset-0 w-full h-full ${source === 'video' ? 'object-contain' : 'object-cover'}`} />
         <canvas ref={canvasRef} className="hidden" />
 
         <div className="absolute inset-x-0 top-0 p-4 pt-[max(1rem,env(safe-area-inset-top))] bg-gradient-to-b from-black/80 via-black/50 to-transparent">
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-ember px-2 py-0.5 text-[11px] font-bold">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-ember px-2 py-0.5 text-[12px] font-bold">
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
             </span>
             {guide && guide.total > 0 && (
@@ -888,20 +901,20 @@ export default function Live() {
             )}
             {torch !== null && (
               <button onClick={() => { void flipTorch() }} aria-label={t('liveTorch')} aria-pressed={torch}
-                className={`w-9 h-9 rounded-full flex items-center justify-center ${torch ? 'bg-ochre text-soil-dark' : 'bg-white/15'} ${
+                className={`w-11 h-11 shrink-0 rounded-full flex items-center justify-center ${torch ? 'bg-ochre text-soil-dark' : 'bg-black/40 ring-1 ring-white/30'} ${
                   // "Too dark" is not advice while the phone is holding the only lamp there is.
-                  !torch && quality?.hint === 'too_dark' ? 'ring-2 ring-ochre animate-pulse' : ''}`}>
-                <Flashlight className="w-4 h-4" />
+                  !torch && quality?.hint === 'too_dark' ? '!ring-2 !ring-ochre animate-pulse' : ''}`}>
+                <Flashlight className="w-5 h-5" />
               </button>
             )}
             <button onClick={toggleMute} aria-label={muted ? t('liveUnmute') : t('liveMute')}
-              className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center">
-              {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              className="w-11 h-11 shrink-0 rounded-full bg-black/40 ring-1 ring-white/30 flex items-center justify-center">
+              {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
             </button>
           </div>
           {source === 'video' && (
             <div className="mt-3">
-              <p className="text-[11px] uppercase tracking-wide text-white/60">
+              <p className="text-[12px] uppercase tracking-wide text-white/75">
                 {t('liveWatching')}
                 {videoCut && <span className="ml-1.5 normal-case tracking-normal text-ochre">
                   {t('liveVideoCut').replace('{min}', String(Math.round(MAX_VIDEO_SECONDS / 60)))}
@@ -915,7 +928,7 @@ export default function Live() {
           )}
           {guide?.step && (
             <>
-              <p className="mt-3 text-[11px] uppercase tracking-wide text-white/60">
+              <p className="mt-3 text-[12px] uppercase tracking-wide text-white/75">
                 {t('liveStep').replace('{i}', String(guide.index + 1)).replace('{n}', String(guide.total))}
               </p>
               <p aria-live="polite" className="mt-0.5 text-lg font-semibold leading-snug">{guide.text}</p>
@@ -928,7 +941,7 @@ export default function Live() {
               ) : null}
             </>
           )}
-          <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
+          <div className="mt-2 flex flex-wrap gap-1.5 text-[12px]">
             {ctx?.weather_now?.temp_c != null && (
               <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5">
                 <CloudSun className="w-3 h-3" /> {Math.round(ctx.weather_now.temp_c)}° · {ctx.weather_now.rh_pct}%
@@ -979,20 +992,20 @@ export default function Live() {
             </p>
           )}
           {liveTop && phase === 'live' && (
-            <p className="mx-auto w-fit flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-xs">
+            <p className="mx-auto w-fit flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-[13px]">
               {liveTop.healthy ? <Leaf className="w-3.5 h-3.5 text-leaf" /> : <Eye className="w-3.5 h-3.5 text-ochre" />}
               {liveTop.name} · {Math.round(liveTop.confidence * 100)}%
             </p>
           )}
           {Object.keys(tally).length > 0 && (
-            <p className="text-center text-[11px] text-white/80">
+            <p className="text-center text-[12px] text-white/80">
               {t('liveSeenSoFar')}: {Object.values(tally).map((x) => `${x.name} ×${x.n}`).join(' · ')}
             </p>
           )}
           {stuck && phase === 'live' && (
             <div className="flex justify-center">
               <button onClick={skipView}
-                className="min-h-[40px] px-4 rounded-full border border-white/40 text-sm font-medium flex items-center gap-2">
+                className="min-h-[44px] px-4 rounded-full border border-white/40 bg-black/40 text-sm font-medium flex items-center gap-2">
                 <SkipForward className="w-4 h-4" /> {t('liveSkip')}
               </button>
             </div>
@@ -1009,7 +1022,7 @@ export default function Live() {
           <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-3 px-8 text-center">
             <Loader2 className="w-8 h-8 animate-spin text-ochre" />
             <p className="text-sm">{t('liveRedial')}</p>
-            {source === 'camera' && <p className="text-xs text-white/60">{t('liveRedialStay')}</p>}
+            {source === 'camera' && <p className="text-[13px] text-white/75">{t('liveRedialStay')}</p>}
           </div>
         )}
         {(phase === 'starting' || phase === 'finishing') && (
@@ -1027,10 +1040,10 @@ export default function Live() {
         )}
 
         {ask && (
-          <div className="absolute inset-x-3 bottom-3 rounded-3xl bg-leaf-deep p-4 shadow-2xl">
-            <p className="text-[11px] uppercase tracking-wide text-cream/60">{t('liveAnswer')}</p>
+          <div className="absolute inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] rounded-3xl bg-leaf-deep p-4 shadow-2xl">
+            <p className="text-[12px] uppercase tracking-wide text-cream/75">{t('liveAnswer')}</p>
             <p className="mt-1 text-lg font-semibold leading-snug">{ask.question}</p>
-            <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+            <div className="mt-2 grid grid-cols-2 gap-2 text-[13px] leading-snug">
               {ask.candidates.map((c) => (
                 <p key={c.id} className="rounded-xl bg-white/10 p-2"><span className="font-semibold">{c.name}</span><br />{c.signature}</p>
               ))}
@@ -1044,7 +1057,7 @@ export default function Live() {
         )}
 
         {expertChoice && (
-          <div className="absolute inset-x-3 bottom-3 rounded-3xl bg-leaf-deep p-4 shadow-2xl">
+          <div className="absolute inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] rounded-3xl bg-leaf-deep p-4 shadow-2xl">
             <p className="text-lg font-semibold leading-snug">{t('liveExpertAsk')}</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <button onClick={() => { setExpertChoice(false); finish(true) }} className="min-h-[48px] rounded-2xl bg-cream text-soil-dark font-semibold">{t('liveYesSend')}</button>
@@ -1112,13 +1125,11 @@ function SummaryView({ s, onAgain, onDone }: {
     // A screen reader is told a dialog opened by landing in it, and the page
     // underneath stops scrolling; closing goes back to the photo it came from.
     zoomClose.current?.focus()
-    const overflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setZoom(null) }
-    window.addEventListener('keydown', esc)
+    const release = lockScroll()
+    const unEsc = onEscape(() => setZoom(null))
     return () => {
-      window.removeEventListener('keydown', esc)
-      document.body.style.overflow = overflow
+      unEsc()
+      release()
       zoomFrom.current?.focus()
     }
   }, [zoom])
@@ -1280,7 +1291,7 @@ function SummaryView({ s, onAgain, onDone }: {
             <PanelHead icon={Video} title={t('liveReadTitle')}
               sub={t('liveReadLine').replace('{k}', String(readable)).replace('{n}', String(marks.length))} />
             <Timeline marks={marks} length={0} light className="mt-4" />
-            <div className="mt-1 flex justify-between text-[12px] text-soil-dark/60 tabular-nums">
+            <div className="mt-1 flex justify-between text-[12px] text-soil-dark/70 tabular-nums">
               <span>0:00</span><span>{clock(Math.max(...marks.map(([at]) => at)))}</span>
             </div>
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-soil-dark/80">
@@ -1315,7 +1326,7 @@ function SummaryView({ s, onAgain, onDone }: {
                   <p className="mt-1 text-[24px] font-semibold tabular-nums">{Math.round(w.temp_c)}°C</p>
                   <p className="text-[13px] text-soil-dark/75">{w.rh_pct}% · {w.text ?? ''}{w.rain_mm_1h ? ` · ${w.rain_mm_1h} mm` : ''}</p>
                 </>
-              ) : <p className="mt-1 text-[15px] text-soil-dark/60">—</p>}
+              ) : <p className="mt-1 text-[15px] text-soil-dark/70">—</p>}
             </div>
             <div className={tile}>
               <p className={tileHead}>{t('liveNext')}</p>
@@ -1324,7 +1335,7 @@ function SummaryView({ s, onAgain, onDone }: {
                   <p className="mt-1 text-[15px]"><span className="text-[20px] font-semibold tabular-nums">{c.forecast.rain_mm} mm</span> {t('liveRain')}</p>
                   <p className="text-[13px] text-soil-dark/75">{c.forecast.t_min != null ? `${Math.round(c.forecast.t_min)}–${Math.round(c.forecast.t_max ?? 0)}°C` : ''}</p>
                 </>
-              ) : <p className="mt-1 text-[15px] text-soil-dark/60">—</p>}
+              ) : <p className="mt-1 text-[15px] text-soil-dark/70">—</p>}
             </div>
             <div className={tile}>
               <p className={tileHead}><Sprout className="h-4 w-4" aria-hidden /> {t('liveSoil')}</p>
@@ -1333,7 +1344,7 @@ function SummaryView({ s, onAgain, onDone }: {
                   <p className="mt-1 text-[20px] font-semibold">{t('livePh')} {ph.value}</p>
                   <p className="text-[13px] text-soil-dark/75">{ph.band} · {t(`how_${ph.how}`)}</p>
                 </>
-              ) : <p className="mt-1 text-[15px] text-soil-dark/60">—</p>}
+              ) : <p className="mt-1 text-[15px] text-soil-dark/70">—</p>}
               {moist && (
                 <p className="mt-1.5 text-[13px] text-soil-dark/75">
                   <Droplets className="-mt-0.5 mr-1 inline h-3.5 w-3.5" />{t('liveMoisture')} {moist.value_pct}%
@@ -1352,7 +1363,7 @@ function SummaryView({ s, onAgain, onDone }: {
           <button onClick={onAgain} className={SECONDARY}>{t('liveAgain')}</button>
           <button onClick={onDone} className={PRIMARY}>{t('liveDone')}</button>
         </div>
-        <p className="text-center text-[12px] text-soil-dark/60">
+        <p className="text-center text-[13px] text-soil-dark/70">
           {t('liveStats').replace('{f}', String(s.stats.frames)).replace('{c}', String(s.stats.classified_views))}
           {s.photo_model ? ` · ${s.model_version}` : ''}
         </p>
@@ -1366,7 +1377,7 @@ function SummaryView({ s, onAgain, onDone }: {
           <img src={zoom.src} alt={zoom.name} className="max-w-full max-h-[80vh] rounded-2xl object-contain" />
           <p className="mt-3 text-sm text-white">{zoom.name}</p>
           <button ref={zoomClose} onClick={() => setZoom(null)} aria-label={t('liveClosePhoto')}
-            className="absolute top-4 right-4 w-11 h-11 rounded-full bg-white/15 text-white flex items-center justify-center">
+            className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4 w-11 h-11 rounded-full bg-black/40 ring-1 ring-white/30 text-white flex items-center justify-center">
             <X className="w-5 h-5" />
           </button>
         </div>

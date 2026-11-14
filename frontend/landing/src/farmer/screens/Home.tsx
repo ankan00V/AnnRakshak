@@ -18,7 +18,7 @@ import LastKnown from '../components/LastKnown'
 import LocationAsk from '../components/LocationAsk'
 import ProblemRow from '../components/ProblemRow'
 import { askKrishi } from '../../krishi/bus'
-import { PestPhoto, PhotoCurve, SkyIcon } from '../ui'
+import { PestPhoto, PhotoCurve, SkyIcon, hideBroken } from '../ui'
 import { PANEL, RISK, wmoKey } from '../tokens'
 import { TourButton } from '../tour/Tour'
 import { useFarmer } from '../FarmerContext'
@@ -35,7 +35,7 @@ export default function Home() {
   // this phone kept the last home payload the farmer gets their own field back
   // and the error is one line above it, which in a place with no signal is
   // worth more to them than a page that is empty but correct.
-  if (home.error && !home.data) return <ErrorBox error={home.error} onRetry={home.reload} retryLabel={t('retry')} />
+  if (home.error && !home.data) return <ErrorBox offlineLabel={t('offline')} error={home.error} onRetry={home.reload} retryLabel={t('retry')} />
   const d = home.data!
   const w = weather.data
   const lastKnown = home.error ? <LastKnown at={home.savedAt} onRetry={home.reload} /> : null
@@ -56,6 +56,7 @@ export default function Home() {
   // a screen that still looks like a working one invites the farmer to look
   // for something that is not there. One statement, one way forward.
   if (d.farm.status === 'fallow') {
+    const cut = fieldPhoto(d.farm)
     return (
       <div className="max-w-2xl mx-auto space-y-5">
         {lastKnown}
@@ -65,22 +66,24 @@ export default function Home() {
               says "harvested" before the sentence does. Illustration, not a
               photograph of this particular plot. */}
           <div className="relative h-[140px] md:h-[170px]">
-            <img src={fieldPhoto(d.farm)?.src ?? ''} alt="" width={1280} height={430} loading="lazy"
-              className="w-full h-full object-cover" />
+            {cut && <img onError={hideBroken} src={cut.src} srcSet={cut.srcSet || undefined} sizes="(min-width: 768px) 672px, calc(100vw - 32px)" alt=""
+              width={cut.width} height={cut.height} fetchPriority="high" decoding="async"
+              className="w-full h-full object-cover" />}
             <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-soil-dark via-soil-dark/45 to-soil-dark/10" />
           </div>
           <div className="relative -mt-8 p-5 md:p-7">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-ochre/20 px-2.5 py-1 text-[11px] font-semibold text-ochre">
-              <Wheat className="w-3.5 h-3.5" /> {t('seasonRestingShort')}
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-ochre/20 px-2.5 py-1 text-[12px] font-semibold text-ochre">
+              <Wheat className="w-3.5 h-3.5" aria-hidden /> {t('seasonRestingShort')}
             </span>
-            <h1 className="mt-3 font-instrument-serif text-3xl leading-tight">{t('harvestedTitle')}</h1>
+            {/* h2: the shell's greeting is this screen's one h1. */}
+            <h2 className="mt-3 font-instrument-serif text-3xl leading-tight">{t('harvestedTitle')}</h2>
             <p className="mt-2 text-sm font-light leading-relaxed text-cream/75 text-pretty">
               {t('harvestedBody').replace('{on}', d.farm.harvested_on ?? '')}
             </p>
           </div>
         </Card>
         {season}
-        <Link to="/app/history" className="block text-center text-sm font-medium text-leaf-deep">
+        <Link to="/app/history" className="flex min-h-[44px] items-center justify-center text-center text-[15px] font-medium text-leaf-deep">
           {t('harvestedHistory')} →
         </Link>
       </div>
@@ -109,7 +112,7 @@ export default function Home() {
           <div className="lg:hidden"><WeatherPanel v={w} loading={weather.loading && !w} /></div>
           <FieldChecks alerts={openAlerts} stage={stageName} />
           {d.model.is_stub && (
-            <p className="flex items-center gap-1.5 text-xs text-soil-dark/70">
+            <p className="flex items-center gap-1.5 text-[13px] text-soil-dark/75">
               <Sparkles className="w-3.5 h-3.5" aria-hidden /> {t('demoModel')}
             </p>
           )}
@@ -138,17 +141,26 @@ function FieldCard({ farm, stages, attention }: { farm: Farm; stages: CropInfo['
   return (
     <section data-tour="farm" className={`${PANEL} p-2`}>
       <div className="relative h-[230px] overflow-hidden rounded-[22px] bg-leaf-deep lg:h-[250px]">
-        {photo && <img src={photo.src} alt="" width={1444} height={570} className="absolute inset-0 h-full w-full object-cover object-[center_70%]" />}
+        {/* The largest thing on Home: fetched first, and phone-sized on a phone. */}
+        {photo && <img onError={hideBroken} src={photo.src} srcSet={photo.srcSet || undefined} sizes={photo.sizes} alt=""
+          width={photo.width} height={photo.height} fetchPriority="high" decoding="async"
+          className="absolute inset-0 h-full w-full object-cover object-[center_70%]" />}
         <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-transparent" />
         <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/20" />
         <div className="relative flex h-full flex-col justify-between p-5 text-white lg:p-6">
           <div className="flex items-start justify-between gap-3">
             {/* The place is also where a farmer with two fields changes field. */}
-            <button onClick={() => navigate('/app/fields')} aria-label={t('switchFarm')}
-              className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[14px] font-medium drop-shadow sm:text-[15px]">
-              <MapPin className="h-4 w-4" aria-hidden />
-              {farm.village || farm.district} • {farm.area_acres} {t('acres')}
-              <ChevronDown className="h-4 w-4 opacity-80" aria-hidden />
+            {/* The label starts with the words on screen so voice control and
+                TalkBack match what the farmer sees; the text wraps rather than
+                running under the status pill. -my keeps the row's height. */}
+            <button onClick={() => navigate('/app/fields')}
+              aria-label={`${farm.village || farm.district}, ${farm.area_acres} ${t('acres')} — ${t('switchFarm')}`}
+              className="-my-2.5 flex min-h-[44px] min-w-0 items-center gap-1.5 py-2.5 pr-2 text-left text-[14px] font-medium leading-tight drop-shadow active:opacity-80 sm:text-[15px]">
+              <MapPin className="h-4 w-4 shrink-0" aria-hidden />
+              {/* Wraps to a second line rather than cutting: "Bhandāra • 2 a…"
+                  beside the status pill at 360 px dropped the field's size. */}
+              <span className="min-w-0 line-clamp-2 [overflow-wrap:anywhere]">{farm.village || farm.district} • {farm.area_acres}{'\u00a0'}{t('acres')}</span>
+              <ChevronDown className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
             </button>
             <span className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-[13px] font-semibold shadow-sm sm:px-3.5 sm:py-1.5 sm:text-[14px] ${
               attention ? 'bg-white text-[#8a5a17]' : 'bg-white text-leaf-deep'}`}>
@@ -198,7 +210,8 @@ function QuickActions() {
   const { t } = useFarmer()
   // White cards that sit off the cream page, each led by its own colour so
   // the four read apart at a glance; scanning, the main job, is the solid one.
-  const tile = 'group relative flex min-h-[136px] flex-col justify-between gap-4 rounded-[22px] p-4 transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 lg:p-5'
+  // active: shows the press at once, before a lazy screen has loaded.
+  const tile = 'group relative flex min-h-[136px] flex-col justify-between gap-4 rounded-[22px] p-4 transition-[transform,box-shadow,filter] duration-200 ease-out hover:-translate-y-0.5 active:brightness-95 motion-safe:active:scale-[0.98] lg:p-5'
   const card = `${tile} bg-white text-soil-dark shadow-[0_10px_24px_-16px_rgba(43,29,18,0.45)] ring-1 ring-soil-dark/[0.07] hover:shadow-[0_16px_30px_-16px_rgba(43,29,18,0.5)]`
   const badge = 'flex h-12 w-12 items-center justify-center rounded-2xl'
   const go = (
@@ -225,7 +238,7 @@ function QuickActions() {
         <Link to="/app/live" data-tour="live" className={card}>
           <span className="flex items-start justify-between">
             <span className={`${badge} bg-[#fde5df] text-[#b5381c]`}><Video className="h-7 w-7" strokeWidth={1.9} aria-hidden /></span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-[#c2401f] px-2 py-0.5 text-[11px] font-bold tracking-wide text-white">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#c2401f] px-2 py-0.5 text-[12px] font-bold tracking-wide text-white">
               <span className="h-1.5 w-1.5 rounded-full bg-white motion-safe:animate-pulse" aria-hidden />LIVE
             </span>
           </span>
@@ -264,7 +277,7 @@ function FieldChecks({ alerts, stage }: { alerts: AlertView[]; stage: string }) 
           <p className="text-[14px] text-soil-dark/75 sm:text-[15px]">{t('checksSub').replace('{stage}', stage)}</p>
         </div>
         {alerts.length > 0 && (
-          <Link to="/app/alerts" className="shrink-0 flex items-center gap-1 whitespace-nowrap text-[15px] font-medium text-leaf-deep hover:underline">
+          <Link to="/app/alerts" className="-my-2 shrink-0 flex min-h-[44px] items-center gap-1 whitespace-nowrap text-[15px] font-medium text-leaf-deep hover:underline">
             {t('seeAll')} <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
         )}
@@ -328,7 +341,7 @@ function WeatherPanel({ v, loading }: { v: WeatherView | null | undefined; loadi
     </div>
   )
   return (
-    <section data-tour="weather" className={`${PANEL} p-5`}>
+    <section data-tour="weather" className={`${PANEL} p-4 sm:p-5`}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
         <div className="flex items-center gap-3">
           <SkyIcon code={c.code} night={c.is_day === 0} className="h-14 w-14" />
@@ -355,14 +368,16 @@ function WeatherPanel({ v, loading }: { v: WeatherView | null | undefined; loadi
       )}
       <div className="mt-5 flex items-center justify-between">
         <h3 className="text-[17px] font-semibold">{t('w5Day')}</h3>
-        <Link to="/app/weather" className="flex items-center gap-1 text-[15px] font-medium text-leaf-deep hover:underline">
+        <Link to="/app/weather" className="-my-2 flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-leaf-deep hover:underline">
           {t('viewFull')} <ArrowRight className="h-4 w-4" aria-hidden />
         </Link>
       </div>
-      <div className="mt-3 grid grid-cols-5 gap-2">
+      {/* Five tiles in ~280px at 360: tight gaps, and a date that may wrap
+          inside its tile rather than push the last one off the card. */}
+      <div className="mt-3 grid grid-cols-5 gap-1.5 sm:gap-2">
         {v.daily.slice(0, 5).map((day) => (
-          <div key={day.on} className="flex flex-col items-center gap-1.5 rounded-2xl bg-[#f5f7f1] py-3">
-            <span className="text-[12px] text-soil-dark/75">{dayLabel(day.on, lang)}</span>
+          <div key={day.on} className="flex min-w-0 flex-col items-center gap-1.5 rounded-2xl bg-[#f5f7f1] px-0.5 py-3">
+            <span className="text-center text-[12px] leading-tight text-soil-dark/80">{dayLabel(day.on, lang)}</span>
             <SkyIcon code={day.code} night={false} className="h-7 w-7" />
             <span className="text-[16px] font-semibold tabular-nums">{day.tmax != null ? Math.round(day.tmax) : '–'}°</span>
             <span className="text-[13px] text-soil-dark/70 tabular-nums">{day.tmin != null ? Math.round(day.tmin) : '–'}°</span>
@@ -398,7 +413,9 @@ function SeasonCard({ farm }: { farm: Farm }) {
       <div className="flex items-start gap-3">
         <Wheat className="h-8 w-8 shrink-0 text-ochre" aria-hidden />
         <div>
-          <h2 className="text-[20px] font-semibold tracking-tight">{t('seasonTitle')}</h2>
+          {/* Not "This season": the card below it (closing the season) has that
+              title, and two cards with one name read as a duplicate. */}
+          <h2 className="text-[20px] font-semibold tracking-tight">{t('expectedHarvest')}</h2>
           <p className="text-[15px] text-soil-dark/80">
             {days <= 0 ? t('harvestDue') : t('harvestAway').replace('{a}', String(a)).replace('{b}', String(b))}
           </p>
@@ -409,10 +426,9 @@ function SeasonCard({ farm }: { farm: Farm }) {
           <div className="h-3 rounded-full bg-gradient-to-r from-[#4b8b3b] to-[#78b04a]" style={{ width: `${pct}%` }} />
         </div>
         <p className="mt-2 text-right text-[13px] text-soil-dark/75">{t('pctComplete').replace('{p}', String(pct))}</p>
-        <p className="mt-3 flex items-center gap-2 text-[15px]">
-          <CalendarDays className="h-5 w-5 text-leaf-deep" aria-hidden />
-          <span className="text-soil-dark/80">{t('expectedHarvest')}:</span>
-          <span className="font-semibold tabular-nums">{window}</span>
+        <p className="mt-3 flex items-center gap-2 text-[16px]">
+          <CalendarDays className="h-5 w-5 shrink-0 text-leaf-deep" aria-hidden />
+          <span className="whitespace-nowrap font-semibold tabular-nums">{window}</span>
         </p>
       </div>
     </section>
@@ -428,7 +444,7 @@ function RecentProblems({ problems }: { problems: ProblemView[] }) {
           <Clock className="h-6 w-6 shrink-0 text-leaf-deep" aria-hidden /> {t('recentProblems')}
         </h2>
         {problems.length > 0 && (
-          <Link to="/app/history" className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[15px] font-medium text-leaf-deep hover:underline">
+          <Link to="/app/history" className="-my-2 flex min-h-[44px] shrink-0 items-center gap-1 whitespace-nowrap text-[15px] font-medium text-leaf-deep hover:underline">
             {t('seeAll')} <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
         )}
@@ -450,6 +466,7 @@ function FollowUp({ id, name, dueOn, onDone, row = false }: {
   const { t, lang } = useFarmer()
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
+  const [failed, setFailed] = useState(false)
   // Answering on a shared demo field edits what the next visitor walks into,
   // so the server refuses it; the buttons would only be able to fail.
   const readOnly = useReadOnlyFarm() !== null
@@ -459,6 +476,8 @@ function FollowUp({ id, name, dueOn, onDone, row = false }: {
   const send = async (r: 'improved' | 'no_change' | 'got_worse',
                       evidence?: { photo: Blob | null; note: string }) => {
     setBusy(r)
+    setFailed(false)
+    setMsg(null)
     try {
       const out = await api.followup(id, r, lang, evidence)
       setReporting(false)
@@ -472,12 +491,20 @@ function FollowUp({ id, name, dueOn, onDone, row = false }: {
       // The slot it lands in is already ember, and onDone is NOT called: the
       // card stays, with the buttons live.
       setMsg(t('notSaved'))
+      setFailed(true)
     } finally {
       setBusy(null)
     }
   }
-  const choose = (r: 'improved' | 'no_change' | 'got_worse') =>
-    r === 'got_worse' ? setReporting(true) : void send(r)
+  const choose = (r: 'improved' | 'no_change' | 'got_worse') => {
+    setMsg(null)
+    setFailed(false)
+    if (r === 'got_worse') setReporting(true)
+    else void send(r)
+  }
+  // A saved answer replaces the buttons; a failed one keeps them under the
+  // error, so the farmer can try again.
+  const done = msg !== null && !failed
   const choices = ([['improved', t('improved'), 'bg-leaf text-cream'], ['no_change', t('noChange'), 'bg-white border border-soil-dark/20'], ['got_worse', t('gotWorse'), 'bg-ember text-cream']] as const)
   // Two treatments of the same disease give two cards with the same name on
   // them. Without the date a farmer cannot tell which one they are answering.
@@ -487,20 +514,23 @@ function FollowUp({ id, name, dueOn, onDone, row = false }: {
       <div className="flex items-center gap-6 px-5 py-4">
         <p className="flex-1 min-w-0 font-semibold truncate">
           {name ?? t('followupDue')}
-          <span className="ml-2 font-normal text-soil-dark/55">{when}</span>
+          <span className="ml-2 font-normal text-soil-dark/75">{when}</span>
         </p>
-        {msg ? (
-          <p className="text-sm text-ember">{msg}</p>
+        {done ? (
+          <p role="status" className="text-sm text-ember">{msg}</p>
         ) : readOnly ? (
-          <p className="text-xs text-soil-dark/50 shrink-0">{t('demoReadOnlyShort')}</p>
+          <p className="text-[13px] text-soil-dark/75 shrink-0">{t('demoReadOnlyShort')}</p>
         ) : (
+          <>
+          {failed && <p role="alert" className="shrink-0 text-sm text-ember">{msg}</p>}
           <div className="grid grid-cols-3 gap-2 w-[22rem] shrink-0">
             {choices.map(([r, label, cls]) => (
-              <button key={r} onClick={() => choose(r)} disabled={busy !== null} className={`min-h-[40px] rounded-xl text-sm font-medium ${cls}`}>
+              <button key={r} onClick={() => choose(r)} disabled={busy !== null} className={`min-h-[44px] rounded-xl text-sm font-medium active:brightness-95 ${cls}`}>
                 {busy === r ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : label}
               </button>
             ))}
           </div>
+          </>
         )}
         {reporting && (
           <div className="basis-full">
@@ -515,23 +545,26 @@ function FollowUp({ id, name, dueOn, onDone, row = false }: {
     <Card className="p-4 border-ochre/40 bg-ochre/5">
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-sm font-semibold">{t('followupDue')}</p>
-        <p className="text-xs text-soil-dark/55 shrink-0">{when}</p>
+        <p className="text-[13px] text-soil-dark/75 shrink-0">{when}</p>
       </div>
-      {name && <p className="text-xs text-soil-dark/60 mt-0.5">{name}</p>}
-      {msg ? (
-        <p className="mt-2 text-sm text-ember">{msg}</p>
+      {name && <p className="text-[13px] text-soil-dark/75 mt-0.5">{name}</p>}
+      {done ? (
+        <p role="status" className="mt-2 text-sm text-ember">{msg}</p>
       ) : readOnly ? (
-        <p className="mt-2 text-xs text-soil-dark/50">{t('demoReadOnlyShort')}</p>
+        <p className="mt-2 text-[13px] text-soil-dark/75">{t('demoReadOnlyShort')}</p>
       ) : (
+        <>
+        {failed && <p role="alert" className="mt-2 text-sm text-ember">{msg}</p>}
         <div className="mt-3 grid grid-cols-3 gap-2">
           {choices.map(([r, label, cls]) => (
-            <button key={r} onClick={() => choose(r)} disabled={busy !== null} className={`min-h-[44px] rounded-xl text-sm font-medium ${cls}`}>
+            <button key={r} onClick={() => choose(r)} disabled={busy !== null} className={`min-h-[44px] rounded-xl text-sm font-medium active:brightness-95 ${cls}`}>
               {busy === r ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : label}
             </button>
           ))}
         </div>
+        </>
       )}
-      {reporting && !msg && (
+      {reporting && !done && (
         <ReportSheet busy={busy !== null} onCancel={() => setReporting(false)}
           onSend={(ev) => void send('got_worse', ev)} />
       )}

@@ -114,7 +114,7 @@ export function NotifySettings() {
         ) : null}
       </div>
       {push === 'on' && (
-        <button onClick={() => run('ptest', () => api.pushTest(farmId!, lang))} className="min-h-[40px] text-[14px] font-medium text-leaf-deep">
+        <button onClick={() => run('ptest', () => api.pushTest(farmId!, lang))} className="inline-flex min-h-[44px] items-center px-2 -mx-2 text-[14px] font-medium text-leaf-deep">
           {busy === 'ptest' ? '…' : t('sendTest')}
         </button>
       )}

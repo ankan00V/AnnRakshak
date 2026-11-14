@@ -110,17 +110,18 @@ export default function WherePicker({ value, onChange, showErrors, needPoint }: 
             spot is still missing — a Save disabled over a point the farmer
             cannot see is a dead button. What the browser itself refused wins:
             that is the more particular thing to say. */}
-        <p className={`mt-2 text-[12px] leading-snug ${locError || noPoint ? 'text-ember' : 'text-soil-dark/60'}`}>
+        <p className={`mt-2 text-[13px] leading-snug ${locError || noPoint ? 'text-ember' : 'text-soil-dark/70'}`}>
           {locError ?? (noPoint ? t('authNeedPoint')
             : value.fromGps ? t('authLocationFilled') : t('authFieldHint'))}
         </p>
       </div>
 
-      <p className="text-center text-[12px] text-soil-dark/45">{t('authOrType')}</p>
+      <p className="text-center text-[13px] text-soil-dark/65">{t('authOrType')}</p>
 
       <Field label={t('authSearchVillage')}>
+        {(aria) => (<>
         <div className="relative">
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('authSearchVillage')} />
+          <Input {...aria} value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('authSearchVillage')} />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-soil-dark/35">
             {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
           </span>
@@ -146,6 +147,7 @@ export default function WherePicker({ value, onChange, showErrors, needPoint }: 
         {hits && hits.length === 0 && !searching && (
           <p className="mt-2 text-[12px] text-soil-dark/55">{t('authNoPlaces')}</p>
         )}
+        </>)}
       </Field>
 
       <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4 lg:items-start">
@@ -157,11 +159,12 @@ export default function WherePicker({ value, onChange, showErrors, needPoint }: 
         </Field>
 
         <Field label={t('district')} error={showErrors && !value.district && t('authPickDistrict')}>
+          {(aria) => (<>
           {freeDistrict || (value.district && !districts.some((d) => d.name === value.district)) ? (
-            <Input value={value.district} onChange={(e) => set({ district: e.target.value })}
+            <Input {...aria} value={value.district} onChange={(e) => set({ district: e.target.value })}
               placeholder={t('authTypeDistrict')} />
           ) : (
-            <Select value={value.district} onChange={(v) => set({ district: v })}>
+            <Select {...aria} value={value.district} onChange={(v) => set({ district: v })}>
               <option value="">{t('authPickDistrict')}</option>
               {districts.map((d) => (
                 <option key={d.name} value={d.name}>{d.local ? `${d.name} · ${d.local}` : d.name}</option>
@@ -170,14 +173,17 @@ export default function WherePicker({ value, onChange, showErrors, needPoint }: 
           )}
           {!freeDistrict && (
             <button type="button" onClick={() => setFreeDistrict(true)}
-              className="mt-1.5 text-[12px] text-leaf-deep underline underline-offset-2">
+              className="-ml-2 inline-flex min-h-[44px] items-center px-2 text-[14px] font-medium text-leaf-deep underline underline-offset-2">
               {t('authOtherDistrict')}
             </button>
           )}
+          </>)}
         </Field>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:gap-4">
+      {/* Stacked on a narrow phone: side by side, "Taluka / tehsil · optional"
+          wrapped to two lines and pushed its box below the village box. */}
+      <div className="grid gap-3 min-[400px]:grid-cols-2 min-[400px]:items-end lg:gap-4">
         <Field label={t('authTaluka')} optional>
           <Input value={value.taluka} onChange={(e) => set({ taluka: e.target.value })} />
         </Field>
