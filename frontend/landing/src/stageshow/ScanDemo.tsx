@@ -32,6 +32,7 @@ type Shot = { src: string }
 const FRAMES = {
   home: { src: '/demo/home-en.webp' },
   scan: { src: '/demo/scan-en.webp' },
+  samples: { src: '/demo/samples-en.webp' },
   framed: { src: '/demo/framed-en.webp' },
   verdict: { src: '/demo/result-en-0.webp' },
   advice: { src: '/demo/result-en-1.webp' },
@@ -49,11 +50,11 @@ const REST = { x: 300, y: 500 }
 /** Where the cursor goes, as a share of the screen: these are taps on a
  *  photograph, so they are placed against what the photograph shows. */
 const TAPS: Partial<Record<Key, { x: number; y: number }>> = {
-  home: { x: 0.5, y: 0.945 },    // Scan, in the bottom bar
-  scan: { x: 0.22, y: 0.66 },    // the first ICAR sample
-  framed: { x: 0.5, y: 0.71 },   // the Scan button under the framed leaf
-  expert: { x: 0.74, y: 0.037 }, // the language pill in the header
-  lang: { x: 0.28, y: 0.49 },    // मराठी
+  home: { x: 0.5, y: 0.93 },       // Scan, raised in the middle of the bottom bar
+  samples: { x: 0.5, y: 0.517 },   // false smut, an untagged ICAR sample
+  framed: { x: 0.5, y: 0.817 },    // Check this photo
+  verdict: { x: 0.647, y: 0.044 }, // the language button in the header
+  lang: { x: 0.265, y: 0.614 },    // मराठी
 }
 
 const script = async (a: Act<S>) => {
@@ -67,11 +68,13 @@ const script = async (a: Act<S>) => {
   // Her field, then the one button the home screen is built around.
   await tap('home')
   await a.set({ at: 'scan' })
-  await a.wait(1200)
+  await a.wait(1400)
 
-  // A held-out ICAR photograph — the app's own words for them are "real
-  // photographs the model has been scored on".
-  await tap('scan')
+  // Down to the held-out ICAR photographs — the app's own words for them are
+  // "never used in training".
+  await a.set({ at: 'samples' })
+  await a.wait(1000)
+  await tap('samples')
   await a.set({ at: 'framed' })
   await a.wait(1300)
 
@@ -83,15 +86,18 @@ const script = async (a: Act<S>) => {
   await a.wait(2600)
 
   // Down the answer: what not to do, then the cheapest thing that works, then
-  // who to call and when it will ask her how it went. This is the part a
+  // when to call an expert and the number to call. This is the part a
   // plant-identification app has nothing to show for.
   await a.set({ at: 'advice' })
   await a.wait(2800)
   await a.set({ at: 'expert' })
   await a.wait(2600)
 
-  // And the same answer in her own language, which is one tap away.
-  await tap('expert')
+  // And the same answer in her own language, which is one tap away. On a
+  // phone the header scrolls with the page, so it is back at the top first.
+  await a.set({ at: 'verdict' })
+  await a.wait(900)
+  await tap('verdict')
   await a.set({ at: 'lang' })
   await a.wait(1400)
   await tap('lang')
@@ -126,12 +132,14 @@ export default function ScanDemo() {
           <>
             <Phone
               width={width}
-              dark
+              // The app's top is a light sky now, so the clock and battery
+              // are drawn dark over it, as the phone itself would.
               // What a real device shows around the app: its header colour
               // runs up behind the clock and battery, and the bottom bar's
               // own white runs down behind the home indicator. Measured off
-              // the captures (#1f3d2c and #f5f5f5) so the seams disappear.
-              wallpaper="linear-gradient(#1f3d2c 0 62px, #f5f5f5 62px)"
+              // the captures (#d3e3ef, the sky over the hills, and #fffefe)
+              // so the seams disappear.
+              wallpaper="linear-gradient(#d3e3ef 0 62px, #fffefe 62px)"
               className="sd-phone"
             >
               <div className="sd-screen">

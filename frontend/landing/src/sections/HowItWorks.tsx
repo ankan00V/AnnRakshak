@@ -9,19 +9,19 @@ import PhoneShot from '../ui/PhoneShot'
 const STEPS = [
   {
     src: '/demo/scan-en.webp',
-    alt: 'The scan screen: photograph a sick plant, with a frame to fill and a live field check option',
+    alt: 'The scan screen: a camera frame to fill with the sick leaf, with buttons to open the camera or choose from the gallery',
     title: 'Take a photo',
     line: 'Point the camera at the sick leaf, in daylight. No typing, no forms.',
   },
   {
     src: '/demo/result-en-0.webp',
-    alt: 'The answer: a rice panicle with the Grad-CAM heat map over it, named False smut, 98% sure',
+    alt: 'The answer: a rice panicle with the heat map of where the AI looked, named False smut, 97% sure',
     title: 'See what it is',
     line: 'It names the disease, marks where it looked, and says how sure it is.',
   },
   {
     src: '/demo/result-en-1.webp',
-    alt: 'The treatment: what not to do, with a listen button, then the safest field practice first',
+    alt: 'The treatment: what not to do, with a listen button, then the safest field practice first and the chemical only on request',
     title: 'Treat it safely',
     line: 'What not to do, then the safest step first. Chemicals only if it keeps spreading.',
   },
