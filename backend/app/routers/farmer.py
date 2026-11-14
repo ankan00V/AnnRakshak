@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import logging
+import re
 from datetime import date
 from typing import Literal
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -95,6 +97,31 @@ def crops(lang: Lang = "en", kb: KB = Depends(get_kb)):
 @router.get("/kb/targets")
 def targets(lang: Lang = "en", crop: str | None = None, kb: KB = Depends(get_kb)):
     return [kb.target_view(t, lang) for t, v in kb.targets.items() if crop is None or v["crop"] == crop]
+
+
+_TARGET_ID = re.compile(r"^[a-z][a-z0-9_]{1,60}$")
+_CLIENT_REF = re.compile(r"^[A-Za-z0-9-]{8,64}$")   # a UUID, or the outbox's fallback id
+
+
+@router.get("/kb/photo/{target}")
+def target_photo(target: str, kb: KB = Depends(get_kb)):
+    """One real photograph of a problem, for the small picture beside a field
+    check — so a farmer told to look for white stem borer sees what it looks
+    like, not only its name. The ICAR field photographs the model was taught
+    on; a problem without one is a 404, and the screen shows an icon instead.
+
+    The name is checked against the knowledge base before it touches the disk,
+    so nothing but a known problem's own folder can ever be read."""
+    if not _TARGET_ID.match(target) or target not in kb.targets:
+        raise HTTPException(404, "no photo")
+    from app.config import BACKEND_DIR  # noqa: PLC0415
+
+    folder = BACKEND_DIR.parent / "data" / "processed" / "icar_640" / target
+    files = sorted(f.name for f in folder.glob("*.jpg")) if folder.is_dir() else []
+    if not files:
+        raise HTTPException(404, "no photo")
+    return RedirectResponse(f"/samples/{target}/{files[0]}", status_code=302,
+                            headers={"Cache-Control": "private, max-age=86400"})
 
 
 #: Where each mount's files actually live, so a sample can be checked before
@@ -336,16 +363,31 @@ async def diagnose(
     image: UploadFile = File(...),
     lang: Lang = Form("en"),
     demo_scenario: str | None = Form(None),
+    client_ref: str | None = Form(None),
     db: Session = Depends(get_db),
     kb: KB = Depends(get_kb),
 ):
     farm = _writable_farm(db, farm_id, request)
+    if client_ref is not None and not _CLIENT_REF.match(client_ref):
+        raise HTTPException(422, "client_ref: 8–64 letters, digits or dashes")
+    # A photo kept on the phone for lack of signal carries its own name. If the
+    # first send arrived and only the answer was lost, the phone sends it again:
+    # that is the same photo, and it gets the same answer — not a second
+    # problem, a second diagnosis, and a second case on an officer's desk.
+    if client_ref:
+        seen = db.scalars(select(Problem).where(Problem.farm_id == farm.id, Problem.client_ref == client_ref)
+                          .order_by(Problem.id).limit(1)).first()
+        if seen is not None:
+            try:
+                return services.result_view(db, kb, seen, lang)
+            except ValueError:
+                pass  # opened but never photographed: diagnose this one properly
     limit(f"diagnose:{farm_id}", 30, 60)
     data = await _read_capped(image)
     if not data:
         raise HTTPException(422, "empty image")
     try:
-        return services.diagnose(db, kb, farm, data, lang, demo_scenario)
+        return services.diagnose(db, kb, farm, data, lang, demo_scenario, client_ref=client_ref)
     except vision.UnreadableImage as exc:
         raise HTTPException(422, "could not read the image — try another photo") from exc
 

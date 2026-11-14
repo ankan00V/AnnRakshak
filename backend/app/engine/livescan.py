@@ -21,6 +21,8 @@ Pure: no I/O. The caller injects the classifier and persists the result.
 
 from __future__ import annotations
 
+import base64
+import binascii
 import io
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -29,7 +31,7 @@ from statistics import median
 import numpy as np
 from PIL import Image
 
-from app.config import FLOOR, GATE, MARGIN, gate_for
+from app.config import FLOOR, MARGIN, gate_for
 from app.engine.gate import crop_of, is_healthy
 from app.engine.vision import MAX_PIXELS, vegetation_fraction
 from app.kb import tr
@@ -235,6 +237,8 @@ BASE_STEPS = [("overview", "scene", 3), ("plant", "plant", 2), ("leaf_top", "clo
 CONFIRM_NEED = 3
 MAX_EVIDENCE_FRAMES = 3
 MIN_SHARE_OF_STRONG = 0.25
+"""A second problem must make up at least this share of the walk's strong disease
+readings to be reported as seen; below it, it goes to an expert as possible."""
 MIN_VIDEO_VIEWS = 2
 """Readable frames below which a video is worth explaining rather than only
 reporting. Two is the bar a disease must clear anyway, so under it the farmer
@@ -262,8 +266,34 @@ VIDEO_KIND = "close"
 """A file is read for usable close-ups of the crop and nothing else: there is no
 one to coach towards the other views, so there is no point measuring against
 them."""
-"""A second problem must make up at least this share of the walk's strong disease
-readings to be reported as seen; below it, it goes to an expert as possible."""
+MAX_MARKS = 720
+"""Entries kept of what each frame of a video came to. Above the server's own
+frame limit, so in practice every frame gets one; it is a bound on what is
+stored with the result, not a sampling rate."""
+MIN_OTHER_CROP_VIEWS = 2
+"""Readings of a different crop before the farmer is told so. One is a misread;
+two that are also most of what the model could read is the wrong field picked,
+or the wrong crop registered, and neither a disease name nor "could not see
+your plants" is the truth about that footage."""
+STATE_VERSION = 1
+"""The shape of LiveSession.to_state(). A call dropped on one container is
+picked up on another, which during a rolling deploy may be running the next
+release; a state it does not know how to read is refused, never guessed at.
+Bump it whenever a field is added, renamed or changes meaning."""
+THUMB_SIDE = 24
+
+
+def _b64(b: bytes) -> str:
+    return base64.b64encode(b).decode("ascii")
+
+
+def _unb64(s: object) -> bytes:
+    if not isinstance(s, str):
+        raise ValueError("a frame in a held call is not text")
+    try:
+        return base64.b64decode(s, validate=True)
+    except binascii.Error as e:
+        raise ValueError("a frame in a held call is not base64") from e
 
 
 @dataclass
@@ -290,6 +320,7 @@ class Sighting:
     target: str
     conf: float
     frame: int
+    at: float | None = None  # video: seconds into the file this frame came from
 
 
 @dataclass
@@ -320,6 +351,15 @@ class LiveSession:
     #: refilms closer, and one whose footage the model cannot recognise as a
     #: crop at all needs to hear something completely different.
     passed_over_why: dict[str, int] = field(default_factory=dict)
+    #: Video: what each frame came to, in order — (seconds in, code). The codes
+    #: are "h" a healthy reading, "p" a problem glimpsed, "c" a clear close-up
+    #: nobody could classify (no model for this crop), "o" another crop, and
+    #: "x" passed over. It is what lets the result show *where* in the video
+    #: something was seen, and how much of it was readable at all.
+    marks: list[tuple[float, str]] = field(default_factory=list)
+    #: The record this session was saved as, once it has been. Saving is asked
+    #: for again when the answer does not arrive, and must not write it twice.
+    saved: int | None = None
     _last_thumb: np.ndarray | None = None
 
     def __post_init__(self):
@@ -348,10 +388,57 @@ class LiveSession:
                 "need": s.need, "got": s.got, "text": text.format(name=s.name or "")}
 
     def on_frame(self, img: Image.Image, jpeg: bytes,
-                 classify: Callable[[Image.Image], list[tuple[str, float]]] | None) -> dict:
+                 classify: Callable[[Image.Image], list[tuple[str, float]]] | None,
+                 at: float | None = None) -> dict:
+        """One frame. `at` is how far into the file it came from, for a video;
+        a camera has no such thing and leaves it out.
+
+        All or nothing. If the model fails part-way through a frame, the frame
+        is undone entirely: counted half-way, it left the view looking already
+        seen, so the same frame sent again after the call was picked back up
+        was passed over as "the same view" and that second was never read."""
+        before = self._checkpoint()
+        try:
+            return self._on_frame(img, jpeg, classify, at)
+        except Exception:
+            self._restore(before)
+            raise
+
+    def _checkpoint(self) -> dict:
+        return {
+            "counts": (self.frames, self.good_frames, self.classified, self.other_crop, self.clear,
+                       self.kept, self.idx, self.confirm_added),
+            "steps": [(st, st.got) for st in self.steps],
+            "sightings": len(self.sightings), "marks": len(self.marks),
+            "evidence": {k: list(v) for k, v in self.evidence.items()},
+            "closeups": list(self.closeups), "thumb": self._last_thumb,
+            "passed": dict(self.passed_over_why),
+        }
+
+    def _restore(self, c: dict) -> None:
+        (self.frames, self.good_frames, self.classified, self.other_crop, self.clear,
+         self.kept, self.idx, self.confirm_added) = c["counts"]
+        self.steps = [st for st, _ in c["steps"]]
+        for st, got in c["steps"]:
+            st.got = got
+        del self.sightings[c["sightings"]:]
+        del self.marks[c["marks"]:]
+        self.evidence, self.closeups = c["evidence"], c["closeups"]
+        self._last_thumb, self.passed_over_why = c["thumb"], c["passed"]
+
+    def _on_frame(self, img: Image.Image, jpeg: bytes,
+                  classify: Callable[[Image.Image], list[tuple[str, float]]] | None,
+                  at: float | None) -> dict:
+        if self.mode == "video" and at is not None and self.marks and self.marks[-1][0] == round(float(at), 1):
+            # The same second again: the frame that was on its way when the
+            # line dropped, re-sent because the phone cannot know it arrived.
+            # It did, and it has been read; reading it twice would count it
+            # twice and mark that second "the same view" on the timeline.
+            return {"quality": None, "counted": False, "advanced": False, "live": None,
+                    "mark": None, "repeat": True, "guide": self.guide()}
         self.frames += 1
         if self.mode == "video":
-            return self._read_frame(img, jpeg, classify)
+            return self._read_frame(img, jpeg, classify, at)
         if self.done:
             return {"quality": None, "counted": False, "advanced": False, "guide": self.guide()}
         step = self.steps[self.idx]
@@ -386,7 +473,8 @@ class LiveSession:
         return out | {"guide": self.guide()}
 
     def _read_frame(self, img: Image.Image, jpeg: bytes,
-                    classify: Callable[[Image.Image], list[tuple[str, float]]] | None) -> dict:
+                    classify: Callable[[Image.Image], list[tuple[str, float]]] | None,
+                    at: float | None = None) -> dict:
         """One frame out of a video the farmer filmed before they got here.
 
         Nothing is asked for and nothing is refused. The video is already shot,
@@ -399,9 +487,10 @@ class LiveSession:
         """
         q = measure(img, VIDEO_KIND, self._last_thumb)
         out: dict = {"quality": q.__dict__ | {"hint_text": None}, "counted": False,
-                     "advanced": False, "live": None}
+                     "advanced": False, "live": None, "mark": "x"}
         if not q.ok:
             self._passed_over(q.hint or "unclear")
+            self._mark(at, "x")
             return out | {"guide": self.guide()}
         self.clear += 1
         self._last_thumb = _thumb(img)
@@ -422,15 +511,72 @@ class LiveSession:
                 self.good_frames -= 1
                 self.closeups = [c for c in self.closeups if c[1] is not jpeg]
                 self._passed_over("not_crop")
+                self._mark(at, "x")
                 return out | {"guide": self.guide()}
             self.classified += 1
-            out["live"] = self._record(preds, jpeg)
+            out["live"] = self._record(preds, jpeg, at)
+            top, conf = preds[0]
+            out["mark"] = ("o" if crop_of(top) != self.crop else "h" if is_healthy(top)
+                           else "p" if conf >= FLOOR else "h")
+        else:
+            out["mark"] = "c"
         self.kept += 1
         out["counted"] = True
+        self._mark(at, out["mark"])
         return out | {"guide": self.guide()}
 
     def _passed_over(self, why: str) -> None:
         self.passed_over_why[why] = self.passed_over_why.get(why, 0) + 1
+
+    def _mark(self, at: float | None, code: str) -> None:
+        if at is not None and len(self.marks) < MAX_MARKS:
+            self.marks.append((round(float(at), 1), code))
+
+    def other_crop_seen(self) -> dict | None:
+        """The crop the footage mostly showed, when it was not this field's.
+
+        A farmer with two fields who picks the wrong one, or whose field is
+        still registered under last season's crop, films perfectly good maize
+        against a rice field. Every reading is then thrown away as "another
+        crop" — correctly — and what they were told was that the camera could
+        not see their plants, which is false and sends them out to film the
+        same maize again. This needs most of the readable views to agree on
+        one other crop, so a single misread leaf never raises it.
+        """
+        if self.other_crop < MIN_OTHER_CROP_VIEWS or self.other_crop * 2 <= self.classified:
+            return None
+        # And only when this field's own crop gave no answer. Footage that pans
+        # over the neighbour's maize on its way to a rice disease is a rice
+        # finding, and so is enough sure looks at healthy rice: telling that
+        # farmer to pick another field, over a result about this one, is a
+        # contradiction on one screen.
+        own = [s for s in self.sightings if crop_of(s.target) == self.crop]
+        if any(not is_healthy(s.target) and s.conf >= FLOOR for s in own):
+            return None
+        if sum(is_healthy(s.target) and s.conf >= gate_for(s.target) for s in own) >= 2:
+            return None
+        tally: dict[str, int] = {}
+        for s in self.sightings:
+            c = crop_of(s.target)
+            if c and c != self.crop:
+                tally[c] = tally.get(c, 0) + 1
+        if not tally:
+            return None
+        crop, views = max(tally.items(), key=lambda kv: kv[1])
+        return {"crop": crop, "views": views} if views * 2 > self.classified else None
+
+    def reading(self) -> dict:
+        """How the looking itself went — kept with the result, because a
+        verdict means something different on top of forty clear close-ups than
+        on top of two, and the difference should still be readable next year.
+
+        A video says how much of it could be read and where; a walk says which
+        views were never shown."""
+        if self.mode != "video":
+            return {"mode": "walk", "skipped": list(self.skipped), "other_crop": self.other_crop_seen()}
+        return {"mode": "video", "read": self.frames, "clear": self.clear, "kept": self.kept,
+                "why_thin": self.why_thin(), "passed_over": dict(self.passed_over_why),
+                "marks": [list(m) for m in self.marks], "other_crop": self.other_crop_seen()}
 
     def why_thin(self) -> str | None:
         """The one thing most worth telling a farmer whose video gave little.
@@ -441,6 +587,10 @@ class LiveSession:
         dark" about footage that was never going to be read would send the
         farmer out to refilm the same unusable thing.
         """
+        if self.other_crop_seen():
+            # Read perfectly well — as something this field is not growing. No
+            # amount of refilming the same plants changes that.
+            return "other_crop"
         if self.kept >= MIN_VIDEO_VIEWS or not self.passed_over_why:
             return None
         if self.passed_over_why.get("not_crop"):
@@ -496,8 +646,11 @@ class LiveSession:
                 a, b = cue["pair"]
                 settled = cue["yes_means"] if self.answer[1] == "yes" else (b if cue["yes_means"] == a else a)
         by_target: dict[str, list[float]] = {}
+        moments: dict[str, list[float]] = {}
         for s in self.sightings:
             by_target.setdefault(s.target, []).append(s.conf)
+            if s.at is not None and s.conf >= FLOOR:
+                moments.setdefault(s.target, []).append(round(s.at, 1))
         # Strong disease readings across the whole walk. A problem read strongly in
         # only a sliver of them — two frames among fifteen that agree on something
         # else — is more likely a misread than a second disease: it goes to an
@@ -513,6 +666,10 @@ class LiveSession:
             item = {"target": t, "views": len(confs), "strong_views": len(strong),
                     "share_of_strong": round(share, 2),
                     "confidence": round(median(strong) if strong else max(confs), 3)}
+            if moments.get(t):
+                # Where in the video it was seen: the farmer can go back to the
+                # second and look at the leaf the reading is about.
+                item["moments"] = sorted(moments[t])[:12]
             if tier == "diagnosable" and ((len(strong) >= 2 and share >= MIN_SHARE_OF_STRONG)
                                           or (settled == t and max(confs) >= FLOOR)):
                 seen.append(item | {"settled_by_answer": settled == t and len(strong) < 2})
@@ -550,6 +707,7 @@ class LiveSession:
             # Which views were never shown. A thin walk should read back as a
             # thin walk years later, not as a field that looked fine.
             "skipped_views": list(self.skipped),
+            "reading": self.reading(),
         }
 
     def evidence_for(self, target: str) -> list[bytes]:
@@ -558,12 +716,93 @@ class LiveSession:
     def hint_text(self, key: str | None) -> str | None:
         return tr(HINTS[key], self.lang) if key else None
 
+    # --- held between containers ----------------------------------------------
+    def to_state(self) -> dict:
+        """Everything the walk is, as plain JSON-ready data.
+
+        A dropped call may be picked back up by a different server than the one
+        it fell off, so the walk has to travel as data. Written out field by
+        field, not pickled: a pickle is a program, and anyone who could write to
+        the shared store would get to run it inside the API. Frames go as
+        base64, the last view's thumbnail as numbers. The one thing that does
+        not travel is `target_name` — a function, rebuilt by whoever reads this
+        back (app.live.restore_session), in the walk's own language.
+
+        Exact, not approximate: the walk picked up must answer the next frame
+        precisely as the one that dropped would have. Floats survive JSON
+        unchanged, and the thumbnail's float32 values are exact as doubles."""
+        return {
+            "v": STATE_VERSION,
+            "crop": self.crop, "lang": self.lang, "can_classify": self.can_classify, "mode": self.mode,
+            "steps": [{"id": s.id, "kind": s.kind, "need": s.need, "got": s.got, "name": s.name}
+                      for s in self.steps],
+            "idx": self.idx, "frames": self.frames, "good_frames": self.good_frames,
+            "classified": self.classified, "other_crop": self.other_crop,
+            "confirm_added": self.confirm_added, "asked": self.asked,
+            "answer": list(self.answer) if self.answer else None,
+            "sightings": [[s.target, float(s.conf), s.frame, None if s.at is None else float(s.at)]
+                          for s in self.sightings],
+            "evidence": {t: [[float(c), _b64(j)] for c, j in ev] for t, ev in self.evidence.items()},
+            "closeups": [[float(sharp), _b64(j)] for sharp, j in self.closeups],
+            "skipped": list(self.skipped), "ended": self.ended, "kept": self.kept, "clear": self.clear,
+            "passed_over_why": dict(self.passed_over_why),
+            "marks": [[float(at), code] for at, code in self.marks],
+            "saved": self.saved,
+            "last_thumb": None if self._last_thumb is None else self._last_thumb.tolist(),
+        }
+
+    @classmethod
+    def from_state(cls, st: dict, target_name: Callable[[str], str] | None = None) -> LiveSession:
+        """The walk to_state() wrote, back as a session. Raises ValueError on
+        anything it does not recognise — another version, a missing field, a
+        step that does not exist — so a held call that cannot be read is
+        refused at the door instead of failing on the farmer's next frame."""
+        if not isinstance(st, dict) or st.get("v") != STATE_VERSION:
+            raise ValueError(f"held call state version {st.get('v') if isinstance(st, dict) else None!r}"
+                             f" is not {STATE_VERSION}")
+        try:
+            steps = [Step(str(s["id"]), str(s["kind"]), int(s["need"]), int(s["got"]),
+                          None if s.get("name") is None else str(s["name"])) for s in st["steps"]]
+            mode = str(st["mode"])
+            if not steps or mode not in ("walk", "video") or any(
+                    s.id not in TEXT or s.kind not in KINDS for s in steps):
+                raise ValueError("a held call names a step or a mode that does not exist")
+            thumb = st.get("last_thumb")
+            if thumb is not None:
+                thumb = np.asarray(thumb, dtype=np.float32)
+                if thumb.shape != (THUMB_SIDE, THUMB_SIDE):
+                    raise ValueError(f"a held call's last view is {thumb.shape}, not a thumbnail")
+            answer = st.get("answer")
+            sess = cls(
+                crop=str(st["crop"]), lang=str(st["lang"]), can_classify=bool(st["can_classify"]),
+                steps=steps, idx=int(st["idx"]), frames=int(st["frames"]),
+                good_frames=int(st["good_frames"]), classified=int(st["classified"]),
+                sightings=[Sighting(str(t), float(c), int(f), None if at is None else float(at))
+                           for t, c, f, at in st["sightings"]],
+                evidence={str(t): [(float(c), _unb64(j)) for c, j in ev] for t, ev in st["evidence"].items()},
+                closeups=[(float(sharp), _unb64(j)) for sharp, j in st["closeups"]],
+                other_crop=int(st["other_crop"]), confirm_added=bool(st["confirm_added"]),
+                asked=None if st.get("asked") is None else str(st["asked"]),
+                answer=None if answer is None else (str(answer[0]), str(answer[1])),
+                mode=mode, skipped=[str(x) for x in st["skipped"]], ended=bool(st["ended"]),
+                kept=int(st["kept"]), clear=int(st["clear"]),
+                passed_over_why={str(k): int(v) for k, v in st["passed_over_why"].items()},
+                marks=[(float(at), str(code)) for at, code in st["marks"]],
+                saved=None if st.get("saved") is None else int(st["saved"]),
+            )
+        except (KeyError, IndexError, TypeError, AttributeError) as e:
+            raise ValueError(f"a held call could not be read: {type(e).__name__}: {e}") from e
+        if target_name is not None:
+            sess.target_name = target_name
+        sess._last_thumb = thumb
+        return sess
+
     # --- internals ------------------------------------------------------------
-    def _record(self, preds: list[tuple[str, float]], jpeg: bytes) -> dict:
+    def _record(self, preds: list[tuple[str, float]], jpeg: bytes, at: float | None = None) -> dict:
         top, conf = preds[0]
         if crop_of(top) != self.crop:
             self.other_crop += 1
-        self.sightings.append(Sighting(top, conf, self.frames))
+        self.sightings.append(Sighting(top, conf, self.frames, at))
         if not is_healthy(top) and conf >= FLOOR:
             ev = self.evidence.setdefault(top, [])
             ev.append((conf, jpeg))
@@ -599,7 +838,7 @@ class LiveSession:
 
 
 def _thumb(img: Image.Image) -> np.ndarray:
-    return np.asarray(img.convert("L").resize((24, 24)), dtype=np.float32)
+    return np.asarray(img.convert("L").resize((THUMB_SIDE, THUMB_SIDE)), dtype=np.float32)
 
 
 def sharpness(gray: np.ndarray) -> float:

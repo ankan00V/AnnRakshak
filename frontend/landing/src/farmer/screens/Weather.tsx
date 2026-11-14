@@ -1,547 +1,431 @@
-import { ArrowDown, ArrowUp, CloudFog, CloudRain, CloudSun, Droplets, Eye, Gauge, Minus, Navigation, Satellite, Snowflake, SprayCan, Sprout, Sun, Thermometer, Wind, Zap } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import {
+  Check, ChevronDown, CloudFog, CloudRain, CloudSun, Droplets, ListChecks, MapPin,
+  Satellite, ShieldCheck, Snowflake, SprayCan, Sprout, Sun, Sunrise, Sunset, Wind, Zap,
+} from 'lucide-react'
 import { api } from '../../api/client'
 import type { Lang, WeatherAdvisory, WeatherDay, WeatherHour, WeatherView } from '../../api/types'
-import { useAsync, useWide } from '../../lib/hooks'
-import { Card, ErrorBox, ListenButton, Pill, SectionTitle } from '../../ui/kit'
+import { useAsync } from '../../lib/hooks'
+import { ErrorBox, ListenButton } from '../../ui/kit'
 import { WeatherSkeleton } from '../components/Skeletons'
 import LastKnown from '../components/LastKnown'
 import { bcp47 } from '../../lib/i18n'
 import { useFarmer } from '../FarmerContext'
-import { MAIN, SIDE, SPLIT } from '../layout'
+import { PanelHead, PestPhoto, PhotoCurve, SkyIcon, hideBroken } from '../ui'
+import { PANEL, RISK, wmoKey } from '../tokens'
+import SprayTimes from '../components/SprayTimes'
 
 type T = ReturnType<typeof useFarmer>['t']
 
-export const SEV_STYLE = {
-  warning: 'border-ember/40 bg-ember/5',
-  advice: 'border-ochre/40 bg-ochre/5',
-  info: 'border-leaf/30 bg-leaf/5',
+/** How loud an advisory is: a warning, a piece of advice, or a note. */
+const SEV = {
+  warning: { box: 'bg-[#fdf0ed]', icon: 'bg-[#f9dcd5] text-[#9a2f17]', title: 'text-[#9a2f17]' },
+  advice: { box: 'bg-[#fbf0dc]', icon: 'bg-[#f6e2bb] text-[#8a5a17]', title: 'text-[#7a4f12]' },
+  info: { box: 'bg-[#f1f6ec]', icon: 'bg-[#dcebd0] text-[#2f5a24]', title: 'text-[#2f5a24]' },
 } as const
-const SEV_TEXT = { warning: 'text-ember', advice: 'text-[#8a5a17]', info: 'text-leaf-deep' } as const
 const CAT_ICON = {
   safety: Zap, rain: CloudRain, wind: Wind, cold: Snowflake, heat: Sun, spray: SprayCan, disease: Sprout,
   irrigation: Droplets, fog: CloudFog,
 } as const
-const SPRAY_COLOR = { good: 'bg-leaf', caution: 'bg-ochre', avoid: 'bg-ember/80' } as const
-const UV_COLOR = {
-  low: 'bg-leaf/15 text-leaf-deep', moderate: 'bg-lime-100 text-lime-800', high: 'bg-ochre/20 text-[#8a5a17]',
-  very_high: 'bg-ember/15 text-ember', extreme: 'bg-purple-100 text-purple-800',
-} as const
-
-export function wmoKey(code: number | null): string {
-  if (code == null) return 'wmo_partly'
-  if (code === 0) return 'wmo_clear'
-  if (code <= 2) return 'wmo_partly'
-  if (code === 3) return 'wmo_overcast'
-  if (code === 45 || code === 48) return 'wmo_fog'
-  if (code >= 51 && code <= 57) return 'wmo_drizzle'
-  if (code >= 61 && code <= 67) return 'wmo_rain'
-  if (code >= 71 && code <= 77) return 'wmo_snow'
-  if (code >= 80 && code <= 86) return 'wmo_showers'
-  if (code >= 95) return 'wmo_thunder'
-  return 'wmo_partly'
-}
 
 function compass(deg: number | null, t: T): string {
   if (deg == null) return ''
   return t('compass').split('|')[Math.round(deg / 45) % 8]
 }
 
-const locale = (lang: Lang) => bcp47(lang)
-
+/** "Today", "Tomorrow", then "Sat 15", in the farmer's language. */
 function dayLabel(on: string, lang: Lang): string {
   const d = new Date(on + 'T00:00:00')
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const diff = Math.round((d.getTime() - today.getTime()) / 864e5)
   if (diff === 0 || diff === 1) {
-    const s = new Intl.RelativeTimeFormat(locale(lang), { numeric: 'auto' }).format(diff, 'day')
+    const s = new Intl.RelativeTimeFormat(bcp47(lang), { numeric: 'auto' }).format(diff, 'day')
     return s.charAt(0).toUpperCase() + s.slice(1)
   }
-  return d.toLocaleDateString(locale(lang), { weekday: 'short', day: 'numeric' })
+  return d.toLocaleDateString(bcp47(lang), { weekday: 'short', day: 'numeric' })
 }
 
 const hhmm = (iso: string) => iso.slice(11, 16)
+const deg = (v: number | null) => (v != null ? `${Math.round(v)}°` : '–')
 
 export default function Weather() {
-  const { farmId, lang, t } = useFarmer()  // lang also feeds dates and the KCC month name
+  const { farmId, lang, t } = useFarmer()
   const w = useAsync(() => api.weather(farmId!, lang), [farmId, lang], ['weather', farmId!, lang].join(':'))
-  const wide = useWide()
   if (w.loading && !w.data) return <WeatherSkeleton />
   // A forecast kept on this phone still tells a farmer what the week looked
-  // like when it was fetched, and `fetched_at` below dates it. The error takes
-  // the screen only when there is nothing kept.
-  if (w.error && !w.data) return <ErrorBox error={w.error} onRetry={w.reload} retryLabel={t('retry')} />
+  // like when it was fetched, and `fetched_at` dates it. The error takes the
+  // screen only when there is nothing kept.
+  if (w.error && !w.data) return <ErrorBox offlineLabel={t('offline')} error={w.error} onRetry={w.reload} retryLabel={t('retry')} />
   const v = w.data!
-  const speech = v.advisories.filter((a) => a.rule !== 'spray_window').slice(0, 3).map((a) => `${a.title}. ${a.text}`).join(' ')
-
-  const header = (
-    <>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="font-instrument-serif text-3xl leading-tight">{t('weatherTitle')}</h1>
-            <p className="text-xs text-soil-dark/50 mt-0.5">
-              {v.location.district} · {v.crop.name} · {v.crop.stage_name} · {t('updatedAt').replace('{t}', hhmm(v.fetched_at))}
-            </p>
-          </div>
-          {speech && <ListenButton text={speech} lang={lang} label={t('listen')} stopLabel={t('stop')} compact />}
-        </div>
-        {v.stale && <p className="text-xs rounded-xl bg-ochre/10 text-[#8a5a17] p-2.5">{t('staleData')}</p>}
-        {/* `stale` above is the server saying its own weather copy is old. This
-            is the phone saying it never reached the server at all. */}
-        {w.error && <LastKnown at={w.savedAt} onRetry={w.reload} />}
-    </>
-  )
-  const todo = (
-        <section className="space-y-2">
-          <SectionTitle>{t('weatherToDo')}</SectionTitle>
-          <Advisories items={v.advisories.filter((a) => a.rule !== 'spray_window')} />
-          {v.watch_for.length > 0 && (
-            <div className="rounded-2xl bg-white border border-soil-dark/10 p-3">
-              <p className="text-xs text-soil-dark/60">{t('watchFor').replace('{crop}', v.crop.name)}</p>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {v.watch_for.map((r) => (
-                  <Pill key={r.target} tone={r.level === 'high' ? 'ember' : r.level === 'medium' ? 'ochre' : 'neutral'}>
-                    {r.name} · {t(`level_${r.level}`)}
-                  </Pill>
-                ))}
-              </div>
-            </div>
-          )}
-          {v.seasonal.length > 0 && (
-            <div className="rounded-2xl bg-sky-50 border border-sky-100 p-3">
-              <p className="text-xs text-sky-900">
-                {t('kccSeasonal').replace('{month}', new Date().toLocaleDateString(bcp47(lang), { month: 'long' })).replace('{district}', v.location.district)}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {v.seasonal.map((s) => (
-                  <span key={s.group} className="rounded-full bg-white border border-sky-200 px-2.5 py-1 text-[11px] text-sky-900">
-                    {s.name}{s.district_calls_this_month > 0 && <span className="text-sky-700/70"> · {s.district_calls_this_month}</span>}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </section>
-  )
-  // Desktop: conditions and the forecast on the left; what to do, the spraying
-  // window and the satellite view beside them (the shared 8 | 4 grid).
-  if (wide) {
-    return (
-      <div className="space-y-6">
-        {header}
-        <div className={SPLIT}>
-          <div className={`${MAIN} space-y-6`}>
-            <NowCard v={v} />
-            <SatRainCard v={v} />
-            <HourlyChart hours={v.hourly.slice(0, 24)} />
-            <DailyList days={v.daily} />
-            <SoilWater v={v} />
-          </div>
-          <aside className={`${SIDE} space-y-6`}>
-            {todo}
-            <SprayCard v={v} />
-            <SatelliteCard />
-          </aside>
-        </div>
-      </div>
-    )
-  }
+  const advice = v.advisories.filter((a) => a.rule !== 'spray_window')
 
   return (
     <div className="space-y-6">
-      {header}
-
-      <NowCard v={v} />
-      <SatRainCard v={v} />
-
-      {todo}
-
-      <SprayCard v={v} />
-      <HourlyChart hours={v.hourly.slice(0, 24)} />
-      <DailyList days={v.daily} />
-      <SoilWater v={v} />
-      <SatelliteCard />
-
+      {v.stale && <p className="rounded-2xl bg-[#fbf0dc] p-3.5 text-[14px] text-[#7a4f12]">{t('staleData')}</p>}
+      {/* `stale` is the server saying its own copy is old; this is the phone
+          saying it never reached the server at all. */}
+      {w.error && <LastKnown at={w.savedAt} onRetry={w.reload} />}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="min-w-0 space-y-6">
+          <NowPanel v={v} />
+          <ToDoPanel v={v} items={advice} />
+          <div className="lg:hidden"><SprayTimes v={v} /></div>
+          <HoursPanel hours={v.hourly.slice(0, 24)} />
+          <DaysPanel days={v.daily} />
+        </div>
+        <aside className="min-w-0 space-y-6">
+          <div className="hidden lg:block"><SprayTimes v={v} /></div>
+          <WaterPanel v={v} />
+          <SatellitePanel />
+        </aside>
+      </div>
     </div>
   )
 }
 
-/** Rain measured over the field by satellite. Shown only when there are
- *  images: never a placeholder number. Which satellite, and when it last
- *  passed, is not something a farmer can do anything with — the millimetres
- *  are. */
-function SatRainCard({ v }: { v: WeatherView }) {
-  const { t } = useFarmer()
-  const s = v.sat_rain
-  if (!s) return null
+/** The sky over the field right now, over a photograph of open country. */
+function NowPanel({ v }: { v: WeatherView }) {
+  const { t, lang } = useFarmer()
+  const c = v.current
+  const today = v.daily[0]
+  const night = c.is_day === 0
+  const speech = v.advisories.filter((a) => a.rule !== 'spray_window').slice(0, 3)
+    .map((a) => `${a.title}. ${a.text}`).join(' ')
+  const stat = (Icon: typeof Droplets, value: string, label: string) => (
+    <div className="flex flex-col items-center gap-0.5 px-2 py-1 text-center">
+      <Icon className="h-5 w-5 text-sky-700" aria-hidden />
+      <span className="whitespace-nowrap text-[17px] font-semibold tabular-nums">{value}</span>
+      <span className="text-[13px] leading-tight text-soil-dark/75">{label}</span>
+    </div>
+  )
   return (
-    <section className="rounded-2xl bg-sky-50 border border-sky-100 p-4 flex items-center gap-4">
-      <span className="shrink-0 w-11 h-11 rounded-full bg-white border border-sky-200 flex items-center justify-center">
-        <Satellite className="w-5 h-5 text-sky-700" />
-      </span>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs text-sky-900/70">{t('satRainTitle')}</p>
-        <p className="text-xl font-semibold text-sky-950 leading-tight">{s.mm} mm</p>
+    <section className={`${PANEL} p-2`}>
+      <div className="relative h-[250px] overflow-hidden rounded-[22px] bg-leaf-deep lg:h-[270px]">
+        <img onError={hideBroken} src={night ? '/photos/sunset.webp' : '/photos/landscape.webp'} alt="" width={934} height={442}
+          className="absolute inset-0 h-full w-full object-cover object-[center_40%]" />
+        <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-transparent" />
+        <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/25" />
+        <div className="relative flex h-full flex-col justify-between p-5 text-white lg:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 drop-shadow">
+              <p className="flex min-w-0 items-center gap-1.5 text-[15px] font-semibold">
+                <MapPin className="h-4 w-4 shrink-0" aria-hidden />
+                <span className="truncate">{v.location.district}</span>
+              </p>
+              <p className="mt-0.5 pl-[22px] text-[13px] opacity-90">{t('updatedAt').replace('{t}', hhmm(v.fetched_at))}</p>
+            </div>
+            {speech && <ListenButton text={speech} lang={lang} label={t('listen')} stopLabel={t('stop')} tone="light" />}
+          </div>
+          <div className="flex items-end justify-between gap-4 pb-3">
+            <div className="flex items-end gap-3">
+              <p className="text-[64px] font-semibold leading-[0.85] tabular-nums drop-shadow-sm lg:text-[76px]">
+                {c.temp != null ? Math.round(c.temp) : '–'}<span className="align-top text-[28px]">°C</span>
+              </p>
+              <div className="pb-1">
+                <p className="font-instrument-serif text-[28px] leading-none drop-shadow-sm lg:text-[32px]">{t(wmoKey(c.code))}</p>
+                {c.feels != null && <p className="mt-1 text-[15px] drop-shadow">{t('feelsLike').replace('{v}', String(Math.round(c.feels)))}</p>}
+              </div>
+            </div>
+            {today && (
+              <div className="hidden text-right text-[14px] leading-relaxed drop-shadow sm:block">
+                <p>{t('wxDayNight').replace('{hi}', deg(today.tmax)).replace('{lo}', deg(today.tmin))}</p>
+                {today.sunrise && today.sunset && (
+                  <p className="flex items-center justify-end gap-3">
+                    <span className="flex items-center gap-1"><Sunrise className="h-4 w-4" aria-hidden />{hhmm(today.sunrise)}</span>
+                    <span className="flex items-center gap-1"><Sunset className="h-4 w-4" aria-hidden />{hhmm(today.sunset)}</span>
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        <PhotoCurve />
+      </div>
+      <div className="grid grid-cols-2 gap-y-2 divide-soil-dark/10 px-2 pb-3 pt-1 sm:grid-cols-4 sm:divide-x">
+        {stat(Droplets, `${c.rh ?? '–'}%`, t('humidity'))}
+        {stat(CloudRain, `${c.prob_3h ?? '–'}%`, t('wxRainNext'))}
+        {stat(Wind, `${c.wind ?? '–'} km/h`, [t('wWind'), compass(c.wdir, t)].filter(Boolean).join(' · '))}
+        {stat(CloudSun, `${today?.rain ?? 0} mm`, t('wxRainToday'))}
       </div>
     </section>
   )
 }
 
-function NowCard({ v }: { v: WeatherView }) {
+/** One piece of weather advice: what is happening, and what to do about it.
+ *  Also the notices list's card, so a notice looks the same wherever it is. */
+function AdviceCard({ a, compact = false }: { a: WeatherAdvisory; compact?: boolean }) {
   const { t } = useFarmer()
-  const c = v.current
-  const trend = c.pressure_trend_24h
-  const TrendIcon = trend == null || Math.abs(trend) < 1 ? Minus : trend > 0 ? ArrowUp : ArrowDown
-  const trendKey = trend == null || Math.abs(trend) < 1 ? 'pressure_steady' : trend > 0 ? 'pressure_up' : 'pressure_down'
-  const tiles: [typeof Droplets, string, string, string?][] = [
-    [Droplets, t('humidity'), `${c.rh ?? '–'}%`],
-    [CloudRain, t('rainChance'), `${c.prob_3h ?? '–'}%`, t('next3h')],
-    [CloudRain, t('rainNow'), `${c.precip ?? 0} mm`],
-    [Wind, t('windLabel'), `${c.wind ?? '–'} km/h`, compass(c.wdir, t)],
-    [Wind, t('gustsLabel'), `${c.gust ?? '–'} km/h`],
-    [Sun, t('uvLabel'), `${c.uv ?? '–'}`, c.uv_band ? t(`uv_${c.uv_band}`) : undefined],
-    [CloudSun, t('cloudLabel'), `${c.cloud ?? '–'}%`],
-    [Eye, t('visibilityLabel'), c.vis != null ? `${(c.vis / 1000).toFixed(c.vis < 10000 ? 1 : 0)} km` : '–'],
-    [Gauge, t('pressureLabel'), `${c.pressure ?? '–'} hPa`, t(trendKey)],
-  ]
+  const s = SEV[a.severity]
+  const Icon = CAT_ICON[a.category] ?? CloudSun
   return (
-    <section className="rounded-3xl bg-gradient-to-br from-leaf-deep to-soil-dark text-cream p-5 shadow-lg shadow-leaf-deep/20">
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <p className="text-6xl font-semibold leading-none tracking-tight">{c.temp != null ? Math.round(c.temp) : '–'}°</p>
-          <p className="mt-2 text-sm text-cream/80">{t(wmoKey(c.code))} · {t('feelsLike').replace('{v}', String(c.feels != null ? Math.round(c.feels) : '–'))}</p>
-          <p className="text-[11px] text-cream/55 mt-0.5 flex items-center gap-1">
-            <Thermometer className="w-3 h-3" /> {t('dewLabel')} {c.dew ?? '–'}°
-            {c.station ? ` · ${c.station}` : ''}
-          </p>
-        </div>
-        {c.wdir != null && (
-          <div className="text-center">
-            <Navigation className="w-8 h-8 text-ochre mx-auto" style={{ transform: `rotate(${(c.wdir + 180) % 360}deg)` }} />
-            <p className="text-[11px] text-cream/70 mt-1">{compass(c.wdir, t)} · {c.wind} km/h</p>
-          </div>
-        )}
+    <article className={`rounded-[20px] p-4 ${s.box}`}>
+      <div className="flex items-center gap-3">
+        <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${s.icon}`}>
+          <Icon className="h-6 w-6" aria-hidden />
+        </span>
+        <h3 className={`min-w-0 flex-1 text-[17px] font-semibold leading-snug ${s.title}`}>{a.title}</h3>
       </div>
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        {tiles.map(([Icon, label, value, sub], i) => (
-          <div key={i} className="rounded-2xl bg-cream/10 px-2.5 py-2">
-            <p className="flex items-center gap-1 text-[10px] text-cream/60"><Icon className="w-3 h-3" />{label}</p>
-            <p className="text-sm font-semibold mt-0.5">{value}</p>
-            {sub && (
-              <p className={`text-[10px] mt-0.5 ${label === t('uvLabel') && c.uv_band ? `inline-block rounded px-1 ${UV_COLOR[c.uv_band]}` : 'text-cream/60'}`}>
-                {label === t('pressureLabel') && <TrendIcon className="inline w-3 h-3 -mt-0.5 mr-0.5" />}{sub}
-              </p>
-            )}
-          </div>
-        ))}
-      </div>
-    </section>
+      {/* Full width on a phone, where the icon's column would squeeze it. */}
+      <p className="mt-2 text-[15px] leading-snug text-soil-dark/85 text-pretty sm:mt-0 sm:pl-14">{a.text}</p>
+      {!compact && a.do.length > 0 && (
+        <ul className="mt-3 space-y-2 sm:pl-14">
+          {a.do.map((d) => (
+            <li key={d} className="flex items-start gap-2.5 text-[15px] leading-snug">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white text-[#4b8b3b]">
+                <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
+              </span>
+              {d}
+            </li>
+          ))}
+        </ul>
+      )}
+      {/* Where the advice comes from matters to an officer checking it, not to
+          a farmer acting on it: there when asked for, out of the way when not. */}
+      {!compact && a.source && (
+        <details className="group mt-3 sm:pl-14">
+          <summary className="flex cursor-pointer list-none items-center gap-1 text-[13px] font-medium text-soil-dark/70 [&::-webkit-details-marker]:hidden">
+            {t('wxWhy')} <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden />
+          </summary>
+          <p className="mt-1.5 text-[13px] leading-snug text-soil-dark/70">{a.source}</p>
+        </details>
+      )}
+    </article>
   )
 }
 
 export function Advisories({ items, compact = false }: { items: WeatherAdvisory[]; compact?: boolean }) {
   const { t } = useFarmer()
   if (items.length === 0) {
-    return <Card className="p-4 text-sm text-leaf-deep">✓ {t('allClear')}</Card>
+    return (
+      <p className="flex items-center gap-3 rounded-[20px] bg-[#f1f6ec] p-4 text-[15px] text-soil-dark/85">
+        <ShieldCheck className="h-6 w-6 shrink-0 text-[#4b8b3b]" aria-hidden /> {t('allClear')}
+      </p>
+    )
   }
-  return (
-    <div className="space-y-2">
-      {items.map((a) => {
-        const Icon = CAT_ICON[a.category] ?? CloudSun
-        return (
-          <article key={a.id} className={`rounded-2xl border p-3.5 ${SEV_STYLE[a.severity]}`}>
-            <p className={`flex items-start gap-2 font-semibold text-[15px] leading-snug ${SEV_TEXT[a.severity]}`}>
-              <Icon className="w-5 h-5 shrink-0 mt-0.5" /> {a.title}
-            </p>
-            <p className="mt-1.5 text-sm leading-snug text-soil-dark/80">{a.text}</p>
-            {!compact && (
-              <>
-                <ul className="mt-2 space-y-1">
-                  {a.do.map((d) => <li key={d} className="text-sm leading-snug">• {d}</li>)}
-                </ul>
-                <p className="mt-2 text-[10.5px] text-soil-dark/45">{a.source}</p>
-              </>
-            )}
-          </article>
-        )
-      })}
-    </div>
-  )
+  return <div className="space-y-3">{items.map((a) => <AdviceCard key={a.id} a={a} compact={compact} />)}</div>
 }
 
-function SprayCard({ v }: { v: WeatherView }) {
+/** What the week's weather means for this crop, and the pests it favours. */
+function ToDoPanel({ v, items }: { v: WeatherView; items: WeatherAdvisory[] }) {
   const { t, lang } = useFarmer()
-  const hours = v.hourly.slice(0, 24)
-  const now = v.spray.now
-  const best = v.spray.windows[0]
   return (
-    <section>
-      <SectionTitle sub={t('sprayLegend')}>
-        <span className="flex items-center gap-2"><SprayCan className="w-5 h-5 text-leaf" />{t('sprayWindowTitle')}</span>
-      </SectionTitle>
-      <Card className="p-4">
-        {now && (
-          <p className={`text-sm font-semibold ${now.status === 'good' ? 'text-leaf-deep' : now.status === 'caution' ? 'text-[#8a5a17]' : 'text-ember'}`}>
-            {t(`spray_${now.status}`)}
-            {v.spray.reasons_text && <span className="block text-xs font-normal text-soil-dark/60 mt-0.5">{v.spray.reasons_text}</span>}
+    <section className={`${PANEL} p-5 lg:p-6`}>
+      <PanelHead icon={ListChecks} title={t('weatherToDo')} sub={t('wxToDoSub').replace('{crop}', v.crop.name)} />
+      <div className="mt-4"><Advisories items={items} /></div>
+      {v.watch_for.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-[17px] font-semibold">{t('watchFor').replace('{crop}', v.crop.name)}</h3>
+          <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+            {v.watch_for.map((r) => {
+              const k = RISK[r.level]
+              return (
+                <li key={r.target} className={`flex items-center gap-3 rounded-[20px] p-2.5 ring-1 ring-soil-dark/[0.05] ${k.row}`}>
+                  <PestPhoto target={r.target} className="h-14 w-14" />
+                  <span className="min-w-0">
+                    <span className="block text-[16px] font-semibold leading-snug">{r.name}</span>
+                    <span className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-[13px] font-medium ${k.pill}`}>{t(k.key)}</span>
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
+      {v.seasonal.length > 0 && (
+        <div className="mt-6 rounded-[20px] bg-[#f5f7f1] p-4">
+          <p className="text-[15px] text-soil-dark/85">
+            {t('kccSeasonal').replace('{month}', new Date().toLocaleDateString(bcp47(lang), { month: 'long' })).replace('{district}', v.location.district)}
           </p>
-        )}
-        <div className="mt-3 flex gap-[3px]" aria-hidden>
-          {hours.map((h) => (
-            <span key={h.t} className={`flex-1 h-7 rounded-[4px] ${SPRAY_COLOR[h.spray]} ${h.is_day ? '' : 'opacity-40'}`} title={`${hhmm(h.t)} ${h.spray}`} />
-          ))}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {v.seasonal.map((s) => (
+              <span key={s.group} className="rounded-full bg-white px-3 py-1 text-[14px] ring-1 ring-soil-dark/10">{s.name}</span>
+            ))}
+          </div>
         </div>
-        <div className="mt-1 flex justify-between text-[10px] text-soil-dark/45">
-          {hours.filter((_, i) => i % 6 === 0).map((h) => <span key={h.t}>{hhmm(h.t)}</span>)}
-        </div>
-        <p className="mt-3 text-sm">
-          {best
-            ? t('sprayBest').replace('{when}', `${dayLabel(best.start.slice(0, 10), lang)} ${hhmm(best.start)}–${hhmm(best.end)}`)
-            : t('sprayNoneShort')}
-        </p>
-        <Link to="/app/spray" className="mt-2 inline-block text-xs font-medium text-leaf-deep">{t('spray')} →</Link>
-      </Card>
+      )}
     </section>
   )
 }
 
-function HourlyChart({ hours }: { hours: WeatherHour[] }) {
+/** The next day in three-hour steps: what a farmer plans a day of work by. */
+function HoursPanel({ hours }: { hours: WeatherHour[] }) {
   const { t } = useFarmer()
-  // A wider drawing on desktop keeps labels at their phone size instead of
-  // scaling the whole chart up with the column.
-  const wide = useWide()
-  if (hours.length < 2) return null
-  const W = wide ? 640 : 336, H = wide ? 150 : 120, top = 16, bottom = 22
-  // Side padding wide enough that an "HH:MM" label centred on the first or
-  // last hour stays inside the drawing.
-  const pad = 18
-  const temps = hours.map((h) => h.temp ?? 0)
-  const lo = Math.min(...temps) - 1, hi = Math.max(...temps) + 1
-  const x = (i: number) => (i / (hours.length - 1)) * (W - 2 * pad) + pad
-  const y = (v: number) => top + (1 - (v - lo) / (hi - lo || 1)) * (H - top - bottom - 20)
-  const line = temps.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')
-  const last = hours.length - 1
-  // Every 4th hour, plus the final hour when it isn't crowding the one before,
-  // so the line never runs off the edge unlabelled.
-  const labelled = (i: number) => i % 4 === 0 || (i === last && last % 4 >= 2)
-  const anyRain = hours.some((h) => (h.prob ?? 0) > 0)
+  const steps = hours.filter((_, i) => i % 3 === 0).slice(0, 8)
+  if (steps.length < 2) return null
   return (
-    <section>
-      <SectionTitle>{t('next24h')}</SectionTitle>
-      <Card className="p-3 overflow-x-auto">
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label={t('next24h')}>
-          <line x1={pad} x2={W - pad} y1={H - bottom} y2={H - bottom} strokeWidth={1} className="stroke-soil-dark/10" />
-          {hours.map((h, i) => {
-            const p = h.prob ?? 0
-            const bh = (p / 100) * 34
-            return <rect key={h.t} x={x(i) - 5} y={H - bottom - bh} width={10} height={bh} rx={2} className="fill-sky-300/70" />
-          })}
-          <path d={line} fill="none" strokeWidth={2.2} strokeLinejoin="round" strokeLinecap="round" className="stroke-ochre" />
-          {hours.map((h, i) => labelled(i) && (
-            <g key={h.t}>
-              <line x1={x(i)} x2={x(i)} y1={y(temps[i]) + 3} y2={H - bottom} strokeWidth={1} strokeDasharray="2 3" className="stroke-soil-dark/10" />
-              <circle cx={x(i)} cy={y(temps[i])} r={2.4} className="fill-ochre" />
-              <text x={x(i)} y={y(temps[i]) - 7} textAnchor="middle" className="fill-soil-dark text-[9px] font-semibold">{Math.round(temps[i])}°</text>
-              <text x={x(i)} y={H - 6} textAnchor="middle" className="fill-soil-dark/50 text-[9px]">{hhmm(h.t)}</text>
-            </g>
-          ))}
-        </svg>
-        <p className="text-[10px] text-soil-dark/50 flex gap-3">
-          <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-ochre inline-block" />{t('temp')}</span>
-          {anyRain && <span className="flex items-center gap-1"><span className="w-2 h-2 bg-sky-300 inline-block rounded-sm" />{t('rainChance')}</span>}
-        </p>
-      </Card>
+    <section className={`${PANEL} p-5 lg:p-6`}>
+      <h2 className="text-[20px] font-semibold tracking-tight sm:text-[22px]">{t('next24h')}</h2>
+      <ol className="no-scrollbar -mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1 sm:grid sm:grid-cols-8 sm:overflow-visible">
+        {steps.map((h, i) => (
+          <li key={h.t} className={`flex w-[72px] shrink-0 flex-col items-center gap-1.5 rounded-2xl py-3 sm:w-auto ${
+            i === 0 ? 'bg-[#e3efd9]' : 'bg-[#f5f7f1]'}`}>
+            <span className={`text-[13px] tabular-nums ${i === 0 ? 'font-semibold text-leaf-deep' : 'text-soil-dark/75'}`}>
+              {i === 0 ? t('wxNow') : hhmm(h.t)}
+            </span>
+            <SkyIcon code={h.code} night={h.is_day === 0} className="h-7 w-7" />
+            <span className="text-[17px] font-semibold tabular-nums">{deg(h.temp)}</span>
+            <span className={`flex items-center gap-0.5 text-[12px] tabular-nums ${(h.prob ?? 0) >= 20 ? 'text-sky-700' : 'text-soil-dark/70'}`}>
+              <Droplets className="h-3 w-3" aria-hidden />{h.prob ?? 0}%
+            </span>
+          </li>
+        ))}
+      </ol>
     </section>
   )
 }
 
-function DailyList({ days }: { days: WeatherDay[] }) {
+/** The week: each day's sky, its warmest and coolest, and whether it rains. */
+function DaysPanel({ days }: { days: WeatherDay[] }) {
   const { t, lang } = useFarmer()
+  if (days.length === 0) return null
   const lo = Math.min(...days.map((d) => d.tmin ?? 99)), hi = Math.max(...days.map((d) => d.tmax ?? -99))
   return (
-    <section>
-      <SectionTitle>{t('next7')}</SectionTitle>
-      <Card className="divide-y divide-soil-dark/5">
+    <section className={`${PANEL} p-5 lg:p-6`}>
+      <h2 className="text-[20px] font-semibold tracking-tight sm:text-[22px]">{t('next7')}</h2>
+      <ul className="mt-3 divide-y divide-soil-dark/[0.07]">
         {days.map((d) => {
           const left = (((d.tmin ?? lo) - lo) / (hi - lo || 1)) * 100
           const width = (((d.tmax ?? hi) - (d.tmin ?? lo)) / (hi - lo || 1)) * 100
+          const wet = (d.rain ?? 0) >= 1 || (d.prob ?? 0) >= 30
           return (
-            <div key={d.on} className="px-3 py-2.5 grid grid-cols-[64px_1fr_auto] items-center gap-3">
-              <div>
-                <p className="text-sm font-medium">{dayLabel(d.on, lang)}</p>
-                <p className="text-[10px] text-soil-dark/50">{t(wmoKey(d.code))}</p>
+            <li key={d.on} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 py-3 sm:grid-cols-[150px_minmax(0,1fr)_200px]">
+              <div className="flex min-w-0 items-center gap-3">
+                <SkyIcon code={d.code} night={false} className="h-8 w-8 shrink-0" />
+                <span className="min-w-0">
+                  <span className="block text-[16px] font-semibold">{dayLabel(d.on, lang)}</span>
+                  <span className="block truncate text-[13px] text-soil-dark/70">{t(wmoKey(d.code))}</span>
+                </span>
               </div>
-              <div>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="w-7 text-right text-soil-dark/60">{d.tmin != null ? Math.round(d.tmin) : '–'}°</span>
-                  <span className="relative flex-1 h-1.5 rounded-full bg-soil-dark/10">
-                    <span className="absolute inset-y-0 rounded-full bg-gradient-to-r from-sky-400 to-ochre" style={{ left: `${left}%`, width: `${Math.max(width, 4)}%` }} />
-                  </span>
-                  <span className="w-7 font-semibold">{d.tmax != null ? Math.round(d.tmax) : '–'}°</span>
-                </div>
-                <p className="mt-1 text-[10.5px] text-soil-dark/55">
-                  <Wind className="inline w-3 h-3 -mt-0.5" /> {d.wind_max ?? '–'}–{d.gust_max ?? '–'} km/h · UV {d.uv_max ?? '–'}
-                  {d.et0 != null && <> · ET₀ {d.et0}</>}
-                </p>
+              <p className={`text-right text-[14px] sm:order-last ${wet ? 'font-medium text-sky-700' : 'text-soil-dark/70'}`}>
+                {wet
+                  ? <span className="inline-flex items-center gap-1"><Droplets className="h-4 w-4" aria-hidden />{d.prob ?? 0}% · {d.rain ?? 0} mm</span>
+                  : t('wxNoRain')}
+              </p>
+              <div className="col-span-2 flex items-center gap-2 text-[14px] tabular-nums sm:col-span-1">
+                <span className="w-9 text-right text-soil-dark/70">{deg(d.tmin)}</span>
+                <span className="relative h-2 flex-1 rounded-full bg-soil-dark/[0.08]">
+                  <span className="absolute inset-y-0 rounded-full bg-gradient-to-r from-sky-400 to-ochre"
+                    style={{ left: `${left}%`, width: `${Math.max(width, 4)}%` }} />
+                </span>
+                <span className="w-9 font-semibold">{deg(d.tmax)}</span>
               </div>
-              <div className="text-right">
-                <p className="text-sm font-semibold text-sky-700">{d.rain ?? 0} mm</p>
-                <p className="text-[10px] text-soil-dark/50">{d.prob ?? 0}%</p>
-              </div>
-            </div>
+            </li>
           )
         })}
-      </Card>
+      </ul>
     </section>
   )
 }
 
-function SoilWater({ v }: { v: WeatherView }) {
+/** Does the crop need water: what it drank this week against what rain gave. */
+function WaterPanel({ v }: { v: WeatherView }) {
   const { t } = useFarmer()
   const w = v.water
-  const s = v.soil
-  if (!s && !w.available) return null
+  const ph = v.soil?.ph
+  const sat = v.sat_rain
+  if (!w.available && !ph && !sat) return null
+  const used = w.etc_week ?? 0
+  const rain = w.eff_rain_week ?? 0
+  const top = Math.max(used, rain, 1)
+  const bar = (label: string, mm: number, cls: string) => (
+    <div>
+      <div className="flex items-baseline justify-between text-[14px]">
+        <span className="text-soil-dark/80">{label}</span>
+        <span className="font-semibold tabular-nums">{Math.round(mm)} mm</span>
+      </div>
+      <div className="mt-1.5 h-3 rounded-full bg-soil-dark/[0.08]">
+        <div className={`h-3 rounded-full ${cls}`} style={{ width: `${Math.max(mm > 0 ? 4 : 0, (mm / top) * 100)}%` }} />
+      </div>
+    </div>
+  )
+  const need = w.verdict === 'irrigate'
   return (
-    <section>
-      <SectionTitle sub={t('modelledNote')}>{t('soilWater')}</SectionTitle>
-      <Card className="p-4 space-y-4">
-        {s?.ph && (
-          <div className="flex items-baseline gap-3 border-b border-soil-dark/10 pb-3">
-            <div>
-              <p className="text-xs text-soil-dark/60">{t('soilPh')}</p>
-              <p className="text-lg font-semibold">
-                {s.ph.value} <span className="text-sm font-normal text-soil-dark/70">{s.ph.band}</span>
-              </p>
-            </div>
-            {/* Where the number came from decides how much a farmer should lean
-                on it: their own sensor, the card they were given, or a map. */}
-            <p className="ml-auto text-right text-[11px] leading-tight text-soil-dark/50">
-              {t(`ph_${s.ph.how}`)}
-            </p>
-          </div>
-        )}
-        {s && (
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-soil-dark/60">{t('soilTemp')}</p>
-              <p className="text-lg font-semibold">{s.temp_surface ?? '–'}°C</p>
-              <p className="text-[11px] text-soil-dark/50">{t('surface')} · 6 cm {s.temp_6cm ?? '–'}°C</p>
-            </div>
-            <div>
-              <p className="text-xs text-soil-dark/60">{t('soilMoisture')}</p>
-              <div className="mt-1 space-y-1">
-                {s.moisture.map((m) => (
-                  <div key={m.depth} className="flex items-center gap-2 text-[11px]">
-                    <span className="w-12 text-soil-dark/55">{m.depth}</span>
-                    <span className="relative flex-1 h-1.5 rounded-full bg-soil-dark/10">
-                      <span className="absolute inset-y-0 left-0 rounded-full bg-sky-500" style={{ width: `${Math.min(100, (m.pct ?? 0) * 2)}%` }} />
-                    </span>
-                    <span className="w-8 text-right font-medium">{m.pct ?? '–'}%</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+    <section className={`${PANEL} p-2`}>
+      <div className="relative h-[110px] overflow-hidden rounded-[22px] bg-leaf-deep">
+        <img onError={hideBroken} src="/photos/field-canal.webp" alt="" width={622} height={468} loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover object-[center_65%]" />
+        <PhotoCurve />
+      </div>
+      <div className="px-3 pb-3 pt-1">
+        <PanelHead icon={Droplets} title={t('wxWaterTitle')} />
         {w.available && (
-          <div className="border-t border-soil-dark/10 pt-3">
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <p><span className="block text-xs text-soil-dark/60">{t('et0Today')}</span><b>{w.et0_today ?? '–'} mm</b></p>
-              <p><span className="block text-xs text-soil-dark/60">{t('cropUseToday')}</span><b>{w.etc_today ?? '–'} mm</b> <span className="text-[10px] text-soil-dark/45">Kc {w.kc}</span></p>
-              <p><span className="block text-xs text-soil-dark/60">{t('weekUsed')}</span><b>{w.etc_week} mm</b></p>
-              <p><span className="block text-xs text-soil-dark/60">{t('weekRain')}</span><b>{w.eff_rain_week} mm</b></p>
+          <>
+            {w.verdict && (
+              <p className={`mt-4 rounded-[20px] p-3.5 text-[16px] font-semibold ${need ? 'bg-[#fbf0dc] text-[#7a4f12]' : 'bg-[#f1f6ec] text-[#2f5a24]'}`}>
+                {t(`wv_${w.verdict}`)}
+              </p>
+            )}
+            <div className="mt-4 space-y-3">
+              {bar(t('weekUsed'), used, 'bg-ochre')}
+              {bar(t('weekRain'), rain, 'bg-sky-500')}
             </div>
-            <p className={`mt-3 text-sm font-semibold ${w.verdict === 'irrigate' ? 'text-ember' : 'text-leaf-deep'}`}>
-              <Droplets className="inline w-4 h-4 -mt-0.5 mr-1" />
-              {t(`wv_${w.verdict}`)}
-              {!!w.deficit && <span className="font-normal text-soil-dark/60"> · {t('shortfall')} {w.deficit} mm</span>}
-            </p>
+            {!!w.deficit && (
+              <p className="mt-3 text-[15px]">
+                {t('shortfall')}: <b className="tabular-nums">{Math.round(w.deficit)} mm</b>
+              </p>
+            )}
+          </>
+        )}
+        {sat && (
+          <p className="mt-4 flex items-center justify-between gap-3 rounded-[20px] bg-sky-50 p-3.5">
+            <span className="flex items-center gap-2 text-[14px] text-sky-950/80">
+              <Satellite className="h-4 w-4 shrink-0" aria-hidden />{t('satRainTitle')}
+            </span>
+            <span className="shrink-0 text-[17px] font-semibold tabular-nums text-sky-900">{sat.mm} mm</span>
+          </p>
+        )}
+        {ph && (
+          <div className="mt-4 flex items-baseline justify-between gap-3 rounded-[20px] bg-[#f5f7f1] p-3.5">
+            <span>
+              <span className="block text-[14px] text-soil-dark/75">{t('soilPh')}</span>
+              <span className="text-[17px] font-semibold tabular-nums">{ph.value}</span>{' '}
+              <span className="text-[15px] text-soil-dark/80">{ph.band}</span>
+            </span>
+            <span className="text-right text-[13px] leading-tight text-soil-dark/75">{t(`ph_${ph.how}`)}</span>
           </div>
         )}
-      </Card>
+        <p className="mt-3 text-[13px] text-soil-dark/75">{t('modelledNote')}</p>
+      </div>
     </section>
   )
 }
 
-/** Compact card for Home: now, the top advice, and the way in. */
-export function WeatherNowCard() {
-  const { farmId, lang, t } = useFarmer()
-  const w = useAsync(() => api.weather(farmId!, lang), [farmId, lang], ['weather', farmId!, lang].join(':'))
-  const v = w.data
-  if (!v) return null
-  const c = v.current
-  const top = v.advisories.find((a) => a.rule !== 'spray_window')
-  return (
-    <Link to="/app/weather" data-tour="weather" className="block rounded-3xl bg-white border border-soil-dark/10 p-4 active:scale-[0.99] transition-transform lg:h-full lg:p-6 lg:flex lg:flex-col lg:hover:border-leaf/40">
-      <div className="flex items-center gap-4">
-        <div className="shrink-0 w-16 text-center lg:w-20">
-          <p className="text-3xl font-semibold leading-none lg:text-5xl">{c.temp != null ? Math.round(c.temp) : '–'}°</p>
-          <p className="text-[10px] text-soil-dark/55 mt-1 lg:text-xs">{t(wmoKey(c.code))}</p>
-        </div>
-        <div className="flex-1 grid grid-cols-3 gap-2 text-center">
-          <p className="text-[10px] text-soil-dark/55"><Droplets className="w-3.5 h-3.5 mx-auto text-sky-600" />{c.rh}%</p>
-          <p className="text-[10px] text-soil-dark/55"><CloudRain className="w-3.5 h-3.5 mx-auto text-sky-600" />{c.prob_3h ?? '–'}%</p>
-          <p className="text-[10px] text-soil-dark/55"><Wind className="w-3.5 h-3.5 mx-auto text-sky-600" />{c.wind} km/h</p>
-        </div>
-      </div>
-      {top && (
-        <p className={`mt-3 rounded-xl border px-3 py-2 text-[13px] font-medium leading-snug ${SEV_STYLE[top.severity]} ${SEV_TEXT[top.severity]}`}>
-          {top.title}
-        </p>
-      )}
-      <p className="mt-2 text-xs font-medium text-leaf-deep lg:mt-auto lg:pt-3 lg:text-sm">{t('fullWeather')} →</p>
-    </Link>
-  )
-}
+const GREEN = {
+  sparse: 'bg-[#f6e6c4] text-[#7a4f12]', low: 'bg-[#eef3d6] text-[#55631a]',
+  moderate: 'bg-[#dcebd0] text-[#2f5a24]', dense: 'bg-[#4b8b3b] text-white',
+} as const
 
-const NDVI_COLOR = { sparse: 'bg-ochre/20 text-[#8a5a17]', low: 'bg-lime-100 text-lime-800', moderate: 'bg-leaf/15 text-leaf-deep', dense: 'bg-leaf text-cream' } as const
-
-/** Greenness from clear Sentinel-2 / Landsat 8 images, and satellite soil data. */
-function SatelliteCard() {
+/** How green the field looked from the satellite, and whether that is falling. */
+function SatellitePanel() {
   const { farmId, lang, t } = useFarmer()
   const s = useAsync(() => api.satellite(farmId!), [farmId], ['satellite', farmId!].join(':'))
-  const d = s.data
-  if (!d || !d.available || !d.latest) return null
+  const d = s.data?.available && s.data.latest ? s.data : null
+  if (!d) return null
   const date = (iso: string) => new Date(iso + 'T00:00:00').toLocaleDateString(bcp47(lang), { day: 'numeric', month: 'short' })
-  const series = d.series ?? []
-  const W = 300, H = 44
+  const series = d?.series ?? []
+  const W = 300, H = 48
   const xs = (i: number) => (series.length > 1 ? (i / (series.length - 1)) * (W - 8) + 4 : W / 2)
-  const ys = (v: number) => H - 4 - v * (H - 8)
+  const ys = (n: number) => H - 4 - n * (H - 8)
   return (
-    <section>
-      <SectionTitle>
-        <span className="flex items-center gap-2"><Satellite className="w-5 h-5 text-leaf" />{t('satTitle')}</span>
-      </SectionTitle>
-      <Card className="p-4 space-y-3">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <p className="text-xs text-soil-dark/60">{t('satNdvi')}</p>
-            <p className="text-3xl font-semibold leading-none mt-1">{d.latest.mean.toFixed(2)}</p>
+    <section className={`${PANEL} p-5`}>
+      <PanelHead icon={Satellite} title={t('satTitle')} />
+      {d.latest && (
+        <div className="mt-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[15px] text-soil-dark/80">{t('wxGreenness')}</span>
+            {d.band && <span className={`rounded-full px-3 py-1 text-[14px] font-semibold ${GREEN[d.band]}`}>{t(`ndvi_${d.band}`)}</span>}
           </div>
-          {d.band && <span className={`rounded-full px-3 py-1 text-xs font-semibold ${NDVI_COLOR[d.band]}`}>{t(`ndvi_${d.band}`)}</span>}
+          {series.length > 1 && (
+            <svg viewBox={`0 0 ${W} ${H}`} className="h-12 w-full" aria-hidden>
+              <path d={series.map((p, i) => `${i ? 'L' : 'M'}${xs(i)},${ys(p.mean)}`).join(' ')} fill="none" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="stroke-[#4b8b3b]" />
+              {series.map((p, i) => <circle key={p.on} cx={xs(i)} cy={ys(p.mean)} r={3} className="fill-[#2f6a39]" />)}
+            </svg>
+          )}
+          <p className="text-[14px] text-soil-dark/75">{t('satLastClear').replace('{date}', date(d.latest.on))}</p>
+          {d.drop && <p className="rounded-[20px] bg-[#fdf0ed] p-3.5 text-[15px] font-medium text-[#9a2f17]">{t('satDrop')}</p>}
+          {(d.age_days ?? 0) > 20 && <p className="rounded-[20px] bg-sky-50 p-3.5 text-[14px] text-sky-950/80">{t('satCloudy')}</p>}
         </div>
-        {series.length > 1 && (
-          <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-11" aria-hidden>
-            <path d={series.map((p, i) => `${i ? 'L' : 'M'}${xs(i)},${ys(p.mean)}`).join(' ')} fill="none" strokeWidth={2} className="stroke-leaf" />
-            {series.map((p, i) => <circle key={p.on} cx={xs(i)} cy={ys(p.mean)} r={2.5} className="fill-leaf-deep" />)}
-          </svg>
-        )}
-        <p className="text-xs text-soil-dark/60">{t('satLastClear').replace('{date}', date(d.latest.on))}</p>
-        {d.previous && d.change != null && (
-          <p className={`text-sm font-medium ${d.drop ? 'text-ember' : 'text-soil-dark/70'}`}>
-            {t('satChange').replace('{date}', date(d.previous.on)).replace('{v}', `${d.change > 0 ? '+' : ''}${d.change.toFixed(2)}`)}
-            {d.drop && <span className="block">{t('satDrop')}</span>}
-          </p>
-        )}
-        {(d.age_days ?? 0) > 20 && <p className="text-xs rounded-xl bg-sky-50 text-sky-900 p-2.5">{t('satCloudy')}</p>}
-        {d.soil && (
-          <div className="grid grid-cols-2 gap-3 border-t border-soil-dark/10 pt-3 text-sm">
-            <p><span className="block text-xs text-soil-dark/60">{t('satSoil')}</span><b>{d.soil.moisture_pct}%</b></p>
-            <p><span className="block text-xs text-soil-dark/60">{t('satSoilTemp')}</span><b>{d.soil.t10_c}°C</b></p>
-          </div>
-        )}
-      </Card>
+      )}
     </section>
   )
 }

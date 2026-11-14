@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Bug, CheckCircle2, FlaskRound, HelpCircle, Loader2, MapPin, Send, Timer, Users } from 'lucide-react'
+import { Bell, BrainCircuit, Bug, CheckCircle2, FlaskRound, HelpCircle, History, Loader2, MapPin, Send, Timer, Users, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import type { CaseBundle, CaseListItem, CaseSatellite, CaseBrief } from '../api/types'
@@ -19,7 +19,21 @@ const REASON_LABEL: Record<string, string> = {
   FARMER_REQUEST: 'Farmer asked',
   FOLLOWUP_WORSE: 'Got worse after treatment',
   INSPECTION_FOUND: 'Found during alert check',
+  LIVE_FEW_VIEWS: 'Live call: too few clear views',
+  FEW_VIEWS: 'Live call: too few clear views',
+  MINORITY_VIEWS: 'Live call: seen in only some views',
+  LOOKALIKE: 'Live call: a look-alike problem',
+  LAB_CLASS_CONFIRM: 'Needs a lab-class check',
+  LAB_CLASS_BELOW_GATE: 'Lab-class, not confident',
+  NOT_A_CROP_PHOTO: 'Not a crop photo',
+  UNFAMILIAR_PHOTO: 'Unfamiliar photo',
+  BELOW_GATE_LIVE: 'Live call: not confident',
 }
+
+/** A reason this table has no words for yet still reads as words, never as a
+ *  code like LIVE_FEW_VIEWS on an officer's screen. */
+export const reasonText = (r: string) =>
+  REASON_LABEL[r] ?? (r.charAt(0) + r.slice(1).toLowerCase()).replace(/_/g, ' ')
 /* The standalone "Expert validation" screen stood here.
  *
  * It listed the same cases as the district office's queue, opened the same
@@ -46,18 +60,16 @@ function SatelliteEvidence({ s }: { s: CaseSatellite }) {
   const falling = s.drop || (s.change ?? 0) < 0
 
   return (
-    <Card className="p-4">
+    <Card className="p-5">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-soil-dark/50">
-          Field greenness (NDVI)
-        </h3>
-        <span className="text-[11px] text-soil-dark/50">
+        <h2 className="text-[17px] font-semibold">Field greenness from satellite</h2>
+        <span className="text-[12px] text-soil-dark/70">
           {s.latest.source} · {s.age_days === 0 ? 'today' : `${s.age_days}d ago`}
         </span>
       </div>
 
-      <p className="mt-2 text-sm">
-        <span className="font-semibold tabular-nums">{s.latest.mean.toFixed(2)}</span>
+      <p className="mt-2 text-[15px]">
+        <span className="text-[20px] font-semibold tabular-nums">{s.latest.mean.toFixed(2)}</span>
         {s.previous && (
           <span className="text-soil-dark/70">
             {' '}from {s.previous.mean.toFixed(2)} on {s.previous.on}
@@ -80,7 +92,7 @@ function SatelliteEvidence({ s }: { s: CaseSatellite }) {
         </svg>
       )}
 
-      <p className="mt-2 text-xs text-soil-dark/70">
+      <p className="mt-2 text-[13px] text-soil-dark/70">
         {s.drop
           ? 'The field lost greenness between two clear scenes — the whole field is under stress, not just this leaf.'
           : s.quiet_stage
@@ -135,34 +147,35 @@ function HandOff({ b, onHandedOff }: { b: CaseBundle; onHandedOff: (to: CaseBrie
   return (
     <div className="relative">
       <button onClick={() => setOpen((v) => !v)} disabled={busy}
-        className="flex items-center gap-1.5 text-xs font-medium text-soil-dark/70 hover:text-soil-dark rounded-full border border-soil-dark/15 px-3 py-1.5 disabled:opacity-50">
-        {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Users className="w-3.5 h-3.5" />}
+        aria-expanded={open}
+        className="flex min-h-[36px] items-center gap-1.5 rounded-full bg-white px-3.5 text-[13px] font-semibold text-soil-dark/85 ring-1 ring-soil-dark/15 hover:bg-[#f8f6f0] disabled:opacity-50">
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Users className="h-4 w-4" />}
         {b.case.assigned_name ? `With ${b.case.assigned_name}` : 'Unassigned'} · hand on
       </button>
       {open && (
-        <div className="absolute right-0 z-20 mt-1 w-72 rounded-2xl border border-soil-dark/15 bg-white shadow-xl p-2">
+        <div className="absolute right-0 z-20 mt-2 w-72 rounded-2xl bg-white p-2 shadow-[0_18px_40px_-16px_rgba(43,29,18,0.45)] ring-1 ring-soil-dark/10">
           <button onClick={() => hand(null)}
-            className="w-full text-left rounded-xl px-3 py-2 text-sm hover:bg-cream">
+            className="w-full rounded-xl px-3 py-2.5 text-left text-[14px] hover:bg-[#f8f6f0]">
             <span className="font-medium">Whoever is freest</span>
-            <span className="block text-[11px] text-soil-dark/60">Routes by open cases, then who has waited longest</span>
+            <span className="block text-[12px] text-soil-dark/70">Routes by open cases, then who has waited longest</span>
           </button>
           {mayPlaceByName && <div className="my-1 border-t border-soil-dark/10" />}
           {mayPlaceByName && others.length === 0 && (
-            <p className="px-3 py-2 text-xs text-soil-dark/60">No other officer is verified yet.</p>
+            <p className="px-3 py-2 text-[13px] text-soil-dark/70">No other officer is verified yet.</p>
           )}
           {others.map((o) => (
             <button key={o.user_id} onClick={() => hand(o.user_id)}
-              className="w-full text-left rounded-xl px-3 py-2 text-sm hover:bg-cream flex items-center justify-between gap-2">
+              className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-[14px] hover:bg-[#f8f6f0]">
               <span>
                 {o.name}
-                <span className="block text-[11px] text-soil-dark/60">{districtLabel(o.districts)}</span>
+                <span className="block text-[12px] text-soil-dark/70">{districtLabel(o.districts)}</span>
               </span>
-              <span className="text-[11px] tabular-nums text-soil-dark/60 shrink-0">{o.open_cases} open</span>
+              <span className="text-[12px] tabular-nums text-soil-dark/70 shrink-0">{o.open_cases} open</span>
             </button>
           ))}
         </div>
       )}
-      {error && <p className="mt-1 text-[11px] text-ember">{error.message}</p>}
+      {error && <p className="mt-1 text-[12px] text-ember">{error.message}</p>}
     </div>
   )
 }
@@ -202,11 +215,11 @@ export function CaseRow({ c, active, onClick }: { c: CaseListItem; active: boole
       <span className="flex-1 min-w-0">
         <span className="flex items-center justify-between gap-2">
           <span className="text-sm font-semibold truncate">#{c.id} · {c.farmer_name}</span>
-          {c.status === 'open' && <span className={`text-[11px] ${active ? 'text-cream/70' : 'text-soil-dark/50'}`}>#{c.queue_position}</span>}
+          {c.status === 'open' && <span className={`text-[12px] ${active ? 'text-cream/70' : 'text-soil-dark/70'}`}>#{c.queue_position}</span>}
         </span>
-        <span className={`block text-xs truncate ${active ? 'text-cream/70' : 'text-soil-dark/60'}`}>{c.crop} · {c.district}</span>
+        <span className={`block text-[13px] truncate ${active ? 'text-cream/70' : 'text-soil-dark/70'}`}>{c.crop} · {c.district}</span>
         <span className="mt-1 flex flex-wrap gap-1">
-          <Pill tone={active ? 'dark' : 'sky'}>{REASON_LABEL[c.reason] ?? c.reason}</Pill>
+          <Pill tone={active ? 'dark' : 'sky'}>{reasonText(c.reason)}</Pill>
           {c.model_top && <Pill tone={active ? 'dark' : 'neutral'}>{c.model_top.name} {Math.round((c.model_top.confidence ?? 0) * 100)}%</Pill>}
           {c.severity === 'high' && <Pill tone="ember">high</Pill>}
           {c.assigned_name
@@ -297,120 +310,147 @@ function CaseDetail({ b, onBack, onResolved, onHandedOff }: {
   const open = b.case.status === 'open'
   const top = b.model.hypotheses[0]
 
+  const pctOf = (c: number | null | undefined) => Math.round((c ?? 0) * 100)
+
   return (
-    <div className="space-y-4">
-      <button onClick={onBack} className="md:hidden flex items-center gap-1 text-sm text-soil-dark/60">
-        <ArrowLeft className="w-4 h-4" /> Queue
-      </button>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-instrument-serif text-3xl leading-tight">Case #{b.case.id}</h1>
-          <p className="text-sm text-soil-dark/60 flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5" />
-            <Link to={`/officer/farm/${b.farm.id}`} className="font-medium text-soil-dark hover:text-leaf-deep hover:underline underline-offset-2">
-              {b.farm.farmer_name}
-            </Link>
-            · {b.farm.crop_name} · {b.farm.district} · {b.farm.stage_name} ({b.farm.das} days) · {b.farm.area_acres} acres
-          </p>
+    <div className="space-y-5">
+      {/* Who, where, why, and the clock — the line an officer reads before the photo. */}
+      <Card className="p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="font-instrument-serif text-[34px] leading-none text-[#1d3a24]">Case #{b.case.id}</h1>
+              <span className={`rounded-full px-3 py-1 text-[13px] font-semibold ${open ? 'bg-[#fdf5e6] text-[#9a6210]' : 'bg-[#eef6ea] text-[#2f6a39]'}`}>
+                {open ? 'Open' : 'Resolved'}
+              </span>
+            </div>
+            <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[14px] text-soil-dark/75">
+              <MapPin className="h-4 w-4 shrink-0" aria-hidden />
+              <Link to={`/officer/farm/${b.farm.id}`} className="font-semibold text-soil-dark hover:text-leaf-deep hover:underline underline-offset-2">
+                {b.farm.farmer_name}
+              </Link>
+              <span>· {b.farm.crop_name} · {b.farm.district} · {b.farm.stage_name}, {b.farm.das} days · {b.farm.area_acres} acres</span>
+            </p>
+            <p className="mt-2.5 inline-flex rounded-full bg-sky-50 px-3 py-1 text-[13px] font-medium text-sky-800">
+              Here because: {reasonText(b.case.reason)}
+            </p>
+          </div>
+          <button onClick={onBack} aria-label="Close the case"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f8f6f0] text-soil-dark/70 hover:bg-[#f1ede2] hover:text-soil-dark">
+            <X className="h-5 w-5" />
+          </button>
         </div>
-        <div className="flex items-center gap-2">
-          {open && b.case.respond_by && (
-            <span className="text-xs text-soil-dark/60">
-              {new Date(b.case.respond_by).getTime() > Date.now()
-                ? `Answer by ${new Date(b.case.respond_by).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                : 'Past its time — moving to another desk'}
-              {b.case.handovers > 0 && ` · ${b.case.handovers} desk${b.case.handovers === 1 ? '' : 's'} before you`}
+        {open && (
+          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-soil-dark/[0.07] pt-4">
+            <span className={`flex min-h-[36px] items-center gap-1.5 rounded-full px-3.5 text-[14px] font-semibold tabular-nums ${
+              timer.s > 180 ? 'bg-[#fdf0ed] text-[#b5381c]' : 'bg-[#eef6ea] text-[#2f6a39]'}`}>
+              <Timer className="h-4 w-4" aria-hidden /> {timer.label} <span className="font-normal opacity-75">/ 3:00 target</span>
             </span>
-          )}
-          {open && <HandOff b={b} onHandedOff={onHandedOff} />}
-          {open && (
-            <span className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ${timer.s > 180 ? 'bg-ember/10 text-ember' : 'bg-leaf/10 text-leaf-deep'}`}>
-              <Timer className="w-4 h-4" /> {timer.label} <span className="text-xs opacity-70">/ 3:00 target</span>
-            </span>
-          )}
-        </div>
-      </div>
+            {b.case.respond_by && (
+              <span className="text-[13px] text-soil-dark/75">
+                {new Date(b.case.respond_by).getTime() > Date.now()
+                  ? `Answer by ${new Date(b.case.respond_by).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                  : 'Past its time — moving to another desk'}
+                {b.case.handovers > 0 && ` · ${b.case.handovers} desk${b.case.handovers === 1 ? '' : 's'} before you`}
+              </span>
+            )}
+            <span className="ml-auto"><HandOff b={b} onHandedOff={onHandedOff} /></span>
+          </div>
+        )}
+      </Card>
 
-      <div className="grid lg:grid-cols-[1.1fr_1fr] gap-4">
-        <Card className="p-3">
+      <div className="grid gap-5 xl:grid-cols-[1.15fr_1fr]">
+        <Card className="p-2">
           {b.photos.length > 0 ? (
             <>
-              <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden">
-                <img src={b.photos[photo]} alt="" className="w-full h-full object-cover" />
+              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[18px] bg-[#eef3e6]">
+                <img src={b.photos[photo]} alt="" className="h-full w-full object-cover" />
                 {showCam && b.heatmaps?.[photo] && <GradCamOverlay heatmap={b.heatmaps[photo]!} />}
                 {b.heatmaps?.[photo] && (
-                  <button onClick={() => setShowCam((v) => !v)}
-                    className="absolute bottom-2 left-2 bg-black/60 text-cream text-[11px] px-2.5 py-1 rounded-full">
-                    {showCam ? 'Hide' : 'Show'} where the AI looked · Grad-CAM
+                  <button onClick={() => setShowCam((v) => !v)} aria-pressed={showCam}
+                    className="absolute bottom-3 left-3 rounded-full bg-black/60 px-3 py-1.5 text-[13px] text-white backdrop-blur-sm">
+                    {showCam ? 'Hide' : 'Show'} where the AI looked
                   </button>
+                )}
+                {b.photos.length > 1 && (
+                  <span className="absolute right-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-[12px] font-medium text-white tabular-nums">
+                    {photo + 1} / {b.photos.length}
+                  </span>
                 )}
               </div>
               {b.photos.length > 1 && (
-                <div className="mt-2 flex gap-2">
+                <div className="flex gap-2 px-1 pb-1 pt-2">
                   {b.photos.map((p, i) => (
-                    <button key={p} onClick={() => setPhoto(i)} className={`w-14 h-14 rounded-lg overflow-hidden ring-2 ${i === photo ? 'ring-ochre' : 'ring-transparent'}`}>
-                      <img src={p} alt="" className="w-full h-full object-cover" />
+                    <button key={p} onClick={() => setPhoto(i)} aria-label={`Photo ${i + 1}`}
+                      className={`h-16 w-16 overflow-hidden rounded-xl ring-2 transition ${i === photo ? 'ring-[#d29a3a]' : 'ring-transparent opacity-80 hover:opacity-100'}`}>
+                      <img src={p} alt="" className="h-full w-full object-cover" />
                     </button>
                   ))}
                 </div>
               )}
             </>
           ) : (
-            <div className="aspect-[4/3] rounded-xl bg-cream flex flex-col items-center justify-center gap-1 px-6 text-center">
-              <p className="text-sm font-medium text-soil-dark/60">No photograph</p>
-              <p className="text-[12px] leading-relaxed text-soil-dark/45">
+            <div className="flex aspect-[4/3] flex-col items-center justify-center gap-1 rounded-[18px] bg-[#f8f6f0] px-6 text-center">
+              <p className="text-[15px] font-semibold text-soil-dark/80">No photograph</p>
+              <p className="text-[13px] leading-relaxed text-soil-dark/70">
                 The farmer reported this without one. Their words are beside this panel.
               </p>
             </div>
           )}
         </Card>
 
-        <div className="space-y-3">
-          <Card className="p-4">
-            <h2 className="text-sm font-semibold">Model hypotheses</h2>
-            <div className="mt-1 flex flex-wrap gap-1">
-              <Pill tone="sky">Here because: {REASON_LABEL[b.case.reason] ?? b.case.reason}</Pill>
-              {b.model.is_stub && <Pill tone="ochre">stub model</Pill>}
-            </div>
+        <div className="space-y-5">
+          <Card className="p-5">
+            <h2 className="flex items-center gap-2 text-[17px] font-semibold">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eef3e6] text-[#2f6a39]"><BrainCircuit className="h-5 w-5" aria-hidden /></span>
+              What the model thinks
+              {b.model.is_stub && <span className="rounded-full bg-[#fdf5e6] px-2.5 py-0.5 text-[12px] font-semibold text-[#9a6210]">demo model</span>}
+            </h2>
             {b.model.hypotheses.length === 0 ? (
-              <p className="mt-2 text-sm text-soil-dark/50">No model output for this case.</p>
+              <p className="mt-3 text-[14px] text-soil-dark/75">No model output for this case.</p>
             ) : (
-              <ul className="mt-3 space-y-2">
+              <ul className="mt-4 space-y-3">
                 {b.model.hypotheses.map((h, i) => (
                   <li key={h.id}>
-                    <div className="flex justify-between text-sm">
-                      <span className={i === 0 ? 'font-semibold' : ''}>{h.name}</span>
-                      <span className="text-soil-dark/60">{Math.round((h.confidence ?? 0) * 100)}%</span>
+                    <div className="flex items-baseline justify-between gap-3 text-[14px]">
+                      <span className={i === 0 ? 'font-semibold' : 'text-soil-dark/85'}>{h.name}</span>
+                      <span className={`tabular-nums ${i === 0 ? 'font-semibold' : 'text-soil-dark/70'}`}>{pctOf(h.confidence)}%</span>
                     </div>
-                    <div className="h-1.5 mt-1 rounded-full bg-soil-dark/10 overflow-hidden">
-                      <div className={`h-full ${i === 0 ? 'bg-leaf' : 'bg-soil-dark/30'}`} style={{ width: `${Math.round((h.confidence ?? 0) * 100)}%` }} />
+                    <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-soil-dark/[0.07]">
+                      <div className={`h-full rounded-full ${i === 0 ? 'bg-[#2f6a39]' : 'bg-[#2f6a39]/30'}`} style={{ width: `${pctOf(h.confidence)}%` }} />
                     </div>
                   </li>
                 ))}
               </ul>
             )}
-            <p className="mt-2 text-[11px] text-soil-dark/40">{b.model.version}</p>
+            {b.model.version && (
+              <details className="mt-3 text-[12px] text-soil-dark/65">
+                <summary className="cursor-pointer select-none hover:text-soil-dark/85">Model version</summary>
+                <p className="mt-1 break-all">{b.model.version}</p>
+              </details>
+            )}
           </Card>
 
           {b.farmer_report.length > 0 && (
-            <Card className="p-4 border-ember/30 bg-ember/[0.03]">
-              <h2 className="text-sm font-semibold flex items-center gap-1.5">
-                <HelpCircle className="w-4 h-4 text-ember" /> What the farmer reported
+            <Card className="bg-[#fdf0ed] p-5">
+              <h2 className="flex items-center gap-2 text-[16px] font-semibold text-[#9a2f17]">
+                <HelpCircle className="h-5 w-5" aria-hidden /> What the farmer reported
               </h2>
               {b.farmer_report.map((r, i) => (
-                <p key={i} className="mt-2 text-sm leading-relaxed">{r.answer}</p>
+                <p key={i} className="mt-2 rounded-xl bg-white/70 p-3 text-[15px] leading-relaxed">“{r.answer}”</p>
               ))}
             </Card>
           )}
 
           {b.doubt_doctor.length > 0 && (
-            <Card className="p-4">
-              <h2 className="text-sm font-semibold flex items-center gap-1.5"><HelpCircle className="w-4 h-4 text-ochre" /> Farmer's field answer</h2>
+            <Card className="bg-[#fdf5e6] p-5">
+              <h2 className="flex items-center gap-2 text-[16px] font-semibold text-[#7a4f12]">
+                <HelpCircle className="h-5 w-5" aria-hidden /> The farmer's answer in the field
+              </h2>
               {b.doubt_doctor.map((d, i) => (
-                <div key={i} className="mt-2 text-sm">
-                  <p className="text-soil-dark/70">"{d.question}"</p>
-                  <p className="mt-1 font-semibold">→ {d.answer === 'unknown' ? "Can't tell" : d.answer.toUpperCase()}</p>
+                <div key={i} className="mt-2 rounded-xl bg-white/70 p-3 text-[14px]">
+                  <p className="text-soil-dark/75">“{d.question}”</p>
+                  <p className="mt-1 text-[15px] font-semibold">→ {d.answer === 'unknown' ? "Can't tell" : d.answer === 'yes' ? 'Yes' : d.answer === 'no' ? 'No' : d.answer}</p>
                 </div>
               ))}
             </Card>
@@ -418,47 +458,73 @@ function CaseDetail({ b, onBack, onResolved, onHandedOff }: {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-3">
-        <Card className="p-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-soil-dark/50">Trap counts</h3>
-          {b.trap_readings.length === 0 ? <p className="mt-2 text-sm text-soil-dark/40">None recorded</p> : (
-            <ul className="mt-2 space-y-1 text-sm">
-              {b.trap_readings.slice(0, 5).map((t, i) => (
-                <li key={i} className="flex justify-between"><span className="flex items-center gap-1"><Bug className="w-3 h-3" />{t.recorded_on}</span><span className={t.per_trap_night >= 8 ? 'text-ember font-semibold' : ''}>{t.per_trap_night}/trap/night</span></li>
+      {/* The rest of the field's story: what the traps say, what the app has
+          already warned about, and what this farm has had before. */}
+      <Card className="p-5">
+        <h2 className="text-[17px] font-semibold">This farm</h2>
+        <div className="mt-3 grid gap-3 md:grid-cols-3">
+          <div className="rounded-2xl bg-[#f8f6f0] p-4">
+            <h3 className="flex items-center gap-1.5 text-[14px] font-semibold"><Bug className="h-4 w-4 text-[#2f6a39]" aria-hidden /> Trap counts</h3>
+            {b.trap_readings.length === 0 ? <p className="mt-2 text-[14px] text-soil-dark/70">None recorded</p> : (
+              <ul className="mt-2 space-y-1.5 text-[14px]">
+                {b.trap_readings.slice(0, 5).map((t, i) => (
+                  <li key={i} className="flex justify-between gap-2 tabular-nums">
+                    <span className="text-soil-dark/75">{t.recorded_on}</span>
+                    <span className={t.per_trap_night >= 8 ? 'font-semibold text-[#b5381c]' : ''}>{t.per_trap_night} / trap / night</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="rounded-2xl bg-[#f8f6f0] p-4">
+            <h3 className="flex items-center gap-1.5 text-[14px] font-semibold"><Bell className="h-4 w-4 text-[#2f6a39]" aria-hidden /> Recent alerts</h3>
+            {b.recent_alerts.length === 0 ? <p className="mt-2 text-[14px] text-soil-dark/70">None</p> : (
+              <ul className="mt-2 space-y-1.5 text-[14px]">
+                {b.recent_alerts.slice(0, 5).map((a) => (
+                  <li key={a.id}>
+                    <span className="block truncate font-medium">{a.name}</span>
+                    <span className="block text-[12px] text-soil-dark/70">{TRIGGER_WORD[a.trigger] ?? a.trigger} · {OUTCOME_WORD[a.outcome ?? 'open'] ?? a.outcome}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="rounded-2xl bg-[#f8f6f0] p-4">
+            <h3 className="flex items-center gap-1.5 text-[14px] font-semibold"><History className="h-4 w-4 text-[#2f6a39]" aria-hidden /> History &amp; follow-ups</h3>
+            <ul className="mt-2 space-y-1.5 text-[14px]">
+              {b.farm_history.map((h, i) => (
+                <li key={i}><span className="capitalize">{h.final_label.replace(/_/g, ' ')}</span> <span className="text-soil-dark/70">· {h.verdict}</span></li>
               ))}
-            </ul>
-          )}
-        </Card>
-        <Card className="p-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-soil-dark/50">Recent alerts on this farm</h3>
-          {b.recent_alerts.length === 0 ? <p className="mt-2 text-sm text-soil-dark/40">None</p> : (
-            <ul className="mt-2 space-y-1 text-sm">
-              {b.recent_alerts.slice(0, 5).map((a) => (
-                <li key={a.id} className="flex justify-between gap-2"><span className="truncate">{a.name}</span><span className="text-xs text-soil-dark/50 shrink-0">{a.trigger} · {a.outcome ?? 'open'}</span></li>
+              {b.followups.map((f, i) => (
+                <li key={`f${i}`} className="text-soil-dark/80">Follow-up {f.due_on}: {f.response ? f.response.replace(/_/g, ' ') : 'pending'}</li>
               ))}
+              {b.farm_history.length === 0 && b.followups.length === 0 && <li className="text-soil-dark/70">First problem on record</li>}
             </ul>
-          )}
-        </Card>
-        <Card className="p-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-soil-dark/50">Farm history & follow-ups</h3>
-          <ul className="mt-2 space-y-1 text-sm">
-            {b.farm_history.map((h, i) => <li key={i}>{h.final_label.replace(/_/g, ' ')} · {h.verdict}</li>)}
-            {b.followups.map((f, i) => <li key={`f${i}`} className="text-soil-dark/70">Follow-up {f.due_on}: {f.response ?? 'pending'}</li>)}
-            {b.farm_history.length === 0 && b.followups.length === 0 && <li className="text-soil-dark/40">First problem on record</li>}
-          </ul>
-        </Card>
-      </div>
+          </div>
+        </div>
+      </Card>
 
       {b.satellite && <SatelliteEvidence s={b.satellite} />}
 
-      {b.icar_referral?.length > 0 && <IcarReferral b={b} />}
-
       {open ? <Decision b={b} top={top?.id} elapsed={timer.s} onResolved={onResolved} /> : (
-        <Card className="p-4 flex items-center gap-2 text-leaf-deep"><CheckCircle2 className="w-5 h-5" /> Resolved</Card>
+        <Card className="flex items-center gap-2 bg-[#eef6ea] p-5 text-[15px] font-semibold text-[#2f6a39]">
+          <CheckCircle2 className="h-5 w-5" /> Resolved
+        </Card>
       )}
+
+      {b.icar_referral?.length > 0 && <IcarReferral b={b} />}
     </div>
   )
 }
+
+const TRIGGER_WORD: Record<string, string> = {
+  weather: 'Weather', phenology: 'Crop stage', 'weather+phenology': 'Weather + crop stage', trap: 'Trap count', spread: 'Confirmed nearby',
+}
+const OUTCOME_WORD: Record<string, string> = {
+  open: 'not checked yet', snoozed: 'reminded', found: 'farmer found it', nothing_found: 'checked, nothing found',
+}
+
+const DFIELD = 'mt-1.5 w-full min-h-[46px] rounded-2xl bg-[#f8f6f0] px-3.5 text-[14px] font-normal text-soil-dark ring-1 ring-soil-dark/10 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#4b8b3b]'
 
 function Decision({ b, top, elapsed, onResolved }: { b: CaseBundle; top?: string; elapsed: number; onResolved: () => void }) {
   // The verdict is recorded under the signed-in expert (the server takes the name from the session).
@@ -495,9 +561,9 @@ function Decision({ b, top, elapsed, onResolved }: { b: CaseBundle; top?: string
 
   if (done) {
     return (
-      <Card className="p-5 border-leaf/40 bg-leaf/5">
-        <p className="flex items-center gap-2 font-semibold text-leaf-deep"><CheckCircle2 className="w-5 h-5" /> {done.verdict === 'confirmed' ? 'Confirmed' : 'Corrected'} in {Math.floor(done.secs / 60)}:{String(done.secs % 60).padStart(2, '0')}</p>
-        <ul className="mt-2 text-sm space-y-1 text-soil-dark/80">
+      <Card className="bg-[#eef6ea] p-5 lg:p-6">
+        <p className="flex items-center gap-2 text-[17px] font-semibold text-[#2f6a39]"><CheckCircle2 className="w-5 h-5" /> {done.verdict === 'confirmed' ? 'Confirmed' : 'Corrected'} in {Math.floor(done.secs / 60)}:{String(done.secs % 60).padStart(2, '0')}</p>
+        <ul className="mt-3 space-y-1.5 text-[14px] text-soil-dark/85">
           {done.label === 'healthy' ? (
             <>
               <li>• The farmer is told their crop is fine — no treatment, nothing to buy.</li>
@@ -521,12 +587,15 @@ function Decision({ b, top, elapsed, onResolved }: { b: CaseBundle; top?: string
   }
 
   return (
-    <Card className="p-4 space-y-3 border-leaf/30">
-      <h2 className="font-semibold">Your decision</h2>
-      <div className="grid md:grid-cols-2 gap-3">
-        <label className="block text-xs text-soil-dark/60">
+    <Card className="space-y-4 p-5 ring-2 ring-[#4b8b3b]/30 lg:p-6">
+      <div>
+        <h2 className="text-[20px] font-semibold tracking-tight">Your decision</h2>
+        <p className="mt-1 text-[14px] text-soil-dark/70">What you choose is what the farmer is told, under your name.</p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="block text-[13px] font-semibold text-soil-dark/80">
           Final diagnosis
-          <select value={label} onChange={(e) => setLabel(e.target.value)} className="mt-1 w-full min-h-[44px] rounded-xl border border-soil-dark/20 px-3 bg-cream/50 text-sm">
+          <select value={label} onChange={(e) => setLabel(e.target.value)} className={DFIELD}>
             {!label && <option value="" disabled>Choose the final diagnosis…</option>}
             {groups.map(([g, items]) => items.length > 0 && (
               <optgroup key={g} label={g}>
@@ -541,36 +610,36 @@ function Decision({ b, top, elapsed, onResolved }: { b: CaseBundle; top?: string
             </optgroup>
           </select>
         </label>
-        <label className="block text-xs text-soil-dark/60">
+        <label className="block text-[13px] font-semibold text-soil-dark/80">
           Reviewing expert
-          <input value={name} readOnly aria-readonly className="mt-1 w-full min-h-[44px] rounded-xl border border-soil-dark/10 px-3 bg-soil-dark/5 text-sm" />
+          <input value={name} readOnly aria-readonly className={`${DFIELD} bg-soil-dark/[0.05] text-soil-dark/80`} />
         </label>
       </div>
-      <label className="block text-xs text-soil-dark/60">
+      <label className="block text-[13px] font-semibold text-soil-dark/80">
         {label === 'other' ? 'What is it? (required — the farmer is shown this)' : 'Note to farmer (optional)'}
         <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
           placeholder={label === 'other' ? 'Name the problem, e.g. "Zinc deficiency — interveinal chlorosis on older leaves"' : undefined}
-          className={`mt-1 w-full rounded-xl border px-3 py-2 bg-cream/50 text-sm ${
-            label === 'other' && !notes.trim() ? 'border-ember/50' : 'border-soil-dark/20'}`} />
+          className={`mt-1.5 w-full rounded-2xl bg-[#f8f6f0] px-3.5 py-2.5 text-[14px] font-normal ring-1 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#4b8b3b] ${
+            label === 'other' && !notes.trim() ? 'ring-[#b5381c]/50' : 'ring-soil-dark/10'}`} />
       </label>
       {label === 'healthy' && (
-        <p className="text-xs rounded-xl bg-leaf/10 text-leaf-deep p-2.5">
+        <p className="rounded-2xl bg-[#eef6ea] p-3.5 text-[14px] text-[#2f5a24]">
           Recorded as healthy: no advisory, no spread alert, and the model's guess is marked wrong.
         </p>
       )}
       {label === 'other' && (
-        <p className="text-xs rounded-xl bg-ochre/10 text-[#8a5a17] p-2.5">
+        <p className="rounded-2xl bg-[#fdf5e6] p-3.5 text-[14px] text-[#7a4f12]">
           Outside the knowledge base, so the app offers no treatment of its own — the farmer sees your
           note and the referral. It is logged as a gap for the team.
         </p>
       )}
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={lab} onChange={(e) => setLab(e.target.checked)} className="w-4 h-4 accent-leaf-deep" />
-        <FlaskRound className="w-4 h-4 text-soil-dark/60" /> Refer sample to a diagnostic lab / KVK
+      <label className="flex min-h-[44px] cursor-pointer items-center gap-2.5 rounded-2xl bg-[#f8f6f0] px-3.5 text-[14px]">
+        <input type="checkbox" checked={lab} onChange={(e) => setLab(e.target.checked)} className="h-4 w-4 accent-[#2f6a39]" />
+        <FlaskRound className="w-4 h-4 text-soil-dark/70" /> Refer sample to a diagnostic lab / KVK
       </label>
       {error && <ErrorBox error={error} />}
       <button onClick={submit} disabled={busy || !label || !name.trim() || (label === 'other' && !notes.trim())}
-        className="w-full min-h-[48px] rounded-full bg-leaf-deep text-cream text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50">
+        className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full bg-[#1d4a2c] text-[16px] font-semibold text-white shadow-[0_12px_24px_-14px_rgba(29,74,44,0.8)] hover:bg-[#245a35] disabled:opacity-50 disabled:shadow-none">
         {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         {label === 'healthy' ? 'Record as healthy'
           : label === 'other' ? 'Record and refer'
@@ -591,21 +660,21 @@ const ICAR_TYPE: Record<string, string> = {
 function IcarReferral({ b }: { b: CaseBundle }) {
   const names = Object.fromEntries(b.candidate_labels.map((c) => [c.id, c.name]))
   return (
-    <Card className="p-4">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-soil-dark/50">ICAR technologies &amp; referral</h3>
-      <p className="text-[11px] text-soil-dark/50 mt-0.5">From the ICAR technology repository, matched to the suspected problems, then crop-level tools.</p>
-      <ul className="mt-3 grid md:grid-cols-2 gap-2">
+    <Card className="p-5 lg:p-6">
+      <h2 className="text-[17px] font-semibold">ICAR technologies &amp; referral</h2>
+      <p className="mt-1 text-[13px] text-soil-dark/70">From the ICAR technology repository, matched to the suspected problems, then crop-level tools.</p>
+      <ul className="mt-4 grid gap-3 md:grid-cols-2">
         {b.icar_referral.map((x) => (
-          <li key={x.id} className="rounded-xl border border-soil-dark/10 p-3 text-sm">
+          <li key={x.id} className="rounded-2xl bg-[#f8f6f0] p-4 text-[14px]">
             <div className="flex flex-wrap gap-1">
               <Pill tone="leaf">{ICAR_TYPE[x.type]}</Pill>
               <Pill>{x.for_target ? `for ${names[x.for_target] ?? x.for_target}` : `${b.farm.crop_name} (crop-level)`}</Pill>
             </div>
-            <p className="mt-1.5 font-medium leading-snug">{x.source_name}</p>
+            <p className="mt-2 font-semibold leading-snug">{x.source_name}</p>
             <p className="mt-1 text-[13px] text-soil-dark/70 leading-snug">{x.summary}</p>
-            {x.claim && <p className="mt-1 text-xs text-leaf-deep">{x.claim}</p>}
-            {x.lead_time_days && <p className="mt-1 text-xs text-[#8a5a17]">Needs {x.lead_time_days} days' notice to the institute.</p>}
-            <p className="mt-1.5 text-xs text-soil-dark/60">
+            {x.claim && <p className="mt-1 text-[13px] text-leaf-deep">{x.claim}</p>}
+            {x.lead_time_days && <p className="mt-1 text-[13px] text-[#8a5a17]">Needs {x.lead_time_days} days' notice to the institute.</p>}
+            <p className="mt-1.5 text-[13px] text-soil-dark/70">
               {x.institute.name}, {x.institute.city} · <a className="text-leaf-deep" href={`tel:${(x.institute.phone ?? '').replace(/[^0-9+]/g, '')}`}>{x.institute.phone}</a>
               {x.institute.email && <> · <span title={x.institute.email_note}>{x.institute.email}{x.institute.email_note ? ' (unverified)' : ''}</span></>}
             </p>

@@ -75,3 +75,63 @@ def test_health_says_little_in_production(monkeypatch):
     assert terse["status"] == "ok"
     assert set(terse) == {"status", "service", "model", "voice"}
     assert set(terse["model"]) == {"is_stub"} and set(terse["voice"]) == {"configured"}
+
+
+@pytest.fixture()
+def built(tmp_path):
+    """A built app with a hashed bundle, a font, a photograph and the worker,
+    behind the same compression the real app has."""
+    from fastapi import FastAPI
+
+    from app.main import SelectiveGZip, mount_web
+
+    web = tmp_path / "web"
+    for d in ("assets", "fonts", "photos", "field"):
+        (web / d).mkdir(parents=True)
+    (web / "index.html").write_text("<!doctype html><title>AnnRakshak</title>")
+    (web / "assets" / "index-abc123.js").write_text("console.log('a farmer');\n" * 200)
+    (web / "fonts" / "Inter-latin.woff2").write_bytes(b"wOF2" + b"\0" * 4000)
+    (web / "photos" / "hills-900.webp").write_bytes(b"RIFF" + b"\0" * 4000)
+    (web / "field" / "maize-800.webp").write_bytes(b"RIFF" + b"\0" * 4000)
+    (web / "sw.js").write_text("self.addEventListener('fetch', () => {})")
+
+    probe = FastAPI()
+    probe.add_middleware(SelectiveGZip, minimum_size=1024)
+
+    @probe.get("/stream")
+    def stream():
+        from fastapi.responses import StreamingResponse
+
+        return StreamingResponse(iter([b"data: one\n\n" * 200]), media_type="text/event-stream")
+
+    mount_web(probe, web)
+    with TestClient(probe) as c:
+        yield c
+
+
+def test_hashed_assets_are_kept_for_a_year_and_compressed(built):
+    r = built.get("/assets/index-abc123.js", headers={"Accept-Encoding": "gzip"})
+    assert r.status_code == 200 and "a farmer" in r.text
+    assert r.headers["cache-control"] == "public, max-age=31536000, immutable"
+    assert r.headers["content-encoding"] == "gzip"
+
+
+def test_fonts_and_photographs_are_kept_for_a_week_and_not_squeezed_again(built):
+    for path in ("/fonts/Inter-latin.woff2", "/photos/hills-900.webp", "/field/maize-800.webp"):
+        r = built.get(path, headers={"Accept-Encoding": "gzip"})
+        assert r.status_code == 200, path
+        assert r.headers["cache-control"] == "public, max-age=604800", path
+        assert "content-encoding" not in r.headers, path   # woff2 and webp are compressed already
+
+
+def test_the_worker_and_the_shell_are_always_asked_for_again(built):
+    assert built.get("/sw.js").headers["cache-control"] == "no-cache"
+    # The shell by its own name, as the worker's install asks for it.
+    assert built.get("/index.html").headers["cache-control"] == "no-cache"
+    assert built.get("/app").headers["cache-control"] == "no-store"
+
+
+def test_server_sent_events_are_never_held_back_by_compression(built):
+    r = built.get("/stream", headers={"Accept-Encoding": "gzip"})
+    assert "content-encoding" not in r.headers
+    assert r.text.startswith("data: one")

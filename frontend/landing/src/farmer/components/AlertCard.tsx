@@ -5,8 +5,10 @@ import { api } from '../../api/client'
 import ReportSheet from './ReportSheet'
 import { useReadOnlyFarm } from './DemoNotice'
 import type { AlertView } from '../../api/types'
-import { ListenButton, Pill } from '../../ui/kit'
+import { ListenButton } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
+import { RISK } from '../tokens'
+import { PestPhoto } from '../ui'
 
 const TRIGGER_ICON: Record<string, typeof CloudRain> = {
   weather: CloudRain,
@@ -14,12 +16,6 @@ const TRIGGER_ICON: Record<string, typeof CloudRain> = {
   phenology: CalendarClock,
   trap: Bug,
   spread: Radar,
-}
-
-const LEVEL_STYLE = {
-  high: { ring: 'border-ember/40', bar: 'bg-ember', tone: 'ember' as const },
-  medium: { ring: 'border-ochre/50', bar: 'bg-ochre', tone: 'ochre' as const },
-  low: { ring: 'border-leaf/30', bar: 'bg-leaf', tone: 'leaf' as const },
 }
 
 /** An alert is a task, not a notification: it stays until the farmer records
@@ -35,7 +31,8 @@ export default function AlertCard({ alert, onDone }: { alert: AlertView; onDone:
   const [note, setNote] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
   const Icon = TRIGGER_ICON[alert.trigger] ?? Eye
-  const style = LEVEL_STYLE[alert.level]
+  // The level is said by the card's tint and one pill, as on Home.
+  const risk = RISK[alert.level]
   const answered = alert.outcome === 'nothing_found' || alert.outcome === 'found'
 
   // A pest the camera cannot name goes straight to an officer when the farmer
@@ -72,77 +69,71 @@ export default function AlertCard({ alert, onDone }: { alert: AlertView; onDone:
   const speakText = `${alert.name}. ${alert.reason} ${alert.tasks.join(' ')}`
 
   return (
-    <article className={`relative overflow-hidden rounded-2xl bg-white border ${style.ring}`}>
-      <span aria-hidden className={`absolute left-0 inset-y-0 w-1 ${style.bar}`} />
-      <div className="p-4 pl-5">
-        <div className="flex items-start gap-3">
-          <span className="shrink-0 w-10 h-10 rounded-full bg-cream flex items-center justify-center">
-            <Icon className="w-5 h-5 text-soil-dark/70" />
-          </span>
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <Pill tone={style.tone}>{t(`level_${alert.level}`)}</Pill>
-              <Pill>{t(`trig_${alert.trigger}`)}</Pill>
-            </div>
-            <h3 className="mt-1.5 font-semibold leading-snug">{alert.name}</h3>
-          </div>
-          <ListenButton text={speakText} lang={lang} label={t('listen')} stopLabel={t('stop')} compact />
-        </div>
-
-        <p className="mt-2 text-[13px] leading-relaxed text-soil-dark/70">
-          <span className="font-medium text-soil-dark">{t('why')}: </span>
-          {alert.reason}
-        </p>
-
-        <div className="mt-3 rounded-xl bg-cream/70 p-3">
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-leaf-deep">
-            <Search className="w-3.5 h-3.5" />
-            {t('whatToCheck')}
+    <article className={`rounded-[20px] p-4 ring-1 ring-soil-dark/[0.05] sm:p-5 ${risk.row}`}>
+      <div className="flex items-start gap-3">
+        <PestPhoto target={alert.target} className="h-16 w-16 sm:h-[72px] sm:w-[72px]" />
+        <div className="min-w-0 flex-1">
+          <h3 className="text-[17px] font-semibold leading-snug sm:text-[18px]">{alert.name}</h3>
+          <p className="mt-1 flex flex-wrap items-center gap-2">
+            <span className={`rounded-full px-2.5 py-0.5 text-[13px] font-medium ${risk.pill}`}>{t(risk.key)}</span>
+            <span className="inline-flex items-center gap-1 text-[13px] text-soil-dark/70">
+              <Icon className="h-4 w-4" aria-hidden /> {t(`trig_${alert.trigger}`)}
+            </span>
           </p>
-          <ol className="mt-1.5 space-y-1.5">
-            {alert.tasks.map((task, i) => (
-              <li key={i} className="flex gap-2 text-[13px] leading-snug">
-                <span className="shrink-0 w-5 h-5 rounded-full bg-leaf/15 text-leaf-deep text-[11px] font-semibold flex items-center justify-center">
-                  {i + 1}
-                </span>
-                {task}
-              </li>
-            ))}
-          </ol>
         </div>
-
-        {note ? (
-          <p className={`mt-3 text-sm flex items-center gap-2 ${failed ? 'text-ember' : 'text-leaf-deep'}`}>
-            {failed ? <AlertTriangle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
-            {note}
-          </p>
-        ) : answered ? (
-          <p className="mt-3 text-xs text-soil-dark/50">{t('answered')}</p>
-        ) : readOnly ? (
-          <p className="mt-3 text-xs text-soil-dark/50">{t('demoReadOnlyShort')}</p>
-        ) : (
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            {([
-              ['nothing_found', t('nothingFound'), 'border-leaf/40 text-leaf-deep'],
-              ['found', t('foundIt'), 'bg-ember text-cream border-ember'],
-              ['snoozed', t('remindTomorrow'), 'border-soil-dark/20 text-soil-dark/70'],
-            ] as const).map(([o, label, cls]) => (
-              <button
-                key={o}
-                onClick={() => choose(o)}
-                disabled={busy !== null}
-                className={`min-h-[44px] rounded-xl border text-xs font-medium leading-tight px-1.5 flex items-center justify-center ${cls} disabled:opacity-60`}
-              >
-                {busy === o ? <Loader2 className="w-4 h-4 animate-spin" /> : label}
-              </button>
-            ))}
-          </div>
-        )}
-        {reporting && (
-          <ReportSheet busy={busy !== null} onCancel={() => setReporting(false)}
-            onSend={(ev) => void answer('found', ev)} />
-        )}
+        <ListenButton text={speakText} lang={lang} label={t('listen')} stopLabel={t('stop')} compact />
       </div>
+
+      <p className="mt-3 text-[15px] leading-relaxed text-soil-dark/85">{alert.reason}</p>
+
+      <div className="mt-4 rounded-[18px] bg-white/75 p-3.5 sm:p-4">
+        <p className="flex items-center gap-1.5 text-[15px] font-semibold text-leaf-deep">
+          <Search className="h-4 w-4" aria-hidden />
+          {t('whatToCheck')}
+        </p>
+        <ol className="mt-2.5 space-y-2.5">
+          {alert.tasks.map((task, i) => (
+            <li key={i} className="flex gap-2.5 text-[15px] leading-snug text-soil-dark">
+              <span className="mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#e3efd9] text-[12px] font-semibold text-[#2f6a39]">
+                {i + 1}
+              </span>
+              {task}
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      {note ? (
+        <p role={failed ? 'alert' : 'status'} className={`mt-4 flex items-center gap-2 text-[15px] ${failed ? 'text-ember' : 'text-leaf-deep'}`}>
+          {failed ? <AlertTriangle className="h-5 w-5 shrink-0" aria-hidden /> : <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden />}
+          {note}
+        </p>
+      ) : answered ? (
+        <p className="mt-4 text-[14px] text-soil-dark/75">{t('answered')}</p>
+      ) : readOnly ? (
+        <p className="mt-4 text-[14px] text-soil-dark/75">{t('demoReadOnlyShort')}</p>
+      ) : (
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {([
+            ['found', t('foundIt'), 'bg-[#9a2f17] text-white'],
+            ['nothing_found', t('nothingFound'), 'bg-white text-leaf-deep ring-1 ring-[#4b8b3b]/30'],
+            ['snoozed', t('remindTomorrow'), 'bg-white/60 text-soil-dark/80 ring-1 ring-soil-dark/15'],
+          ] as const).map(([o, label, cls]) => (
+            <button
+              key={o}
+              onClick={() => choose(o)}
+              disabled={busy !== null}
+              className={`flex min-h-[52px] items-center justify-center rounded-2xl px-2 text-[14px] font-semibold leading-tight transition-[filter] hover:brightness-95 active:brightness-90 disabled:opacity-60 ${cls}`}
+            >
+              {busy === o ? <Loader2 className="h-4 w-4 animate-spin" /> : label}
+            </button>
+          ))}
+        </div>
+      )}
+      {reporting && (
+        <ReportSheet busy={busy !== null} onCancel={() => setReporting(false)}
+          onSend={(ev) => void answer('found', ev)} />
+      )}
     </article>
   )
 }

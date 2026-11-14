@@ -37,6 +37,9 @@ def mail(monkeypatch):
 def client(monkeypatch, mail):
     monkeypatch.setattr(config, "AUTH_ENFORCE", True)
     monkeypatch.setattr(config, "OTP_RESEND_SECONDS", 0)
+    # The email path, whatever a developer's .env says: SMS sign-in has its
+    # own tests (tests/test_sms.py) and these pin what happens without it.
+    monkeypatch.setattr(config, "SMS_BACKEND", "off")
     monkeypatch.setattr(auth_router, "limit", lambda *a, **k: None)
     Base.metadata.drop_all(bind=engine)
     with TestClient(app) as c:

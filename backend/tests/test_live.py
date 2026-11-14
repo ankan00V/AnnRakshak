@@ -303,6 +303,11 @@ def test_a_resume_token_is_good_once_and_only_for_its_own_field(client):
     with client.websocket_connect("/api/live/1") as ws:
         ws.send_json({"type": "resume", "token": token})
         assert ws.receive_json()["type"] == "ready"
+        # Heard on the new line, so "ready" — and the token in it — arrived.
+        # (Until then the old token still works: see the test below on a
+        # reconnection that drops again at once.)
+        ws.send_json({"type": "ping"})
+        assert ws.receive_json()["type"] == "pong"
     # spent: the same token does not open a second call
     with client.websocket_connect("/api/live/1") as ws:
         ws.send_json({"type": "resume", "token": token})
@@ -591,3 +596,548 @@ def test_language_switch_mid_call(client):
         m = ws.receive_json()
         assert m["type"] == "lang" and m["guide"]["step"] == ready["guide"]["step"]
         assert not re.search("[ऀ-ॿ]", m["guide"]["text"] + m["context"]["crop"]["name"])
+
+
+# --- how the looking itself went ----------------------------------------------
+
+def test_a_video_remembers_where_it_saw_what_it_saw():
+    """A verdict off a video is a claim about particular seconds of it. The
+    farmer should be able to go back to those seconds and look at the leaf —
+    and a year on, the record should still say how much of the file could be
+    read, not only what was concluded from it."""
+    readings = iter([[("rice_healthy", 0.93)], [("rice_brown_spot", 0.9)], [("rice_brown_spot", 0.86)]])
+    s = LiveSession(crop="rice", lang="en", can_classify=True, mode="video")
+    s.on_frame(leaf(1, dark=True), b"dark", lambda img: next(readings), at=0.0)   # passed over
+    assert s.on_frame(leaf(2), b"a", lambda img: next(readings), at=1.0)["mark"] == "h"
+    assert s.on_frame(leaf(3), b"b", lambda img: next(readings), at=7.5)["mark"] == "p"
+    assert s.on_frame(leaf(4), b"c", lambda img: next(readings), at=19.0)["mark"] == "p"
+    s.ended = True
+
+    f = s.findings(kb)
+    assert f["seen"][0]["moments"] == [7.5, 19.0]
+    r = f["reading"]
+    assert r["mode"] == "video" and (r["read"], r["clear"], r["kept"]) == (4, 3, 3)
+    assert r["marks"] == [[0.0, "x"], [1.0, "h"], [7.5, "p"], [19.0, "p"]]
+    assert r["passed_over"] == {"too_dark": 1} and r["why_thin"] is None
+
+
+def test_a_walk_has_no_seconds_to_point_at():
+    s = LiveSession(crop="rice", lang="en", can_classify=True)
+    s.skip()
+    r = s.findings(kb)["reading"]
+    assert r == {"mode": "walk", "skipped": ["overview"], "other_crop": None}
+
+
+def test_footage_of_another_crop_is_called_what_it_is():
+    """Two fields, the wrong one picked — or a field still registered under last
+    season's crop. Every reading is rightly set aside as another crop, and the
+    farmer used to be told the camera could not see their plants: false, and it
+    sent them out to film the same maize again."""
+    maize = lambda img: [("maize_healthy", 0.9), ("maize_rust", 0.05)]  # noqa: E731
+    s = LiveSession(crop="rice", lang="en", can_classify=True, mode="video")
+    for seed in range(300, 306):
+        s.on_frame(leaf(seed), f"m{seed}".encode(), maize, at=float(seed - 300))
+    s.ended = True
+    assert s.other_crop_seen() == {"crop": "maize", "views": 6}
+    assert s.why_thin() == "other_crop", "plenty of clear frames, all of the wrong crop"
+    f = s.findings(kb)
+    assert not f["seen"] and not f["possible"]
+    assert {m[1] for m in f["reading"]["marks"]} == {"o"}
+
+    view = live.reading_view(kb, f["reading"], "rice", "hi")
+    assert "मक्का" in view["other_crop"]["text"] and "धान" in view["other_crop"]["text"]
+
+
+def test_one_misread_leaf_is_not_another_crop():
+    readings = iter([[("maize_rust", 0.6)]] + [[("rice_healthy", 0.92)]] * 5)
+    s = LiveSession(crop="rice", lang="en", can_classify=True, mode="video")
+    for seed in range(320, 326):
+        s.on_frame(leaf(seed), b"x", lambda img: next(readings))
+    assert s.other_crop == 1 and s.other_crop_seen() is None and s.why_thin() is None
+
+
+# --- the socket, held to the same things --------------------------------------
+
+def frame_msg(seq: int, seed: int, **more) -> dict:
+    return {"type": "frame", "seq": seq, "data": base64.b64encode(jpeg(leaf(seed))).decode()} | more
+
+
+def read_video(ws, seeds, step: float = 1.0) -> dict:
+    """Send frames the way the upload screen does and return the last reply."""
+    m = {}
+    for i, seed in enumerate(seeds):
+        ws.send_json(frame_msg(i, seed, at=i * step))
+        m = ws.receive_json()
+        assert m["type"] == "frame", m
+    return m
+
+
+def summary_of(ws) -> dict:
+    m = ws.receive_json()
+    while m["type"] != "summary":
+        assert m["type"] != "error", f"asked for the result and was refused: {m}"
+        m = ws.receive_json()
+    return m["summary"]
+
+
+def test_a_video_end_to_end_keeps_its_reading(client):
+    """The upload route through the real socket: read, ended, saved — and the
+    saved record says it was a video, how much of it was readable and where the
+    problem was seen, in whichever language it is opened in later."""
+    with client.websocket_connect("/api/live/1") as ws:
+        # A laptop's idea of where it is must not move the field: the weather
+        # and the "you are far from your field" line are about the crop.
+        ws.send_json({"type": "start", "lang": "mr", "mode": "video", "lat": 12.97, "lon": 77.59, "accuracy": 30})
+        ready = ws.receive_json()
+        assert ready["context"]["location"]["source"] == "farm"
+        assert not ready["context"]["location"]["far_from_farm"]
+        last = read_video(ws, range(800, 808), step=2.0)
+        assert last["mark"] == "p" and last["guide"]["kept"] == 8
+        ws.send_json({"type": "end_of_video"})
+        assert ws.receive_json()["type"] == "steps_done"
+        ws.send_json({"type": "finish"})
+        s = summary_of(ws)
+
+    assert s["verdict"] == "found" and s["reading"]["mode"] == "video"
+    assert s["reading"]["kept"] == 8 and len(s["reading"]["marks"]) == 8
+    assert s["seen"][0]["moments"][:3] == [0.0, 2.0, 4.0]
+    with SessionLocal() as db:
+        scan = db.query(LiveScan).one()
+        assert scan.findings["reading"]["mode"] == "video"
+        assert scan.location_source == "farm"
+    en = client.get(f"/api/farms/1/live/{s['scan_id']}?lang=en").json()
+    assert en["reading"] == s["reading"], "the reading changed when the language did"
+    assert en["seen"][0]["moments"] == s["seen"][0]["moments"]
+
+
+def test_a_thin_video_says_why_in_the_saved_summary(client, monkeypatch):
+    """Why a video gave nothing used to live only in the browser's memory of
+    the call: reload, or switch language, and the explanation was gone and the
+    generic "hold the phone close to a leaf" came back in its place."""
+    monkeypatch.setattr(live, "classify", lambda img: [])     # nothing the model knows as a crop
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "en", "mode": "video"})
+        ws.receive_json()
+        read_video(ws, range(820, 826))
+        ws.send_json({"type": "end_of_video"})
+        ws.receive_json()
+        ws.send_json({"type": "finish"})
+        s = summary_of(ws)
+    assert s["verdict"] == "unclear" and s["reading"]["why_thin"] == "not_crop"
+    assert "video" in s["speech"] and "hold the phone" not in s["speech"]
+    again = client.get(f"/api/farms/1/live/{s['scan_id']}?lang=hi").json()
+    assert again["reading"]["why_thin"] == "not_crop"
+
+
+def test_a_video_dropped_mid_read_is_picked_back_up(client):
+    """Three minutes of footage read to the last ten seconds, and the wifi
+    blinks. Only a walk used to be held; a video was thrown away."""
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "en", "mode": "video"})
+        token = ws.receive_json()["resume"]
+        read_video(ws, range(840, 844))
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "resume", "token": token})
+        back = ws.receive_json()
+        assert back["resumed"] and back["guide"]["read"] == 4 and back["guide"]["kept"] == 4
+        ws.send_json(frame_msg(9, 850, at=9.0))
+        assert ws.receive_json()["guide"]["kept"] == 5
+        ws.send_json({"type": "end_of_video"})
+        assert ws.receive_json()["type"] == "steps_done"
+        ws.send_json({"type": "finish"})
+        assert summary_of(ws)["reading"]["read"] == 5
+
+
+def test_a_message_that_is_not_a_message_does_not_end_the_call(client):
+    """Text that is not JSON raised straight out of the handler, and a JSON list
+    has no .get — either one ended the call on an unhandled error, which also
+    skipped the parking, so the walk went with it."""
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "en"})
+        ws.receive_json()
+        ws.send_text("{not json")
+        assert ws.receive_json()["code"] == "BAD_MESSAGE"
+        ws.send_json(["frame", 1])
+        assert ws.receive_json()["code"] == "BAD_MESSAGE"
+        ws.send_bytes(b"\x00\x01")
+        assert ws.receive_json()["code"] == "BAD_MESSAGE"
+        ws.send_json({"type": "ping"})
+        assert ws.receive_json()["type"] == "pong"
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json("start")                       # the opening message, not an object
+        assert ws.receive_json()["code"] == "EXPECTED_START"
+
+
+@pytest.mark.parametrize("lat,lon", [(float("nan"), 79.65), (21.17, float("inf")), (True, False), (91, 79), ("21", "79")])
+def test_a_position_that_is_not_one_is_not_used(client, lat, lon):
+    """JSON as Python reads it allows NaN and Infinity, and True is an int. A
+    latitude of NaN went on to be rounded, stored and sent to a weather service."""
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_text(__import__("json").dumps({"type": "start", "lang": "en", "lat": lat, "lon": lon}))
+        loc = ws.receive_json()["context"]["location"]
+        assert loc["source"] == "farm" and (loc["lat"], loc["lon"]) == (21.17, 79.65)
+
+
+def test_a_save_that_fails_does_not_cost_the_walk(client, monkeypatch):
+    """The database blinks at the one moment that matters. The walk is still in
+    memory and nothing was written: the call says so and stays up, and asking
+    again saves it."""
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "en", "mode": "video"})
+        ws.receive_json()
+        read_video(ws, range(860, 866))
+        ws.send_json({"type": "end_of_video"})
+        ws.receive_json()
+        real = live.finish
+        monkeypatch.setattr(live, "finish", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("connection reset")))
+        ws.send_json({"type": "finish"})
+        assert ws.receive_json() == {"type": "error", "code": "SAVE_FAILED"}
+        with SessionLocal() as db:
+            assert db.query(LiveScan).count() == 0
+        monkeypatch.setattr(live, "finish", real)
+        ws.send_json({"type": "finish"})
+        assert summary_of(ws)["verdict"] == "found"
+    with SessionLocal() as db:
+        assert db.query(LiveScan).count() == 1
+
+
+def test_a_frame_the_model_chokes_on_parks_the_walk_instead_of_losing_it(client, monkeypatch):
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "en", "mode": "video"})
+        token = ws.receive_json()["resume"]
+        read_video(ws, range(880, 883))
+        monkeypatch.setattr(live, "classify", lambda img: 1 / 0)
+        ws.send_json(frame_msg(5, 890))
+        with pytest.raises(Exception):  # noqa: B017, PT011  the server lets the socket go
+            ws.receive_json()
+    monkeypatch.setattr(live, "classify", lambda img: [("rice_brown_spot", 0.88)])
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "resume", "token": token})
+        back = ws.receive_json()
+        assert back["resumed"] and back["guide"]["kept"] == 3
+
+
+def test_an_answer_lost_on_the_way_back_is_given_again_not_saved_twice(client):
+    """The line drops in the second between the save and the summary arriving.
+    The farmer was told the walk was lost while its result sat in their history.
+    Dialling back in with the same token gets the same answer — and no second
+    record of the same walk."""
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "en", "mode": "video"})
+        token = ws.receive_json()["resume"]
+        read_video(ws, range(900, 906))
+        ws.send_json({"type": "end_of_video"})
+        ws.receive_json()
+        ws.send_json({"type": "finish"})
+        first = summary_of(ws)
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "resume", "token": token})
+        again = ws.receive_json()
+        assert again["type"] == "summary" and again["summary"]["scan_id"] == first["scan_id"]
+    with SessionLocal() as db:
+        assert db.query(LiveScan).count() == 1
+    with client.websocket_connect("/api/live/1") as ws:      # and the token is spent
+        ws.send_json({"type": "resume", "token": token})
+        assert ws.receive_json()["code"] == "RESUME_UNKNOWN"
+
+
+def test_a_failure_after_the_save_does_not_save_the_walk_twice(client, monkeypatch):
+    """The record is written, and then putting the answer together fails. The
+    phone is told to ask again — and asking again must find the walk already
+    saved, not open the same problem and the same expert case a second time."""
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "en", "mode": "video"})
+        ws.receive_json()
+        read_video(ws, range(920, 926))
+        ws.send_json({"type": "end_of_video"})
+        ws.receive_json()
+        real = live.speech
+        monkeypatch.setattr(live, "speech", lambda *a, **k: 1 / 0)
+        ws.send_json({"type": "finish"})
+        assert ws.receive_json()["code"] == "SAVE_FAILED"
+        monkeypatch.setattr(live, "speech", real)
+        ws.send_json({"type": "finish"})
+        s = summary_of(ws)
+    assert s["verdict"] == "found" and s["seen"][0]["advisory"]["ladder"]
+    with SessionLocal() as db:
+        assert db.query(LiveScan).count() == 1
+        assert db.query(Problem).count() == 1
+
+
+def test_a_reconnection_that_drops_again_at_once_keeps_the_walk(client):
+    """Picking a walk back up hands the phone a new token. On the patchy line
+    that made it drop in the first place, it can drop again before that token
+    arrives — and the walk was then held under a token the phone never saw, so
+    its next try, with the one it did have, was told the walk was gone."""
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "en", "mode": "video"})
+        old = ws.receive_json()["resume"]
+        read_video(ws, range(940, 944))
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "resume", "token": old})
+        # "ready" is sent, and the line is gone before the phone says anything
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "resume", "token": old})
+        back = ws.receive_json()
+        assert back["resumed"] and back["guide"]["read"] == 4
+        newer = back["resume"]
+        ws.send_json({"type": "ping"})                      # this time it is heard
+        assert ws.receive_json()["type"] == "pong"
+    with client.websocket_connect("/api/live/1") as ws:   # the old token is spent now
+        ws.send_json({"type": "resume", "token": old})
+        assert ws.receive_json()["code"] == "RESUME_UNKNOWN"
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "resume", "token": newer})
+        assert ws.receive_json()["guide"]["read"] == 4
+
+
+# --- after review: the failures between the cracks ---------------------------
+
+def test_a_phone_whose_old_line_is_still_open_can_take_its_call_back(client):
+    """Wifi to mobile data leaves the old connection half-open: nothing on it
+    says it has gone, and the server only notices after a minute and a half of
+    silence. The reconnection comes in long before that and used to be told the
+    walk did not exist — it was still attached to the dead line."""
+    with client.websocket_connect("/api/live/1") as old:
+        old.send_json({"type": "start", "lang": "en", "mode": "video"})
+        token = old.receive_json()["resume"]
+        read_video(old, range(960, 964))
+        # ...and the phone is now on another network, the old line still open
+        with client.websocket_connect("/api/live/1") as new:
+            new.send_json({"type": "resume", "token": token})
+            back = new.receive_json()
+            assert back["type"] == "ready" and back["resumed"], back
+            assert back["guide"]["read"] == 4
+            new.send_json(frame_msg(9, 970, at=9.0))
+            assert new.receive_json()["guide"]["kept"] == 5
+
+
+def test_a_check_that_saw_another_crop_still_says_so_after_the_crop_is_changed(client):
+    """The sentence tells the farmer to change the crop for this field if it is
+    wrong. When they do, the saved check must not turn into "looks like maize,
+    but this field is registered as maize"."""
+    import app.routers.live  # noqa: F401  (the route under test)
+    from app import live as live_mod
+
+    maize = lambda img: [("maize_healthy", 0.93), ("maize_rust", 0.04)]  # noqa: E731
+    live_mod_classify = live_mod.classify
+    try:
+        live_mod.classify = maize
+        with client.websocket_connect("/api/live/1") as ws:
+            ws.send_json({"type": "start", "lang": "en", "mode": "video"})
+            ws.receive_json()
+            read_video(ws, range(980, 986))
+            ws.send_json({"type": "end_of_video"})
+            ws.receive_json()
+            ws.send_json({"type": "finish"})
+            s = summary_of(ws)
+    finally:
+        live_mod.classify = live_mod_classify
+    assert s["reading"]["other_crop"]["crop"] == "maize"
+    assert "registered as Rice" in s["reading"]["other_crop"]["text"], s["reading"]["other_crop"]["text"]
+    with SessionLocal() as db:
+        db.get(Farm, 1).crop = "maize"     # the farmer took the advice
+        db.commit()
+    again = client.get(f"/api/farms/1/live/{s['scan_id']}?lang=en").json()
+    assert again["reading"]["other_crop"]["text"] == s["reading"]["other_crop"]["text"]
+    hi = client.get(f"/api/farms/1/live/{s['scan_id']}?lang=hi").json()
+    assert "धान" in hi["reading"]["other_crop"]["text"], "not re-said in the farmer's language"
+
+
+def test_a_neighbours_crop_in_the_footage_does_not_overrule_a_finding_on_this_one():
+    """Six frames of the maize plot next door, four of a rice disease: that is
+    a rice finding, and telling the farmer to pick another field over it is a
+    contradiction on one screen."""
+    readings = iter([[("maize_healthy", 0.9)]] * 6 + [[("rice_brown_spot", 0.9)]] * 4)
+    s = LiveSession(crop="rice", lang="en", can_classify=True, mode="video")
+    for seed in range(1000, 1010):
+        s.on_frame(leaf(seed), f"n{seed}".encode(), lambda img: next(readings))
+    s.ended = True
+    assert [x["target"] for x in s.findings(kb)["seen"]] == ["rice_brown_spot"]
+    assert s.other_crop_seen() is None and s.why_thin() is None
+
+    healthy = iter([[("maize_healthy", 0.9)]] * 6 + [[("rice_healthy", 0.95)]] * 3)
+    s = LiveSession(crop="rice", lang="en", can_classify=True, mode="video")
+    for seed in range(1020, 1029):
+        s.on_frame(leaf(seed), f"h{seed}".encode(), lambda img: next(healthy))
+    assert s.other_crop_seen() is None, "sure looks at healthy rice are an answer about this field"
+
+
+def test_a_frame_the_model_fails_on_is_undone_whole_and_read_again():
+    """Counted half-way, the failed frame left the view looking already seen,
+    and the same frame re-sent after the call was picked back up was passed
+    over as "the same view": that second of video was never read."""
+    for mode in ("video", "walk"):
+        s = LiveSession(crop="rice", lang="en", can_classify=True, mode=mode)
+        if mode == "walk":
+            s.idx = 2                                    # the leaf close-ups
+        ok = lambda img: [("rice_brown_spot", 0.9)]      # noqa: E731
+        s.on_frame(leaf(1040), b"a", ok, at=0.0)
+        before = (s.frames, s.good_frames, s.classified, s.clear, s.kept, s.idx,
+                  [st.got for st in s.steps], len(s.closeups), len(s.marks), len(s.sightings))
+        with pytest.raises(ZeroDivisionError):
+            s.on_frame(leaf(1041), b"b", lambda img: 1 / 0, at=1.0)
+        after = (s.frames, s.good_frames, s.classified, s.clear, s.kept, s.idx,
+                 [st.got for st in s.steps], len(s.closeups), len(s.marks), len(s.sightings))
+        assert after == before, mode
+        again = s.on_frame(leaf(1041), b"b", ok, at=1.0)
+        assert again["counted"], f"{mode}: the re-sent frame was passed over: {again['quality']}"
+
+
+def test_a_walk_past_its_time_can_still_be_finished_and_is_not_held_for_ever(client, monkeypatch):
+    """A long walk, then a long look-alike question: the farmer's finish arrived
+    after the outside edge, was dropped there, and the walk was held, handed
+    back and refused again until the phone gave up."""
+    import app.routers.live as router
+
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "en", "mode": "video"})
+        ws.receive_json()
+        read_video(ws, range(1060, 1064))
+        monkeypatch.setattr(router, "HARD_SECONDS", -1)      # the edge is now behind us
+        ws.send_json({"type": "finish"})
+        assert summary_of(ws)["reading"]["read"] == 4         # the last word still counts
+
+    monkeypatch.setattr(router, "HARD_SECONDS", 600)
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "en", "mode": "video"})
+        token = ws.receive_json()["resume"]
+        read_video(ws, range(1070, 1074))
+        monkeypatch.setattr(router, "HARD_SECONDS", -1)       # just past the edge
+        ws.send_json({"type": "ping"})
+        assert ws.receive_json()["code"] == "SESSION_LIMIT"   # told once
+        monkeypatch.setattr(router, "HARD_SECONDS", -10_000)  # and now long, long past it
+        ws.send_json({"type": "ping"})                         # let go
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "resume", "token": token})
+        assert ws.receive_json()["code"] == "RESUME_UNKNOWN", "a call that can only time out was held"
+
+
+def test_held_calls_are_capped_per_caller_and_answers_do_not_take_their_place():
+    import app.routers.live as router
+
+    router._parked.clear()
+    router._answered.clear()
+    now = time.monotonic()
+    walk = lambda who, at: router._Parked(now + at, 1, who, object(), {}, "en", 0.0)  # noqa: E731
+    router._hold(("farmer-walk",), walk(7, 0))
+    for i in range(router.MAX_ANSWERED + 5):                 # a busy afternoon of finished calls
+        router._hold((f"answer-{i}",), router._Parked(now + 1 + i, 1, 8, None, {}, "en", 0.0, {"x": i}))
+    for i in range(5):                                       # one account, dropping over and over
+        router._hold((f"spam-{i}",), walk(9, 2 + i))
+    assert "farmer-walk" in router._parked, "a real dropped walk was pushed out"
+    assert sum(1 for t in router._parked if t.startswith("spam-")) == router.MAX_PARKED_PER_CALLER
+    assert len(router._answered) == router.MAX_ANSWERED
+    # one call under two names is one place, and is picked up once
+    router._hold(("new-name", "old-name"), walk(7, 10))
+    assert router._unpark("old-name", 1, 7) is not None
+    assert "new-name" not in router._parked and router._unpark("new-name", 1, 7) is None
+
+
+def test_a_save_that_fails_takes_the_photos_it_wrote_with_it(client, monkeypatch):
+    from app.config import UPLOAD_DIR
+
+    def files():
+        return set(UPLOAD_DIR.glob("*.jpg")) if UPLOAD_DIR.exists() else set()
+
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "en", "mode": "video"})
+        ws.receive_json()
+        read_video(ws, range(1080, 1086))
+        ws.send_json({"type": "end_of_video"})
+        ws.receive_json()
+        before = files()
+        real = services._advise
+        monkeypatch.setattr(services, "_advise", lambda *a, **k: 1 / 0)   # after the photos are written
+        ws.send_json({"type": "finish"})
+        assert ws.receive_json()["code"] == "SAVE_FAILED"
+        assert files() == before, "the failed attempt left its photos behind"
+        monkeypatch.setattr(services, "_advise", real)
+        ws.send_json({"type": "finish"})
+        s = summary_of(ws)
+    assert len(files() - before) == len(s["seen"][0]["evidence"])
+
+
+@pytest.mark.parametrize("v", [10 ** 400, -(10 ** 400), float("nan"), True, "1", None, 91])
+def test_a_number_that_is_not_one_is_refused_at_the_door(v):
+    from app.routers.live import _number
+
+    assert _number(v, -90, 90) is None
+
+
+def test_the_second_that_was_in_flight_when_the_line_dropped_is_read_once():
+    s = LiveSession(crop="rice", lang="en", can_classify=True, mode="video")
+    ok = lambda img: [("rice_brown_spot", 0.9)]  # noqa: E731
+    s.on_frame(leaf(1100), b"a", ok, at=31.0)
+    s.on_frame(leaf(1101), b"b", ok, at=32.0)
+    again = s.on_frame(leaf(1101), b"b", ok, at=32.0)   # re-sent after the reconnection
+    assert again["repeat"] and not again["counted"] and again["mark"] is None
+    assert (s.frames, s.kept, len(s.marks)) == (2, 2, 2)
+    blur_retry = s.on_frame(leaf(1102), b"c", ok, at=32.5)  # a second look is not a repeat
+    assert blur_retry["counted"] and s.frames == 3
+
+
+def test_past_the_edge_only_a_real_last_word_is_taken(client, monkeypatch):
+    """Past the time limit the finish, and an answer to a question actually
+    waiting, are still taken. Anything else — an answer to nothing, or the
+    same answer over and over — is not a way to keep the place in the queue."""
+    import app.routers.live as router
+
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "en", "mode": "video"})
+        ws.receive_json()
+        read_video(ws, range(1120, 1124))
+        monkeypatch.setattr(router, "HARD_SECONDS", -1)
+        ws.send_json({"type": "answer", "cue_id": "nothing", "answer": "yes"})   # no question was asked
+        assert ws.receive_json()["code"] == "SESSION_LIMIT"
+        ws.send_json({"type": "answer", "cue_id": "nothing", "answer": "yes"})
+        with pytest.raises(Exception):  # noqa: B017, PT011  let go
+            ws.receive_json()
+
+    monkeypatch.setattr(router, "HARD_SECONDS", 600)
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "en", "mode": "video"})
+        ws.receive_json()
+        read_video(ws, range(1130, 1134))
+        monkeypatch.setattr(router, "HARD_SECONDS", -1 - router.LAST_WORD_SECONDS - 5)
+        ws.send_json({"type": "finish"})                   # even the finish, once the grace is spent
+        with pytest.raises(Exception):  # noqa: B017, PT011
+            ws.receive_json()
+
+
+# --- one farm, one age -----------------------------------------------------------
+
+@pytest.mark.parametrize("state", [None, "Tamil Nadu"])
+def test_a_transplanted_rice_farm_has_one_age_on_the_whole_screen(client, state):
+    """The crop card and the warnings under it describe the same crop.
+
+    A rice farmer gives the transplanting date, and the weeks in the nursery are
+    added back to get the crop's age. The card did that; the risk rules counted
+    from the bare date, so one screen said "Flowering · 81 days old" and, right
+    below it, "Your crop is 60 days old (Panicle initiation)". Three weeks is a
+    whole stage, and the rules are keyed to the stage."""
+    kb, today = get_kb(), date.today()
+    with SessionLocal() as db:
+        farm = Farm(farmer_name="tp", crop="rice", sowing_date=today - timedelta(days=60),
+                    date_basis="transplanted", state=state, district="Bhandara",
+                    lat=21.17, lon=79.65, area_acres=2, lang="en")
+        db.add(farm)
+        db.commit()
+
+        stage, das = kb.stage_of(farm, today)
+        assert das == 60 + kb.nursery_days("rice", state) and das != 60
+
+        window = services.weather_for(db, farm)
+        scores = services.risk_scores(db, kb, farm, today, window)
+        aged = [s for s in scores if "das" in s.detail]
+        assert aged, "no rule fired, so nothing here was checked"
+        assert {(s.detail["stage"], s.detail["das"]) for s in aged} == {(stage, das)}
+
+        ctx = live.context(db, kb, farm, None, None, None, "en")
+        assert (ctx["crop"]["stage"], ctx["crop"]["das"]) == (stage, das)
+        said = f"Your crop is {das} days old ({ctx['crop']['stage_name']})"
+        by_stage = [r for r in ctx["risks"] if r["trigger"] == "phenology"]
+        assert all(r["reason"].startswith(said) for r in by_stage)
+        assert not any("60 days old" in r["reason"] for r in ctx["risks"])
+        if state is None:  # 81 days: inside the stem borer's window, so the sentence is on screen
+            assert by_stage

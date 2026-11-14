@@ -5,13 +5,15 @@ touches the database, the weather/soil services and the photo model.
 
 from __future__ import annotations
 
+import contextlib
 import copy
+from collections.abc import Callable
 from datetime import date, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import services
+from app import config, services
 from app.engine import advisory as advisory_engine
 from app.engine import fieldnow, risk, vision
 from app.engine.livescan import LiveSession
@@ -146,6 +148,16 @@ def relang(kb: KB, sess: LiveSession, lang: str) -> None:
     sess.target_name = _namer(kb, lang)
 
 
+def restore_session(kb: KB, state: dict) -> LiveSession:
+    """A walk held as data (LiveSession.to_state), back as a session that can
+    take the next frame. The names it speaks are a function of the language,
+    and functions do not travel: they are rebuilt here, exactly as a language
+    switch rebuilds them. Raises ValueError on a state it cannot read."""
+    sess = LiveSession.from_state(state)
+    relang(kb, sess, sess.lang)
+    return sess
+
+
 def classify(img) -> list[tuple[str, float]]:
     """Top-3 targets for one close-up, calibrated — the same model as the photo path."""
     model = vision._real_model()
@@ -186,6 +198,36 @@ def walk_verdict(seen: bool, possible: bool, can_classify: bool, healthy_confide
 
 def finish(db: Session, kb: KB, farm: Farm, sess: LiveSession, ctx: dict, lang: str,
            send_to_expert: bool = False) -> dict:
+    # Asked for twice: the first answer never arrived, or something failed
+    # after the commit. The walk is already on record — hand back that record
+    # rather than open the same problems and the same expert case again.
+    if sess.saved is not None:
+        scan = db.get(LiveScan, sess.saved)
+        if scan is not None:
+            return render(db, kb, farm, scan, lang)
+    # Evidence photos are written to disk before the rows that point at them
+    # are committed. A save that fails part-way rolls the rows back but not the
+    # files, and each retry wrote a fresh set; so the ones this attempt wrote
+    # go with it, unless the commit already happened and they are referenced.
+    written: list[str] = []
+
+    def keep(jpeg: bytes) -> str:
+        name = services.save_upload(jpeg)
+        written.append(name)
+        return name
+
+    try:
+        return _record(db, kb, farm, sess, ctx, lang, send_to_expert, keep)
+    except Exception:
+        if sess.saved is None:
+            for name in written:
+                with contextlib.suppress(OSError):
+                    (config.UPLOAD_DIR / name).unlink()
+        raise
+
+
+def _record(db: Session, kb: KB, farm: Farm, sess: LiveSession, ctx: dict, lang: str,
+            send_to_expert: bool, keep: Callable[[bytes], str]) -> dict:
     f = sess.findings(kb)
     model_version = vision.model_status()["model_version"] if sess.can_classify else "none"
     problem_ids: list[int] = []
@@ -199,7 +241,7 @@ def finish(db: Session, kb: KB, farm: Farm, sess: LiveSession, ctx: dict, lang: 
         frames = sess.evidence_for(t)
         for i, jpeg in enumerate(frames or [None]):
             db.add(Diagnosis(
-                problem_id=problem.id, image_path=services.save_upload(jpeg) if jpeg else None,
+                problem_id=problem.id, image_path=keep(jpeg) if jpeg else None,
                 topk=[{"target": t, "confidence": item["confidence"]}],
                 gate_outcome="advise", gate_reason="LIVE_MULTI_VIEW", confidence=item["confidence"],
                 model_version=model_version, is_stub=False,
@@ -219,7 +261,7 @@ def finish(db: Session, kb: KB, farm: Farm, sess: LiveSession, ctx: dict, lang: 
         db.flush()
         for jpeg in sess.evidence_for(t) or [None]:
             db.add(Diagnosis(
-                problem_id=problem.id, image_path=services.save_upload(jpeg) if jpeg else None,
+                problem_id=problem.id, image_path=keep(jpeg) if jpeg else None,
                 topk=[{"target": t, "confidence": item["confidence"]}], gate_outcome="escalate",
                 gate_reason="LIVE_FEW_VIEWS" if item["reason"] in ("FEW_VIEWS", "MINORITY_VIEWS", "LOOKALIKE") else "NOT_PHOTO_DIAGNOSABLE",
                 confidence=item["confidence"], model_version=model_version, is_stub=False,
@@ -236,7 +278,7 @@ def finish(db: Session, kb: KB, farm: Farm, sess: LiveSession, ctx: dict, lang: 
         db.add(problem)
         db.flush()
         for _, jpeg in sess.closeups:
-            db.add(Diagnosis(problem_id=problem.id, image_path=services.save_upload(jpeg), topk=[],
+            db.add(Diagnosis(problem_id=problem.id, image_path=keep(jpeg), topk=[],
                              gate_outcome="escalate", gate_reason="FARMER_REQUEST", confidence=0.0,
                              model_version=model_version, is_stub=False))
         reason = "CROP_NOT_SUPPORTED" if not sess.can_classify else "FARMER_REQUEST"
@@ -252,13 +294,14 @@ def finish(db: Session, kb: KB, farm: Farm, sess: LiveSession, ctx: dict, lang: 
         findings={"seen": [{k: v for k, v in x.items() if k not in ("advisory",)} for x in seen_out],
                   "possible": possible_out, "healthy_views": f["healthy_views"],
                   "other_crop_views": f["other_crop_views"], "answer": f["answer"],
-                  "skipped_views": f["skipped_views"]},
+                  "skipped_views": f["skipped_views"], "reading": f["reading"]},
         context={k: ctx[k] for k in ("location", "weather_now", "forecast", "soil", "crop")}
         | {"risks": [{k: r[k] for k in ("target", "level", "trigger", "reason_i18n")} for r in ctx["risks"]]},
         problem_ids=problem_ids, model_version=model_version,
     )
     db.add(scan)
     db.commit()
+    sess.saved = scan.id
     summary = {
         "scan_id": scan.id, "verdict": verdict, "context": ctx,
         "seen": seen_out, "possible": possible_out, "expert_case": expert_case,
@@ -266,9 +309,27 @@ def finish(db: Session, kb: KB, farm: Farm, sess: LiveSession, ctx: dict, lang: 
                   "classified_views": f["classified_views"], "healthy_views": f["healthy_views"],
                   "other_crop_views": f["other_crop_views"]},
         "model_version": model_version, "photo_model": sess.can_classify,
+        "reading": reading_view(kb, f["reading"], sess.crop, lang),
     }
     summary["speech"] = speech(summary, lang)
     return summary
+
+
+def reading_view(kb: KB, reading: dict | None, crop: str, lang: str) -> dict:
+    """How the looking went, in `lang`: a walk or a video, how much of a video
+    was readable and where, which views a walk never got — and, when what the
+    camera showed was mostly a different crop, the sentence that says so.
+
+    A check saved before any of this was kept reads back as a plain walk."""
+    r = dict(reading or {"mode": "walk", "skipped": []})
+    other = r.get("other_crop")
+    if other and other.get("crop") in kb.crops and crop in kb.crops:
+        seen = tr(kb.crops[other["crop"]]["names"], lang)
+        r["other_crop"] = other | {"name": seen, "text": _s(
+            "other_crop", lang, seen=seen, crop=tr(kb.crops[crop]["names"], lang))}
+    else:
+        r["other_crop"] = None
+    return r
 
 
 def localize_context(kb: KB, context: dict, lang: str) -> dict:
@@ -309,6 +370,11 @@ def render(db: Session, kb: KB, farm: Farm, scan: LiveScan, lang: str) -> dict:
         "stats": {"frames": scan.frames, "good_frames": scan.good_frames, "classified_views": scan.classified_views,
                   "healthy_views": f.get("healthy_views", 0), "other_crop_views": f.get("other_crop_views", 0)},
         "model_version": scan.model_version, "photo_model": scan.model_version != "none",
+        # Against the crop the check was made for, not the field's crop today:
+        # "change the crop for this field" is advice a farmer may well take,
+        # and the record of why should not then contradict itself.
+        "reading": reading_view(kb, f.get("reading") or {"mode": "walk", "skipped": f.get("skipped_views", [])},
+                                (scan.context.get("crop") or {}).get("id") or farm.crop, lang),
     }
     summary["speech"] = speech(summary, lang)
     return summary
@@ -346,6 +412,46 @@ S = {
                       "कृपया फिर से कोशिश करें: फ़ोन को पत्ती के पास, दिन की रोशनी में, स्थिर रखें।",
                 "mr": "तुमची रोपे निरोगी आहेत की नाही हे सांगण्याइतकी स्पष्ट दिसली नाहीत. "
                       "कृपया पुन्हा प्रयत्न करा: फोन पानाजवळ, दिवसाच्या उजेडात, स्थिर धरा."},
+    # A video is not a phone held to a leaf: telling somebody at a computer to
+    # "hold the phone close" about footage that is already shot is advice for
+    # another room. The screen says which wall the video hit; this only has to
+    # not contradict it.
+    "unclear_video": {
+        "en": "I could not read enough of this video to tell whether your plants are healthy.",
+        "hi": "इस वीडियो से मैं इतना नहीं पढ़ पाया कि बता सकूँ कि आपके पौधे स्वस्थ हैं या नहीं।",
+        "mr": "तुमची रोपे निरोगी आहेत की नाही हे सांगण्याइतके या व्हिडिओतून मला वाचता आले नाही.",
+        "bn": "আপনার গাছ সুস্থ কি না তা বলার মতো যথেষ্ট এই ভিডিও থেকে আমি পড়তে পারিনি।",
+        "ta": "உங்கள் செடிகள் ஆரோக்கியமாக உள்ளனவா என்று சொல்லும் அளவுக்கு இந்த வீடியோவை என்னால் படிக்க முடியவில்லை.",
+        "te": "మీ మొక్కలు ఆరోగ్యంగా ఉన్నాయో లేదో చెప్పగలిగేంతగా ఈ వీడియోను నేను చదవలేకపోయాను.",
+        "kn": "ನಿಮ್ಮ ಗಿಡಗಳು ಆರೋಗ್ಯವಾಗಿವೆಯೇ ಎಂದು ಹೇಳುವಷ್ಟು ಈ ವೀಡಿಯೊವನ್ನು ನನಗೆ ಓದಲು ಆಗಲಿಲ್ಲ.",
+        "ml": "നിങ്ങളുടെ ചെടികൾ ആരോഗ്യമുള്ളതാണോ എന്ന് പറയാൻ വേണ്ടത്ര ഈ വീഡിയോ എനിക്ക് വായിക്കാനായില്ല.",
+        "gu": "તમારા છોડ સ્વસ્થ છે કે નહીં તે કહી શકાય એટલું આ વીડિયોમાંથી હું વાંચી શક્યો નહીં.",
+        "pa": "ਤੁਹਾਡੇ ਬੂਟੇ ਤੰਦਰੁਸਤ ਹਨ ਜਾਂ ਨਹੀਂ, ਇਹ ਦੱਸਣ ਜੋਗਾ ਮੈਂ ਇਸ ਵੀਡੀਓ ਵਿੱਚੋਂ ਨਹੀਂ ਪੜ੍ਹ ਸਕਿਆ।",
+    },
+    # What the camera showed was a crop, read well enough — only not the one
+    # this field is registered to. "Could not see your plants" would be false.
+    "other_crop": {
+        "en": "What I saw looks like {seen}, but this field is registered as {crop}. "
+              "Choose the right field, or change the crop for this field.",
+        "hi": "मुझे जो दिखा वह {seen} जैसा लगता है, पर यह खेत {crop} के लिए दर्ज है। "
+              "सही खेत चुनें, या इस खेत की फसल बदलें।",
+        "mr": "मला जे दिसले ते {seen} सारखे वाटते, पण हे शेत {crop} साठी नोंदवलेले आहे. "
+              "योग्य शेत निवडा, किंवा या शेताचे पीक बदला.",
+        "bn": "আমি যা দেখলাম তা {seen}-এর মতো লাগছে, কিন্তু এই জমি {crop}-এর জন্য নথিভুক্ত। "
+              "সঠিক জমি বেছে নিন, অথবা এই জমির ফসল বদলান।",
+        "ta": "நான் பார்த்தது {seen} போல் தெரிகிறது, ஆனால் இந்த வயல் {crop} என்று பதிவாகியுள்ளது. "
+              "சரியான வயலைத் தேர்ந்தெடுங்கள், அல்லது இந்த வயலின் பயிரை மாற்றுங்கள்.",
+        "te": "నేను చూసినది {seen} లాగా ఉంది, కానీ ఈ పొలం {crop} కోసం నమోదైంది. "
+              "సరైన పొలాన్ని ఎంచుకోండి, లేదా ఈ పొలం పంటను మార్చండి.",
+        "kn": "ನಾನು ನೋಡಿದ್ದು {seen} ರಂತೆ ಕಾಣುತ್ತದೆ, ಆದರೆ ಈ ಹೊಲ {crop} ಎಂದು ನೋಂದಣಿಯಾಗಿದೆ. "
+              "ಸರಿಯಾದ ಹೊಲವನ್ನು ಆಯ್ಕೆಮಾಡಿ, ಅಥವಾ ಈ ಹೊಲದ ಬೆಳೆಯನ್ನು ಬದಲಾಯಿಸಿ.",
+        "ml": "ഞാൻ കണ്ടത് {seen} പോലെ തോന്നുന്നു, പക്ഷേ ഈ വയൽ {crop} എന്നാണ് രേഖപ്പെടുത്തിയിരിക്കുന്നത്. "
+              "ശരിയായ വയൽ തിരഞ്ഞെടുക്കുക, അല്ലെങ്കിൽ ഈ വയലിലെ വിള മാറ്റുക.",
+        "gu": "મને જે દેખાયું તે {seen} જેવું લાગે છે, પણ આ ખેતર {crop} માટે નોંધાયેલું છે. "
+              "સાચું ખેતર પસંદ કરો, અથવા આ ખેતરનો પાક બદલો.",
+        "pa": "ਮੈਨੂੰ ਜੋ ਦਿਖਿਆ ਉਹ {seen} ਵਰਗਾ ਲੱਗਦਾ ਹੈ, ਪਰ ਇਹ ਖੇਤ {crop} ਲਈ ਦਰਜ ਹੈ। "
+              "ਸਹੀ ਖੇਤ ਚੁਣੋ, ਜਾਂ ਇਸ ਖੇਤ ਦੀ ਫ਼ਸਲ ਬਦਲੋ।",
+    },
     "healthy": {"en": "All the plants I saw look healthy.", "hi": "जितने पौधे मैंने देखे, सब स्वस्थ दिखते हैं।",
                 "mr": "मी पाहिलेली सर्व रोपे निरोगी दिसतात."},
     "no_model": {"en": "I can't judge {crop} diseases from the camera yet.",
@@ -389,9 +495,12 @@ def speech(summary: dict, lang: str) -> str:
             parts.append(_s("first", lang, x=first))
     if summary["possible"]:
         parts.append(_s("possible", lang, names=", ".join(x["name"] for x in summary["possible"])))
+    reading = summary.get("reading") or {}
     if not summary["seen"] and not summary["possible"]:
-        if summary.get("verdict") == "unclear":
-            parts.append(_s("unclear", lang))
+        if reading.get("other_crop"):
+            parts.append(reading["other_crop"]["text"])
+        elif summary.get("verdict") == "unclear":
+            parts.append(_s("unclear_video" if reading.get("mode") == "video" else "unclear", lang))
         elif summary["photo_model"]:
             parts.append(_s("healthy", lang))
         else:

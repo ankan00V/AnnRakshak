@@ -53,8 +53,8 @@ export default function Profile() {
     ?? p?.department
 
   const chip = (on: boolean) =>
-    `rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${
-      on ? 'bg-leaf-deep text-cream border-leaf-deep' : 'bg-white border-soil-dark/15 text-soil-dark/70'}`
+    `rounded-full px-3 py-1.5 text-[13px] font-medium border transition-colors ${
+      on ? 'bg-[#1d4a2c] text-white border-leaf-deep' : 'bg-white border-soil-dark/15 text-soil-dark/70'}`
 
   return (
     <>
@@ -125,11 +125,11 @@ export default function Profile() {
         </div>
 
         <aside className={`${SIDE} space-y-5`}>
-          <Card className="p-4 md:p-5 space-y-2">
-            <h2 className="font-semibold flex items-center gap-2">
+          <Card className="p-5 lg:p-6 space-y-2">
+            <h2 className="flex items-center gap-2 text-[18px] font-semibold tracking-tight">
               <ShieldCheck className="w-4 h-4 text-leaf" /> Checked by the office
             </h2>
-            <p className="text-xs text-soil-dark/60">
+            <p className="text-[13px] text-soil-dark/70">
               These were verified when you were let in, so they are not editable here. The district office
               can change them.
             </p>

@@ -1,16 +1,17 @@
 import { useState } from 'react'
-import { Bug, CheckCircle2, Cpu, Loader2 } from 'lucide-react'
+import { Bug, CalendarCheck, CheckCircle2, ChevronDown, Cpu, Loader2, ShieldCheck } from 'lucide-react'
 import type { TargetView } from '../../api/types'
 import { api } from '../../api/client'
 import { useAsync } from '../../lib/hooks'
-import { Card, ErrorBox, SectionTitle } from '../../ui/kit'
+import { ErrorBox } from '../../ui/kit'
 import { AlertsSkeleton } from '../components/Skeletons'
 import AlertCard from '../components/AlertCard'
 import LastKnown from '../components/LastKnown'
 import { useReadOnlyFarm } from '../components/DemoNotice'
 import { NoticeInbox, NotifySettings } from '../components/NotifyPanels'
 import { useFarmer } from '../FarmerContext'
-import { MAIN, SIDE, SPLIT } from '../layout'
+import { FIELD, LABEL, PANEL, PRIMARY } from '../tokens'
+import { PanelHead } from '../ui'
 
 
 export default function Alerts() {
@@ -22,57 +23,59 @@ export default function Alerts() {
   if ((alerts.loading && !alerts.data) || (home.loading && !home.data)) return <AlertsSkeleton />
   // The checks this phone kept are what a farmer with no signal came here for,
   // so the error only takes the screen when there is nothing kept to take it from.
-  if (alerts.error && !alerts.data) return <ErrorBox error={alerts.error} onRetry={alerts.reload} retryLabel={t('retry')} />
+  if (alerts.error && !alerts.data) return <ErrorBox offlineLabel={t('offline')} error={alerts.error} onRetry={alerts.reload} retryLabel={t('retry')} />
   const crop = home.data?.farm.crop ?? ''
   const open = alerts.data!.filter((a) => a.outcome === null || a.outcome === 'snoozed')
   const done = alerts.data!.filter((a) => a.outcome === 'nothing_found' || a.outcome === 'found')
 
   return (
     <div className="space-y-6">
-      <h1 className="font-instrument-serif text-3xl leading-tight">{t('alertsTitle')}</h1>
       {alerts.error && <LastKnown at={alerts.savedAt} onRetry={alerts.reload} />}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="min-w-0 space-y-6">
+          <section className={`${PANEL} p-5 lg:p-6`}>
+            <PanelHead icon={CalendarCheck} title={t('todayChecks')} sub={t('todayChecksSub')} />
+            {open.length === 0 ? (
+              <p className="mt-4 flex items-center gap-3 rounded-[20px] bg-[#f1f6ec] p-4 text-[15px] text-soil-dark/85">
+                <ShieldCheck className="h-6 w-6 shrink-0 text-[#4b8b3b]" aria-hidden /> {t('noChecks')}
+              </p>
+            ) : (
+              // On a phone the cards take the panel's padding back, so the text is not three boxes deep.
+              <div className="-mx-3 mt-4 space-y-3 sm:mx-0">
+                {open.map((a) => <AlertCard key={a.id} alert={a} onDone={alerts.reload} />)}
+              </div>
+            )}
+          </section>
+          <NoticeInbox />
+        </div>
 
-      <div className={`space-y-6 ${SPLIT}`}>
-      <div className={`space-y-6 ${MAIN}`}>
-      <NoticeInbox />
+        <aside className="min-w-0 space-y-6">
+          <NotifySettings />
+          {/* The shared demo field belongs to nobody, so the server refuses every
+              write to it. Offering these two forms there is offering a farmer work
+              that cannot land — the other write surfaces already say so instead. */}
+          {!readOnly && (
+            <>
+              {crop && <TrapForm crop={crop} onSaved={alerts.reload} />}
+              <SensorForm onSaved={alerts.reload} />
+            </>
+          )}
 
-      <section className="space-y-3">
-        <SectionTitle sub={t('todayChecksSub')}>{t('todayChecks')}</SectionTitle>
-        {open.length === 0 ? (
-          <Card className="p-5 text-center text-sm text-soil-dark/60">{t('noChecks')}</Card>
-        ) : (
-          open.map((a) => <AlertCard key={a.id} alert={a} onDone={alerts.reload} />)
-        )}
-      </section>
-      </div>
-
-      <aside className={`space-y-6 ${SIDE}`}>
-      <NotifySettings />
-      {/* The shared demo field belongs to nobody, so the server refuses every
-          write to it. Offering these two forms there is offering a farmer work
-          that cannot land — the other write surfaces already say so instead. */}
-      {!readOnly && (
-        <>
-          {crop && <TrapForm crop={crop} onSaved={alerts.reload} />}
-          <SensorForm onSaved={alerts.reload} />
-        </>
-      )}
-
-      {done.length > 0 && (
-        <section>
-          <SectionTitle>{t('answered')}</SectionTitle>
-          <ul className="space-y-1.5">
-            {done.map((a) => (
-              <li key={a.id} className="flex items-center gap-2 text-sm rounded-xl bg-white/60 border border-soil-dark/10 px-3 py-2">
-                <CheckCircle2 className={`w-4 h-4 ${a.outcome === 'found' ? 'text-ember' : 'text-leaf'}`} />
-                <span className="flex-1 truncate">{a.name}</span>
-                <span className="text-xs text-soil-dark/50">{a.outcome === 'found' ? t('foundIt') : t('nothingFound')}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      </aside>
+          {done.length > 0 && (
+            <section className={`${PANEL} p-5`}>
+              <PanelHead icon={CheckCircle2} title={t('answered')} />
+              <ul className="mt-3 divide-y divide-soil-dark/[0.07]">
+                {done.map((a) => (
+                  <li key={a.id} className="flex items-center gap-3 py-2.5 text-[15px]">
+                    <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${a.outcome === 'found' ? 'bg-ember' : 'bg-[#4b8b3b]'}`} aria-hidden />
+                    <span className="min-w-0 flex-1 truncate">{a.name}</span>
+                    <span className="shrink-0 text-[13px] text-soil-dark/70">{a.outcome === 'found' ? t('foundIt') : t('nothingFound')}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </aside>
       </div>
     </div>
   )
@@ -112,55 +115,46 @@ function TrapForm({ crop, onSaved }: { crop: string; onSaved: () => void }) {
     }
   }
 
-  const field = 'w-full min-h-[44px] rounded-xl border border-soil-dark/20 px-3 bg-cream/50 text-sm focus:outline-none focus:border-leaf'
   return (
-    <Card className="p-4 space-y-3">
-      <div className="flex items-start gap-3">
-        <span className="w-10 h-10 rounded-full bg-ochre/15 flex items-center justify-center shrink-0">
-          <Bug className="w-5 h-5 text-ochre" />
-        </span>
-        <div>
-          <h2 className="font-semibold">{t('trapsTitle')}</h2>
-          <p className="text-xs text-soil-dark/60">{t('trapsSub')}</p>
-        </div>
-      </div>
-      <label className="block text-xs text-soil-dark/60">
+    <section className={`${PANEL} space-y-4 p-5`}>
+      <PanelHead icon={Bug} title={t('trapsTitle')} sub={t('trapsSub')} />
+      <label className={LABEL}>
         {t('trapPest')}
-        <select className={field} value={target} onChange={(e) => setTarget(e.target.value)}>
+        <select className={FIELD} value={target} onChange={(e) => setTarget(e.target.value)}>
           {pests.map((p) => <option key={p.id} value={p.id}>{p.name}{p.trap_etl != null ? ` · ETL ${p.trap_etl}/${t('perTrapNight')}` : ''}</option>)}
         </select>
       </label>
-      {etl == null && pests.length > 0 && <p className="text-[11px] text-soil-dark/50">{t('trapNoEtl')}</p>}
-      <div className="grid grid-cols-2 gap-2">
-        <label className="block text-xs text-soil-dark/60">
+      {etl == null && pests.length > 0 && <p className="text-[13px] text-soil-dark/70">{t('trapNoEtl')}</p>}
+      <div className="grid grid-cols-2 gap-3">
+        <label className={LABEL}>
           {t('mothsCaught')}
-          <input className={field} type="number" inputMode="numeric" min="0" value={count} onChange={(e) => setCount(e.target.value)} />
+          <input className={FIELD} type="number" inputMode="numeric" min="0" value={count} onChange={(e) => setCount(e.target.value)} />
         </label>
-        <label className="block text-xs text-soil-dark/60">
+        <label className={LABEL}>
           {t('trapCount')}
-          <input className={field} type="number" inputMode="numeric" min="1" value={traps} onChange={(e) => setTraps(e.target.value)} />
+          <input className={FIELD} type="number" inputMode="numeric" min="1" value={traps} onChange={(e) => setTraps(e.target.value)} />
         </label>
       </div>
-      <button onClick={save} disabled={busy || count === ''} className="w-full min-h-[44px] rounded-full bg-leaf-deep text-cream text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2">
-        {busy && <Loader2 className="w-4 h-4 animate-spin" />}
+      <button onClick={save} disabled={busy || count === ''} className={PRIMARY}>
+        {busy && <Loader2 className="h-5 w-5 animate-spin" />}
         {t('record')}
       </button>
-      {msg && <p className={`text-sm font-medium text-center ${failed ? 'text-ember' : ''}`}>{msg}</p>}
+      {msg && <p role={failed ? 'alert' : 'status'} className={`text-center text-[15px] font-medium ${failed ? 'text-ember' : 'text-leaf-deep'}`}>{msg}</p>}
       {readings.data && readings.data.length > 0 && (
-        <div className="flex items-end gap-1 h-16 pt-2 border-t border-soil-dark/10">
+        <div className="flex h-20 items-end gap-1.5 rounded-[20px] bg-[#f5f7f1] px-3 pb-2 pt-3">
           {readings.data.slice(0, 10).reverse().map((r) => {
             const rowEtl = pests.find((p) => p.id === r.target)?.trap_etl
             const over = rowEtl != null && r.per_trap_night >= rowEtl
             return (
               <div key={r.id} className="flex-1 flex flex-col items-center gap-0.5" title={`${r.recorded_on}: ${r.per_trap_night} ${t('perTrapNight')}`}>
-                <span className={`w-full rounded-t ${over ? 'bg-ember' : 'bg-leaf/60'}`} style={{ height: `${Math.min(48, r.per_trap_night * 3)}px` }} />
-                <span className="text-[9px] text-soil-dark/50">{r.per_trap_night}</span>
+                <span className={`w-full rounded-t-md ${over ? 'bg-ember' : 'bg-[#4b8b3b]/70'}`} style={{ height: `${Math.min(44, Math.max(3, r.per_trap_night * 3))}px` }} />
+                <span className="text-[12px] tabular-nums text-soil-dark/75">{r.per_trap_night}</span>
               </div>
             )
           })}
         </div>
       )}
-    </Card>
+    </section>
   )
 }
 
@@ -193,35 +187,28 @@ function SensorForm({ onSaved }: { onSaved: () => void }) {
       setBusy(false)
     }
   }
-  const field = 'w-full min-h-[44px] rounded-xl border border-soil-dark/20 px-3 bg-cream/50 text-sm focus:outline-none focus:border-leaf'
   return (
-    <Card className="p-4">
-      <button onClick={() => setOpen((o) => !o)} className="w-full flex items-start gap-3 text-left">
-        <span className="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center shrink-0">
-          <Cpu className="w-5 h-5 text-sky-700" />
-        </span>
-        <span>
-          <span className="block font-semibold">{t('sensorTitle')}</span>
-          <span className="block text-xs text-soil-dark/60">{t('sensorSub')}</span>
-        </span>
+    <section className={`${PANEL} p-5`}>
+      <button onClick={() => setOpen((o) => !o)} aria-expanded={open} className="w-full text-left">
+        <PanelHead icon={Cpu} title={t('sensorTitle')} sub={t('sensorSub')}
+          action={<ChevronDown className={`mt-2 h-5 w-5 shrink-0 text-soil-dark/60 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />} />
       </button>
       {open && (
-        <div className="mt-3 space-y-2">
-          <div className="grid grid-cols-2 gap-2">
-            <label className="block text-xs text-soil-dark/60">{t('sensorRh')}<input className={field} type="number" inputMode="decimal" value={rh} onChange={(e) => setRh(e.target.value)} /></label>
-            <label className="block text-xs text-soil-dark/60">{t('sensorRain')}<input className={field} type="number" inputMode="decimal" value={rain} onChange={(e) => setRain(e.target.value)} /></label>
-            <label className="block text-xs text-soil-dark/60">{t('sensorTmin')}<input className={field} type="number" inputMode="decimal" value={tmin} onChange={(e) => setTmin(e.target.value)} /></label>
-            <label className="block text-xs text-soil-dark/60">{t('sensorTmax')}<input className={field} type="number" inputMode="decimal" value={tmax} onChange={(e) => setTmax(e.target.value)} /></label>
+        <div className="mt-4 space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <label className={LABEL}>{t('sensorRh')}<input className={FIELD} type="number" inputMode="decimal" value={rh} onChange={(e) => setRh(e.target.value)} /></label>
+            <label className={LABEL}>{t('sensorRain')}<input className={FIELD} type="number" inputMode="decimal" value={rain} onChange={(e) => setRain(e.target.value)} /></label>
+            <label className={LABEL}>{t('sensorTmin')}<input className={FIELD} type="number" inputMode="decimal" value={tmin} onChange={(e) => setTmin(e.target.value)} /></label>
+            <label className={LABEL}>{t('sensorTmax')}<input className={FIELD} type="number" inputMode="decimal" value={tmax} onChange={(e) => setTmax(e.target.value)} /></label>
           </div>
-          <button onClick={save} disabled={busy || (rh === '' && tmin === '' && tmax === '' && rain === '')}
-            className="w-full min-h-[44px] rounded-full bg-sky-700 text-white text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2">
-            {busy && <Loader2 className="w-4 h-4 animate-spin" />}
+          <button onClick={save} disabled={busy || (rh === '' && tmin === '' && tmax === '' && rain === '')} className={PRIMARY}>
+            {busy && <Loader2 className="h-5 w-5 animate-spin" />}
             {t('record')}
           </button>
-          {done && <p className="text-sm text-center text-leaf-deep">{t('trapRecorded')}</p>}
-          {failed && <p className="text-sm text-center text-ember">{t('notSaved')}</p>}
+          {done && <p role="status" className="text-center text-[15px] text-leaf-deep">{t('trapRecorded')}</p>}
+          {failed && <p role="alert" className="text-center text-[15px] text-ember">{t('notSaved')}</p>}
         </div>
       )}
-    </Card>
+    </section>
   )
 }

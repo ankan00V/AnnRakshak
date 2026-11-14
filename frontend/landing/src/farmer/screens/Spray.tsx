@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { Ban, FlaskConical, HelpCircle, Info, Loader2, ShieldCheck, Sparkles, SprayCan } from 'lucide-react'
+import { Ban, FlaskConical, HelpCircle, Info, Leaf, Loader2, Search, ShieldCheck, Sparkles, SprayCan } from 'lucide-react'
 import { api } from '../../api/client'
 import type { LabelVerdict } from '../../api/types'
 import { useAsync } from '../../lib/hooks'
 import { ErrorBox, ListenButton, VoiceButton } from '../../ui/kit'
 import DemoNotice, { useReadOnlyFarm } from '../components/DemoNotice'
 import { useFarmer } from '../FarmerContext'
-import { MAIN, SIDE, SPLIT } from '../layout'
+import SprayTimes from '../components/SprayTimes'
+import { PANEL } from '../tokens'
 
 const QUICK = ['Mancozeb', 'Copper oxychloride', 'Emamectin', 'Tricyclazole', 'Chlorantraniliprole', 'Glyphosate']
 
@@ -23,13 +24,33 @@ export default function Spray() {
   const weather = useAsync(() => api.weather(farmId!, lang), [farmId, lang], ['weather', farmId!, lang].join(':'))
   const readOnly = useReadOnlyFarm() !== null
   const [logged, setLogged] = useState<string | null>(null)
+  const [logFailed, setLogFailed] = useState(false)
+  // A ref, not only state: two taps in one frame both see the old state, and
+  // the second would log the same spray twice.
+  const logging = useRef(false)
+  const [logBusy, setLogBusy] = useState(false)
   const logSpray = async () => {
-    const r = await api.logSpray(farmId!, v?.product ?? (q.trim() || null), lang)
-    const c = r.check
-    setLogged(c && c.status !== 'good' ? `${t(`spray_${c.status}`)} — ${c.reasons_text ?? ''}. ${t('sprayLogged')}` : t('sprayLogged'))
+    if (logging.current) return
+    logging.current = true
+    setLogBusy(true)
+    setLogFailed(false)
+    // A reply for a product the farmer has since moved on from is dropped, not
+    // shown under the new product's verdict.
+    const id = asked.current
+    try {
+      const r = await api.logSpray(farmId!, v?.product ?? (q.trim() || null), lang)
+      const c = r.check
+      if (id !== asked.current) return
+      setLogged(c && c.status !== 'good' ? `${t(`spray_${c.status}`)} — ${c.reasons_text ?? ''}. ${t('sprayLogged')}` : t('sprayLogged'))
+    } catch {
+      // Without signal the press used to do nothing at all; say it was not saved
+      // and leave the button there to press again.
+      if (id === asked.current) setLogFailed(true)
+    } finally {
+      logging.current = false
+      setLogBusy(false)
+    }
   }
-  const now = weather.data?.spray.now
-  const best = weather.data?.spray.windows[0]
   const current = home.data?.problems.find((p) => p.status === 'open' && p.name)
 
   // Language switched with a verdict on screen: check the same product again,
@@ -50,6 +71,9 @@ export default function Spray() {
       const verdict = await api.labelCheck(farmId!, text.trim(), lang)
       if (id !== asked.current) return
       setV(verdict)
+      // A new product starts unlogged: the last one's "logged" is not this one's.
+      setLogged(null)
+      setLogFailed(false)
       setNote(verdict.note_available ? 'loading' : null)
       if (verdict.note_available) {
         api.labelNote(farmId!, text.trim(), lang)
@@ -65,14 +89,6 @@ export default function Spray() {
 
   const waiting = v?.tone === 'unknown' && note === 'loading'
 
-  const header = (
-    <div>
-      <FlaskConical className="w-8 h-8 text-ochre" />
-      <h1 className="mt-2 font-instrument-serif text-3xl leading-tight">{t('sprayTitle')}</h1>
-      <p className="mt-1 text-sm text-soil-dark/60">{t('spraySub')}</p>
-    </div>
-  )
-
   // The answer this screen gives is only worth having when it is about a real
   // field: whether a product suits *your* crop, against *your* diagnosis, at a
   // dose for *your* plot. On the shared demonstration field there is no such
@@ -80,141 +96,152 @@ export default function Spray() {
   // clothes of advice — and this is the screen where a wrong answer is bought
   // at the counter and sprayed. The camera and the live check already stop
   // here; this was the one that did not.
-  if (readOnly) {
-    return (
-      <div className="space-y-5">
-        {header}
-        <DemoNotice />
-      </div>
-    )
-  }
+  if (readOnly) return <DemoNotice />
+
+  const tone = v ? TONE[v.tone === 'stop' ? 'stop' : v.tone === 'unknown' ? 'unknown' : 'ok'] : null
 
   return (
-    <div className="space-y-5">
-      {header}
-
-      <div className={`space-y-5 ${SPLIT}`}>
-      <aside className={`space-y-5 lg:order-2 ${SIDE}`}>
-      {now && (
-        <div className={`rounded-2xl p-3 lg:p-5 flex gap-3 items-start ${now.status === 'good' ? 'bg-leaf/10 text-leaf-deep' : now.status === 'caution' ? 'bg-ochre/10 text-[#8a5a17]' : 'bg-ember/10 text-ember'}`}>
-          <SprayCan className="w-5 h-5 shrink-0 mt-0.5" />
-          <p className="text-sm">
-            <span className="font-semibold">{t(`spray_${now.status}`)}</span>
-            {weather.data?.spray.reasons_text && <span className="block text-xs opacity-80">{weather.data.spray.reasons_text}</span>}
-            <span className="block text-xs mt-0.5 opacity-80">
-              {best ? t('sprayBest').replace('{when}', `${best.start.slice(11, 16)}–${best.end.slice(11, 16)}`) : t('sprayNoneShort')}
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="min-w-0 space-y-6">
+        <section className={`${PANEL} p-5 lg:p-6`}>
+          {/* What the product is being checked against: the field's own open problem. */}
+          <div className="flex items-center gap-3 rounded-[20px] bg-[#f5f7f1] p-2.5">
+            <span className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-[#e3efd9]">
+              {current?.image_url
+                ? <img src={current.image_url} alt="" className="h-full w-full object-cover" />
+                : <span className="flex h-full w-full items-center justify-center text-[#2f6a39]"><Leaf className="h-6 w-6" aria-hidden /></span>}
             </span>
-          </p>
-        </div>
-      )}
-
-      <p className="text-xs rounded-xl bg-white border border-soil-dark/10 px-3 py-2 lg:px-4 lg:py-3 lg:text-sm">
-        <span className="text-soil-dark/50">{t('forProblem')}: </span>
-        <span className="font-medium">{current?.name ?? (home.data ? t('noDiagnosisYet') : '…')}</span>
-      </p>
-      <p className="hidden lg:flex gap-2 text-xs text-soil-dark/60">
-        <Info className="w-4 h-4 shrink-0" />
-        {t('neverSafeNote')}
-      </p>
-      </aside>
-
-      <div className={`space-y-5 lg:order-1 ${MAIN}`}>
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          check()
-        }}
-        className="space-y-2"
-      >
-        <div className="flex gap-2">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={t('productName')}
-            className="flex-1 min-w-0 min-h-[48px] rounded-xl border border-soil-dark/20 px-3 bg-white text-sm focus:outline-none focus:border-leaf"
-          />
-          <VoiceButton lang={lang} label={t('speak')} recordingLabel={t('recording')} onText={(txt) => {
-            setQ(txt)
-            check(txt)
-          }} />
-        </div>
-        <button type="submit" disabled={busy || !q.trim()} className="w-full min-h-[48px] rounded-full bg-leaf-deep text-cream text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2">
-          {busy && <Loader2 className="w-4 h-4 animate-spin" />}
-          {t('check')}
-        </button>
-      </form>
-
-      <div className="flex flex-wrap gap-1.5">
-        {QUICK.map((p) => (
-          <button key={p} onClick={() => {
-            setQ(p)
-            check(p)
-          }} className="px-3 py-1.5 rounded-full bg-white border border-soil-dark/15 text-xs">
-            {p}
-          </button>
-        ))}
-      </div>
-
-      {error && <ErrorBox error={error} />}
-
-      {/* An unknown product: the AI note is the useful part, so the card waits
-          for it and both appear together. A veto never waits. */}
-      {waiting && (
-        <section className="rounded-2xl p-5 bg-white border border-soil-dark/10 flex items-center gap-3 text-sm text-soil-dark/60 animate-fadein">
-          <Loader2 className="w-5 h-5 animate-spin text-ochre shrink-0" />
-          {t('aiNoteLoading')}
-        </section>
-      )}
-
-      {v && !waiting && (
-        <section className={`rounded-2xl p-5 animate-fadein ${
-          v.tone === 'stop' ? 'bg-ember text-cream'
-            : v.tone === 'unknown' ? 'bg-ochre/15 border-2 border-ochre/50'
-            : 'bg-white border-2 border-leaf/40'}`}>
-          <div className="flex items-start justify-between gap-3">
-            <p className="flex items-center gap-2 text-xl font-semibold">
-              {v.tone === 'stop' ? <Ban className="w-6 h-6" />
-                : v.tone === 'unknown' ? <HelpCircle className="w-6 h-6 text-[#8a5a17]" />
-                : <ShieldCheck className="w-6 h-6 text-leaf" />}
-              {v.title ?? (v.tone === 'stop' ? t('vetoTitle') : v.tone === 'unknown' ? t('unknownTitle') : t('noObjectionTitle'))}
-            </p>
-            <ListenButton text={v.message} lang={lang} label={t('listen')} stopLabel={t('stop')} compact />
+            <span className="min-w-0">
+              <span className="block text-[13px] text-soil-dark/75">{t('forProblem')}</span>
+              <span className="block text-[16px] font-semibold leading-snug">
+                {current?.name ?? (home.data ? t('noDiagnosisYet') : '…')}
+              </span>
+            </span>
           </div>
-          {v.product && <p className={`mt-1 text-xs ${v.tone === 'stop' ? 'text-cream/80' : 'text-soil-dark/60'}`}>{v.product}</p>}
-          <p className="mt-3 text-[15px] leading-snug">{v.message}</p>
-          {note && (
-            <div className="mt-3 rounded-xl bg-white/70 border border-soil-dark/10 p-3">
-              <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-soil-dark/45">
-                <Sparkles className="w-3.5 h-3.5" /> {t('aiNote')}
-              </p>
-              {note === 'loading' ? (
-                <p className="mt-1 flex items-center gap-2 text-[13px] text-soil-dark/55">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('aiNoteLoading')}
-                </p>
-              ) : note === 'none' ? (
-                <p className="mt-1 text-[13px] text-soil-dark/55">{t('aiNoteNone')}</p>
-              ) : (
-                <p className="mt-1 text-[14px] leading-snug">{note}</p>
-              )}
-            </div>
-          )}
-          {!v.is_veto && (
-            logged
-              ? <p className="mt-3 text-sm rounded-xl bg-leaf/10 text-leaf-deep p-2.5">{logged}</p>
-              : <button onClick={logSpray} className="mt-3 w-full min-h-[44px] rounded-full bg-leaf-deep text-cream text-sm font-medium flex items-center justify-center gap-2">
-                  <SprayCan className="w-4 h-4" /> {t('sprayingNow')}
-                </button>
-          )}
-        </section>
-      )}
 
-      <p className="flex gap-2 text-xs text-soil-dark/60 lg:hidden">
-        <Info className="w-4 h-4 shrink-0" />
-        {t('neverSafeNote')}
-      </p>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              check()
+            }}
+            className="mt-5"
+          >
+            <label className="block text-[17px] font-semibold" htmlFor="spray-product">{t('sprayAsk')}</label>
+            <div className="mt-3 flex gap-2">
+              <div className="relative min-w-0 flex-1">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-soil-dark/50" aria-hidden />
+                <input
+                  id="spray-product"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder={t('productName')}
+                  className="min-h-[56px] w-full rounded-full bg-[#f5f7f1] pl-12 pr-4 text-[16px] ring-1 ring-soil-dark/10 placeholder:text-soil-dark/55 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#4b8b3b]"
+                />
+              </div>
+              <VoiceButton lang={lang} label={t('speak')} recordingLabel={t('recording')} onText={(txt) => {
+                setQ(txt)
+                check(txt)
+              }} />
+            </div>
+            <button type="submit" disabled={busy || !q.trim()}
+              className="mt-3 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-full bg-[#2f6a39] text-[17px] font-semibold text-white shadow-[0_12px_24px_-14px_rgba(29,74,44,0.8)] transition-colors hover:bg-[#2a5f33] disabled:opacity-50 disabled:shadow-none">
+              {busy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <FlaskConical className="h-5 w-5" aria-hidden />}
+              {t('check')}
+            </button>
+          </form>
+
+          <p className="mt-5 text-[14px] text-soil-dark/75">{t('sprayCommon')}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {QUICK.map((p) => (
+              <button key={p} onClick={() => {
+                setQ(p)
+                check(p)
+              }} className="min-h-[44px] rounded-full bg-white px-4 text-[14px] font-medium ring-1 ring-soil-dark/15 transition-colors hover:bg-[#f5f7f1] active:bg-[#eef3e6]">
+                {p}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {error && <ErrorBox offlineLabel={t('offline')} error={error} />}
+
+        {/* One live region that stays mounted, so a farmer who asked by voice
+            hears the verdict come back, the AI note when it follows, and a
+            failed save. Nothing inside is role=alert: an alert in here is
+            read twice, once by itself and once by this region. */}
+        <div aria-live="polite" className="space-y-6 empty:hidden">
+          {/* An unknown product: the AI note is the useful part, so the card waits
+              for it and both appear together. A veto never waits. */}
+          {waiting && (
+            <section className={`${PANEL} flex items-center gap-3 p-5 text-[15px] text-soil-dark/75 animate-fadein`}>
+              <Loader2 className="h-5 w-5 shrink-0 animate-spin text-ochre" aria-hidden />
+              {t('aiNoteLoading')}
+            </section>
+          )}
+
+          {v && tone && !waiting && (
+            <section className={`rounded-[28px] p-5 animate-fadein lg:p-6 ${tone.box}`}>
+              <div className="flex items-start gap-3">
+                <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${tone.icon}`}>
+                  {v.tone === 'stop' ? <Ban className="h-7 w-7" aria-hidden /> : v.tone === 'unknown' ? <HelpCircle className="h-7 w-7" aria-hidden /> : <ShieldCheck className="h-7 w-7" aria-hidden />}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-[22px] font-semibold leading-tight">
+                    {v.title ?? (v.tone === 'stop' ? t('vetoTitle') : v.tone === 'unknown' ? t('unknownTitle') : t('noObjectionTitle'))}
+                  </h2>
+                  {v.product && <p className={`mt-1 text-[14px] ${tone.sub}`}>{v.product}</p>}
+                </div>
+                <ListenButton text={v.message} lang={lang} label={t('listen')} stopLabel={t('stop')} compact tone={v.tone === 'stop' ? 'light' : 'dark'} />
+              </div>
+              <p className="mt-4 text-[16px] leading-relaxed">{v.message}</p>
+              {note && (
+                <div className={`mt-4 rounded-[20px] p-4 ${v.tone === 'stop' ? 'bg-white/10' : 'bg-white/80'}`}>
+                  <p className={`flex items-center gap-1.5 text-[13px] font-semibold ${tone.sub}`}>
+                    <Sparkles className="h-4 w-4" aria-hidden /> {t('aiNote')}
+                  </p>
+                  {note === 'loading' ? (
+                    <p className={`mt-1.5 flex items-center gap-2 text-[14px] ${tone.sub}`}>
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> {t('aiNoteLoading')}
+                    </p>
+                  ) : note === 'none' ? (
+                    <p className={`mt-1.5 text-[14px] ${tone.sub}`}>{t('aiNoteNone')}</p>
+                  ) : (
+                    <p className="mt-1.5 text-[15px] leading-snug">{note}</p>
+                  )}
+                </div>
+              )}
+              {!v.is_veto && (
+                logged
+                  ? <p className="mt-4 rounded-[20px] bg-white/80 p-3.5 text-[15px] text-leaf-deep">{logged}</p>
+                  : <button onClick={logSpray} disabled={logBusy} aria-busy={logBusy || undefined}
+                      className="mt-4 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full bg-[#2f6a39] text-[16px] font-semibold text-white hover:bg-[#2a5f33] motion-safe:active:scale-[0.98] active:brightness-95 disabled:opacity-60">
+                      {logBusy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <SprayCan className="h-5 w-5" aria-hidden />} {t('sprayingNow')}
+                    </button>
+              )}
+              {logFailed && !logged && (
+                <p className={`mt-3 text-[15px] font-medium ${v.tone === 'stop' ? 'text-white' : 'text-ember'}`}>{t('notSaved')}</p>
+              )}
+            </section>
+          )}
+        </div>
       </div>
-      </div>
+
+      <aside className="min-w-0 space-y-6">
+        {weather.data && <SprayTimes v={weather.data} toCheck={false} />}
+        <section className={`${PANEL} flex items-start gap-3 p-5`}>
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#e3efd9] text-[#2f6a39]">
+            <Info className="h-6 w-6" aria-hidden />
+          </span>
+          <p className="text-[15px] leading-relaxed text-soil-dark/85">{t('neverSafeNote')}</p>
+        </section>
+      </aside>
     </div>
   )
 }
+
+/** How a verdict looks: a refusal is the loudest thing on the screen. */
+const TONE = {
+  stop: { box: 'bg-[#9a2f17] text-white', icon: 'bg-white/15 text-white', sub: 'text-white/80' },
+  unknown: { box: 'bg-[#fbf0dc] text-soil-dark ring-1 ring-ochre/30', icon: 'bg-[#f6e2bb] text-[#8a5a17]', sub: 'text-soil-dark/70' },
+  ok: { box: 'bg-white text-soil-dark ring-2 ring-[#4b8b3b]/30', icon: 'bg-[#e3efd9] text-[#2f6a39]', sub: 'text-soil-dark/70' },
+} as const

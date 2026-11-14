@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BadgeCheck, Loader2, UserPlus } from 'lucide-react'
+import { BadgeCheck, ClipboardList, Loader2, MapPinned, UserPlus, Users } from 'lucide-react'
 import { api } from '../../api/client'
 import { useAsync } from '../../lib/hooks'
 import { useAuth } from '../../auth/AuthContext'
 import { Card, ErrorBox, Pill } from '../../ui/kit'
-import { OfficerLoadPanel, PageHead, PanelBone, pct } from '../panels'
+import { OfficerLoadPanel, PageHead, PanelBone, pct, StatCard } from '../panels'
 
 /** Staff. Who is carrying what, and who is still waiting to be let in —
  *  verification is a real decision the district office makes by hand. */
@@ -16,6 +16,7 @@ export default function Officers() {
   // officer has their own queue; this is not theirs to read.
   const mayVerify = me?.profile?.supervisor === true
   const pending = useAsync(() => (mayVerify ? api.pendingOfficers() : Promise.resolve([])), [mayVerify])
+  const load = useAsync(() => (mayVerify ? api.workload() : Promise.resolve(null)), [mayVerify])
   const [busy, setBusy] = useState<number | null>(null)
   const [failed, setFailed] = useState<string | null>(null)
 
@@ -52,9 +53,15 @@ export default function Officers() {
     <>
       <PageHead title="Officers"
         purpose="Who is on the books, what each desk is carrying, and who is waiting to be let in." />
-      <Card className="p-4 md:p-5">
-        <h2 className="font-semibold flex items-center gap-2"><UserPlus className="w-4 h-4 text-ochre" /> Waiting to be verified</h2>
-        <p className="text-xs text-soil-dark/60 mt-0.5">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+        <StatCard icon={Users} tone="green" value={load.data?.officers.length} label="Verified officers" />
+        <StatCard icon={MapPinned} tone="violet" value={load.data ? new Set(load.data.officers.flatMap((o) => o.districts)).size : undefined} label="Districts covered" />
+        <StatCard icon={ClipboardList} tone="amber" value={load.data?.open_total} label="Open cases" to="/officer/queue" />
+        <StatCard icon={UserPlus} tone="red" value={pending.data?.length} label="Waiting to be verified" />
+      </div>
+      <Card className="p-5 lg:p-6">
+        <h2 className="flex items-center gap-2 text-[18px] font-semibold tracking-tight"><UserPlus className="w-4 h-4 text-ochre" /> Waiting to be verified</h2>
+        <p className="text-[13px] text-soil-dark/70 mt-0.5">
           A sign-up reviews nothing and is handed no cases until the office says who they are.
         </p>
         {pending.error && <div className="mt-3"><ErrorBox error={pending.error} onRetry={pending.reload} /></div>}
@@ -67,7 +74,7 @@ export default function Officers() {
                 <li key={o.user_id} className="py-3 flex flex-wrap items-center gap-3">
                   <span className="flex-1 min-w-0">
                     <span className="block text-sm font-medium">{o.name}</span>
-                    <span className="block text-xs text-soil-dark/70">
+                    <span className="block text-[13px] text-soil-dark/70">
                       {o.designation.replace(/_/g, ' ')} · {o.organisation} · {o.employee_id}
                     </span>
                     <span className="mt-1 flex flex-wrap gap-1">
@@ -81,16 +88,16 @@ export default function Officers() {
                         person who can confirm they work there — which is the
                         check: a phone call. */}
                     {o.office && (
-                      <span className="mt-1 block text-xs text-soil-dark/60">
+                      <span className="mt-1 block text-[13px] text-soil-dark/70">
                         {o.office}{o.office_phone ? ` · ${o.office_phone}` : ''}
                         {o.posted_since ? ` · in post since ${o.posted_since.slice(0, 7)}` : ''}
                       </span>
                     )}
                     {o.reporting && (
-                      <span className="mt-1 block text-xs">
-                        <span className="text-soil-dark/55">Vouched by </span>
+                      <span className="mt-1 block text-[13px]">
+                        <span className="text-soil-dark/70">Vouched by </span>
                         <span className="font-medium">{o.reporting.name}</span>
-                        <span className="text-soil-dark/55">, {o.reporting.designation} · </span>
+                        <span className="text-soil-dark/70">, {o.reporting.designation} · </span>
                         <a href={o.reporting.contact.includes('@') ? `mailto:${o.reporting.contact}` : `tel:${o.reporting.contact}`}
                           className="text-leaf-deep underline underline-offset-2">{o.reporting.contact}</a>
                       </span>
@@ -98,18 +105,18 @@ export default function Officers() {
                   </span>
                   {mayVerify ? (
                     <button onClick={() => verify(o.user_id)} disabled={busy === o.user_id}
-                      className="flex items-center gap-1.5 rounded-full bg-leaf-deep text-cream text-xs font-medium px-3.5 py-2 disabled:opacity-60">
+                      className="flex items-center gap-1.5 rounded-full bg-[#1d4a2c] text-white text-[13px] font-medium px-3.5 py-2 disabled:opacity-60">
                       {busy === o.user_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <BadgeCheck className="w-3.5 h-3.5" />}
                       Verify
                     </button>
                   ) : (
-                    <span className="text-xs text-soil-dark/55">Awaiting the supervisor</span>
+                    <span className="text-[13px] text-soil-dark/70">Awaiting the supervisor</span>
                   )}
                 </li>
               ))}
             </ul>
           )}
-        {failed && <p className="mt-3 text-xs text-ember">{failed}</p>}
+        {failed && <p className="mt-3 text-[13px] text-ember">{failed}</p>}
       </Card>
 
       <OfficerLoadPanel />
@@ -127,14 +134,14 @@ function Performance() {
   if (!rows.data) return <PanelBone rows={4} />
   const working = rows.data.filter((r) => r.resolved > 0)
   return (
-    <Card className="p-4 md:p-5">
-      <h2 className="font-semibold">How the desks are doing</h2>
+    <Card className="p-5 lg:p-6">
+      <h2 className="text-[18px] font-semibold tracking-tight">How the desks are doing</h2>
       {working.length === 0 ? (
         <p className="mt-3 text-sm text-soil-dark/70">No case has been resolved yet, so there is nothing to compare.</p>
       ) : (
         <div className="mt-3 overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="text-left text-xs text-soil-dark/60">
+            <thead className="text-left text-[13px] text-soil-dark/70">
               <tr className="border-b border-soil-dark/10">
                 <th className="py-2 pr-3 font-medium">Officer</th>
                 <th className="py-2 pr-3 font-medium text-right">Resolved</th>
@@ -169,9 +176,9 @@ function TheRecord() {
   const rows = useAsync(() => api.officeActions(), [])
   if (!rows.data) return <PanelBone rows={4} />
   return (
-    <Card className="p-4 md:p-5">
-      <h2 className="font-semibold">The office's record</h2>
-      <p className="text-xs text-soil-dark/60 mt-0.5">
+    <Card className="p-5 lg:p-6">
+      <h2 className="text-[18px] font-semibold tracking-tight">The office's record</h2>
+      <p className="text-[13px] text-soil-dark/70 mt-0.5">
         Verifying a colleague, routing a backlog and sending an advisory are decisions a district has to
         be able to answer for.
       </p>
@@ -184,9 +191,9 @@ function TheRecord() {
               <span className="min-w-0">
                 <span className="font-medium">{a.actor}</span>{' '}
                 <span className="text-soil-dark/70">{a.action.replace(/_/g, ' ')}</span>
-                {a.subject && <span className="text-soil-dark/50"> · {a.subject}{a.subject_id ? ` #${a.subject_id}` : ''}</span>}
+                {a.subject && <span className="text-soil-dark/70"> · {a.subject}{a.subject_id ? ` #${a.subject_id}` : ''}</span>}
               </span>
-              <span className="text-[11px] text-soil-dark/50 shrink-0">{a.at?.slice(0, 16).replace('T', ' ')}</span>
+              <span className="text-[12px] text-soil-dark/70 shrink-0">{a.at?.slice(0, 16).replace('T', ' ')}</span>
             </li>
           ))}
         </ul>

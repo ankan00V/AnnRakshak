@@ -14,6 +14,10 @@ sarvamai==0.1.31a4
 python-dotenv==1.2.3
 # Postgres (Neon) driver; SQLite needs nothing
 psycopg[binary]==3.3.5
+# Redis (app/cache.py, routers/live.py): the shared cache, rate limits, one
+# watcher, live events, and live calls held across containers. Without it in
+# the image, REDIS_URL is set and silently ignored — every container on its own.
+redis==5.2.1
 # Web Push notifications (VAPID)
 pywebpush==2.5.0
 # The farmer's data report (app/report.py). fpdf2 draws the PDF; uharfbuzz

@@ -58,7 +58,7 @@ export default function Darpan() {
       <header className="flex items-center justify-between gap-3 px-4 py-3 border-b border-soil-dark/10 bg-leaf-deep text-cream rounded-t-3xl">
         <span>
           <span className="block text-sm font-semibold">Darpan</span>
-          <span className="block text-[11px] text-cream/70">दर्पण · your district, as it stands</span>
+          <span className="block text-[12px] text-cream/70">दर्पण · your district, as it stands</span>
         </span>
         <button onClick={() => setOpen(false)} aria-label="Close Darpan" className="text-cream/70 hover:text-cream">
           <X className="w-4 h-4" />
@@ -97,7 +97,7 @@ export default function Darpan() {
                   <div className="mt-2.5 flex flex-wrap gap-1.5">
                     {turn.answer.go.map((g) => (
                       <Link key={g.to} to={g.to} onClick={() => setOpen(false)}
-                        className="inline-flex items-center gap-1 rounded-full bg-white border border-soil-dark/15 px-2.5 py-1 text-xs font-medium hover:border-leaf/50">
+                        className="inline-flex items-center gap-1 rounded-full bg-white border border-soil-dark/15 px-2.5 py-1 text-[13px] font-medium hover:border-leaf/50">
                         {g.label} <ArrowRight className="w-3 h-3" />
                       </Link>
                     ))}
@@ -109,7 +109,7 @@ export default function Darpan() {
         ))}
 
         {busy && (
-          <p className="flex items-center gap-2 text-sm text-soil-dark/60">
+          <p className="flex items-center gap-2 text-sm text-soil-dark/70">
             <Loader2 className="w-3.5 h-3.5 animate-spin" /> reading the district…
           </p>
         )}
