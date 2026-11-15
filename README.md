@@ -18,7 +18,7 @@ check, and the agriculture office is the one who can act at scale.
 
 ## 🌾 AnnRakshak — Project Demo
 
-https://github.com/user-attachments/assets/58cca41c-1418-460b-a6ab-f4ede10069d0
+https://github.com/user-attachments/assets/5f8567ad-7b39-4b0e-b462-34a522b31956
 
 ## Two apps, one system
 
