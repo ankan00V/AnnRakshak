@@ -5,8 +5,9 @@ public/tour/<lang>/<step>.mp3, the step's title and caption read by Sarvam's
 Bulbul voice. Made here rather than at run time so the tour starts instantly,
 works on a weak connection, and costs no voice credit when farmers use it.
 
-Captions come from the app's own text (lib/i18n.ts for English, Hindi and
-Marathi; locales/<lang>.json for the rest), so what is heard is what is shown.
+Captions come from the app's own text (lib/i18n.ts for English; locales/<lang>.json
+for every other language, Hindi and Marathi included), so what is heard is what
+is shown.
 A clip is remade only when its text changed (public/tour/manifest.json keeps a
 hash per clip). Each clip is re-encoded to mono 32 kbit/s MP3 — plenty for a
 voice, about a third of the size.
@@ -59,7 +60,8 @@ I18N_TS = T.ROOT / "frontend" / "landing" / "src" / "lib" / "i18n.ts"
 
 
 def authored(lang: str) -> dict[str, str]:
-    """The key: text pairs of one authored language block in lib/i18n.ts."""
+    """The key: text pairs of a language block in lib/i18n.ts. Only English is
+    left there; Hindi and Marathi moved to locales/<lang>.json with the rest."""
     src = I18N_TS.read_text(encoding="utf-8")
     start = re.search(rf"^const {lang}\b.*=\s*{{\s*$", src, re.M)
     end = src.index("\n}", start.end())
@@ -72,8 +74,9 @@ def authored(lang: str) -> dict[str, str]:
 
 
 def table_for(lang: str) -> dict[str, str]:
-    return authored(lang) if lang in ("en", "hi", "mr") else \
-        json.loads((T.UI_OUT / f"{lang}.json").read_text(encoding="utf-8"))
+    if lang == "en":
+        return authored(lang)
+    return json.loads((T.UI_OUT / f"{lang}.json").read_text(encoding="utf-8"))
 
 
 def help_texts(lang: str) -> dict[str, str]:

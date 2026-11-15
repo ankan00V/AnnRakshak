@@ -7,8 +7,10 @@ comes from. Both sign in with their mobile number or email.
 
 One-time codes: 6 digits, kept only as a salted SHA-256, 5 minutes, 5 tries,
 a 30-second wait between sends, rate limited per destination and per IP.
-There is no free SMS gateway yet, so every code goes to the account's email
-by SMTP, whichever identifier was typed.
+Where a code goes is decided in routers/auth.py: a farmer's mobile number gets
+it by SMS when a provider is configured (app/sms.py), and everything else — an
+email address, an officer, or SMS that is off or failed — gets it by email.
+The challenge records the channel and destination it really went to.
 
 Sessions: an opaque random token in an HttpOnly, SameSite=Lax cookie; only
 its hash is stored, so a database leak does not leak sessions. A session lasts
@@ -102,7 +104,9 @@ def normalise_email(raw: str) -> str | None:
 
 
 def mask(channel: str, dest: str) -> str:
-    if channel == "phone":
+    """Where a code went, as the screen shows it: enough to recognise, not
+    enough to read off somebody else's screen."""
+    if channel in ("phone", "sms"):
         return f"+91 ••••••{dest[-4:]}"
     name, _, domain = dest.partition("@")
     return f"{name[:2]}{'•' * max(1, len(name) - 2)}@{domain}"

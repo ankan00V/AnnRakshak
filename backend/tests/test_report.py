@@ -79,7 +79,7 @@ def test_every_section_of_the_export_reaches_the_document(farmer):
     """
     data = _export(farmer)
     headed = {"account", "profile", "farms", "problems", "photographs", "alerts",
-              "sprays", "emails_we_sent"}
+              "sprays", "emails_we_sent", "sms"}
     sections = {k for k, v in data.items() if k != "exported_at"}
     assert sections <= headed, f"the export grew a section the report does not print: {sections - headed}"
 

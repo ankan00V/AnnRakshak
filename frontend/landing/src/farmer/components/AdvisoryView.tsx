@@ -1,13 +1,15 @@
 import { useState } from 'react'
-import { Ban, BadgeCheck, BookOpen, ChevronDown, FlaskConical, Leaf, Phone, PhoneCall, ShieldAlert, Sprout } from 'lucide-react'
+import { Ban, BadgeCheck, BookOpen, ChevronDown, FlaskConical, Leaf, ListChecks, Phone, PhoneCall, ShieldAlert, Sprout } from 'lucide-react'
 import type { Advisory, IcarTech, LadderRung } from '../../api/types'
 import { ListenButton, Pill } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
+import { PANEL } from '../tokens'
+import { PanelHead } from '../ui'
 
 const TIER = {
-  cultural: { icon: Sprout, tone: 'bg-leaf/15 text-leaf-deep', key: 'cultural' },
-  biological: { icon: Leaf, tone: 'bg-lime-100 text-lime-800', key: 'biological' },
-  chemical: { icon: FlaskConical, tone: 'bg-ember/10 text-ember', key: 'chemical' },
+  cultural: { icon: Sprout, tone: 'bg-[#e3efd9] text-[#2f6a39]', key: 'cultural' },
+  biological: { icon: Leaf, tone: 'bg-[#eef3d6] text-[#55631a]', key: 'biological' },
+  chemical: { icon: FlaskConical, tone: 'bg-[#f9dcd5] text-[#9a2f17]', key: 'chemical' },
 }
 
 /** The advisory in the order the product promises: what NOT to do first and
@@ -28,39 +30,39 @@ export default function AdvisoryView({ advisory }: { advisory: Advisory }) {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl border-2 border-ember/40 bg-ember/5 p-4">
-        <div className="flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ember">
-            <Ban className="w-4 h-4" />
-            {t('whatToAvoid')}
-          </h2>
+      <section className="rounded-[28px] bg-[#fdf0ed] p-5 ring-1 ring-[#9a2f17]/10 lg:p-6">
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#f9dcd5] text-[#9a2f17]">
+            <Ban className="h-6 w-6" aria-hidden />
+          </span>
+          <h2 className="min-w-0 flex-1 text-[20px] font-semibold tracking-tight text-[#9a2f17] sm:text-[22px]">{t('whatToAvoid')}</h2>
           <ListenButton text={speech} lang={lang} label={t('listen')} stopLabel={t('stop')} />
         </div>
-        <ul className="mt-2 space-y-2">
+        <ul className="mt-4 space-y-2.5">
           {advisory.what_to_avoid.map((a, i) => (
-            <li key={i} className="text-[14px] leading-snug font-medium text-soil-dark flex gap-2">
-              <span aria-hidden className="text-ember">✕</span>
+            <li key={i} className="flex gap-2.5 text-[15px] font-medium leading-snug text-soil-dark">
+              <span aria-hidden className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white text-[12px] font-bold text-[#9a2f17]">✕</span>
               {a}
             </li>
           ))}
         </ul>
       </section>
 
-      <section className="rounded-2xl bg-white border border-soil-dark/10 p-4">
-        <h2 className="text-sm font-semibold">{t('whatToDo')}</h2>
-        <p className="mt-1 text-xs text-soil-dark/60">{advisory.what_to_check}</p>
-        <ol className="mt-3 space-y-3">
+      <section className={`${PANEL} p-5 lg:p-6`}>
+        <PanelHead icon={ListChecks} title={t('whatToDo')} sub={advisory.what_to_check} />
+        <ol className="mt-5 space-y-4">
           {nonChem.map((r, i) => (
             <Rung key={i} rung={r} n={i + 1} />
           ))}
         </ol>
 
         {chem.length > 0 && (
-          <div className="mt-4 border-t border-dashed border-soil-dark/15 pt-3">
-            <p className="text-xs text-soil-dark/60">{t('chemicalLast')}</p>
+          <div className="mt-5 rounded-[20px] bg-[#f5f7f1] p-4">
+            <p className="text-[14px] text-soil-dark/80">{t('chemicalLast')}</p>
             <button
               onClick={() => setShowChem((s) => !s)}
-              className="mt-2 w-full min-h-[44px] rounded-xl border border-ember/30 text-ember text-sm font-medium flex items-center justify-center gap-2"
+              aria-expanded={showChem}
+              className="mt-3 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-white text-[15px] font-semibold text-[#9a2f17] ring-1 ring-[#9a2f17]/20"
             >
               <FlaskConical className="w-4 h-4" />
               {showChem ? t('hideChemical') : t('showChemical')}
@@ -78,40 +80,42 @@ export default function AdvisoryView({ advisory }: { advisory: Advisory }) {
       </section>
 
       {advisory.icar_options?.length > 0 && (
-        <section className="rounded-2xl bg-white border border-leaf/30 p-4">
-          <h2 className="text-sm font-semibold flex items-center gap-1.5">
-            <BadgeCheck className="w-4 h-4 text-leaf" />
-            {t('icarTitle')}
-          </h2>
-          <p className="mt-1 text-xs text-soil-dark/60">{t('icarSub')}</p>
-          <ul className="mt-3 space-y-3">
+        <section className={`${PANEL} p-5 lg:p-6`}>
+          <PanelHead icon={BadgeCheck} title={t('icarTitle')} sub={t('icarSub')} />
+          <ul className="mt-4 space-y-3">
             {advisory.icar_options.map((o) => <IcarOption key={o.id} o={o} />)}
           </ul>
         </section>
       )}
 
-      <section className="rounded-2xl bg-soil-dark text-cream p-4 flex gap-3">
-        <PhoneCall className="w-5 h-5 text-ochre shrink-0 mt-0.5" />
-        <div>
-          <p className="text-xs uppercase tracking-wide text-cream/60">{t('expertTrigger')}</p>
-          <p className="text-sm mt-0.5">{advisory.expert_trigger}</p>
-          <a href="tel:18001801551" className="mt-2 inline-block text-xs text-ochre underline underline-offset-2">
-            {t('callKcc')}
-          </a>
+      <section className="rounded-[28px] bg-[#1d4a2c] p-5 text-white lg:p-6">
+        <div className="flex items-start gap-3">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15">
+            <PhoneCall className="h-6 w-6" aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[17px] font-semibold">{t('expertTrigger')}</p>
+            <p className="mt-1 text-[15px] leading-snug text-white/85">{advisory.expert_trigger}</p>
+          </div>
         </div>
+        <a href="tel:18001801551"
+          className="mt-4 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-white px-5 text-center text-[15px] font-semibold text-[#1d4a2c] sm:ml-[60px] sm:w-auto sm:inline-flex">
+          <Phone className="h-4 w-4" aria-hidden /> {t('callKcc')}
+        </a>
       </section>
 
-      <details className="rounded-2xl bg-white/60 border border-soil-dark/10 p-3 text-xs">
-        <summary className="cursor-pointer flex items-center gap-1.5 font-medium text-soil-dark/70">
-          <BookOpen className="w-3.5 h-3.5" />
+      <details className="group rounded-[20px] bg-white/70 p-4 text-[13px] ring-1 ring-soil-dark/[0.06]">
+        <summary className="flex cursor-pointer list-none items-center gap-2 font-medium text-soil-dark/75 [&::-webkit-details-marker]:hidden">
+          <BookOpen className="h-4 w-4" aria-hidden />
           {t('sources')} ({advisory.citations.length})
+          <ChevronDown className="ml-auto h-4 w-4 transition-transform group-open:rotate-180" aria-hidden />
         </summary>
-        <ul className="mt-2 space-y-1.5">
+        <ul className="mt-3 space-y-2">
           {advisory.citations.map((c, i) => (
             <li key={i} className="text-soil-dark/70">
               <span className="font-medium text-soil-dark">{c.title}</span> — {c.publisher}
               {c.url && (
-                <a href={c.url} target="_blank" rel="noreferrer" className="ml-1 text-leaf-deep underline">
+                <a href={c.url} target="_blank" rel="noreferrer" className="ml-1 text-leaf-deep underline [overflow-wrap:anywhere]">
                   {c.url.replace(/^https?:\/\//, '')}
                 </a>
               )}
@@ -129,15 +133,15 @@ function Rung({ rung, n }: { rung: LadderRung; n: number }) {
   const Icon = tier.icon
   return (
     <li className="flex gap-3">
-      <span className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${tier.tone}`}>
-        <Icon className="w-4 h-4" />
+      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${tier.tone}`}>
+        <Icon className="h-5 w-5" aria-hidden />
       </span>
-      <div className="flex-1 min-w-0">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-soil-dark/50">
+      <div className="min-w-0 flex-1">
+        <p className="text-[13px] font-semibold text-soil-dark/70">
           {n}. {t(tier.key)}
         </p>
         {rung.tier !== 'chemical' ? (
-          <p className="text-[14px] leading-snug mt-0.5">{rung.action}</p>
+          <p className="mt-0.5 text-[15px] leading-snug">{rung.action}</p>
         ) : (
           <div className="mt-0.5 space-y-1">
             <p className="text-[14px] font-semibold">{rung.product}</p>
@@ -148,9 +152,9 @@ function Rung({ rung, n }: { rung: LadderRung; n: number }) {
                 {rung.for_field.replace(/^[^:]+:\s*/, '')}
               </p>
             )}
-            {rung.timing && <p className="text-xs text-soil-dark/60">{rung.timing}</p>}
-            <p className="text-xs flex items-start gap-1.5 text-soil-dark/70">
-              <ShieldAlert className="w-3.5 h-3.5 text-ochre shrink-0 mt-px" />
+            {rung.timing && <p className="text-[13px] text-soil-dark/75">{rung.timing}</p>}
+            <p className="text-[13px] flex items-start gap-1.5 text-soil-dark/75">
+              <ShieldAlert className="w-3.5 h-3.5 text-ochre shrink-0 mt-0.5" aria-hidden />
               {rung.label_rule}
             </p>
             {!rung.verified && <Pill tone="ochre">{t('dosePending')}</Pill>}
@@ -173,26 +177,28 @@ const ICAR_TYPE_KEY = {
 function IcarOption({ o }: { o: IcarTech }) {
   const { t } = useFarmer()
   return (
-    <li className="rounded-xl bg-cream/60 p-3">
-      <Pill tone="leaf" className="!text-[10px]">{t(ICAR_TYPE_KEY[o.type])}</Pill>
-      <p className="mt-1.5 text-[14px] leading-snug">{o.summary}</p>
+    <li className="rounded-[20px] bg-[#f5f7f1] p-4">
+      <Pill tone="leaf" className="!text-[12px]">{t(ICAR_TYPE_KEY[o.type])}</Pill>
+      <p className="mt-2 text-[15px] leading-snug">{o.summary}</p>
       {o.link_reason && (
-        <p className="mt-1 text-xs text-soil-dark/70"><span className="font-medium">{t('icarWhy')}: </span>{o.link_reason}</p>
+        <p className="mt-1 text-[13px] text-soil-dark/75"><span className="font-medium">{t('icarWhy')}: </span>{o.link_reason}</p>
       )}
       {o.claim && (
-        <p className="mt-1 text-xs text-leaf-deep"><span className="font-medium">{t('icarResult')}: </span>{o.claim}</p>
+        <p className="mt-1 text-[13px] text-leaf-deep"><span className="font-medium">{t('icarResult')}: </span>{o.claim}</p>
       )}
       {o.supply && (
-        <p className="mt-1 text-xs text-soil-dark/70"><span className="font-medium">{t('icarSupply')}: </span>{o.supply}</p>
+        <p className="mt-1 text-[13px] text-soil-dark/75"><span className="font-medium">{t('icarSupply')}: </span>{o.supply}</p>
       )}
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-soil-dark/60">
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-[13px] text-soil-dark/75">
         <span>{o.institute.name}, {o.institute.city}</span>
+        {/* A pill a thumb can hit: calling the institute is how a farmer gets the input. */}
         {o.institute.phone && (
-          <a href={`tel:${o.institute.phone.replace(/[^0-9+]/g, '')}`} className="inline-flex items-center gap-1 text-leaf-deep font-medium">
-            <Phone className="w-3 h-3" /> {t('icarCall')} {o.institute.phone}
+          <a href={`tel:${o.institute.phone.replace(/[^0-9+]/g, '')}`}
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full bg-white px-3 text-[14px] font-medium text-leaf-deep ring-1 ring-[#4b8b3b]/20 active:brightness-95">
+            <Phone className="w-4 h-4" aria-hidden /> {t('icarCall')} <span className="tabular-nums">{o.institute.phone}</span>
           </a>
         )}
-        {o.lead_time_days && <Pill tone="ochre" className="!text-[10px]">{t('icarLead').replace('{n}', String(o.lead_time_days))}</Pill>}
+        {o.lead_time_days && <Pill tone="ochre" className="!text-[12px]">{t('icarLead').replace('{n}', String(o.lead_time_days))}</Pill>}
       </div>
     </li>
   )

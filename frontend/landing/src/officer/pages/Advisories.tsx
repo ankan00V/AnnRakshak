@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { CheckCircle2, Loader2, Megaphone, Search, Send } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { CheckCircle2, FileText, History, Loader2, Megaphone, Plus, Search, Send } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../../api/client'
 import type { AdvisoryDraft, AdvisoryPreview } from '../../api/types'
@@ -7,7 +7,7 @@ import { useAuth } from '../../auth/AuthContext'
 import { useAsync } from '../../lib/hooks'
 import { MAIN, SIDE, SPLIT } from '../../ui/layout'
 import { Card, ErrorBox, Pill } from '../../ui/kit'
-import { many, OutlookPanel, PageHead, Panel, PanelBone } from '../panels'
+import { CardHead, many, OutlookPanel, PageHead, Panel, PanelBone, shortDate, targetName } from '../panels'
 
 // Every language the app sends in. This list was three, so an officer could
 // check the Marathi, Hindi and English of what they were about to send and had
@@ -39,6 +39,17 @@ export default function Advisories() {
   const [busy, setBusy] = useState(false)
   const [sent, setSent] = useState<{ sent: number; skipped: number } | null>(null)
   const [error, setError] = useState<Error | null>(null)
+  const formRef = useRef<HTMLDivElement>(null)
+  const [allSent, setAllSent] = useState(false)
+
+  /* The outlook says what is building; this turns a row of it into the
+     advisory about it. It used to be two screens' worth of copying a disease
+     name from a table into a dropdown by hand. */
+  const draftFrom = (r: { crop: string; target: string }) => {
+    setCrop(r.crop)
+    setTarget(r.target)
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   const draft: AdvisoryDraft = useMemo(
     () => ({ target, crop, districts, kind, level, note: note || null, audience }),
@@ -103,25 +114,28 @@ export default function Advisories() {
   return (
     <>
       <PageHead title="Advisories"
-        purpose="Tell every farm of one crop what is building — in their own language, with the checks it carries." />
+        purpose="Tell every farm of one crop what is building — in their own language, with the checks it carries.">
+        <button onClick={() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          className="flex min-h-[44px] items-center gap-2 rounded-full bg-[#1d4a2c] px-5 text-[15px] font-semibold text-white shadow-sm hover:bg-[#245a35]">
+          <Plus className="h-5 w-5" aria-hidden /> Issue an advisory
+        </button>
+      </PageHead>
       <div className={`gap-5 ${SPLIT}`}>
-      <Card className={`p-4 md:p-5 ${MAIN}`}>
-        <h2 className="font-semibold flex items-center gap-2"><Megaphone className="w-4 h-4 text-leaf" /> Issue an advisory</h2>
-        <p className="text-xs text-soil-dark/60 mt-0.5">
-          Every farm of this crop in the districts you pick gets it, in their own language, with the
-          inspection tasks this problem carries.
-        </p>
+      <div ref={formRef} className={`scroll-mt-24 ${MAIN}`}>
+      <Card className="p-5 lg:p-6">
+        <CardHead icon={Megaphone} title="Issue an advisory"
+          sub="Every farm of this crop in the districts you pick gets it, in their own language, with the inspection tasks this problem carries." />
 
         <div className="mt-4 grid sm:grid-cols-2 gap-3">
-          <label className="block text-xs text-soil-dark/70">
+          <label className="block text-[13px] font-semibold text-soil-dark/80">
             Crop
             <select value={crop} onChange={(e) => { setCrop(e.target.value); setTarget('') }}
-              className="mt-1 w-full min-h-[42px] rounded-xl border border-soil-dark/20 px-3 bg-cream/50 text-sm">
-              {['rice', 'maize', 'cotton', 'soybean'].map((c) => <option key={c} value={c}>{c}</option>)}
+              className="mt-1.5 w-full min-h-[46px] rounded-2xl bg-[#f8f6f0] px-3.5 text-[14px] font-normal text-soil-dark ring-1 ring-soil-dark/10 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#4b8b3b]">
+              {['rice', 'maize', 'cotton', 'soybean'].map((c) => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
             </select>
           </label>
 
-          <label className="block text-xs text-soil-dark/70">
+          <label className="block text-[13px] font-semibold text-soil-dark/80">
             Problem
             {/* "Already alerted" is the right audience while something is
                 building, and nobody at all for a problem the engine has not
@@ -135,7 +149,7 @@ export default function Advisories() {
                 setTarget(next)
                 if (audience === 'alerted' && !targets.some((t) => t.target === next && t.alerted > 0)) setAudience('stage')
               }}
-              className="mt-1 w-full min-h-[42px] rounded-xl border border-soil-dark/20 px-3 bg-cream/50 text-sm">
+              className="mt-1.5 w-full min-h-[46px] rounded-2xl bg-[#f8f6f0] px-3.5 text-[14px] font-normal text-soil-dark ring-1 ring-soil-dark/10 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#4b8b3b]">
               <option value="">{choices.loading ? 'Loading…' : 'Choose…'}</option>
               {building.length > 0 && (
                 <optgroup label="Building now">
@@ -153,7 +167,7 @@ export default function Advisories() {
               )}
             </select>
             {choices.error && (
-              <span className="mt-1 block text-[11px] text-ember">
+              <span className="mt-1 block text-[12px] font-normal text-ember">
                 The list of problems did not load — reload the page before you send anything.
               </span>
             )}
@@ -161,16 +175,17 @@ export default function Advisories() {
         </div>
 
         <fieldset className="mt-4">
-          <legend className="text-xs text-soil-dark/70">Districts <span className="text-soil-dark/50">(none = the whole state)</span></legend>
-          <div className="mt-2 max-h-36 overflow-y-auto rounded-xl border border-soil-dark/15 p-2 flex flex-wrap gap-1.5">
-            {allDistricts.length === 0 && <span className="text-xs text-soil-dark/50">Loading districts…</span>}
+          <legend className="text-[13px] font-semibold text-soil-dark/80">Districts <span className="font-normal text-soil-dark/70">(none = the whole state)</span></legend>
+          <div className="mt-2 flex max-h-40 flex-wrap gap-1.5 overflow-y-auto rounded-2xl bg-[#f8f6f0] p-2.5 ring-1 ring-soil-dark/10">
+            {allDistricts.length === 0 && <span className="text-[13px] text-soil-dark/70">Loading districts…</span>}
             {allDistricts.map((d: string) => {
               const on = districts.includes(d)
               return (
                 <button key={d} type="button"
                   onClick={() => setDistricts((s) => on ? s.filter((x) => x !== d) : [...s, d])}
-                  className={`rounded-full px-2.5 py-1 text-xs border ${on
-                    ? 'bg-leaf-deep text-cream border-leaf-deep' : 'border-soil-dark/20 text-soil-dark/70'}`}>
+                  aria-pressed={on}
+                  className={`rounded-full px-3 py-1.5 text-[13px] font-medium ring-1 transition-colors ${on
+                    ? 'bg-[#1d4a2c] text-white ring-[#1d4a2c]' : 'bg-white text-soil-dark/80 ring-soil-dark/15 hover:ring-[#4b8b3b]/50'}`}>
                   {d}
                 </button>
               )
@@ -179,8 +194,8 @@ export default function Advisories() {
         </fieldset>
 
         <fieldset className="mt-4">
-          <legend className="text-xs text-soil-dark/70">Who it reaches</legend>
-          <div className="mt-2 grid sm:grid-cols-2 gap-1.5">
+          <legend className="text-[13px] font-semibold text-soil-dark/80">Who it reaches</legend>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
             {([
               ['alerted', 'Already alerted', 'farms the risk engine has flagged for this problem'],
               ['nearby', 'Near a confirmed case', 'within the 5 km spread radius'],
@@ -188,55 +203,56 @@ export default function Advisories() {
               ['all', 'Every farm of this crop', 'the blunt instrument'],
             ] as const).map(([k, label, why]) => (
               <button key={k} type="button" onClick={() => setAudience(k)}
-                className={`text-left rounded-xl border px-3 py-2 ${audience === k
-                  ? 'border-leaf-deep bg-leaf/[0.06]' : 'border-soil-dark/15 hover:border-leaf/40'}`}>
-                <span className="block text-sm font-medium">{label}</span>
-                <span className="block text-[11px] text-soil-dark/60">{why}</span>
+                aria-pressed={audience === k}
+                className={`rounded-2xl px-3.5 py-2.5 text-left ring-1 transition-colors ${audience === k
+                  ? 'bg-[#e3efd9] ring-[#4b8b3b]/50' : 'bg-white ring-soil-dark/10 hover:ring-[#4b8b3b]/40'}`}>
+                <span className="block text-[14px] font-semibold">{label}</span>
+                <span className="block text-[12px] text-soil-dark/70">{why}</span>
               </button>
             ))}
           </div>
         </fieldset>
 
         <div className="mt-4 grid sm:grid-cols-2 gap-3">
-          <label className="block text-xs text-soil-dark/70">
+          <label className="block text-[13px] font-semibold text-soil-dark/80">
             Kind
             <select value={kind} onChange={(e) => setKind(e.target.value as 'advisory' | 'inspection')}
-              className="mt-1 w-full min-h-[42px] rounded-xl border border-soil-dark/20 px-3 bg-cream/50 text-sm">
+              className="mt-1.5 w-full min-h-[46px] rounded-2xl bg-[#f8f6f0] px-3.5 text-[14px] font-normal text-soil-dark ring-1 ring-soil-dark/10 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#4b8b3b]">
               <option value="advisory">Advisory — this is building, check your field</option>
               <option value="inspection">Inspection — go and look at this field</option>
             </select>
           </label>
-          <label className="block text-xs text-soil-dark/70">
+          <label className="block text-[13px] font-semibold text-soil-dark/80">
             Level
             <select value={level} onChange={(e) => setLevel(e.target.value as 'low' | 'medium' | 'high')}
-              className="mt-1 w-full min-h-[42px] rounded-xl border border-soil-dark/20 px-3 bg-cream/50 text-sm">
-              {['high', 'medium', 'low'].map((l) => <option key={l} value={l}>{l}</option>)}
+              className="mt-1.5 w-full min-h-[46px] rounded-2xl bg-[#f8f6f0] px-3.5 text-[14px] font-normal text-soil-dark ring-1 ring-soil-dark/10 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#4b8b3b]">
+              {['high', 'medium', 'low'].map((l) => <option key={l} value={l}>{l.charAt(0).toUpperCase() + l.slice(1)}</option>)}
             </select>
           </label>
         </div>
 
-        <label className="mt-4 block text-xs text-soil-dark/70">
+        <label className="mt-4 block text-[13px] font-semibold text-soil-dark/80">
           Your note (optional — the farmer reads it)
           <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} maxLength={400}
             placeholder="e.g. Scouts found it in Sakoli block on Tuesday."
-            className="mt-1 w-full rounded-xl border border-soil-dark/20 px-3 py-2 bg-cream/50 text-sm" />
+            className="mt-1.5 w-full rounded-2xl bg-[#f8f6f0] px-3.5 py-2.5 text-[14px] font-normal ring-1 ring-soil-dark/10 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#4b8b3b]" />
         </label>
 
         {error && <div className="mt-3"><ErrorBox error={error} /></div>}
 
         {sent ? (
-          <div className="mt-4 rounded-2xl border border-leaf/40 bg-leaf/5 p-4">
+          <div className="mt-4 rounded-2xl bg-[#eef6ea] p-4">
             <p className="flex items-center gap-2 font-semibold text-leaf-deep">
               <CheckCircle2 className="w-5 h-5" /> Sent to {sent.sent} farm{sent.sent === 1 ? '' : 's'}
             </p>
             {sent.skipped > 0 && (
-              <p className="mt-1 text-xs text-soil-dark/70">
+              <p className="mt-1 text-[13px] text-soil-dark/70">
                 {sent.skipped} already had this advisory today and were not sent it twice.
               </p>
             )}
           </div>
         ) : preview ? (
-          <div className="mt-4 rounded-2xl border border-ochre/40 bg-ochre/[0.06] p-4">
+          <div className="mt-4 rounded-2xl bg-[#fdf5e6] p-4 ring-1 ring-[#d29a3a]/25">
             <p className="text-sm font-medium">
               This reaches <span className="tabular-nums">{preview.farms}</span> farm{preview.farms === 1 ? '' : 's'}
               {preview.districts.length > 0 ? ` in ${preview.districts.join(', ')}` : ' across every district'}.
@@ -248,7 +264,7 @@ export default function Advisories() {
             <div className="mt-3 flex flex-wrap gap-1.5">
               {APP_LANGS.map(({ code, label }) => (
                 <button key={code} onClick={() => setLang(code)} lang={code} title={code}
-                  className={`rounded-full px-2.5 py-1 text-xs ${lang === code ? 'bg-leaf-deep text-cream' : 'bg-white text-soil-dark/70 border border-soil-dark/15'}`}>
+                  className={`rounded-full px-3 py-1 text-[13px] ring-1 ${lang === code ? 'bg-[#1d4a2c] text-white ring-[#1d4a2c]' : 'bg-white text-soil-dark/80 ring-soil-dark/15'}`}>
                   {label}
                 </button>
               ))}
@@ -256,16 +272,16 @@ export default function Advisories() {
 
             <div className="mt-2 rounded-xl bg-white p-3">
               <p lang={lang} className="text-sm">{preview.reason[lang]}</p>
-              <ul lang={lang} className="mt-2 space-y-1 text-xs text-soil-dark/75">
+              <ul lang={lang} className="mt-2 space-y-1 text-[13px] text-soil-dark/75">
                 {(preview.tasks[lang] ?? []).map((t) => <li key={t}>• {t}</li>)}
               </ul>
             </div>
 
             {preview.farms === 0 ? (
-              <p className="mt-3 text-xs text-ember">No farm matches — nothing to send.</p>
+              <p className="mt-3 text-[13px] text-ember">No farm matches — nothing to send.</p>
             ) : (
               <button onClick={send} disabled={busy}
-                className="mt-3 w-full min-h-[44px] rounded-full bg-ember text-cream text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-60">
+                className="mt-3 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-[#b5381c] text-[15px] font-semibold text-white hover:brightness-110 disabled:opacity-60">
                 {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 Send to {preview.farms} farm{preview.farms === 1 ? '' : 's'}
               </button>
@@ -273,64 +289,84 @@ export default function Advisories() {
           </div>
         ) : (
           <button onClick={look} disabled={busy || !target}
-            className="mt-4 w-full min-h-[44px] rounded-full bg-leaf-deep text-cream text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50">
+            className="mt-5 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-[#1d4a2c] text-[15px] font-semibold text-white hover:bg-[#245a35] disabled:opacity-50">
             {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
             See what would be sent
           </button>
         )}
       </Card>
+      </div>
 
-      <div className={`space-y-5 ${SIDE}`}>
-        <Card className="p-4 md:p-5">
-          <h2 className="font-semibold">Issued before</h2>
-          {history.error && !history.data ? <div className="mt-3"><ErrorBox error={history.error} onRetry={history.reload} /></div>
-            : !history.data ? <div className="mt-3"><PanelBone rows={4} /></div>
+      <div className={SIDE}>
+        <Card className="p-5 lg:p-6">
+          <CardHead icon={History} title="Sent from this office"
+            sub="What went out, to how many farms, and what came back." />
+          {history.error && !history.data ? <div className="mt-4"><ErrorBox error={history.error} onRetry={history.reload} /></div>
+            : !history.data ? <div className="mt-4"><PanelBone rows={4} /></div>
             : history.data.length === 0 ? (
-              <p className="mt-3 text-sm text-soil-dark/70">Nothing has been issued from this office yet.</p>
+              <p className="mt-4 rounded-2xl bg-[#f8f6f0] p-4 text-[14px] text-soil-dark/75">Nothing has been issued from this office yet.</p>
             ) : (
-              <ul className="mt-3 divide-y divide-soil-dark/10">
-                {history.data.map((h) => (
-                  <li key={h.id} className="py-2.5 flex items-start justify-between gap-3">
-                    <span className="min-w-0">
-                      <span className="block text-sm font-medium truncate">
-                        {h.target.replace(/_/g, ' ')} <span className="text-soil-dark/50">· {h.kind}</span>
+              <ul className="mt-3 divide-y divide-soil-dark/[0.07]">
+                {(allSent ? history.data : history.data.slice(0, 5)).map((h) => {
+                  const checked = h.farms > 0 ? Math.min(1, h.inspected / h.farms) : 0
+                  return (
+                    <li key={h.id} className="flex gap-3 py-3.5" title={`Issued by ${h.issued_by}`}>
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eef3e6] text-[#2f6a39]">
+                        <FileText className="h-5 w-5" aria-hidden />
                       </span>
-                      {/* Wraps rather than truncates. Who sent an advisory and
-                          when are the two things this list is consulted for —
-                          "was this already gone out, and by whom?" — and on one
-                          line they are the first to go: in a narrow window this
-                          read "every district…" and dropped both. Two lines of
-                          11px cost less than a second trip to ask. */}
-                      <span className="block text-[11px] text-soil-dark/60 [overflow-wrap:anywhere]">
-                        {h.districts.length > 0 ? h.districts.join(', ') : 'every district'} · {h.issued_by}
-                        {h.issued_at ? ` · ${h.issued_at.slice(0, 10)}` : ''}
-                      </span>
-                      {h.note && <span className="block text-[11px] text-soil-dark/50 truncate">“{h.note}”</span>}
-                    </span>
-                    <span className="text-right shrink-0">
-                      <span className="block text-xs tabular-nums text-soil-dark/70">{many(h.farms, 'farm')}</span>
-                      {h.farms > 0 && (
-                        <span className="mt-1 block text-[11px] tabular-nums">
-                          {h.inspected === 0 ? (
-                            <span className="text-ember">none checked yet</span>
-                          ) : (
-                            <>
-                              <span className="text-leaf-deep">{h.inspected} checked</span>
-                              {h.found > 0 && <span className="text-ember"> · {h.found} found it</span>}
-                            </>
-                          )}
-                        </span>
+                      <div className="min-w-0 flex-1">
+                      {/* The name without its crop prefix, which the crop label
+                          below already says: "rice brown planthopper ·
+                          advis..." was cut off on every row. */}
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="min-w-0 text-[15px] font-semibold leading-snug">
+                          {targetName(h.target, h.crop)}
+                        </p>
+                        <Pill tone={h.kind === 'inspection' ? 'sky' : 'leaf'} className="shrink-0 !py-0.5 capitalize">{h.kind}</Pill>
+                      </div>
+                      <p className="mt-0.5 text-[13px] text-soil-dark/70">
+                        <span className="capitalize">{h.crop}</span>
+                        {' · '}{h.districts.length > 0 ? h.districts.join(', ') : 'every district'}
+                        {' · '}{shortDate(h.issued_at)}
+                        {h.level === 'high' && <span className="text-ember"> · high</span>}
+                      </p>
+                      {h.note && (
+                        <p className="mt-1.5 line-clamp-2 rounded-xl bg-[#f8f6f0] px-2.5 py-1.5 text-[13px] leading-snug text-soil-dark/80">
+                          {h.note}
+                        </p>
                       )}
-                    </span>
-                  </li>
-                ))}
+                      <div className="mt-2 flex items-center gap-2">
+                        <div className="flex-1 h-1 rounded-full bg-soil-dark/[0.07]" aria-hidden>
+                          <span className="block h-full rounded-full bg-leaf" style={{ width: `${checked * 100}%` }} />
+                        </div>
+                        <span className="shrink-0 text-[12px] tabular-nums text-soil-dark/70">
+                          {h.inspected === 0
+                            ? <>{many(h.farms, 'farm')} · <span className="text-ember">none checked yet</span></>
+                            : <>{h.inspected} of {many(h.farms, 'farm')} checked{h.found > 0 && <span className="text-ember font-medium"> · {h.found} found it</span>}</>}
+                        </span>
+                      </div>
+                      </div>
+                    </li>
+                  )
+                })}
               </ul>
             )}
+          {/* Five, so the list ends about where the form beside it does. All
+              eight left a column of empty page under the form. */}
+          {history.data && history.data.length > 5 && (
+            <button type="button" onClick={() => setAllSent((v) => !v)}
+              className="mt-2 text-[14px] font-semibold text-leaf-deep hover:underline underline-offset-2">
+              {allSent ? 'Show fewer' : `Show all ${history.data.length}`}
+            </button>
+          )}
         </Card>
+      </div>
+      </div>
 
-        <Panel q={outlook} rows={6}>{(rows) => <OutlookPanel rows={rows} />}</Panel>
-      </div>
-      </div>
+      {/* Full width: seven columns of what is building, and the one table on
+          this page that needs the room. In the side column it squeezed until
+          its own headers ran together. */}
+      <Panel q={outlook} rows={6}>{(rows) => <OutlookPanel rows={rows} onDraft={draftFrom} />}</Panel>
     </>
   )
 }

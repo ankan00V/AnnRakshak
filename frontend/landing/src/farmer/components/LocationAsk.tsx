@@ -74,8 +74,9 @@ export default function LocationAsk({ farm, onUpdated }: { farm: Farm; onUpdated
             {t('locAskBody').replace('{district}', farm.district)}
           </p>
         </div>
-        <button onClick={() => setHidden(true)} aria-label={t('locAskLater')} className="p-1 -m-1 text-soil-dark/40">
-          <X className="w-4 h-4" />
+        <button onClick={() => setHidden(true)} aria-label={t('locAskLater')}
+          className="shrink-0 -m-2 flex h-11 w-11 items-center justify-center rounded-full text-soil-dark/70 hover:bg-soil-dark/5">
+          <X className="h-5 w-5" />
         </button>
       </div>
       {state === 'saved' ? (
@@ -85,7 +86,7 @@ export default function LocationAsk({ farm, onUpdated }: { farm: Farm; onUpdated
           <p className="text-[13px] font-semibold">
             {t('locFarTitle').replace('{km}', String(far.km)).replace('{district}', farm.district)}
           </p>
-          <p className="mt-1 text-[12px] text-soil-dark/65">{t('locFarBody')}</p>
+          <p className="mt-1 text-[13px] text-soil-dark/75">{t('locFarBody')}</p>
           <div className="mt-3 grid grid-cols-2 gap-2">
             <button onClick={() => { setFar(null); setState('idle') }}
               className="min-h-[44px] rounded-full border border-soil-dark/20 bg-white text-sm font-medium">{t('locAskLater')}</button>
@@ -100,7 +101,7 @@ export default function LocationAsk({ farm, onUpdated }: { farm: Farm; onUpdated
             {state === 'asking' ? <Loader2 className="w-4 h-4 animate-spin" /> : <LocateFixed className="w-4 h-4" />}
             {t('locAskCta')}
           </button>
-          <p className="mt-2 text-[12px] text-soil-dark/55">
+          <p className="mt-2 text-[13px] text-soil-dark/70">
             {state === 'denied' ? t('locDenied') : state === 'failed' ? t('locFailed') : t('locAskStanding')}
           </p>
         </>

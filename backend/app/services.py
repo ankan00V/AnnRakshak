@@ -941,10 +941,11 @@ def _advise(db: Session, kb: KB, problem: Problem, target: str, source: str, lan
 
 
 def diagnose(
-    db: Session, kb: KB, farm: Farm, image_bytes: bytes, lang: str, scenario: str | None = None
+    db: Session, kb: KB, farm: Farm, image_bytes: bytes, lang: str, scenario: str | None = None,
+    client_ref: str | None = None,
 ) -> dict:
     image_path = save_upload(image_bytes)
-    problem = Problem(farm_id=farm.id)
+    problem = Problem(farm_id=farm.id, client_ref=client_ref)
     db.add(problem)
     db.flush()
 
@@ -1263,7 +1264,7 @@ def case_satellite(db: Session, kb: KB, farm: Farm) -> dict | None:
     if not satellite.configured() or not farm.agro_polygon_id:
         return None
     try:
-        stage, _ = kb.stage_for(farm.crop, farm.sowing_date, date.today())
+        stage, _ = kb.stage_of(farm, date.today())
         s = satellite.summarize(satellite.ndvi_series(farm.agro_polygon_id), farm.crop, stage)
     except satellite.SatelliteUnavailable:
         return None
@@ -1495,7 +1496,10 @@ def risk_scores(db: Session, kb: KB, farm: Farm, today: date, window,
 
     `satellite` is this farm's greenness-drop summary when the caller already
     has one (the watcher does); it only ever raises a level that already fired."""
-    stage, das = kb.stage_for(farm.crop, farm.sowing_date, today)
+    # The farm's one age: kb.stage_of counts from the date the seed went in,
+    # so a rice farmer who gave the transplanting date is not read three weeks
+    # younger here than on the crop card above the warning.
+    stage, das = kb.stage_of(farm, today)
     history = set(db.scalars(
         select(Problem.target).where(Problem.farm_id == farm.id,
                                      Problem.season_no == farm.season_no, Problem.target.is_not(None))

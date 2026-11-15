@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { api, ApiError, UNAUTHORIZED } from '../api/client'
 import type { Me } from '../api/types'
 import { clearCache } from '../lib/hooks'
@@ -41,31 +41,44 @@ function recalled(): Me | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [me, setMe] = useState<Me | null>(null)
-  const [loading, setLoading] = useState(true)
+  // A phone that was signed in opens straight into the app with the account it
+  // remembers, and Home's own requests start at once instead of queueing
+  // behind /me on a slow line. This is only which screens to draw: the server
+  // still checks the session cookie on every request, and the check below
+  // takes the account away the moment the server says it is not signed in.
+  const [me, setMe] = useState<Me | null>(recalled)
+  const [loading, setLoading] = useState(() => recalled() === null)
   const [signedOut, setSignedOut] = useState(false)
+  // Bumped by sign-in and log-out: an answer to /me asked before either is
+  // about a session that no longer exists and must not overwrite the new one.
+  const epoch = useRef(0)
 
   useEffect(() => {
+    const asked = epoch.current
     api.me()
       .then((m) => {
+        if (epoch.current !== asked) return
         setMe(m)
         remember(m)
       })
       .catch((e: ApiError) => {
-        // Offline: trust the last session until the server says otherwise —
-        // and keep what this phone saved, which is the whole point of it.
-        if (e.status === 0) setMe(recalled())
-        else {
-          // The server has answered, and the answer is that this is nobody.
+        if (epoch.current !== asked) return
+        // Only the server saying "nobody is signed in" ends the session. No
+        // signal (status 0) or a server fault (5xx) says nothing about it, so
+        // the remembered account stays — the whole point of keeping it.
+        if (e.status === 401) {
           // What the phone kept is one farmer's field, their problems and
           // their photographs; on a shared handset it must not outlive their
           // session just because it ended by expiring rather than by logging
           // out.
+          setMe(null)
           remember(null)
           clearCache()
         }
       })
-      .finally(() => setLoading(false))
+      .finally(() => {
+        if (epoch.current === asked) setLoading(false)
+      })
   }, [])
 
   useEffect(() => {
@@ -79,6 +92,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signIn = useCallback((m: Me) => {
+    epoch.current += 1
+    setLoading(false)
     clearCache()
     remember(m)
     try {
@@ -99,6 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // until the request comes back — which on a weak signal is long enough to
     // hand the phone over still signed in. Logging out is not a thing to make
     // somebody wait for, and it must not depend on the network answering.
+    epoch.current += 1
+    setLoading(false)
     clearCache()
     remember(null)
     try {

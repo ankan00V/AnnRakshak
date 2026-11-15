@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { DiagnoseResult, Lang, LiveEvent } from '../api/types'
-import { LANG_KEY, LANGS, loadLocale, makeT } from '../lib/i18n'
+import { LANG_KEY, LANGS, loadLocale, makeT, bcp47 } from '../lib/i18n'
 import { usePersistent } from '../lib/hooks'
 
 interface FarmerState {
@@ -35,6 +35,13 @@ export function FarmerProvider({ children }: { children: ReactNode }) {
     return () => {
       on = false
     }
+  }, [lang])
+  // The page says which language it is in, so a screen reader reads Hindi
+  // as Hindi rather than spelling it out with English rules, and the browser
+  // offers the right keyboard and hyphenation. It said "en" in every language.
+  useEffect(() => {
+    document.documentElement.lang = bcp47(lang)
+    return () => { document.documentElement.lang = 'en' }
   }, [lang])
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const t = useMemo(() => makeT(lang), [lang, loaded])

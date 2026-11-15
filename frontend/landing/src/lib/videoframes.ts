@@ -89,8 +89,13 @@ export async function openVideo(file: File, v: HTMLVideoElement,
   const close = () => {
     if (closed) return
     closed = true
-    v.removeAttribute('src')
-    v.load()
+    // The element is shared. A file abandoned while it was still opening is
+    // closed after the next one has been put in it — and clearing the element
+    // then emptied the farmer's new video, which was read as unreadable.
+    if (v.src === url) {
+      v.removeAttribute('src')
+      v.load()
+    }
     URL.revokeObjectURL(url)
   }
 

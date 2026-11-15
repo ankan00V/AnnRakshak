@@ -11,6 +11,8 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.datastructures import Headers
+from starlette.middleware.gzip import GZipMiddleware, GZipResponder
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -28,6 +30,7 @@ from app import voice
 from app import cache, mosdac, notify, runtime, watch
 from app import krishi as krishi_kb
 from app.routers import auth, darpan, expert, farmer, geo, krishi, live, officials, weather
+from app.routers import sms as sms_replies
 
 
 logging.basicConfig(
@@ -60,6 +63,13 @@ async def lifespan(_: FastAPI):
     # waits for every connection to close. Tell them first, or the process
     # sits here until each one reaches its own deadline.
     runtime.begin()
+    # A live call whose connection just closed is on its way into Redis, where
+    # the farmer's reconnection to another container will look for it. Let
+    # those moves land before the loop goes; the release listener goes with
+    # the other background tasks. Without REDIS_URL both are no-ops.
+    await live.drain(5)
+    if live._listener is not None and not live._listener.done():
+        tasks.append(live._listener)
     for task in tasks:
         task.cancel()
     # Background loops talk to the network; one stuck on a dead socket must not
@@ -83,6 +93,46 @@ if ALLOWED_ORIGINS:
 elif not PROD:
     app.add_middleware(CORSMiddleware, allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
                        allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
+
+# Never gzipped: already compressed, or must reach the phone the moment it is
+# written. Starlette 0.41's GZip writes a stream through a GzipFile that holds
+# bytes back until it has a block's worth, so a server-sent event would sit in
+# the server instead of arriving; images, audio and woff2 only cost CPU to
+# squeeze again.
+_NO_GZIP = ("text/event-stream", "image/", "audio/", "video/", "font/woff2", "application/zip")
+
+
+class _Responder(GZipResponder):
+    passthrough = False
+
+    async def send_with_gzip(self, message) -> None:
+        if message["type"] == "http.response.start":
+            ctype = Headers(raw=message["headers"]).get("content-type", "")
+            self.passthrough = ctype.startswith(_NO_GZIP)
+        if self.passthrough:
+            await self.send(message)
+            return
+        await super().send_with_gzip(message)
+
+
+class SelectiveGZip(GZipMiddleware):
+    """GZip for text — the app's JS and CSS, the API's JSON — and nothing else.
+
+    The phone this is for is on 2G or 3G: the farmer app's first load is about
+    a quarter of its size compressed. No proxy in front of this process is
+    guaranteed to do it (docker-compose publishes this port directly)."""
+
+    async def __call__(self, scope, receive, send) -> None:
+        if scope["type"] == "http" and "gzip" in Headers(scope=scope).get("accept-encoding", ""):
+            await _Responder(self.app, self.minimum_size, compresslevel=self.compresslevel)(scope, receive, send)
+            return
+        await self.app(scope, receive, send)
+
+
+# compresslevel 6: nearly all of level 9's saving for a fraction of the CPU,
+# which matters on the one small container this runs on.
+app.add_middleware(SelectiveGZip, minimum_size=1024, compresslevel=6)
 
 
 @app.exception_handler(Exception)
@@ -139,6 +189,8 @@ app.include_router(officials.router)
 app.include_router(live.router)
 app.include_router(weather.router)
 app.include_router(voice.router)
+# Replies by SMS from farmers without the app (the provider's callback).
+app.include_router(sms_replies.router)
 
 
 @app.get("/health")
@@ -170,6 +222,39 @@ def health():
 # The browser app, when this process is the one serving it
 # --------------------------------------------------------------------------
 
+class _Hashed(StaticFiles):
+    """/assets: every name carries a hash of its content, so a file can be kept
+    for a year. Without this a phone asked again for the same 200 KB of
+    JavaScript on every open."""
+
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        if response.status_code in (200, 304):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response
+
+
+# Fonts and photographs keep their names across deploys, so a week, not a year:
+# long enough that a farmer's phone stops fetching them, short enough that a
+# replaced photograph reaches it.
+_WEEK = ("fonts/", "photos/", "field/")
+
+
+def _cache_for(path: str) -> dict[str, str]:
+    if path.startswith(_WEEK):
+        return {"Cache-Control": "public, max-age=604800"}
+    if path == "sw.js":
+        # The browser must look for a new worker on every visit, or a fix to
+        # the offline cache waits on a stale copy of the thing that holds it.
+        return {"Cache-Control": "no-cache"}
+    if path == "index.html":
+        # The address the worker installs the shell from. Without a header a
+        # browser may reuse a stale copy by heuristic, and an old shell pointing
+        # at deleted /assets names becomes the app that opens offline.
+        return {"Cache-Control": "no-cache"}
+    return {}
+
+
 def mount_web(target, web_dir) -> None:
     """Serve a built single-page app from `web_dir` on `target`.
 
@@ -177,7 +262,7 @@ def mount_web(target, web_dir) -> None:
     throwaway app in a test — the behaviour here (a deep link survives a cold
     load, a path cannot walk out of the root) is production behaviour and wants
     covering like any other."""
-    target.mount("/assets", StaticFiles(directory=web_dir / "assets"), name="assets")
+    target.mount("/assets", _Hashed(directory=web_dir / "assets"), name="assets")
     root = web_dir.resolve()
 
     @target.get("/{path:path}", include_in_schema=False)
@@ -189,7 +274,8 @@ def mount_web(target, web_dir) -> None:
         rather than a 404. Registered last, so every API route wins first."""
         wanted = (web_dir / path).resolve()
         if path and root in wanted.parents and wanted.is_file():
-            return FileResponse(wanted)        # favicon, manifest, the service worker
+            # favicon, manifest, the service worker, fonts and photographs
+            return FileResponse(wanted, headers=_cache_for(path))
         # A path that asks for a file must not be answered with the shell. A
         # relative asset base once made /signup/expert ask for
         # /signup/assets/index.js; this returned index.html with it, the browser

@@ -1,5 +1,5 @@
 """Getting a notice to the farmer: in the open app (Server-Sent Events), on the
-phone when the app is closed (Web Push), and by email.
+phone when the app is closed (Web Push), by email, and by SMS.
 
 Delivery policy, in one place:
 - In-app: everything, the moment it is issued.
@@ -8,6 +8,11 @@ Delivery policy, in one place:
 - Email: per the farmer's choice — warnings and new high-risk alerts for their
   crop right away ('warnings', the default), every advisory ('all'), or only the
   6 am summary ('digest'). At most MAX_ALERT_EMAILS_PER_FARM_PER_DAY alert emails.
+- SMS: for a farmer who has said yes (sms_pref 'warnings' — the default for a
+  farmer with no email), three moments: a warning-severity weather notice and
+  the day-four follow-up question, both waiting out the quiet hours, and the
+  expert's verdict, which does not. Once per field and moment (sms_log), at
+  most MAX_ALERT_SMS_PER_FARM_PER_DAY a day, never to a demo field.
 """
 
 from __future__ import annotations
@@ -15,6 +20,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
+import logging
 import os
 import secrets
 from datetime import date, datetime, timedelta
@@ -26,7 +32,7 @@ from pywebpush import WebPushException, webpush
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import cache, live, mailer, services
+from app import cache, config, live, mailer, services, sms
 from app.config import (
     DATA_DIR,
     MAX_ALERT_EMAILS_PER_FARM_PER_DAY,
@@ -38,7 +44,10 @@ from app.config import (
 )
 from app.engine import agromet, risk
 from app.kb import KB, tr, trl
-from app.models import Alert, EmailLog, Farm, FollowUp, Notice, Problem, PushSubscription, SprayLog, User
+from app.models import (Alert, EmailLog, Farm, FollowUp, Notice, Problem, PushSubscription, SmsLog, SprayLog,
+                        User)
+
+log = logging.getLogger("annrakshak.notify")
 
 LEVEL_LABEL = {
     "high": {"en": "High risk", "hi": "अधिक जोखिम", "mr": "जास्त धोका"},
@@ -240,7 +249,14 @@ def verdict_reached(db: Session, kb: KB, farm: Farm, problem_id: int, target: st
     title, url = tr(VERDICT_TEXT["title"], lang), f"/app/history/{problem_id}"
     broker.publish(farm.id, {"type": "verdict", "id": problem_id, "severity": "info",
                              "title": title, "body": body, "url": url})
-    return push(db, farm.id, _payload(title, body, url, f"verdict-{problem_id}", "info"))
+    out = push(db, farm.id, _payload(title, body, url, f"verdict-{problem_id}", "info"))
+    # And by SMS, for the farmer who sent a photo from a borrowed smartphone or
+    # whose own has no data left: push reaches neither. The key carries the
+    # label, so a corrected verdict is news and the same one sent twice is not.
+    out["sms"] = text_farm(db, farm, kind="verdict", ref=f"verdict:{problem_id}:{target or 'none'}",
+                           text=f"AnnRakshak: {title}. {body}", link=app_url(url), now=datetime.now())
+    db.commit()  # the verdict itself is already committed; this keeps the push and SMS records
+    return out
 
 
 FOLLOWUP_TEXT = {
@@ -300,6 +316,112 @@ def followup_reminders(db: Session, kb: KB, farm: Farm, now: datetime) -> int:
         push(db, farm.id, _payload(title, body, url, f"followup-{fu.id}", "info"))
         fu.reminded_at = now
         sent += 1
+    return sent
+
+
+# --------------------------------------------------------------------------
+# SMS
+# --------------------------------------------------------------------------
+
+SMS_PREFS = ("warnings", "off")
+
+
+def default_sms_pref(email: str | None) -> str:
+    """What a farmer who was never asked gets. With no email, SMS is the only
+    way to reach them when the app is closed, so it is on; with an email they
+    already have one, and an SMS they did not ask for is an interruption that
+    costs money."""
+    return "off" if email else "warnings"
+
+
+def sms_pref_for(db: Session, farm: Farm) -> str:
+    """Whether alerts may go to this field's phone by SMS, asked of the person
+    first, as email_pref_for does, and of the field only when no account is
+    behind it."""
+    user = db.get(User, farm.user_id) if farm.user_id else None
+    if user is not None:
+        return user.sms_pref or default_sms_pref(user.email)
+    return farm.sms_pref or default_sms_pref(farm.email)
+
+
+def _may_text(db: Session, farm: Farm, kind: str) -> bool:
+    """A real field, with a phone, whose farmer said yes, and a provider that
+    can carry this kind of message. A demo field never: its numbers are made
+    up, and a made-up Indian mobile number is somebody's real one."""
+    return bool(farm.phone and not farm.is_demo and sms.enabled(kind)
+                and sms_pref_for(db, farm) == "warnings")
+
+
+def text_farm(db: Session, farm: Farm, *, kind: str, ref: str, text: str, link: str | None,
+              now: datetime) -> str | None:
+    """One alert SMS to a field's phone, at most once per `ref`.
+
+    Returns the send status, or None when nothing was attempted: the farmer
+    said no, it already went, it has failed SMS_RETRIES times, or the field's
+    allowance for today is spent. A failure is recorded without the dedupe
+    key, so the next sweep tries again.
+
+    The expert's verdict counts against the day's allowance but is never
+    stopped by it, the same exception push makes: it is the answer to a
+    question the farmer asked, not one more forecast."""
+    if not _may_text(db, farm, kind):
+        return None
+    ref = ref[:80]
+    if db.scalar(select(SmsLog.id).where(SmsLog.farm_id == farm.id, SmsLog.dedupe_key == ref)):
+        return None
+    tries = db.scalar(select(func.count(SmsLog.id)).where(
+        SmsLog.farm_id == farm.id, SmsLog.ref == ref, SmsLog.status == "failed")) or 0
+    if tries >= config.SMS_RETRIES:
+        return None
+    today = datetime.combine(now.date(), datetime.min.time())
+    sent_today = db.scalar(select(func.count(SmsLog.id)).where(
+        SmsLog.farm_id == farm.id, SmsLog.direction == "out", SmsLog.kind.in_(sms.ALERT_KINDS),
+        SmsLog.status.in_(("sent", "outbox")), SmsLog.at >= today)) or 0
+    if sent_today >= config.MAX_ALERT_SMS_PER_FARM_PER_DAY and kind != "verdict":
+        return None
+    words, whole = sms.fit(text, link)
+    status, err = sms.send(farm.phone, whole, kind=kind, variables={"text": words, "link": link or ""})
+    sms.record(db, farm_id=farm.id, number=farm.phone, direction="out", kind=kind, status=status, ref=ref,
+               delivered=status in ("sent", "outbox"), body=whole, error=err)
+    return status
+
+
+FOLLOWUP_SMS_DAYS = 2
+"""How long after it fell due a follow-up question still goes by SMS. Without
+a window, switching SMS on would text every farmer every question they never
+answered in the app, months late."""
+
+
+def sms_alerts(db: Session, kb: KB, farm: Farm, now: datetime) -> int:
+    """Warnings and follow-up questions by SMS, for the farmer without the app.
+
+    A sweep rather than a step inside the push or reminder code, so a message
+    that failed is tried again on the next pass and one that went is never
+    sent twice (the sms_log key). Both wait out the quiet hours: a question
+    about a crop can wait for morning, and so, by the farmer's own rule, can a
+    forecast — a warning that expires overnight is never sent late."""
+    if quiet(now) or not (_may_text(db, farm, "warning") or _may_text(db, farm, "followup")):
+        return 0
+    sent = 0
+    for n in db.scalars(select(Notice).where(
+            Notice.farm_id == farm.id, Notice.severity == "warning", Notice.valid_until > now,
+            Notice.created_at >= now - timedelta(days=1)).order_by(Notice.id)).all():
+        v = notice_view(kb, farm, n, farm.lang, now)
+        sent += text_farm(db, farm, kind="warning", ref=f"notice:{n.id}",
+                          text=f"AnnRakshak: {v['title']}. {v['text']}", link=app_url("/app/weather"),
+                          now=now) in ("sent", "outbox")
+    for fu in db.scalars(select(FollowUp).join(Problem, Problem.id == FollowUp.problem_id).where(
+            Problem.farm_id == farm.id, FollowUp.response.is_(None), FollowUp.due_on <= now.date(),
+            FollowUp.due_on >= now.date() - timedelta(days=FOLLOWUP_SMS_DAYS))).all():
+        problem = db.get(Problem, fu.problem_id)
+        target = problem.target if problem else None
+        name = tr(kb.targets[target]["names"], farm.lang) if target and target in kb.targets else ""
+        ask = tr(FOLLOWUP_TEXT["title"], farm.lang) + (f" ({name})" if name else "")
+        # Invite a reply only where one will be read; otherwise the app link
+        # is the answer, and the message says so.
+        how = sms.say("options", farm.lang) if sms.inbound_ready() else sms.say("in_app", farm.lang)
+        sent += text_farm(db, farm, kind="followup", ref=f"followup:{fu.id}", text=f"AnnRakshak: {ask} {how}",
+                          link=app_url(f"/app/history/{fu.problem_id}"), now=now) in ("sent", "outbox")
     return sent
 
 

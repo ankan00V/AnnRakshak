@@ -101,6 +101,10 @@ L = {
     "at": {"en": "When", "hi": "कब", "mr": "कधी"},
     "emails": {"en": "Emails we sent you", "hi": "हमने भेजे ईमेल", "mr": "आम्ही पाठवलेले ईमेल"},
     "subject": {"en": "Subject", "hi": "विषय", "mr": "विषय"},
+    "sms": {"en": "Text messages, both ways", "hi": "SMS, भेजे और मिले", "mr": "SMS, पाठवलेले आणि आलेले"},
+    "message": {"en": "Message", "hi": "संदेश", "mr": "संदेश"},
+    "sms_out": {"en": "We sent", "hi": "हमने भेजा", "mr": "आम्ही पाठवले"},
+    "sms_in": {"en": "You sent", "hi": "आपने भेजा", "mr": "तुम्ही पाठवले"},
     "kind": {"en": "Kind", "hi": "प्रकार", "mr": "प्रकार"},
     "nothing": {"en": "Nothing here yet.", "hi": "अभी यहाँ कुछ नहीं।", "mr": "इथे अजून काही नाही."},
     "page": {"en": "Page", "hi": "पृष्ठ", "mr": "पृष्ठ"},
@@ -376,6 +380,16 @@ def render(data: dict, lang: str = "en") -> bytes:
         _table(pdf, [_t("subject", lang), _t("kind", lang), _t("at", lang)], [4, 1, 1.4],
                [[str(e.get("subject") or ""), str(e.get("kind") or ""), _day(e.get("at"))]
                 for e in emails])
+
+    _heading(pdf, _t("sms", lang))
+    texts = data.get("sms") or []
+    if not texts:
+        _empty(pdf, lang)
+    if texts:
+        _table(pdf, [_t("message", lang), _t("kind", lang), _t("at", lang)], [4, 1, 1.4],
+               [[str(m.get("text") or ""),
+                 _t("sms_in" if m.get("direction") == "in" else "sms_out", lang), _day(m.get("at"))]
+                for m in texts])
 
     out = pdf.output()
     return bytes(out)

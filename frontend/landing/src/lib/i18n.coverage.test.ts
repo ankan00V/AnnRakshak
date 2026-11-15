@@ -20,7 +20,7 @@ const I18N_SRC = import.meta.glob('./i18n.ts', {
 const english = (() => {
   const src = Object.values(I18N_SRC)[0] ?? ''
   const from = src.indexOf('const en = {')
-  const to = src.indexOf('const hi')
+  const to = from >= 0 ? src.indexOf('\n}\n', from) : -1
   const block = from >= 0 && to > from ? src.slice(from, to) : ''
   return new Set([...block.matchAll(/^ {2}'?([A-Za-z0-9_+]+)'?:/gm)].map((m) => m[1]))
 })()
@@ -33,10 +33,10 @@ for (const [path, src] of Object.entries(SOURCES)) {
   for (const m of src.matchAll(/\bt\('([A-Za-z0-9_]+)'\)/g)) asked.add(m[1])
 }
 
-/** English, Hindi and Marathi are authored in i18n.ts. The rest are files, and a
- *  key missing from one is invisible: the lookup falls back to English and the
+/** English is authored in i18n.ts; every other language is a file, and a key
+ *  missing from one is invisible: the lookup falls back to English and the
  *  farmer who chose Tamil simply reads English. Nothing else catches that. */
-const SHIPPING = LANGS.map((l) => l.code).filter((c) => !['en', 'hi', 'mr'].includes(c))
+const SHIPPING = LANGS.map((l) => l.code).filter((c) => c !== 'en')
 
 describe('every string the app offers exists in every language it offers', () => {
   it('read the English table and the screens', () => {

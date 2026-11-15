@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { BellRing, Loader2, Mail, Smartphone } from 'lucide-react'
+import { BellRing, CloudSun, Loader2, Mail, Smartphone } from 'lucide-react'
 import { api } from '../../api/client'
 import type { Contact, EmailPref } from '../../api/types'
 import { useAsync } from '../../lib/hooks'
 import { disablePush, enablePush, pushState, type PushState } from '../../lib/push'
-import { Card, SectionTitle } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
+import { FIELD, LABEL, PANEL, PRIMARY, SECONDARY } from '../tokens'
+import { PanelHead } from '../ui'
 import DemoNotice, { useReadOnlyFarm } from './DemoNotice'
 import { Advisories } from '../screens/Weather'
 
@@ -21,19 +22,21 @@ export function NoticeInbox() {
   const active = items.filter((x) => x.active)
   const past = items.filter((x) => !x.active).slice(0, 5)
   return (
-    <section className="space-y-2">
-      <SectionTitle>{t('noticesTitle')}</SectionTitle>
-      {n.loading && !n.data ? null : active.length === 0 ? (
-        <Card className="p-4 text-sm text-soil-dark/60">{t('noNotices')}</Card>
-      ) : (
-        <Advisories items={active} />
-      )}
+    <section className={`${PANEL} p-5 lg:p-6`}>
+      <PanelHead icon={CloudSun} title={t('noticesTitle')} />
+      <div className="mt-4">
+        {n.loading && !n.data ? null : active.length === 0 ? (
+          <p className="rounded-[20px] bg-[#f5f7f1] p-4 text-[15px] text-soil-dark/80">{t('noNotices')}</p>
+        ) : (
+          <Advisories items={active} />
+        )}
+      </div>
       {past.length > 0 && (
-        <ul className="space-y-1">
+        <ul className="mt-4 divide-y divide-soil-dark/[0.07]">
           {past.map((x) => (
-            <li key={x.notice_id} className="flex items-center gap-2 text-xs rounded-xl bg-white/60 border border-soil-dark/10 px-3 py-2 text-soil-dark/60">
-              <span className="flex-1 truncate">{x.title}</span>
-              <span>{t('expired')}</span>
+            <li key={x.notice_id} className="flex items-center gap-3 py-2.5 text-[14px] text-soil-dark/75">
+              <span className="min-w-0 flex-1 truncate">{x.title}</span>
+              <span className="shrink-0 rounded-full bg-soil-dark/5 px-2.5 py-0.5 text-[12px]">{t('expired')}</span>
             </li>
           ))}
         </ul>
@@ -92,71 +95,62 @@ export function NotifySettings() {
   if (readOnly) return <DemoNotice />
 
   return (
-    <Card className="p-4 space-y-4">
-      <div className="flex items-start gap-3">
-        <span className="w-10 h-10 rounded-full bg-leaf/10 flex items-center justify-center shrink-0">
-          <BellRing className="w-5 h-5 text-leaf-deep" />
-        </span>
-        <div>
-          <h2 className="font-semibold">{t('notifyTitle')}</h2>
-          <p className="text-xs text-soil-dark/60">{t('notifySub')}</p>
-        </div>
-      </div>
+    <section className={`${PANEL} space-y-4 p-5`}>
+      <PanelHead icon={BellRing} title={t('notifyTitle')} sub={t('notifySub')} />
 
-      <div className="flex items-center gap-3">
-        <Smartphone className="w-4 h-4 text-soil-dark/50 shrink-0" />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium">{t('phoneAlerts')}</p>
-          <p className="text-[11px] text-soil-dark/55">
+      <div className="flex items-center gap-3 rounded-[20px] bg-[#f5f7f1] p-3.5">
+        <Smartphone className="h-5 w-5 shrink-0 text-leaf-deep" aria-hidden />
+        <div className="min-w-0 flex-1">
+          <p className="text-[15px] font-semibold">{t('phoneAlerts')}</p>
+          <p className="text-[13px] text-soil-dark/75">
             {push === 'on' ? t('phoneOn') : push === 'blocked' ? t('phoneBlocked') : push === 'unsupported' ? t('phoneUnsupported') : ''}
           </p>
         </div>
         {push === 'on' || push === 'off' ? (
           <button onClick={togglePush} disabled={busy !== null}
-            className={`shrink-0 min-h-[40px] px-4 rounded-full text-xs font-medium ${push === 'on' ? 'bg-white border border-soil-dark/20' : 'bg-leaf-deep text-cream'}`}>
-            {busy === 'push' ? <Loader2 className="w-4 h-4 animate-spin" /> : push === 'on' ? t('phoneTurnOff') : t('phoneTurnOn')}
+            className={`min-h-[44px] shrink-0 rounded-full px-4 text-[14px] font-semibold ${push === 'on' ? 'bg-white ring-1 ring-soil-dark/15' : 'bg-[#2f6a39] text-white'}`}>
+            {busy === 'push' ? <Loader2 className="h-4 w-4 animate-spin" /> : push === 'on' ? t('phoneTurnOff') : t('phoneTurnOn')}
           </button>
         ) : null}
       </div>
       {push === 'on' && (
-        <button onClick={() => run('ptest', () => api.pushTest(farmId!, lang))} className="text-xs font-medium text-leaf-deep">
+        <button onClick={() => run('ptest', () => api.pushTest(farmId!, lang))} className="inline-flex min-h-[44px] items-center px-2 -mx-2 text-[14px] font-medium text-leaf-deep">
           {busy === 'ptest' ? '…' : t('sendTest')}
         </button>
       )}
 
-      <div className="border-t border-soil-dark/10 pt-3 space-y-2">
-        <label className="block text-xs text-soil-dark/60">
-          <span className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5" />{t('emailLabel')}</span>
+      <div className="space-y-3">
+        <label className={LABEL}>
+          <span className="flex items-center gap-1.5"><Mail className="h-4 w-4" aria-hidden />{t('emailLabel')}</span>
           <input type="email" inputMode="email" autoComplete="email" value={email} placeholder={t('emailPlaceholder')}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full min-h-[44px] rounded-xl border border-soil-dark/20 px-3 bg-cream/50 text-sm focus:outline-none focus:border-leaf" />
+            onChange={(e) => setEmail(e.target.value)} className={FIELD} />
         </label>
-        <div className="grid grid-cols-1 gap-1.5">
+        <div className="grid gap-2">
           {PREFS.map((p) => (
-            <label key={p} className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${pref === p ? 'border-leaf bg-leaf/5' : 'border-soil-dark/10'}`}>
-              <input type="radio" name="email-pref" checked={pref === p} onChange={() => setPref(p)} className="accent-leaf-deep" />
+            <label key={p} className={`flex min-h-[48px] cursor-pointer items-center gap-3 rounded-2xl px-4 text-[15px] ring-1 transition-colors ${
+              pref === p ? 'bg-[#e3efd9] font-medium text-leaf-deep ring-[#4b8b3b]/40' : 'bg-white ring-soil-dark/10 hover:bg-[#f5f7f1]'}`}>
+              <input type="radio" name="email-pref" checked={pref === p} onChange={() => setPref(p)} className="h-4 w-4 accent-[#2f6a39]" />
               {t(`emailPref_${p}`)}
             </label>
           ))}
         </div>
-        <button onClick={save} disabled={busy !== null}
-          className="w-full min-h-[44px] rounded-full bg-leaf-deep text-cream text-sm font-medium disabled:opacity-50">
-          {busy === 'save' ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : t('saveBtn')}
+        <button onClick={save} disabled={busy !== null} className={PRIMARY}>
+          {busy === 'save' ? <Loader2 className="h-5 w-5 animate-spin" /> : t('saveBtn')}
         </button>
         {contact?.email && (
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <button onClick={() => run('etest', async () => sent((await api.emailTest(farmId!)).status))} disabled={busy !== null}
-              className="flex-1 min-h-[40px] rounded-full border border-soil-dark/20 text-xs font-medium bg-white">
+              className={`${SECONDARY} px-3 text-[14px]`}>
               {busy === 'etest' ? '…' : t('emailTestBtn')}
             </button>
             <button onClick={() => run('esum', async () => sent((await api.emailSummary(farmId!)).status))} disabled={busy !== null}
-              className="flex-1 min-h-[40px] rounded-full border border-soil-dark/20 text-xs font-medium bg-white">
+              className={`${SECONDARY} px-3 text-[14px]`}>
               {busy === 'esum' ? '…' : t('emailSummaryBtn')}
             </button>
           </div>
         )}
       </div>
-      {msg && <p className="text-xs text-center text-leaf-deep">{msg}</p>}
-    </Card>
+      {msg && <p role="status" className="text-center text-[14px] text-leaf-deep">{msg}</p>}
+    </section>
   )
 }

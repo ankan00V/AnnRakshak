@@ -10,7 +10,7 @@ Erasure here means two different things, deliberately:
 
   The person goes.   Name, phone, email, village, the field's coordinates, the
                      sessions, the push subscriptions, the record of every
-                     email we sent them, and every photograph they uploaded —
+                     email and SMS we sent them and every reply, and every photograph they uploaded —
                      the files, not only the rows.
 
   The disease stays. A confirmed case of bacterial blight in Bhandara in
@@ -48,6 +48,7 @@ from app.models import (
     Problem,
     PushSubscription,
     SensorReading,
+    SmsLog,
     SprayLog,
     TrapReading,
     User,
@@ -77,6 +78,7 @@ def export_account(db: Session, user: User) -> dict:
     return {
         "exported_at": datetime.now().isoformat(),
         "account": {"name": user.name, "phone": user.phone, "email": user.email,
+                    "email_not_yet_confirmed": user.pending_email,
                     "role": user.role, "language": user.lang,
                     "joined": user.created_at.isoformat() if getattr(user, "created_at", None) else None},
         "profile": {"district": profile.district, "taluka": profile.taluka, "village": profile.village,
@@ -101,6 +103,10 @@ def export_account(db: Session, user: User) -> dict:
         "emails_we_sent": [{"kind": e.kind, "subject": e.subject,
                             "at": e.sent_at.isoformat() if e.sent_at else None}
                            for e in rows(EmailLog, EmailLog.farm_id.in_(farm_ids))],
+        # Both ways: what we texted them, and what they texted back.
+        "sms": [{"direction": m.direction, "kind": m.kind, "text": m.body, "status": m.status,
+                 "at": m.at.isoformat() if m.at else None}
+                for m in rows(SmsLog, SmsLog.farm_id.in_(farm_ids))],
     }
 
 
@@ -131,6 +137,8 @@ def erase_account(db: Session, user: User) -> dict:
         (Notice, Notice.farm_id.in_(farm_ids) if farm_ids else None),
         (PushSubscription, PushSubscription.farm_id.in_(farm_ids) if farm_ids else None),
         (EmailLog, EmailLog.farm_id.in_(farm_ids) if farm_ids else None),
+        # The texts we sent and the farmer's own replies to them.
+        (SmsLog, SmsLog.farm_id.in_(farm_ids) if farm_ids else None),
         (SprayLog, SprayLog.farm_id.in_(farm_ids) if farm_ids else None),
         (SensorReading, SensorReading.farm_id.in_(farm_ids) if farm_ids else None),
         (TrapReading, TrapReading.farm_id.in_(farm_ids) if farm_ids else None),

@@ -134,7 +134,7 @@ export default function SignupExpert() {
   const o = options.data
   const name = (list: { id: string; name: string }[] | undefined, id: string) => list?.find((x) => x.id === id)?.name ?? id
 
-  if (options.error) return <ErrorBox error={options.error} onRetry={options.reload} retryLabel={t('retry')} />
+  if (options.error) return <ErrorBox offlineLabel={t('offline')} error={options.error} onRetry={options.reload} retryLabel={t('retry')} />
   if (!o) {
     return (
       <FormCard>
@@ -168,11 +168,13 @@ export default function SignupExpert() {
             </Field>
             <Field label={t('authMobile')} hint={t('authExpertMobileHint')}
               error={(show('phone') && t('authBadPhone')) || (taken?.field === 'phone' ? taken.message : false)}>
+              {(aria) => (
               <div className="flex gap-2">
-                <span className="min-h-[48px] px-3 rounded-xl border border-soil-dark/20 bg-cream flex items-center text-[15px] text-soil-dark/60">+91</span>
-                <Input value={f.phone} onChange={(e) => set('phone', e.target.value)} type="tel" inputMode="numeric"
+                <span className="min-h-[48px] px-3 rounded-xl border border-soil-dark/20 bg-cream flex items-center text-[15px] text-soil-dark/70">+91</span>
+                <Input {...aria} value={f.phone} onChange={(e) => set('phone', e.target.value)} type="tel" inputMode="numeric"
                   autoComplete="tel-national" maxLength={14} placeholder="98XXXXXXXX" invalid={show('phone') || taken?.field === 'phone'} />
               </div>
+              )}
             </Field>
           </div>
           <Field label={t('authWorkEmail')} hint={t('authWorkEmailHint')}

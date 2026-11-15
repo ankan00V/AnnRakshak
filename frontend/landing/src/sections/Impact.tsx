@@ -83,8 +83,8 @@ export default function Impact() {
               line="One screen, in their own language, read aloud — saying what to do today."
               show={
                 <PhoneShot src="/demo/result-mr.webp"
-                  alt="The answer in Marathi: the disease name, how sure it is, and what not to do, with a listen button"
-                  crop={{ aspect: 'aspect-square', position: 'object-[50%_32%]' }} />
+                  alt="The answer in Marathi: the disease name, how sure it is, what else it considered, and when it will ask again"
+                  crop={{ aspect: 'aspect-square', position: 'object-[50%_0%]' }} />
               }
               points={FARMER_POINTS}
             />

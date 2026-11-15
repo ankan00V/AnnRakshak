@@ -29,6 +29,8 @@ backend/.data/
 .claude/
 .agents/
 .cursor/
+.codex/
+.gemini/
 .vscode/
 .idea/
 skills-lock.json

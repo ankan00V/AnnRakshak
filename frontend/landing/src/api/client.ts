@@ -151,6 +151,12 @@ export const api = {
   saveProfile: (body: Record<string, unknown>) =>
     req<Me>('/api/auth/me/profile', { ...json(body), method: 'PATCH' }),
   me: () => req<Me>('/api/auth/me'),
+  /** Send a code to an email the signed-in person wants on their account:
+   *  the one given at an SMS sign-up (no `email`), or a new one. */
+  addEmail: (email: string | null, lang: Lang) =>
+    req<OtpSent>('/api/auth/me/email', json({ email, lang })),
+  verifyEmail: (challenge_id: string, code: string, lang: Lang) =>
+    req<Me>('/api/auth/me/email/verify', json({ challenge_id, code, lang })),
   places: () => req<{ states: StatePlaces[] }>('/api/geo/places'),
   whereAmI: (lat: number, lon: number) =>
     req<{ state: string | null; district: string | null; village: string | null }>(
@@ -205,11 +211,16 @@ export const api = {
     req<Farm>(`/api/farms/${farmId}`, { ...json({ lat, lon, confirm_far: confirmFar }), method: 'PATCH' }),
   home: (farmId: number, lang: Lang) => req<Home>(`/api/farms/${farmId}/home?lang=${lang}`),
 
-  diagnose: (farmId: number, image: Blob, lang: Lang, scenario?: string) => {
+  // `clientRef` names this one photograph. A photo sent from the offline queue
+  // may reach the server and lose its answer on the way back; sent again with
+  // the same reference, the server hands back that answer instead of opening a
+  // second case for the same plant.
+  diagnose: (farmId: number, image: Blob, lang: Lang, scenario?: string, clientRef?: string) => {
     const fd = new FormData()
     fd.append('image', image, 'photo.jpg')
     fd.append('lang', lang)
     if (scenario) fd.append('demo_scenario', scenario)
+    if (clientRef) fd.append('client_ref', clientRef)
     return req<DiagnoseResult>(`/api/farms/${farmId}/diagnose`, { method: 'POST', body: fd })
   },
   clarify: (problemId: number, cueId: string, answer: 'yes' | 'no' | 'unknown', lang: Lang) =>

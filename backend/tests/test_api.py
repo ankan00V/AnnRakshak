@@ -1362,3 +1362,48 @@ def test_an_oversized_upload_is_refused_without_being_held(client, monkeypatch):
     r = client.post("/api/farms/1/diagnose", files={"image": ("big.jpg", big, "image/jpeg")},
                     data={"lang": "en"})
     assert r.status_code == 413
+
+
+def test_a_field_check_can_show_a_real_photo_of_the_problem(client):
+    """A farmer told to look for white stem borer should see one, not only its
+    name. Only a known problem's own folder can be reached by this route."""
+    from pathlib import Path
+
+    from app.config import BACKEND_DIR
+
+    have = (Path(BACKEND_DIR).parent / "data" / "processed" / "icar_640" / "rice_white_stem_borer").is_dir()
+    r = client.get("/api/kb/photo/rice_white_stem_borer", follow_redirects=False)
+    if have:
+        assert r.status_code == 302 and r.headers["location"].startswith("/samples/rice_white_stem_borer/")
+    else:
+        assert r.status_code == 404
+    for bad in ["..%2F..%2Fetc", "rice_blast/../../x", "not_a_target", "RICE_BLAST", "a" * 80]:
+        assert client.get(f"/api/kb/photo/{bad}", follow_redirects=False).status_code == 404, bad
+
+
+def test_a_photo_sent_twice_from_the_outbox_is_diagnosed_once(client):
+    """A photo kept on the phone for lack of signal is sent when the signal
+    comes back. If that send arrived but its answer was lost, the phone sends
+    it again with the same reference: the farmer must get the same answer back,
+    not a second problem — and an officer not a second case for one leaf."""
+    ref = "6f1c2d3e-4b5a-4c7d-8e9f-a0b1c2d3e4f5"
+    send = lambda: client.post("/api/farms/1/diagnose",
+                               files={"image": ("x.jpg", _leaf_jpeg(), "image/jpeg")},
+                               data={"lang": "en", "demo_scenario": "clear", "client_ref": ref})
+    with SessionLocal() as db:
+        before = db.scalar(select(func.count()).select_from(Problem).where(Problem.farm_id == 1))
+    first = send()
+    again = send()
+    assert first.status_code == again.status_code == 200
+    assert again.json()["problem_id"] == first.json()["problem_id"]
+    with SessionLocal() as db:
+        after = db.scalar(select(func.count()).select_from(Problem).where(Problem.farm_id == 1))
+    assert after == before + 1, "the same photo opened two problems"
+
+    # Another photo is another problem, and a malformed reference is refused.
+    other = client.post("/api/farms/1/diagnose", files={"image": ("x.jpg", _leaf_jpeg(), "image/jpeg")},
+                        data={"lang": "en", "demo_scenario": "clear", "client_ref": "a-different-photo-01"})
+    assert other.json()["problem_id"] != first.json()["problem_id"]
+    bad = client.post("/api/farms/1/diagnose", files={"image": ("x.jpg", _leaf_jpeg(), "image/jpeg")},
+                      data={"lang": "en", "client_ref": "../../etc"})
+    assert bad.status_code == 422

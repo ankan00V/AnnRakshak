@@ -3,6 +3,7 @@ import { Loader2, Sprout, Trash2, Wheat } from 'lucide-react'
 import { api } from '../../api/client'
 import type { CropInfo, Farm } from '../../api/types'
 import { useFarmer } from '../FarmerContext'
+import { FIELD } from '../tokens'
 import { bcp47 } from '../../lib/i18n'
 import { ErrorBox } from '../../ui/kit'
 
@@ -24,9 +25,9 @@ export default function FieldManager({ farms, crops, onChange }: {
   onChange: () => void
 }) {
   const { t } = useFarmer()
-  if (farms.length === 0) return <p className="text-sm text-soil-dark/55">{t('profileNoFields')}</p>
+  if (farms.length === 0) return <p className="rounded-[20px] bg-[#f5f7f1] p-4 text-[15px] text-soil-dark/80">{t('profileNoFields')}</p>
   return (
-    <ul className="-mt-1 divide-y divide-soil-dark/[0.08]">
+    <ul className="space-y-3">
       {farms.map((f) => <Row key={f.id} farm={f} crops={crops} onChange={onChange} />)}
     </ul>
   )
@@ -70,15 +71,15 @@ function Row({ farm, crops, onChange }: { farm: Farm; crops: CropInfo[] | null; 
   }
 
   return (
-    <li className="py-3.5">
+    <li className="rounded-[20px] bg-[#f5f7f1] p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="flex items-center gap-2 text-[15px] font-medium leading-snug">
+          <p className="flex items-center gap-2 text-[16px] font-semibold leading-snug">
             <span aria-hidden className={`w-1.5 h-1.5 rounded-full shrink-0 ${
             fallow ? 'bg-soil-dark/25' : over ? 'bg-ochre' : 'bg-leaf'}`} />
             <span className="min-w-0">{farm.crop_name}</span>
           </p>
-          <p className="mt-0.5 pl-[14px] text-[12px] leading-snug text-soil-dark/55">
+          <p className="mt-0.5 pl-[14px] text-[13px] leading-snug text-soil-dark/75">
             {farm.village || farm.district}
             {' · '}
             {fallow ? t('seasonRestingShort')
@@ -93,16 +94,16 @@ function Row({ farm, crops, onChange }: { farm: Farm; crops: CropInfo[] | null; 
             {!!farm.seasons && ` · ${t('seasonCount').replace('{n}', String(farm.seasons))}`}
           </p>
         </div>
-        <span className={`shrink-0 whitespace-nowrap px-2.5 py-1 rounded-full text-[11px] font-medium ${
-          fallow ? 'bg-soil-dark/[0.06] text-soil-dark/60' : 'bg-leaf/15 text-leaf-deep'}`}>
+        <span className={`shrink-0 whitespace-nowrap px-2.5 py-1 rounded-full text-[13px] font-medium ${
+          fallow ? 'bg-soil-dark/[0.06] text-soil-dark/75' : 'bg-leaf/15 text-leaf-deep'}`}>
           {farm.area_acres} {t('acres')}
         </span>
       </div>
 
-      {error && <div className="mt-2.5"><ErrorBox error={error} /></div>}
+      {error && <div className="mt-2.5"><ErrorBox offlineLabel={t('offline')} error={error} /></div>}
 
       {readOnly && (
-        <p className="mt-2 pl-[14px] text-[11px] leading-relaxed text-soil-dark/45">
+        <p className="mt-2 pl-[14px] text-[13px] leading-relaxed text-soil-dark/70">
           {t('demoTitle')}
         </p>
       )}
@@ -110,23 +111,23 @@ function Row({ farm, crops, onChange }: { farm: Farm; crops: CropInfo[] | null; 
       {!readOnly && mode === null && (
         <div className="mt-2.5 pl-[14px] flex flex-wrap items-center gap-2">
           <button onClick={() => setMode(fallow ? 'on' : 'off')}
-            className={`min-h-[36px] px-3.5 rounded-full text-[13px] font-medium flex items-center gap-1.5 transition-colors ${
+            className={`min-h-[44px] px-3.5 rounded-full text-[14px] font-medium flex items-center gap-1.5 transition-colors ${
               fallow ? 'bg-leaf-deep text-cream'
-              : over ? 'bg-ochre text-cream'
+              : over ? 'bg-ochre text-soil-dark'
               : 'border border-soil-dark/20 text-soil-dark/75 hover:bg-soil-dark/[0.04]'}`}>
             {fallow ? <Sprout className="w-3.5 h-3.5" /> : <Wheat className="w-3.5 h-3.5" />}
             {fallow ? t('profileFieldOn') : t('profileFieldOff')}
           </button>
           {over && (
             <button disabled={busy} onClick={() => run(() => api.stillStanding(farm.id))}
-              className="min-h-[36px] px-3.5 rounded-full border border-leaf-deep/30 text-leaf-deep
+              className="min-h-[44px] px-3.5 rounded-full border border-leaf-deep/30 text-leaf-deep
                          text-[13px] font-medium flex items-center gap-1.5 hover:bg-leaf/10 disabled:opacity-60">
               <Sprout className="w-3.5 h-3.5" />
               {t('profileStillStanding')}
             </button>
           )}
           {<button onClick={() => setMode('remove')} aria-label={t('profileFieldRemove')}
-            className="min-h-[36px] px-3 rounded-full text-[13px] text-soil-dark/45 hover:text-ember hover:bg-ember/[0.07]
+            className="min-h-[44px] px-3 rounded-full text-[14px] text-soil-dark/70 hover:text-ember hover:bg-ember/[0.07]
                        flex items-center gap-1.5 transition-colors">
             <Trash2 className="w-3.5 h-3.5" />
             {t('profileFieldRemove')}
@@ -136,9 +137,9 @@ function Row({ farm, crops, onChange }: { farm: Farm; crops: CropInfo[] | null; 
 
       {/* Closing the season: the crop is off, so the days stop here. */}
       {mode === 'off' && (over ? (
-        <div className="mt-2.5 ml-[14px] rounded-xl bg-ochre/[0.07] p-3">
-          <p className="text-[12px] leading-relaxed text-soil-dark/75">{t('seasonOverNote')}</p>
-          <label className="mt-2.5 block text-[11px] text-soil-dark/60 sm:max-w-[16rem]">
+        <div className="mt-2.5 ml-[14px] rounded-2xl bg-[#fbf0dc] p-3.5">
+          <p className="text-[14px] leading-relaxed text-soil-dark/80">{t('seasonOverNote')}</p>
+          <label className="mt-2.5 block text-[13px] font-medium text-soil-dark/80 sm:max-w-[16rem]">
             {t('profileCameOffOn')}
             <input type="date" className={FIELD} value={cameOff}
               max={new Date().toISOString().slice(0, 10)} min={farm.sowing_date}
@@ -155,18 +156,18 @@ function Row({ farm, crops, onChange }: { farm: Farm; crops: CropInfo[] | null; 
 
       {/* The next season, on this same row rather than a new one. */}
       {mode === 'on' && (
-        <div className="mt-2.5 ml-[14px] rounded-xl bg-cream/70 border border-soil-dark/10 p-3">
-          <p className="text-[12px] leading-relaxed text-soil-dark/65">
+        <div className="mt-2.5 ml-[14px] rounded-2xl bg-white p-3.5 ring-1 ring-soil-dark/10">
+          <p className="text-[14px] leading-relaxed text-soil-dark/80">
             {t('seasonFallowNote').replace('{on}', farm.harvested_on ?? '')}
           </p>
           <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
-            <label className="block text-[11px] text-soil-dark/60">
+            <label className="block text-[13px] font-medium text-soil-dark/80">
               {t('crop')}
               <select className={FIELD} value={crop} onChange={(e) => setCrop(e.target.value)}>
                 {(crops ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </label>
-            <label className="block text-[11px] text-soil-dark/60">
+            <label className="block text-[13px] font-medium text-soil-dark/80">
               {t('sowingDateOnly')}
               <input type="date" className={FIELD} value={sown} max={new Date().toISOString().slice(0, 10)}
                 onChange={(e) => setSown(e.target.value)} />
@@ -186,14 +187,13 @@ function Row({ farm, crops, onChange }: { farm: Farm; crops: CropInfo[] | null; 
   )
 }
 
-const FIELD = 'mt-1 w-full min-h-[40px] rounded-xl border border-soil-dark/20 bg-white px-2.5 text-sm'
 
 function Confirm({ note, label, onYes, onCancel, busy, tone }: {
   note: string; label: string; onYes: () => void; onCancel: () => void; busy: boolean; tone: 'ochre' | 'ember'
 }) {
   return (
-    <div className={`mt-2.5 ml-[14px] rounded-xl p-3 ${tone === 'ember' ? 'bg-ember/[0.06]' : 'bg-ochre/[0.07]'}`}>
-      <p className="text-[12px] leading-relaxed text-soil-dark/75">{note}</p>
+    <div className={`mt-2.5 ml-[14px] rounded-2xl p-3.5 ${tone === 'ember' ? 'bg-[#fdf0ed]' : 'bg-[#fbf0dc]'}`}>
+      <p className="text-[14px] leading-relaxed text-soil-dark/80">{note}</p>
       <Buttons busy={busy} onCancel={onCancel} label={label} tone={tone} onYes={onYes} />
     </div>
   )
@@ -203,15 +203,16 @@ function Buttons({ label, onYes, onCancel, busy, tone }: {
   label: string; onYes: () => void; onCancel: () => void; busy: boolean; tone: 'ochre' | 'ember' | 'leaf'
 }) {
   const { t } = useFarmer()
-  const fill = tone === 'ember' ? 'bg-ember text-cream' : tone === 'leaf' ? 'bg-leaf-deep text-cream' : 'bg-ochre text-cream'
+  // Dark on ochre: cream on it is under 3:1, unreadable in the sun.
+  const fill = tone === 'ember' ? 'bg-ember text-cream' : tone === 'leaf' ? 'bg-leaf-deep text-cream' : 'bg-ochre text-soil-dark'
   return (
     <div className="mt-2.5 flex gap-2">
       <button disabled={busy} onClick={onYes}
-        className={`min-h-[40px] px-4 rounded-full text-[13px] font-semibold flex items-center gap-2 disabled:opacity-60 ${fill}`}>
+        className={`min-h-[44px] px-5 rounded-full text-[14px] font-semibold flex items-center gap-2 disabled:opacity-60 ${fill}`}>
         {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
         {label}
       </button>
-      <button onClick={onCancel} className="min-h-[40px] px-4 rounded-full border border-soil-dark/20 text-[13px]">
+      <button onClick={onCancel} className="min-h-[44px] px-5 rounded-full bg-white ring-1 ring-soil-dark/15 text-[14px]">
         {t('back')}
       </button>
     </div>
