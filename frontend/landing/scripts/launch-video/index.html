@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AnnRakshak launch</title>
+<!--
+  The launch video. Every frame is render(t), a pure function of time; the
+  renderer (render.mjs) calls it and captures the stage. Screens are captures
+  of the real app (capture.mjs), on a phone and a laptop drawn here.
+-->
+<style>
+@font-face { font-family: Inter; font-weight: 300 800; src: url(/pub/fonts/Inter-latin.woff2) format('woff2'); }
+@font-face { font-family: 'Instrument Serif'; font-style: normal; src: url(/pub/fonts/InstrumentSerif-400-latin.woff2) format('woff2'); }
+@font-face { font-family: 'Instrument Serif'; font-style: italic; src: url(/pub/fonts/InstrumentSerif-400-italic-latin.woff2) format('woff2'); }
+@font-face { font-family: Indic; src: url(/pub/fonts/NotoSansDevanagari-devanagari.woff2) format('woff2'); unicode-range: U+0900-097F; }
+@font-face { font-family: Indic; src: url(/pub/fonts/NotoSansBengali-bengali.woff2) format('woff2'); unicode-range: U+0980-09FF; }
+@font-face { font-family: Indic; src: url(/pub/fonts/NotoSansGurmukhi-gurmukhi.woff2) format('woff2'); unicode-range: U+0A00-0A7F; }
+@font-face { font-family: Indic; src: url(/pub/fonts/NotoSansGujarati-gujarati.woff2) format('woff2'); unicode-range: U+0A80-0AFF; }
+@font-face { font-family: Indic; src: url(/pub/fonts/NotoSansOriya-oriya.woff2) format('woff2'); unicode-range: U+0B00-0B7F; }
+@font-face { font-family: Indic; src: url(/pub/fonts/NotoSansTamil-tamil.woff2) format('woff2'); unicode-range: U+0B80-0BFF; }
+@font-face { font-family: Indic; src: url(/pub/fonts/NotoSansTelugu-telugu.woff2) format('woff2'); unicode-range: U+0C00-0C7F; }
+@font-face { font-family: Indic; src: url(/pub/fonts/NotoSansKannada-kannada.woff2) format('woff2'); unicode-range: U+0C80-0CFF; }
+@font-face { font-family: Indic; src: url(/pub/fonts/NotoSansMalayalam-malayalam.woff2) format('woff2'); unicode-range: U+0D00-0D7F; }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: #050806; }
+#stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; font-family: Inter, Indic, system-ui, sans-serif;
+  color: #fff; perspective: 2600px; perspective-origin: 50% 45%; background: #050806; }
+.layer { position: absolute; inset: 0; }
+#glowA, #glowB { position: absolute; width: 1400px; height: 1400px; border-radius: 50%; filter: blur(40px); }
+#glowA { background: radial-gradient(circle, rgba(75,139,59,0.55), rgba(75,139,59,0) 62%); }
+#glowB { background: radial-gradient(circle, rgba(210,154,58,0.35), rgba(210,154,58,0) 60%); }
+#hills { position: absolute; inset: -60px; background: url(/pub/photos/hills.webp) center 40% / cover; }
+#hillsShade { position: absolute; inset: 0; background:
+  radial-gradient(120% 90% at 50% 45%, rgba(5,8,6,0.15), rgba(5,8,6,0.82) 75%),
+  linear-gradient(180deg, rgba(5,8,6,0.35), rgba(5,8,6,0.1) 40%, rgba(5,8,6,0.85)); }
+#green { background: radial-gradient(110% 90% at 50% 40%, #245a35 0%, #163a23 45%, #0b1f13 100%); }
+#grain { position: absolute; inset: 0; opacity: 0.06; mix-blend-mode: overlay; pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+#vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(130% 100% at 50% 50%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.55) 100%); }
+
+.dev { position: absolute; left: 0; top: 0; transform-style: preserve-3d; will-change: transform, opacity; }
+#phone { width: 432px; height: 904px; }
+#phone .body { position: absolute; inset: 0; border-radius: 72px; padding: 15px;
+  background: linear-gradient(140deg, #4a524d 0%, #23282a 22%, #15181a 48%, #2b3133 78%, #535b57 100%);
+  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.22), inset 0 0 0 5px #060707, inset 0 0 0 7px rgba(255,255,255,0.05); }
+#phone .btn { position: absolute; width: 5px; border-radius: 3px; background: linear-gradient(90deg, #2a3031, #4f5755); }
+#phone .screen { position: relative; width: 402px; height: 874px; border-radius: 58px; overflow: hidden; background: #f4f1e8; transform: translateZ(0); }
+#phone .island { position: absolute; top: 13px; left: 50%; width: 118px; height: 34px; margin-left: -59px; border-radius: 20px; background: #000; z-index: 30; }
+#phone .shadow, #laptop .shadow { position: absolute; left: 8%; right: 8%; bottom: -70px; height: 90px; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0,0,0,0.75), rgba(0,0,0,0)); transform: translateZ(-60px); }
+.shot { position: absolute; left: 0; top: 0; opacity: 0; transform-origin: 0 0; will-change: transform, opacity; }
+.chrome { position: absolute; left: 0; top: 0; width: 100%; opacity: 0; z-index: 10; }
+.glare { position: absolute; inset: 0; pointer-events: none; z-index: 40; border-radius: inherit;
+  background: linear-gradient(115deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.05) 22%, rgba(255,255,255,0) 40%); mix-blend-mode: screen; }
+.ripple { position: absolute; width: 70px; height: 70px; margin: -35px 0 0 -35px; border-radius: 50%; z-index: 20;
+  border: 3px solid rgba(255,255,255,0.95); background: rgba(255,255,255,0.28); box-shadow: 0 0 0 2px rgba(29,74,44,0.35), 0 6px 20px rgba(0,0,0,0.25); opacity: 0; }
+
+#laptop { width: 1580px; height: 1040px; }
+#laptop .lid { position: absolute; left: 0; top: 0; width: 1580px; height: 1012px; border-radius: 34px 34px 14px 14px; padding: 28px 34px 39px;
+  background: #0a0b0b; box-shadow: inset 0 0 0 2px #8e9595, inset 0 0 0 4px #2b2f2f, inset 0 0 0 5px rgba(255,255,255,0.06); }
+#laptop .cam { position: absolute; top: 11px; left: 50%; width: 7px; height: 7px; margin-left: -3.5px; border-radius: 50%; background: #1d2423; box-shadow: inset 0 0 0 1.5px #2e3a39; }
+#laptop .screen { position: relative; width: 1512px; height: 945px; border-radius: 6px; overflow: hidden; background: #f4f1e8; }
+#laptop .base { position: absolute; left: -110px; right: -110px; top: 1006px; height: 30px; border-radius: 3px 3px 40px 40px;
+  background: linear-gradient(180deg, #e7eaea 0%, #c3c8c8 35%, #8d9393 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 30px 60px -20px rgba(0,0,0,0.8); }
+#laptop .base::after { content: ''; position: absolute; top: 0; left: 50%; width: 260px; height: 11px; margin-left: -130px;
+  border-radius: 0 0 14px 14px; background: linear-gradient(180deg, #9aa0a0, #c9cdcd); }
+
+.kicker { position: absolute; font: 600 20px/1 Inter; letter-spacing: 0.32em; text-transform: uppercase; color: #d9b25e; white-space: nowrap; }
+.head { position: absolute; font: 650 104px/1.02 Inter; letter-spacing: -0.045em; color: #fff; }
+.head .w { display: inline-block; will-change: transform, opacity, filter; }
+.serif { font-family: 'Instrument Serif'; font-style: italic; font-weight: 400; letter-spacing: -0.01em; color: #e8bf6a; padding-right: 0.08em; }
+.sub { position: absolute; font: 400 32px/1.35 Inter; color: rgba(255,255,255,0.72); letter-spacing: -0.01em; }
+.chip { position: absolute; padding: 16px 24px; border-radius: 22px; font: 600 26px/1.1 Inter; color: #fff; white-space: nowrap;
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.22); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 20px 50px -20px rgba(0,0,0,0.6); }
+.chip small { display: block; font: 500 18px/1.3 Inter; color: rgba(255,255,255,0.65); margin-top: 4px; }
+.chip b { color: #f3d48a; }
+#langwall { position: absolute; inset: 0; }
+#langwall span { position: absolute; font: 600 64px/1 Indic, Inter; color: rgba(255,255,255,0); white-space: nowrap; }
+#logo { position: absolute; left: 0; right: 0; text-align: center; }
+#logo img { width: 150px; height: 150px; display: block; margin: 0 auto 26px; filter: drop-shadow(0 18px 40px rgba(0,0,0,0.5)); }
+#logo .name { font: 400 150px/1 'Instrument Serif'; letter-spacing: -0.01em; }
+#logo .tag { margin-top: 18px; font: 500 40px/1.2 Inter; letter-spacing: -0.02em; color: rgba(255,255,255,0.86); }
+#logo .who { margin-top: 26px; font: 600 20px/1 Inter; letter-spacing: 0.34em; text-transform: uppercase; color: #f0cf82; text-shadow: 0 2px 18px rgba(0,0,0,0.6); }
+#logo .tag, #logo .name { text-shadow: 0 4px 40px rgba(0,0,0,0.45); }
+.signal { position: absolute; padding: 12px 20px; border-radius: 999px; font: 600 24px/1 Inter; background: rgba(181,56,28,0.92); color: #fff; display: flex; gap: 10px; align-items: center; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="layer" id="bgDark" style="background: radial-gradient(120% 100% at 50% 40%, #0d1610 0%, #060907 60%, #030403 100%);"></div>
+  <div class="layer" id="green"></div>
+  <div class="layer" id="hillsWrap"><div id="hills"></div><div id="hillsShade"></div></div>
+  <div id="glowA"></div><div id="glowB"></div>
+  <div id="langwall"></div>
+  <div class="dev" id="laptop">
+    <div class="shadow"></div>
+    <div class="lid"><div class="cam"></div><div class="screen" id="lscreen"><div class="glare"></div><div class="ripple" id="lripple"></div></div></div>
+    <div class="base"></div>
+  </div>
+  <div class="dev" id="phone">
+    <div class="shadow"></div>
+    <div class="btn" style="left:-4px; top:170px; height:38px"></div>
+    <div class="btn" style="left:-4px; top:236px; height:72px"></div>
+    <div class="btn" style="left:-4px; top:322px; height:72px"></div>
+    <div class="btn" style="right:-4px; top:260px; height:110px"></div>
+    <div class="body"><div class="screen" id="pscreen"><div class="island"></div><div class="glare"></div><div class="ripple" id="pripple"></div></div></div>
+  </div>
+  <div id="chips"></div>
+  <div class="kicker" id="kicker"></div>
+  <div class="head" id="head"></div>
+  <div class="sub" id="sub"></div>
+  <div class="signal" id="signal">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M2 2l20 20M8.5 16.5a5 5 0 0 1 7 0M5 13a10 10 0 0 1 5.17-2.8M19 13a10 10 0 0 0-2.4-1.6M12 20h.01"/></svg>
+    No signal
+  </div>
+  <div id="logo"><img src="/pub/brand/emblem-512.png" alt=""><div class="name">AnnRakshak</div><div class="tag"></div><div class="who"></div></div>
+  <div id="grain"></div>
+  <div id="vignette"></div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id)
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x))
+const lerp = (a, b, k) => a + (b - a) * k
+const p = (t, a, b) => clamp((t - a) / (b - a))
+const eo = (k) => 1 - Math.pow(1 - k, 3)
+const eio = (k) => k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2
+const eexp = (k) => k >= 1 ? 1 : 1 - Math.pow(2, -10 * k)
+const META = window.META
+const T = window.TL
+const S = T.scenes
+const TAP = T.tap
+
+// ---------- screens ----------
+const PSHOTS = ['p_home', 'p_scan', 'p_samples', 'p_framed', 'p_checking1', 'p_result', 'p_clarify', 'p_lang', 'p_result_mr',
+  'p_krishi_open', 'p_krishi', 'p_live', 'p_call1', 'p_call2', 'p_call4', 'p_call_result', 'p_alerts', 'p_problem',
+  'p_spray_typed', 'p_spray_verdict', 'p_offline_weather', 'p_profile_sms', 'p_result_full', 'p_home_full', 'p_weather_full']
+const PCHROME = ['p_chrome_scan', 'p_chrome_home', 'p_chrome_weather']
+const LSHOTS = ['l_scan', 'l_scan_framed', 'l_result', 'l_live', 'l_live_watch', 'l_live_result', 'l_farmer_home', 'l_farmer_weather',
+  'l_today', 'l_queue', 'l_case', 'l_case_decision', 'l_map', 'l_advisories', 'l_inputs', 'l_model', 'l_officers', 'l_darpan']
+const img = {}
+function addShots(list, parent, cls, ext, width) {
+  for (const n of list) {
+    const el = document.createElement('img')
+    el.src = `/shots/${n}.${ext}`; el.className = cls; el.alt = ''
+    if (width) el.style.width = width + 'px'
+    parent.insertBefore(el, parent.querySelector('.glare'))
+    img[n] = el
+  }
+}
+addShots(PSHOTS, $('pscreen'), 'shot', 'jpg', 402)
+addShots(PCHROME, $('pscreen'), 'chrome', 'png')
+addShots(LSHOTS, $('lscreen'), 'shot', 'jpg', 1512)
+
+function screens(list, layers) {
+  for (const n of list) img[n].style.opacity = 0
+  for (const L of layers) {
+    const el = img[L.name]; if (!el) continue
+    el.style.opacity = L.o ?? 1
+    el.style.zIndex = L.z ?? 1
+    el.style.transform = `translate(${L.dx ?? 0}px, ${(L.dy ?? 0) - (L.scroll ?? 0)}px) scale(${L.s ?? 1})`
+  }
+}
+function chromeOn(name) { for (const n of PCHROME) img[n].style.opacity = n === name ? 1 : 0 }
+/** A run of screens, each fading into the next at the given times. */
+function seq(t, names, at, dur = 0.35) {
+  const out = []
+  names.forEach((n, i) => {
+    const inK = i === 0 ? 1 : eio(p(t, at[i - 1], at[i - 1] + dur))
+    const outK = i === names.length - 1 ? 0 : eio(p(t, at[i], at[i] + dur))
+    if (inK * (1 - outK) > 0) out.push({ name: n, o: inK * (1 - outK), z: i + 1 })
+  })
+  return out
+}
+/** A finger press where the app has the control, at the beat the music ticks. */
+function ripple(el, t, t0, at) {
+  if (!at) return
+  const k = p(t, t0 - 0.12, t0 + 0.42)
+  if (k <= 0 || k >= 1) return
+  el.style.left = (at.x * 100) + '%'; el.style.top = (at.y * 100) + '%'
+  el.style.opacity = k < 0.25 ? 1 : 1 - (k - 0.25) / 0.75
+  el.style.transform = `scale(${k < 0.25 ? lerp(0.6, 1, eo(k / 0.25)) : lerp(1, 1.5, eo((k - 0.25) / 0.75))})`
+}
+function place(el, o) {
+  if (!o || o.op <= 0) { el.style.opacity = 0; return }
+  el.style.opacity = o.op ?? 1
+  el.style.transform = `translate3d(${o.x - el.offsetWidth / 2}px, ${o.y - el.offsetHeight / 2}px, ${o.z ?? 0}px) rotateY(${o.ry ?? 0}deg) rotateX(${o.rx ?? 0}deg) rotateZ(${o.rz ?? 0}deg) scale(${o.s ?? 1})`
+  const g = el.querySelector('.glare')
+  if (g) g.style.opacity = clamp(0.55 + (o.ry ?? 0) / 40, 0.15, 1)
+}
+
+// ---------- type ----------
+let headKey = ''
+function head(html, key) {
+  if (headKey === key) return
+  headKey = key
+  $('head').innerHTML = html.split(/(<em>.*?<\/em>|<br>|\s+)/).filter((x) => x && !/^\s+$/.test(x))
+    .map((w) => w === '<br>' ? '<br>' : w.startsWith('<em>') ? `<span class="w serif">${w.slice(4, -5)}</span>` : `<span class="w">${w}</span>`).join(' ')
+}
+/** Words rise in one by one from t0, and leave together from t1. */
+function words(t, t0, t1, x, y, opts = {}) {
+  const el = $('head')
+  el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.width = (opts.w ?? 1100) + 'px'
+  el.style.fontSize = (opts.size ?? 104) + 'px'; el.style.textAlign = opts.align ?? 'left'
+  const out = t1 ? eio(p(t, t1, t1 + 0.45)) : 0
+  el.querySelectorAll('.w').forEach((w, i) => {
+    const k = eo(p(t, t0 + i * 0.09, t0 + i * 0.09 + 0.7))
+    w.style.opacity = k * (1 - out)
+    w.style.transform = `translateY(${(1 - k) * 46 - out * 20}px)`
+    w.style.filter = `blur(${(1 - k) * 14 + out * 8}px)`
+  })
+  el.style.opacity = t < t0 - 0.01 || (t1 && t > t1 + 0.46) ? 0 : 1
+}
+function text(id, t, t0, t1, x, y, html, opts = {}) {
+  const el = $(id)
+  if (el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html }
+  el.style.left = x + 'px'; el.style.top = y + 'px'
+  el.style.width = opts.w ? opts.w + 'px' : ''
+  el.style.textAlign = opts.align ?? 'left'
+  const k = eo(p(t, t0, t0 + 0.8)), out = t1 ? eio(p(t, t1, t1 + 0.45)) : 0
+  el.style.opacity = k * (1 - out)
+  el.style.transform = `translateY(${(1 - k) * 24}px)`
+}
+function hideText() { for (const id of ['head', 'sub', 'kicker']) $(id).style.opacity = 0 }
+/** Kicker, headline and line beside a phone. */
+function caption(t, a, b, side, kick, h, sub, key, opts = {}) {
+  const x = side === 'left' ? 180 : 1130, y = opts.y ?? 330
+  if (kick) text('kicker', t, a, b - 0.5, x, y, kick)
+  head(h, key)
+  words(t, a + 0.25, b - 0.5, x - 6, y + 60, { size: opts.size ?? 96, w: opts.w ?? 780 })
+  if (sub) text('sub', t, a + 0.8, b - 0.5, x, y + (opts.subY ?? 300), sub, { w: opts.sw ?? 680 })
+}
+/** A centred line above a laptop. */
+function topline(t, a, b, kick, h, key) {
+  if (kick) text('kicker', t, a, b - 0.5, 0, 34, kick, { w: 1920, align: 'center' })
+  head(h, key)
+  words(t, a + 0.25, b - 0.5, 0, 70, { size: 60, w: 1920, align: 'center' })
+}
+function chips(t, list) {
+  const box = $('chips'), key = list.map((c) => c.html).join('|')
+  if (box.dataset.k !== key) { box.innerHTML = list.map((c) => `<div class="chip">${c.html}</div>`).join(''); box.dataset.k = key }
+  ;[...box.children].forEach((el, i) => {
+    const c = list[i]
+    const k = eexp(p(t, c.t0, c.t0 + 0.9)), out = c.t1 ? eio(p(t, c.t1, c.t1 + 0.4)) : 0
+    el.style.left = c.x + 'px'; el.style.top = c.y + 'px'
+    el.style.opacity = k * (1 - out)
+    el.style.transform = `translateY(${(1 - k) * 30 + Math.sin((t - c.t0) * 1.1 + i) * 6}px) scale(${lerp(0.92, 1, k)})`
+  })
+}
+const LANGS = ['मराठी', 'हिन्दी', 'বাংলা', 'தமிழ்', 'తెలుగు', 'ಕನ್ನಡ', 'മലയാളം', 'ગુજરાતી', 'ਪੰਜਾਬੀ', 'English', 'ଓଡ଼ିଆ']
+$('langwall').innerHTML = LANGS.map((l) => `<span>${l}</span>`).join('')
+function langwall(t, t0, t1) {
+  const els = $('langwall').children
+  const POS = [[120, 210], [1380, 170], [210, 820], [1450, 850], [90, 520], [1560, 520], [470, 120], [1180, 960], [560, 960], [1210, 70], [880, 1000]]
+  for (let i = 0; i < els.length; i++) {
+    const k = eo(p(t, t0 + i * 0.12, t0 + i * 0.12 + 0.8)), out = eio(p(t, t1, t1 + 0.5))
+    els[i].style.left = POS[i][0] + 'px'; els[i].style.top = POS[i][1] + 'px'
+    els[i].style.color = `rgba(255,255,255,${0.16 * k * (1 - out)})`
+    els[i].style.transform = `translateY(${Math.sin(t * 0.7 + i) * 10 + (1 - k) * 30}px)`
+  }
+}
+function bg(t, o) {
+  $('bgDark').style.opacity = o.dark ?? 1
+  $('green').style.opacity = o.green ?? 0
+  $('hillsWrap').style.opacity = o.hills ?? 0
+  $('hills').style.transform = `scale(${1.08 + (o.hz ?? 0)}) translateY(${o.hy ?? 0}px)`
+  const ga = $('glowA'), gb = $('glowB')
+  ga.style.left = (o.ax ?? 1100) - 700 + 'px'; ga.style.top = (o.ay ?? 540) - 700 + 'px'; ga.style.opacity = o.ga ?? 0.8
+  gb.style.left = (o.bx ?? 600) - 700 + 'px'; gb.style.top = (o.by ?? 700) - 700 + 'px'; gb.style.opacity = o.gb ?? 0.5
+  gb.style.background = o.red ? 'radial-gradient(circle, rgba(181,56,28,0.55), rgba(181,56,28,0) 60%)' : ''
+}
+const PHONE_L = (k) => ({ x: 760, y: 548, ry: lerp(16, 8, eio(k)), rx: 3, s: 1.08, op: 1 })
+const PHONE_R = (k) => ({ x: 1220, y: 548, ry: lerp(-15, -8, eio(k)), rx: 3, s: 1.08, op: 1 })
+const LAPTOP_C = (t, a, k, enter = false) => {
+  const inK = enter ? eexp(p(t, a, a + 1.4)) : 1
+  return { x: 960, y: 640 + (1 - inK) * 160, ry: lerp(enter ? -20 : 6, -6, eio(k)), rx: enter ? lerp(18, 7, inK) : 7, s: 0.8, op: 1 }
+}
+
+// ---------- the film ----------
+window.render = function render(t) {
+  let phone = null, laptop = null, pl = [], ll = [], chromeName = null, chipList = []
+  hideText()
+  $('logo').style.opacity = 0; $('signal').style.opacity = 0
+  langwall(t, 999, 1000)
+  const pr = $('pripple'), lr = $('lripple')
+  pr.style.opacity = 0; lr.style.opacity = 0
+  // A short dip through black on every cut: the old scene leaves, then the new arrives.
+  let dip = 0
+  for (const c of T.cuts) dip = Math.max(dip, 1 - clamp(Math.abs(t - c) / 0.28))
+  $('stage').style.filter = dip > 0 ? `brightness(${1 - eio(dip) * 0.85})` : 'none'
+  const sc = S.find((x) => t >= x.a && t < x.b) ?? S[S.length - 1]
+  const { a, b, id } = sc
+  const k = p(t, a, b)
+
+  switch (id) {
+    case 'hook': {
+      const kk = eo(p(t, 0, 1.4))
+      bg(t, { ax: 1240, ay: 520, ga: 0.9 * kk + 0.1, bx: 1500, by: 900, gb: 0.35 })
+      phone = { x: 1240, y: 560 + (1 - kk) * 60, ry: lerp(-24, -12, eio(k)), rx: 4, s: lerp(0.98, 1.06, eio(k)), op: 1 }
+      pl = seq(t, ['p_framed', 'p_checking1', 'p_result'], [TAP.hook + 0.15, 2.25])
+      ripple(pr, t, TAP.hook, META.tap_check)
+      head('One photo.<br><em>One answer.</em>', 'hook')
+      words(t, 0.25, b - 0.55, 170, 360, { size: 132, w: 820 })
+      text('sub', t, 2.7, b - 0.55, 176, 680, 'False smut, 97% sure — and where the AI looked.', { w: 780 })
+      chipList = [{ html: 'False smut <small>97% sure</small>', x: 1520, y: 330, t0: 2.8, t1: b - 0.5 },
+                  { html: 'Where the AI looked', x: 1500, y: 640, t0: 3.1, t1: b - 0.5 }]
+      break
+    }
+    case 'reveal': {
+      bg(t, { hills: eo(p(t, a, a + 1.2)), hz: -0.06 * eio(k), hy: -20 * k, ga: 0, gb: 0.25, bx: 960, by: 980 })
+      const l = $('logo'), kk = eexp(p(t, a + 0.2, a + 1.4)), out = eio(p(t, b - 0.5, b - 0.05))
+      l.style.top = '250px'; l.style.opacity = kk * (1 - out)
+      l.style.transform = `translateY(${(1 - kk) * 40}px) scale(${lerp(0.94, 1, kk)})`
+      l.querySelector('.tag').textContent = 'Crop and pest protection for every farmer.'
+      l.querySelector('.who').textContent = 'In their own language · on any phone'
+      l.querySelector('.tag').style.opacity = eo(p(t, a + 1.0, a + 1.8))
+      l.querySelector('.who').style.opacity = eo(p(t, a + 1.6, a + 2.4))
+      break
+    }
+    case 'scan': {
+      bg(t, { ax: 760, ay: 560, ga: 0.85, bx: 400, by: 950, gb: 0.35 })
+      phone = PHONE_L(k)
+      pl = seq(t, ['p_home', 'p_scan', 'p_samples', 'p_framed', 'p_checking1', 'p_result'],
+        [TAP.scanNav + 0.2, TAP.scanNav + 1.1, TAP.sample + 0.2, TAP.check + 0.15, TAP.check + 1.6])
+      ripple(pr, t, TAP.scanNav, META.tap_scan_nav)
+      ripple(pr, t, TAP.sample, META.tap_sample)
+      ripple(pr, t, TAP.check, META.tap_check)
+      const steps = [
+        [a + 0.2, TAP.sample - 0.2, 'Tap <em>Scan.</em>', 'Take a photo of the sick leaf, or pick one from the gallery. No typing, no forms.'],
+        [TAP.sample - 0.2, TAP.check + 1.5, 'It reads <em>the leaf.</em>', 'One of 46 problems across rice, maize, cotton and soybean.'],
+        [TAP.check + 1.5, b - 0.5, 'It <em>names it.</em>', 'Shows where it looked, and how sure it is — against its own bar for advising.'],
+      ]
+      const st = steps.find(([s0, s1]) => t >= s0 && t < s1 + 0.46) ?? steps[0]
+      text('kicker', t, a, b - 0.5, 1130, 330, 'For the farmer · on the phone')
+      head(st[2], 'scan' + st[0]); words(t, st[0], st[1], 1124, 390, { size: 96, w: 760 })
+      text('sub', t, st[0] + 0.3, st[1], 1130, 520, st[3], { w: 640 })
+      chipList = [{ html: '<b>97%</b> sure <small>above the bar to advise</small>', x: 130, y: 300, t0: TAP.check + 2.2, t1: b - 0.4 }]
+      break
+    }
+    case 'upload': {
+      bg(t, { ax: 960, ay: 640, ga: 0.7, bx: 1500, by: 300, gb: 0.3 })
+      laptop = LAPTOP_C(t, a, k, true)
+      ll = seq(t, ['l_scan', 'l_scan_framed', 'l_result'], [a + 1.0, TAP.lcheck + 0.2])
+      ripple(lr, t, TAP.lcheck, META.tap_lcheck)
+      topline(t, a, b, 'On a laptop too', 'Or upload a photo — <em>same answer.</em>', 'upload')
+      break
+    }
+    case 'unsure': {
+      bg(t, { ax: 1200, ay: 560, ga: 0.8, bx: 1500, by: 300, gb: 0.35 })
+      phone = PHONE_R(k)
+      pl = [{ name: 'p_clarify', o: 1 }]
+      caption(t, a, b, 'left', 'Never a confident wrong answer', 'Not sure? <em>It asks.</em>',
+        'Torn between two, it asks the farmer one question. Still unsure, it sends the case to an expert — with an ETA.', 'unsure')
+      chipList = [{ html: 'Brown spot <b>49%</b> · Rice blast <b>47%</b> <small>one question settles it</small>', x: 180, y: 800, t0: a + 1.2, t1: b - 0.4 }]
+      break
+    }
+    case 'treat': {
+      bg(t, { ax: 760, ay: 560, ga: 0.8, bx: 300, by: 300, gb: 0.35 })
+      phone = PHONE_L(k)
+      const avoid = Math.max(0, (META.result_avoid ?? 1000) - 150), call = Math.max(avoid, (META.result_call ?? 1600) - 260)
+      pl = [{ name: 'p_result_full', o: 1, scroll: lerp(0, avoid, eio(p(t, a + 0.5, a + 1.8))) + (call - avoid) * eio(p(t, a + 2.9, a + 3.9)) }]
+      chromeName = 'p_chrome_scan'
+      const second = t >= a + 2.8
+      caption(t, second ? a + 2.8 : a, second ? b : a + 2.8, 'right', second ? 'Help is one tap away' : 'Safe by default',
+        second ? 'Or call <em>an expert.</em>' : 'The safest step <em>first.</em>',
+        second ? 'Kisan Call Centre, free, one tap — when it is worse than the app can handle.'
+          : 'What not to do, then the cheapest thing that works. Chemicals only if it keeps spreading.',
+        second ? 'treat2' : 'treat1')
+      break
+    }
+    case 'lang': {
+      bg(t, { ax: 960, ay: 560, ga: 0.75, bx: 960, by: 980, gb: 0.4 })
+      langwall(t, a + 0.2, b - 0.5)
+      phone = { x: 960, y: 548, ry: lerp(-6, 6, eio(k)), rx: 3, s: 1.08, op: 1 }
+      pl = seq(t, ['p_result', 'p_lang', 'p_result_mr'], [TAP.lang + 0.15, TAP.mr + 0.15])
+      ripple(pr, t, TAP.lang, META.tap_lang)
+      ripple(pr, t, TAP.mr, META.tap_marathi)
+      chipList = [{ html: 'आभासी काजळी <small>Marathi, read aloud</small>', x: 1250, y: 420, t0: TAP.mr + 0.6, t1: b - 0.4 },
+                  { html: '<b>11</b> languages', x: 470, y: 640, t0: a + 1.0, t1: b - 0.4 }]
+      break
+    }
+    case 'krishi': {
+      bg(t, { ax: 1200, ay: 560, ga: 0.8, bx: 1500, by: 900, gb: 0.35 })
+      phone = PHONE_R(k)
+      pl = seq(t, ['p_krishi_open', 'p_krishi'], [TAP.krishi + 0.3])
+      ripple(pr, t, TAP.krishi, META.tap_krishi_q)
+      caption(t, a, b, 'left', 'Krishi, the helper', 'Ask it <em>anything.</em>',
+        'Answers from this field’s own weather and stage — spoken, in their language. It never invents, and never names a pesticide.', 'krishi')
+      break
+    }
+    case 'call': {
+      bg(t, { ax: 760, ay: 560, ga: 0.85, bx: 400, by: 950, gb: 0.35 })
+      phone = PHONE_L(k)
+      pl = seq(t, ['p_live', 'p_call1', 'p_call2', 'p_call4', 'p_call_result'], [TAP.start + 0.2, a + 3.0, a + 4.2, a + 5.4])
+      ripple(pr, t, TAP.start, META.tap_start)
+      const first = t < a + 3.6
+      caption(t, first ? a : a + 3.6, first ? a + 3.6 : b, 'right', 'AI video call',
+        first ? 'Walk the field <em>with it.</em>' : 'It says where <em>to look.</em>',
+        first ? 'A live video call with the AI, in the field. No upload, no waiting.'
+          : 'Whole plant, leaf top, underside, base. It reports a problem only when two close-ups agree.',
+        first ? 'call1' : 'call2')
+      chipList = [{ html: 'False smut <small>3 views · 95%</small>', x: 130, y: 420, t0: a + 5.8, t1: b - 0.4 }]
+      break
+    }
+    case 'lcall': {
+      bg(t, { ax: 960, ay: 640, ga: 0.7, bx: 300, by: 300, gb: 0.3 })
+      laptop = LAPTOP_C(t, a, k, true)
+      ll = seq(t, ['l_live', 'l_live_watch', 'l_live_result'], [TAP.lvideo + 0.2, a + 3.0])
+      ripple(lr, t, TAP.lvideo, META.tap_lvideo)
+      topline(t, a, b, 'On a laptop, from a video', 'Film the field. <em>Drop it in.</em>', 'lcall')
+      break
+    }
+    case 'weather': {
+      bg(t, { ax: 960, ay: 600, ga: 0.7, bx: 300, by: 900, gb: 0.35 })
+      laptop = { x: 860 + (1 - eo(p(t, a, a + 1.2))) * 120, y: 630, ry: lerp(14, 8, eio(k)), rx: 6, s: 0.74, op: 1 }
+      phone = { x: 1560, y: 690 + (1 - eo(p(t, a + 0.3, a + 1.4))) * 80, z: 120, ry: lerp(-16, -10, eio(k)), rx: 3, s: 0.74, op: 1 }
+      ll = [{ name: 'l_farmer_weather', o: 1 }]
+      pl = [{ name: 'p_weather_full', o: 1, scroll: Math.max(0, (META.weather_todo ?? 600) - 90) * eio(p(t, a + 1.2, a + 2.8)) }]
+      chromeName = 'p_chrome_weather'
+      head('Weather, turned into <em>work.</em>', 'weather')
+      words(t, a + 0.25, b - 0.5, 160, 48, { size: 80, w: 1600 })
+      text('sub', t, a + 0.7, b - 0.5, 166, 144, 'Hour by hour, with what to do this week and when it is safe to spray.', { w: 1300 })
+      break
+    }
+    case 'alerts': {
+      bg(t, { ax: 1200, ay: 560, ga: 0.8, bx: 1500, by: 300, gb: 0.35 })
+      phone = PHONE_R(k)
+      pl = [{ name: 'p_alerts', o: 1 }]
+      caption(t, a, b, 'left', 'Alerts & traps', 'Every alert <em>comes with a task.</em>',
+        'Weather, crop stage, trap counts and cases nearby — and exactly what to check in the field.', 'alerts')
+      break
+    }
+    case 'followup': {
+      bg(t, { ax: 760, ay: 560, ga: 0.8, bx: 300, by: 950, gb: 0.35 })
+      phone = PHONE_L(k)
+      const fu = Math.max(0, (META.home_followup ?? 500) - 140), hv = Math.max(fu, (META.home_harvest ?? 2100) - 260)
+      const sw = eio(p(t, a + 3.0, a + 3.35))
+      pl = [{ name: 'p_home_full', o: 1 - sw, scroll: lerp(fu * eio(p(t, a, a + 0.8)), hv, eio(p(t, a + 1.3, a + 2.3))) },
+            { name: 'p_problem', o: sw, z: 2 }]
+      chromeName = sw < 0.5 ? 'p_chrome_home' : null
+      const second = t >= a + 2.9
+      caption(t, second ? a + 2.9 : a, second ? b : a + 2.9, 'right', second ? 'History' : 'Follow-up',
+        second ? 'An expert’s <em>verdict, kept.</em>' : 'Day four: <em>how is it?</em>',
+        second ? 'Every photo sent, and what came of it — confirmed by a named expert.'
+          : 'It asks how the crop is after treatment. “Worse” goes straight back to an expert. And it knows when the harvest is due.',
+        second ? 'fu2' : 'fu1')
+      break
+    }
+    case 'spray': {
+      const v = eio(p(t, TAP.spray + 0.2, TAP.spray + 0.6))
+      bg(t, { ax: 1200, ay: 560, ga: 0.8 * (1 - v) + 0.3, bx: 1200, by: 600, gb: 0.9 * v, red: true })
+      phone = PHONE_R(k)
+      pl = seq(t, ['p_spray_typed', 'p_spray_verdict'], [TAP.spray + 0.2])
+      ripple(pr, t, TAP.spray, META.tap_spray)
+      caption(t, a, b, 'left', 'Check before you spray', 'A wrong spray, <em>stopped.</em>',
+        'Before it is bought. Glyphosate is a weed killer: it does nothing for false smut, and can damage the crop. It never calls a pesticide “safe”.', 'spray')
+      break
+    }
+    case 'offline': {
+      bg(t, { ax: 1200, ay: 560, ga: 0.6, gb: 0 })
+      phone = PHONE_R(k)
+      const sw = eio(p(t, a + 2.4, a + 2.75))
+      pl = [{ name: 'p_offline_weather', o: 1 - sw }, { name: 'p_profile_sms', o: sw, z: 2 }]
+      const sg = $('signal'), sk = eexp(p(t, a + 0.3, a + 1)) * (1 - eio(p(t, a + 2.1, a + 2.4)))
+      sg.style.left = '1420px'; sg.style.top = '120px'; sg.style.opacity = sk
+      sg.style.transform = `translateY(${(1 - sk) * 20}px)`
+      const second = t >= a + 2.4
+      caption(t, second ? a + 2.4 : a, second ? b : a + 2.4, 'left', second ? 'Any phone' : 'Works offline',
+        second ? 'Warnings <em>by SMS.</em>' : 'No signal? <em>It still opens.</em>',
+        second ? 'A text message when the weather or a pest needs action — on any phone, even without the app.'
+          : 'Every screen, with what the phone last saved. A photo taken without signal is sent when there is one.',
+        second ? 'off2' : 'off1')
+      break
+    }
+    case 'turn': {
+      bg(t, { dark: 1 - eo(p(t, a, a + 0.8)), green: eo(p(t, a, a + 0.8)), ga: 0, gb: 0 })
+      head('From one field <em>to the whole district.</em>', 'turn')
+      words(t, a + 0.15, b - 0.45, 160, 420, { size: 104, w: 1600, align: 'center' })
+      break
+    }
+    case 'office': {
+      bg(t, { ax: 960, ay: 640, ga: 0.7, bx: 400, by: 300, gb: 0.3 })
+      laptop = LAPTOP_C(t, a, k, true)
+      ll = seq(t, ['l_today', 'l_queue', 'l_case'], [a + 2.0, TAP.review + 0.2])
+      ripple(lr, t, TAP.review, META.tap_review)
+      const first = t < a + 3.9
+      topline(t, first ? a : a + 3.9, first ? a + 3.9 : b, 'For the district office · on the laptop',
+        first ? 'Every unsure case <em>reaches an expert.</em>' : 'With the photos, the guesses <em>and the farmer’s words.</em>', first ? 'o1' : 'o2')
+      break
+    }
+    case 'decide': {
+      bg(t, { ax: 960, ay: 640, ga: 0.7, bx: 1500, by: 300, gb: 0.3 })
+      laptop = LAPTOP_C(t, a, k)
+      ll = [{ name: 'l_case_decision', o: 1 }]
+      topline(t, a, b, null, 'Confirm, correct, <em>or send to a lab.</em>', 'decide')
+      break
+    }
+    case 'map': case 'plan': case 'staff': {
+      bg(t, { ax: 960, ay: 640, ga: 0.7, bx: id === 'plan' ? 300 : 1500, by: 300, gb: 0.3 })
+      laptop = LAPTOP_C(t, a, k)
+      const sw = a + 2.4, first = t < sw
+      const [n1, n2, h1, h2] = {
+        map: ['l_map', 'l_advisories', 'See where it <em>spreads.</em>', 'Warn every farm, <em>in its language.</em>'],
+        plan: ['l_inputs', 'l_model', 'Stock what farms <em>will need.</em>', 'Uncertainty, <em>in plain view.</em>'],
+        staff: ['l_officers', 'l_darpan', 'Every desk, <em>accountable.</em>', 'And Darpan, <em>for the officer.</em>'],
+      }[id]
+      ll = seq(t, [n1, n2], [sw])
+      if (id === 'staff') {
+        // Darpan sits in the corner of the dashboard: the camera moves in on it.
+        const z = lerp(1, 1.75, eio(p(t, sw + 0.4, sw + 1.6)))
+        ll = ll.map((L) => L.name === 'l_darpan' ? { ...L, s: z, dx: -1512 * (z - 1), dy: -945 * (z - 1) * 0.92 } : L)
+      }
+      topline(t, first ? a : sw, first ? sw : b, null, first ? h1 : h2, id + (first ? 1 : 2))
+      break
+    }
+    case 'both': {
+      const inK = eexp(p(t, a, a + 1.2))
+      bg(t, { ax: 900, ay: 560, ga: 0.8, bx: 1500, by: 760, gb: 0.45 })
+      laptop = { x: 860, y: 625 + (1 - inK) * 80, ry: lerp(12, 6, eio(k)), rx: 6, s: 0.76, op: 1 }
+      phone = { x: 1560, y: 710 + (1 - inK) * 120, z: 160, ry: lerp(-18, -12, eio(k)), rx: 3, s: 0.76, op: 1 }
+      ll = [{ name: 'l_farmer_home', o: 1 }]
+      pl = [{ name: 'p_home', o: 1 }]
+      head('One app. <em>Every field.</em>', 'both')
+      words(t, a + 0.2, b - 0.45, 0, 56, { size: 76, w: 1920, align: 'center' })
+      break
+    }
+    default: {
+      bg(t, { dark: 0, green: 1, ga: 0, gb: 0 })
+      const l = $('logo'), kk = eexp(p(t, a + 0.1, a + 1.2))
+      l.style.top = '230px'; l.style.opacity = kk * (1 - eio(p(t, b - 0.6, b)))
+      l.style.transform = `translateY(${(1 - kk) * 30}px) scale(${lerp(0.95, 1, kk)})`
+      l.querySelector('.tag').textContent = 'Protect every harvest.'
+      l.querySelector('.who').textContent = 'Farmers · Experts · District officers'
+      l.querySelector('.tag').style.opacity = eo(p(t, a + 0.6, a + 1.4))
+      l.querySelector('.who').style.opacity = eo(p(t, a + 1.1, a + 1.9))
+    }
+  }
+
+  place($('phone'), phone)
+  place($('laptop'), laptop)
+  screens(PSHOTS, pl)
+  screens(LSHOTS, ll)
+  chromeOn(chromeName)
+  chips(t, chipList)
+}
+
+window.ready = (async () => {
+  await document.fonts.ready
+  await Promise.all([...document.images].map((i) => i.decode().catch(() => undefined)))
+  await Promise.all(['650 104px Inter', 'italic 104px "Instrument Serif"', '104px "Instrument Serif"', '64px Indic']
+    .map((f) => document.fonts.load(f, 'आভாಕമગ')))
+  return true
+})()
+</script>
+</body>
+</html>

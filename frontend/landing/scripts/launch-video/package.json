@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "Renders the AnnRakshak launch video from the real app. See README.md."
+}
