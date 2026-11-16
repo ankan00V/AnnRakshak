@@ -39,7 +39,7 @@ export default function Hero() {
           <Navbar />
           {/* Sizes follow the width on wide screens, so the hero keeps the same
               proportions on a laptop and on a large monitor. */}
-          <div className="mx-auto max-w-[1720px] px-6 pb-32 pt-6 md:px-12 lg:px-[7vw] lg:pb-[clamp(88px,7.4vw,140px)] lg:pt-[clamp(12px,1.6vw,32px)]">
+          <div className="mx-auto max-w-[1720px] px-6 pb-32 pt-6 md:px-12 lg:px-[7vw] lg:pb-[clamp(130px,11vw,210px)] lg:pt-[clamp(32px,3.2vw,64px)]">
             <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:w-[46%] lg:max-w-none lg:text-left">
               <h1 className="font-display text-[40px] leading-[1.04] tracking-[-0.01em] text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.25)] sm:text-[54px] lg:text-[clamp(44px,4.15vw,80px)]">
                 Crop and Pest <br className="hidden sm:block" />
