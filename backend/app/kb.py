@@ -270,8 +270,10 @@ def validate(kb: KB) -> list[str]:
                     errors.append(f"advisory {tid}: unknown ingredient {ing}")
                 elif kb.pesticides[ing]["class"] == "herbicide":
                     errors.append(f"advisory {tid}: herbicide {ing} on a pest/disease ladder")
-                if r.get("dose_per_litre") is None and not r.get("dose_basis"):
+                if r.get("dose_per_litre") is None and not r.get("dose_basis") and not r.get("per_kg_seed"):
                     errors.append(f"advisory {tid}: chemical rung {ing} has no dose")
+                if r.get("use", "spray") not in ("spray", "seed"):
+                    errors.append(f"advisory {tid}: chemical rung {ing} has an unknown use")
         for o in adv.get("organic", []):
             ing = o.get("ingredient")
             if not kb.pesticides.get(ing, {}).get("organic"):

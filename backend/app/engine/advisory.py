@@ -76,6 +76,23 @@ HEALTHY = {
 UNIT_SHORT = {
     "g": {"en": "g", "hi": "ग्राम", "mr": "ग्रॅम"},
     "ml": {"en": "ml", "hi": "मिली", "mr": "मिली"},
+    "kg": {"en": "kg", "hi": "किलो", "mr": "किलो"},
+    "L": {"en": "litres", "hi": "लीटर", "mr": "लिटर"},
+}
+SEED_TREATMENT = {
+    "en": "Seed treatment: {n} {unit} per kg of seed{water}.",
+    "hi": "बीज उपचार: प्रति किलो बीज {n} {unit}{water}।",
+    "mr": "बीजप्रक्रिया: प्रति किलो बियाण्यास {n} {unit}{water}.",
+}
+SEED_WATER = {
+    "en": ", mixed in {ml} ml of water",
+    "hi": ", {ml} मिली पानी में मिलाकर",
+    "mr": ", {ml} मिली पाण्यात मिसळून",
+}
+CHEM_NONE = {
+    "en": "No pesticide is registered in India for this problem on this crop (CIB&RC list, 30.09.2026). Do not spray one: a product not registered for it has no tested dose and is not legal to use for it.",
+    "hi": "भारत में इस फसल पर इस समस्या के लिए कोई कीटनाशक पंजीकृत नहीं है (CIB&RC सूची, 30.09.2026)। कोई दवा न छिड़कें: जो दवा इसके लिए पंजीकृत नहीं, उसकी कोई जाँची हुई मात्रा नहीं है और उसका इस्तेमाल कानूनी नहीं है।",
+    "mr": "भारतात या पिकावर या समस्येसाठी कोणतेही कीटकनाशक नोंदणीकृत नाही (CIB&RC यादी, 30.09.2026). कोणतेही औषध फवारू नका: जे यासाठी नोंदणीकृत नाही, त्याचे तपासलेले प्रमाण नाही आणि ते वापरणे कायदेशीर नाही.",
 }
 
 
@@ -87,6 +104,15 @@ def _fmt(n: float) -> str:
     return f"{n:.0f}" if n >= 10 else f"{n:.1f}".rstrip("0").rstrip(".")
 
 
+def _big(qty: float, unit: str) -> tuple[float, str]:
+    """A field's worth in the unit a farmer buys it in: 24.3 kg, not 24300 g."""
+    if unit == "g" and qty >= 1000:
+        return qty / 1000, "kg"
+    if unit == "ml" and qty >= 1000:
+        return qty / 1000, "L"
+    return qty, unit
+
+
 def compose(kb: KB, target: str, lang: str, area_acres: float | None = None) -> dict:
     adv = kb.advisories[target]
     ladder_out = []
@@ -94,6 +120,8 @@ def compose(kb: KB, target: str, lang: str, area_acres: float | None = None) -> 
         item: dict = {"tier": rung["tier"]}
         if rung["tier"] != "chemical":
             item["action"] = tr(rung["action"], lang)
+            if rung.get("source"):
+                item["source"] = rung["source"]
         else:
             pest = kb.pesticides[rung["ingredient"]]
             item |= {
@@ -107,10 +135,16 @@ def compose(kb: KB, target: str, lang: str, area_acres: float | None = None) -> 
             days = (rung.get("registration") or {}).get("waiting_days")
             if days:
                 item["waiting"] = tr(WAIT, lang).format(days=days)
-            if rung.get("dose_per_litre") is not None and rung.get("dose_unit"):
+            item["use"] = rung.get("use", "spray")
+            if rung.get("per_kg_seed"):
+                sd = rung["per_kg_seed"]
+                water = tr(SEED_WATER, lang).format(ml=_fmt(sd["water_ml"])) if sd.get("water_ml") else ""
+                item["dose"] = tr(SEED_TREATMENT, lang).format(
+                    n=_fmt(sd["amount"]), unit=tr(UNIT_SHORT[sd["unit"]], lang), water=water)
+            elif rung.get("dose_per_litre") is not None and rung.get("dose_unit"):
                 item |= _spray_dose(rung, lang, area_acres)
             else:
-                item["dose"] = rung.get("dose_basis", "")
+                item["dose"] = tr(rung.get("dose_basis"), lang)
         ladder_out.append(item)
 
     order = [TIER_ORDER[r["tier"]] for r in ladder_out]
@@ -120,8 +154,11 @@ def compose(kb: KB, target: str, lang: str, area_acres: float | None = None) -> 
         raise LadderOrderError(f"{target}: ladder not chemical-last at composition")
 
     t = kb.targets[target]
+    pest_or_disease = t.get("kind") in ("pest", "disease", "virus")
     return {
         "target": target,
+        # deficiency and disorder are not pests: no organic or chemical pesticide applies
+        "kind": t.get("kind"),
         "name": tr(t["names"], lang),
         "signature": tr(t["signature"], lang),
         "what_to_check": tr(adv["what_to_check"], lang),
@@ -131,6 +168,9 @@ def compose(kb: KB, target: str, lang: str, area_acres: float | None = None) -> 
         "organic": organic,
         # Neem preparations made at home, where a government IPM source names them.
         "homemade": homemade,
+        # A pest or disease no pesticide is registered for: said, not left blank.
+        "chemical_none": tr(CHEM_NONE, lang)
+        if pest_or_disease and not any(r["tier"] == "chemical" for r in ladder_out) else None,
         "expert_trigger": tr(adv["expert_trigger"], lang),
         "citations": adv["citations"],
         # ICAR-released products and tools for this problem, with who to call.
@@ -146,8 +186,9 @@ def _spray_dose(rung: dict, lang: str, area_acres: float | None) -> dict:
     if area_acres and water:
         litres = water * area_acres
         qty = dose * litres
+        shown, shown_unit = _big(qty, unit)
         out["for_field"] = tr(FOR_AREA, lang).format(
-            area=_fmt(area_acres), qty=_fmt(qty), unit=tr(UNIT_SHORT[unit], lang), water=_fmt(litres)
+            area=_fmt(area_acres), qty=_fmt(shown), unit=tr(UNIT_SHORT[shown_unit], lang), water=_fmt(litres)
         )
         out["quantity"] = {"amount": round(qty, 1), "unit": unit, "water_l": round(litres)}
     return out
@@ -179,7 +220,9 @@ def _organic(kb: KB, o: dict, lang: str, area_acres: float | None) -> dict:
         item["dose"] = tr(PER_ACRE, lang).format(n=_fmt(a["amount"]), unit=unit)
         if area_acres:
             qty = a["amount"] * area_acres
-            item["for_field"] = tr(FOR_AREA_DRY, lang).format(area=_fmt(area_acres), qty=_fmt(qty), unit=unit)
+            shown, shown_unit = _big(qty, a["unit"])
+            item["for_field"] = tr(FOR_AREA_DRY, lang).format(
+                area=_fmt(area_acres), qty=_fmt(shown), unit=tr(UNIT_SHORT[shown_unit], lang))
             item["quantity"] = {"amount": round(qty, 1), "unit": a["unit"], "water_l": None}
     else:
         item |= _spray_dose(o, lang, area_acres)

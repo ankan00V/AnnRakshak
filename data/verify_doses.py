@@ -55,6 +55,16 @@ NEW_PESTICIDES = {
                                            "thiamethoxam lambda cyhalothrin", "thiamethoxam + lambda cyhalothrin"]},
     "pyraclostrobin_20wg": {"name": "Pyraclostrobin 20% WG", "class": "fungicide",
                             "aliases": ["pyraclostrobin", "पायराक्लोस्ट्रोबिन"]},
+    "sedaxane_fludioxonil_thiamethoxam_fs": {
+        "name": "Sedaxane 2.5% + Fludioxonil 2.5% + Thiamethoxam 26.25% FS", "class": "fungicide",
+        "aliases": ["sedaxane fludioxonil thiamethoxam", "sedaxane + fludioxonil + thiamethoxam"]},
+    "carboxin_75wp": {"name": "Carboxin 75% WP", "class": "fungicide",
+                      "aliases": ["carboxin", "कार्बोक्सिन", "कार्बॉक्सिन"]},
+    "mefentrifluconazole_pyraclostrobin_sc": {
+        "name": "Mefentrifluconazole 200 g/l + Pyraclostrobin 200 g/l SC", "class": "fungicide",
+        "aliases": ["mefentrifluconazole pyraclostrobin", "mefentrifluconazole + pyraclostrobin"]},
+    "ipconazole_metalaxyl_me": {"name": "Ipconazole 2.35% + Metalaxyl 1.88% ME", "class": "fungicide",
+                                "aliases": ["ipconazole metalaxyl", "ipconazole + metalaxyl"]},
     "azoxystrobin_mancozeb_wg": {"name": "Azoxystrobin 8.3% + Mancozeb 66.7% WG", "class": "fungicide",
                                  "aliases": ["azoxystrobin mancozeb", "azoxystrobin + mancozeb"]},
 }
@@ -166,6 +176,45 @@ D = {
 }
 
 
+# Registered uses for problems that had no chemical rung, found on 18 Nov 2026
+# by reading the seed-treatment rows as well as the sprays. Each is added as the
+# last rung. target -> (ingredient, registration, rung fields)
+SEED_TIMING = {
+    "en": "Treat next season's seed just before sowing, and dry it in the shade.",
+    "hi": "अगले मौसम के बीज का बुवाई से ठीक पहले उपचार करें, और छाया में सुखाएँ।",
+    "mr": "पुढील हंगामातील बियाण्यावर पेरणीपूर्वी लगेच प्रक्रिया करा, आणि सावलीत वाळवा.",
+}
+ADD = {
+    "cotton_wilt": ("sedaxane_fludioxonil_thiamethoxam_fs",
+        reg("F", "Cotton", "Fungal wilt, root rot", "4.0 ml per kg seed (seed treatment)", "10 ml per kg seed", None),
+        {"use": "seed", "per_kg_seed": {"amount": 4.0, "unit": "ml", "water_ml": 10}, "timing": SEED_TIMING}),
+    "cotton_bacterial_blight": ("carboxin_75wp",
+        reg("F", "Cotton", "Angular leaf spot (bacterial blight)", "2–2.5 g per kg seed (seed treatment)", "N/A", None),
+        {"use": "seed", "per_kg_seed": {"amount": 2.5, "unit": "g"}, "timing": {
+            "en": "A one-time treatment of next season's seed before sowing.",
+            "hi": "अगले मौसम के बीज का बुवाई से पहले एक बार उपचार।",
+            "mr": "पुढील हंगामातील बियाण्यावर पेरणीपूर्वी एकदाच प्रक्रिया.",
+        }}),
+    "soybean_target_spot": ("mefentrifluconazole_pyraclostrobin_sc",
+        reg("F", "Soybean", "Frog eye leaf spot and target leaf spot", "400–500 ml", "500", 24),
+        {"dose_per_litre": 1.0, "dose_unit": "ml", "water_l_per_acre": 200, "timing": {
+            "en": "Spray when the first spots with rings appear on the lower leaves.",
+            "hi": "निचली पत्तियों पर छल्लेदार धब्बे पहली बार दिखें तब छिड़कें।",
+            "mr": "खालच्या पानांवर वर्तुळाकार ठिपके पहिल्यांदा दिसताच फवारा.",
+        }}),
+    # The list gives 0.5 + 0.4 g a.i. and 20.0 of formulation without saying per
+    # how much seed, so no dose is written here: the label carries it.
+    "maize_banded_leaf_sheath_blight": ("ipconazole_metalaxyl_me",
+        reg("F", "Maize", "Maydis leaf blight, Fusarium stalk rot, banded leaf & sheath blight, downy mildew",
+            "seed treatment; the list does not state the seed quantity, see the label", "NA", None),
+        {"use": "seed", "dose_basis": {
+            "en": "Seed treatment: use the dose printed on the product label.",
+            "hi": "बीज उपचार: उत्पाद के लेबल पर छपी मात्रा का इस्तेमाल करें।",
+            "mr": "बीजप्रक्रिया: उत्पादनाच्या लेबलवर छापलेले प्रमाण वापरा.",
+        }, "timing": SEED_TIMING}),
+}
+
+
 def fetch() -> None:
     RAW.mkdir(parents=True, exist_ok=True)
     for local, remote in LISTS.values():
@@ -212,7 +261,7 @@ def main() -> None:
                 _, registration, changes = d
             changes = dict(changes)
             borrow = changes.pop("timing_from", None)
-            if borrow:
+            if borrow and borrow in timings:  # on a re-run the rung lent from is gone; its timing already moved
                 r["timing"] = timings[borrow]
             for k, v in changes.items():
                 if v is None:
@@ -224,6 +273,13 @@ def main() -> None:
             counts["verified"] += 1
             ladder.append(r)
         a["ladder"] = ladder
+    for t, (ingredient, registration, fields) in ADD.items():
+        ladder = adv[t]["ladder"]
+        if any(r.get("ingredient") == ingredient for r in ladder):
+            continue
+        ladder.append({"tier": "chemical", "ingredient": ingredient, **fields,
+                       "verified": True, "registration": registration})
+        counts["added"] = counts.get("added", 0) + 1
     missing = set(D) - seen
     if missing and not all(adv.get(t) for t, _ in missing):
         raise SystemExit(f"decisions for rungs that no longer exist: {sorted(missing)}")

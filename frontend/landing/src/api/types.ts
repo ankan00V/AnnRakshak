@@ -84,6 +84,10 @@ export interface LadderRung {
   waiting?: string
   for_field?: string
   quantity?: { amount: number; unit: string; water_l: number }
+  /** A chemical rung: a spray, or a treatment of next season's seed. */
+  use?: 'spray' | 'seed'
+  /** A field step or natural control: where the advice comes from. */
+  source?: string
 }
 
 /** A registered bio-pesticide or neem product for this problem, offered
@@ -156,6 +160,10 @@ export interface Advisory {
   /** Registered organic products; empty when none is registered for this problem. */
   organic?: OrganicOption[]
   homemade?: HomemadeOption[]
+  /** pest, disease, virus — or deficiency/disorder, which no pesticide treats. */
+  kind?: string
+  /** Set when no pesticide is registered for this pest or disease on this crop. */
+  chemical_none?: string | null
   expert_trigger: string
   citations: Citation[]
   icar_options: IcarTech[]

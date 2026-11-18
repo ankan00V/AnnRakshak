@@ -90,6 +90,13 @@ Maharashtra = four IMD subdivisions — Konkan & Goa, Madhya Maharashtra, Marath
 - Removed, because nothing in the list registers that product on that crop for that pest: copper oxychloride on rice, cotton and soybean; propiconazole on maize and on rice false smut; emamectin and spinetoram on maize; carbendazim for cotton wilt and soybean septoria; validamycin on maize; metalaxyl + mancozeb on rice and soybean; mancozeb on cotton and for maize gray leaf spot / Curvularia. Several of those problems have **no registered foliar spray at all** (maize gray leaf spot and Curvularia leaf spot, banded leaf and sheath blight, cotton wilt and bacterial blight, rice bacterial leaf streak and downy mildew, soybean downy mildew, bacterial blight, septoria and target spot): their advice is the cultural and biological rungs and an expert, which is what the list supports.
 - Every remaining rung carries `registration` (source, crop, pest, formulation per ha, water per ha, waiting days) and `verified: true`; the waiting period is shown to the farmer. `tests/test_engine.py` refuses a chemical rung without a registration, on another crop, or with a dose outside the registered range per hectare.
 
+- **Re-read on 18 Nov 2026 for seed treatments, not only sprays.** Four problems that had no chemical rung have a registered use, now added (`ADD` in `data/verify_doses.py`):
+  - cotton wilt: Sedaxane + Fludioxonil + Thiamethoxam FS, 4 ml per kg of seed;
+  - cotton bacterial blight, listed as "angular leaf spot": Carboxin 75% WP, 2–2.5 g per kg of seed;
+  - soybean target leaf spot: Mefentrifluconazole + Pyraclostrobin SC, 400–500 ml/ha, 24-day waiting period;
+  - maize banded leaf and sheath blight: Ipconazole + Metalaxyl ME seed treatment. The list does not say per how much seed its amount is, so the app gives no number and sends the farmer to the label.
+- **Ten pests and diseases have no registered pesticide in India in either list**: rice bacterial leaf streak, bacterial panicle blight, downy mildew and skipper; maize gray leaf spot, Curvularia leaf spot and ear rot; soybean Septoria brown spot, downy mildew and bacterial blight. Rows that say only "leaf spot" are not taken to cover a disease they do not name. For these the app says plainly that nothing is registered and that nothing should be sprayed (`chemical_none`). `tests/test_engine.py` requires every pest and disease to carry either a registered chemical or that statement.
+
 ## 3c. Organic options — the CIB&RC bio-pesticide lists (17 Nov 2026)
 
 - Source: the same CIB&RC Major Uses lists, the **bio-insecticides** and **bio-fungicides** files (as on 30.09.2026): living products (Trichoderma, Pseudomonas, Bacillus subtilis, Bt, Beauveria, Metarhizium, Verticillium, HaNPV) and neem (azadirachtin) products, each with crop, pest, dose per hectare, water and waiting period.
@@ -110,6 +117,17 @@ Maharashtra = four IMD subdivisions — Konkan & Goa, Madhya Maharashtra, Marath
 - **10 options on 9 problems**: maize fall armyworm; cotton whitefly, aphid, jassid and leaf curl (through the whitefly); soybean tobacco caterpillar, yellow mosaic (through the whitefly) and rust; rice brown planthopper (neem oil, and NSKE below the threshold).
 - Left out: the soybean package's cow-urine, cow-milk and asafoetida sprays. They are in a government document, but nothing in it or behind it measures what they do. Also left out: neem cake for maize nematodes, which is not a problem the app advises on.
 - `tests/test_engine.py` requires each option to name its source and to read in Hindi and Marathi, not English left standing in; it also checks that NSKE reaches the farmer as 50 g a litre.
+
+## 3e. Organic steps for every pest and disease (18 Nov 2026)
+
+- The advice now shows everything that is not a chemical under one heading, "Organic options": the field steps, natural control, registered organic products and neem made at home. The chemical comes last. Deficiencies and disorders are not framed this way, because no pesticide treats them.
+- Ten problems had too few organic steps (false smut had one). `data/organic_practices.py` adds 13 sourced steps from the NCIPM & DPPQS IPM packages and IRRI. For example:
+  - false smut: alternate wetting and drying, moderate nitrogen, field sanitation, and a hot-water (52 °C, 10 min) or Pseudomonas seed treatment;
+  - named resistant varieties for tungro, common rust, maydis and turcicum blight, downy mildew, and banded leaf and sheath blight;
+  - Trichoderma harzianum seed treatment for banded leaf and sheath blight;
+  - dhaincha as a trap crop for girdle beetle.
+  Each step shows its source to the farmer.
+- `tests/test_engine.py` requires at least two organic steps for every pest and disease.
 
 ## 4. ICAR Technology repository
 

@@ -1,5 +1,5 @@
 {
- "_note": "One advisory per target. Ladder order is cultural -> biological -> chemical and the loader refuses any other order. Chemical rungs name an ingredient from pesticides.json. Every chemical rung is checked against the CIB&RC Major Uses of Pesticides lists (data/verify_doses.py): 'registration' records the row it rests on — crop, pest, formulation per hectare, water per hectare, waiting period — and a rung whose product is not registered for that crop and pest is not here. Doses are per litre of water at the registered water volume; the printed label stays the authority on dose. 'organic' lists the bio-pesticides and neem products registered for that crop and pest in the CIB&RC Major Uses lists for bio-insecticides and bio-fungicides (data/organic_options.py), each with the registration it rests on; a target with none registered has no 'organic' list.",
+ "_note": "One advisory per target. Ladder order is cultural -> biological -> chemical and the loader refuses any other order. Chemical rungs name an ingredient from pesticides.json. Every chemical rung is checked against the CIB&RC Major Uses of Pesticides lists (data/verify_doses.py): 'registration' records the row it rests on — crop, pest, formulation per hectare, water per hectare, waiting period — and a rung whose product is not registered for that crop and pest is not here. Doses are per litre of water at the registered water volume; the printed label stays the authority on dose. 'organic' lists the bio-pesticides and neem products registered for that crop and pest in the CIB&RC Major Uses lists for bio-insecticides and bio-fungicides (data/organic_options.py), each with the registration it rests on; a target with none registered has no 'organic' list.. Every chemical rung is checked against the CIB&RC Major Uses of Pesticides lists (data/verify_doses.py): 'registration' records the row it rests on — crop, pest, formulation per hectare, water per hectare, waiting period — and a rung whose product is not registered for that crop and pest is not here. Doses are per litre of water at the registered water volume; the printed label stays the authority on dose.",
  "rice_blast": {
   "what_to_check": {
    "en": "Check the upper leaves of 10 plants along a diagonal, and the node just below the panicle.",
@@ -564,6 +564,26 @@
     }
    },
    {
+    "tier": "cultural",
+    "action": {
+     "en": "Alternate wetting and drying instead of keeping the field flooded, keep nitrogen moderate, and after harvest clear the infected panicles and stubble from the field.",
+     "hi": "खेत में लगातार पानी भरा रखने के बजाय बारी-बारी से गीला-सूखा करें, नाइट्रोजन सीमित रखें, और कटाई के बाद संक्रमित बालियाँ और ठूँठ खेत से हटा दें।",
+     "mr": "शेतात सतत पाणी साचवण्याऐवजी आलटून-पालटून ओले-कोरडे करा, नत्र मर्यादित ठेवा, आणि कापणीनंतर बाधित लोंब्या व खुंट शेतातून काढून टाका."
+    },
+    "source": "IRRI Rice Knowledge Bank, False smut",
+    "added_by": "organic_practices"
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Next season, soak the seed in hot water at 52 °C for 10 minutes, or coat it with Pseudomonas fluorescens at 10 g per kg of seed.",
+     "hi": "अगले मौसम में बीज को 52 °C गर्म पानी में 10 मिनट भिगोएँ, या प्रति किलो बीज 10 ग्राम स्यूडोमोनास फ्लोरेसेंस से उपचारित करें।",
+     "mr": "पुढील हंगामात बियाणे 52 °C गरम पाण्यात 10 मिनिटे भिजवा, किंवा प्रति किलो बियाण्यास 10 ग्रॅम स्युडोमोनास फ्लुरोसन्स लावा."
+    },
+    "source": "IRRI Rice Knowledge Bank, False smut; NCIPM & DPPQS, Integrated Pest Management Package for Rice (seed treatment for seed-borne disease)",
+    "added_by": "organic_practices"
+   },
+   {
     "tier": "chemical",
     "ingredient": "copper_hydroxide_77wp",
     "dose_per_litre": 2.7,
@@ -632,6 +652,26 @@
      "hi": "हरे फुदके पर नज़र रखने के लिए रात में प्रकाश प्रपंच लगाएँ।",
      "mr": "हिरव्या तुडतुड्यांवर लक्ष ठेवण्यासाठी रात्री प्रकाश सापळा लावा."
     }
+   },
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Tolerant varieties named in the national IPM package: Vikramarya, Nidhi, Amulya, Dinesh, Lakshmi and Nalini. Transplant seedlings older than 3 weeks, at the same time as your neighbours.",
+     "hi": "राष्ट्रीय IPM पैकेज में बताई गई सहनशील किस्में: विक्रमार्य, निधि, अमूल्य, दिनेश, लक्ष्मी और नलिनी। 3 सप्ताह से पुरानी पौध रोपें, पड़ोसियों के साथ एक ही समय पर।",
+     "mr": "राष्ट्रीय IPM पॅकेजमधील सहनशील वाण: विक्रमार्य, निधी, अमूल्य, दिनेश, लक्ष्मी आणि नलिनी. 3 आठवड्यांपेक्षा जुनी रोपे लावा, शेजाऱ्यांसोबत एकाच वेळी."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Rice",
+    "added_by": "organic_practices"
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Protect the spiders, mirid bugs and other predators that eat the green leafhopper which spreads tungro: no broad-spectrum sprays early in the season.",
+     "hi": "टुंग्रो फैलाने वाले हरे फुदके को खाने वाली मकड़ियों, मिरिड बग और दूसरे शिकारी कीटों को बचाएँ: मौसम की शुरुआत में व्यापक असर वाले छिड़काव न करें।",
+     "mr": "टुंग्रो पसरवणाऱ्या हिरव्या तुडतुड्याला खाणारे कोळी, मिरिड ढेकूण आणि इतर भक्षक वाचवा: हंगामाच्या सुरुवातीला सर्वव्यापी फवारण्या करू नका."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Rice",
+    "added_by": "organic_practices"
    },
    {
     "tier": "chemical",
@@ -1115,6 +1155,16 @@
     }
    },
    {
+    "tier": "cultural",
+    "action": {
+     "en": "Resistant varieties named in the national IPM package: PEMH 5, Vivek 21, Vivek 23, Vivek 25 and Pratap Kanchan 2; Nithyashree for Karnataka and Andhra Pradesh.",
+     "hi": "राष्ट्रीय IPM पैकेज में बताई गई प्रतिरोधी किस्में: PEMH 5, विवेक 21, विवेक 23, विवेक 25 और प्रताप कंचन 2; कर्नाटक और आंध्र प्रदेश के लिए नित्यश्री।",
+     "mr": "राष्ट्रीय IPM पॅकेजमधील प्रतिकारक वाण: PEMH 5, विवेक 21, विवेक 23, विवेक 25 आणि प्रताप कांचन 2; कर्नाटक व आंध्र प्रदेशासाठी नित्यश्री."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize",
+    "added_by": "organic_practices"
+   },
+   {
     "tier": "biological",
     "action": {
      "en": "Spray Trichoderma harzianum at 5 g per litre at first lesions.",
@@ -1211,6 +1261,16 @@
     }
    },
    {
+    "tier": "cultural",
+    "action": {
+     "en": "Resistant varieties named in the national IPM package: HM 10, PAU 352, Malviya Hybrid Makka 2, PEMH 1, PEMH 5, HQPM 1, HQPM 4, HQPM 5, HQPM 7, Shaktiman 3, Shaktiman 4 and HSC 1.",
+     "hi": "राष्ट्रीय IPM पैकेज में बताई गई प्रतिरोधी किस्में: HM 10, PAU 352, मालवीय हाइब्रिड मक्का 2, PEMH 1, PEMH 5, HQPM 1, HQPM 4, HQPM 5, HQPM 7, शक्तिमान 3, शक्तिमान 4 और HSC 1।",
+     "mr": "राष्ट्रीय IPM पॅकेजमधील प्रतिकारक वाण: HM 10, PAU 352, मालवीय हायब्रिड मका 2, PEMH 1, PEMH 5, HQPM 1, HQPM 4, HQPM 5, HQPM 7, शक्तिमान 3, शक्तिमान 4 आणि HSC 1."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize",
+    "added_by": "organic_practices"
+   },
+   {
     "tier": "chemical",
     "ingredient": "mancozeb_75wp",
     "dose_per_litre": 2.5,
@@ -1271,6 +1331,16 @@
      "hi": "रोगरोधी संकर लें और समय पर बोएँ; ठंडे-नम मौसम में देर से बोई फसल पर रतुआ ज़्यादा।",
      "mr": "प्रतिकारक संकरित वाण घ्या व वेळेवर पेरा; थंड-दमट हवामानात उशिरा पेरलेल्या पिकावर तांबेरा जास्त."
     }
+   },
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Resistant hybrids named in the national IPM package: Buland, Sheetal, HHM 1, HHM 2, HQPM 1 and Nithyashree.",
+     "hi": "राष्ट्रीय IPM पैकेज में बताए गए प्रतिरोधी संकर: बुलंद, शीतल, HHM 1, HHM 2, HQPM 1 और नित्यश्री।",
+     "mr": "राष्ट्रीय IPM पॅकेजमधील प्रतिकारक संकरित वाण: बुलंद, शीतल, HHM 1, HHM 2, HQPM 1 आणि नित्यश्री."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize",
+    "added_by": "organic_practices"
    },
    {
     "tier": "chemical",
@@ -1335,11 +1405,55 @@
     }
    },
    {
+    "tier": "cultural",
+    "action": {
+     "en": "Resistant varieties named in the national IPM package: Pratap Kanchan 2, Pratap Makka 3, Pratap Makka 5, Shaktiman 1 and Shaktiman 3.",
+     "hi": "राष्ट्रीय IPM पैकेज में बताई गई प्रतिरोधी किस्में: प्रताप कंचन 2, प्रताप मक्का 3, प्रताप मक्का 5, शक्तिमान 1 और शक्तिमान 3।",
+     "mr": "राष्ट्रीय IPM पॅकेजमधील प्रतिकारक वाण: प्रताप कांचन 2, प्रताप मका 3, प्रताप मका 5, शक्तिमान 1 आणि शक्तिमान 3."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize",
+    "added_by": "organic_practices"
+   },
+   {
     "tier": "biological",
     "action": {
      "en": "Mix Pseudomonas fluorescens or Trichoderma into the soil at sowing next season.",
      "hi": "अगले मौसम में बुवाई के समय स्यूडोमोनास या ट्राइकोडर्मा मिट्टी में दें।",
      "mr": "पुढील हंगामात पेरणीवेळी स्युडोमोनास किंवा ट्रायकोडर्मा जमिनीत द्या."
+    }
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Next season, coat the seed with Trichoderma harzianum 2% WP at 20 g per kg of seed.",
+     "hi": "अगले मौसम में प्रति किलो बीज 20 ग्राम ट्राइकोडर्मा हार्जियानम 2% WP से बीज उपचार करें।",
+     "mr": "पुढील हंगामात प्रति किलो बियाण्यास 20 ग्रॅम ट्रायकोडर्मा हर्जियानम 2% WP लावा."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize",
+    "added_by": "organic_practices"
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "ipconazole_metalaxyl_me",
+    "use": "seed",
+    "dose_basis": {
+     "en": "Seed treatment: use the dose printed on the product label.",
+     "hi": "बीज उपचार: उत्पाद के लेबल पर छपी मात्रा का इस्तेमाल करें।",
+     "mr": "बीजप्रक्रिया: उत्पादनाच्या लेबलवर छापलेले प्रमाण वापरा."
+    },
+    "timing": {
+     "en": "Treat next season's seed just before sowing, and dry it in the shade.",
+     "hi": "अगले मौसम के बीज का बुवाई से ठीक पहले उपचार करें, और छाया में सुखाएँ।",
+     "mr": "पुढील हंगामातील बियाण्यावर पेरणीपूर्वी लगेच प्रक्रिया करा, आणि सावलीत वाळवा."
+    },
+    "verified": true,
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Maize",
+     "pest": "Maydis leaf blight, Fusarium stalk rot, banded leaf & sheath blight, downy mildew",
+     "formulation_per_ha": "seed treatment; the list does not state the seed quantity, see the label",
+     "water_l_per_ha": "NA",
+     "waiting_days": null
     }
    }
   ],
@@ -1382,6 +1496,16 @@
      "hi": "रोगी पौधे दिखते ही उखाड़कर नष्ट करें; अगले मौसम में बीज का मेटालेक्सिल से उपचार करें।",
      "mr": "रोगट रोपे दिसताच उपटून नष्ट करा; पुढील हंगामात बियाण्यास मेटॅलॅक्सिल लावा."
     }
+   },
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Sow before the rains set in, and do not sow maize next to sorghum or after it. Resistant varieties in the national IPM package: PEMH 5, Bio 9636, DMH 1, COH(M) 4, COH(M) 5 and Nithyashree.",
+     "hi": "बारिश शुरू होने से पहले बुवाई करें, और मक्का को ज्वार के पास या ज्वार के बाद न बोएँ। राष्ट्रीय IPM पैकेज की प्रतिरोधी किस्में: PEMH 5, बायो 9636, DMH 1, COH(M) 4, COH(M) 5 और नित्यश्री।",
+     "mr": "पाऊस सुरू होण्यापूर्वी पेरणी करा, आणि मका ज्वारीच्या शेजारी किंवा ज्वारीनंतर पेरू नका. राष्ट्रीय IPM पॅकेजमधील प्रतिकारक वाण: PEMH 5, बायो 9636, DMH 1, COH(M) 4, COH(M) 5 आणि नित्यश्री."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize",
+    "added_by": "organic_practices"
    },
    {
     "tier": "chemical",
@@ -2194,6 +2318,16 @@
     }
    },
    {
+    "tier": "cultural",
+    "action": {
+     "en": "Grow dhaincha as a trap crop around the field: the beetles gather on it, away from the soybean.",
+     "hi": "खेत के चारों ओर ढैंचा को फँसाऊ फसल के रूप में उगाएँ: भृंग सोयाबीन से हटकर उस पर जमा होते हैं।",
+     "mr": "शेताभोवती धैंचा सापळा पीक म्हणून लावा: भुंगे सोयाबीनपासून दूर त्यावर जमतात."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Soybean",
+    "added_by": "organic_practices"
+   },
+   {
     "tier": "chemical",
     "ingredient": "thiacloprid_21_7sc",
     "dose_per_litre": 1.5,
@@ -2613,6 +2747,16 @@
      "hi": "रोगी अवशेष नष्ट करें, गैर-अनाज फसल से फसल-चक्र करें और संतुलित नाइट्रोजन-पोटाश दें।",
      "mr": "रोगट अवशेष नष्ट करा, तृणधान्य नसलेल्या पिकाची फेरपालट करा व संतुलित नत्र-पालाश द्या."
     }
+   },
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Before sowing, plough deep two or three times, 10 to 15 days apart, to bury the old crop debris and weeds; sow certified seed and throw out light, chaffy or damaged seed.",
+     "hi": "बुवाई से पहले 10 से 15 दिन के अंतर पर दो-तीन बार गहरी जुताई करें, ताकि पुरानी फसल के अवशेष और खरपतवार दब जाएँ; प्रमाणित बीज बोएँ और हल्के, खोखले या टूटे बीज निकाल दें।",
+     "mr": "पेरणीपूर्वी 10 ते 15 दिवसांच्या अंतराने दोन-तीन वेळा खोल नांगरट करा, म्हणजे जुन्या पिकाचे अवशेष व तण गाडले जातील; प्रमाणित बियाणे पेरा आणि हलके, पोचट किंवा तुटलेले बी काढून टाका."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize (cultural practices for diseases)",
+    "added_by": "organic_practices"
    }
   ],
   "expert_trigger": {
@@ -2736,6 +2880,29 @@
      "en": "Spray Pseudomonas fluorescens at 5 g per litre at the first spots.",
      "hi": "पहले धब्बे दिखते ही स्यूडोमोनास फ्लोरेसेंस 5 ग्राम प्रति लीटर छिड़कें।",
      "mr": "पहिले ठिपके दिसताच स्यूडोमोनास फ्लुरोसन्स 5 ग्रॅम प्रति लिटर फवारा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "carboxin_75wp",
+    "use": "seed",
+    "per_kg_seed": {
+     "amount": 2.5,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "A one-time treatment of next season's seed before sowing.",
+     "hi": "अगले मौसम के बीज का बुवाई से पहले एक बार उपचार।",
+     "mr": "पुढील हंगामातील बियाण्यावर पेरणीपूर्वी एकदाच प्रक्रिया."
+    },
+    "verified": true,
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Angular leaf spot (bacterial blight)",
+     "formulation_per_ha": "2–2.5 g per kg seed (seed treatment)",
+     "water_l_per_ha": "N/A",
+     "waiting_days": null
     }
    }
   ],
@@ -2971,6 +3138,30 @@
      "en": "Drench the soil around nearby plants with Trichoderma viride at 5 g per litre; treat next season's seed with 4 g per kg.",
      "hi": "आसपास के पौधों की जड़ों में ट्राइकोडर्मा विरिडी 5 ग्राम प्रति लीटर डालें; अगले मौसम के बीज को 4 ग्राम प्रति किलो से उपचारित करें।",
      "mr": "जवळच्या झाडांच्या मुळांशी ट्रायकोडर्मा व्हिरिडी 5 ग्रॅम प्रति लिटर ओता; पुढील हंगामाच्या बियाण्यास 4 ग्रॅम प्रति किलो प्रक्रिया करा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "sedaxane_fludioxonil_thiamethoxam_fs",
+    "use": "seed",
+    "per_kg_seed": {
+     "amount": 4.0,
+     "unit": "ml",
+     "water_ml": 10
+    },
+    "timing": {
+     "en": "Treat next season's seed just before sowing, and dry it in the shade.",
+     "hi": "अगले मौसम के बीज का बुवाई से ठीक पहले उपचार करें, और छाया में सुखाएँ।",
+     "mr": "पुढील हंगामातील बियाण्यावर पेरणीपूर्वी लगेच प्रक्रिया करा, आणि सावलीत वाळवा."
+    },
+    "verified": true,
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Fungal wilt, root rot",
+     "formulation_per_ha": "4.0 ml per kg seed (seed treatment)",
+     "water_l_per_ha": "10 ml per kg seed",
+     "waiting_days": null
     }
    }
   ],
@@ -3378,6 +3569,16 @@
      "hi": "समय पर कटाई करें; सड़े भुट्टे अलग करें; भंडारण से पहले भुट्टे और दाने धूप में 14% से कम नमी तक सुखाएँ; फॉल आर्मीवर्म और तना छेदक को रोकें जो रास्ता खोलते हैं।",
      "mr": "वेळेवर काढणी करा; कुजलेली कणसे वेगळी करा; साठवण्यापूर्वी कणसे व दाणे उन्हात 14% पेक्षा कमी ओलाव्यापर्यंत वाळवा; लष्करी अळी व खोडकिडीचे नियंत्रण करा, जे बुरशीला वाट मोकळी करतात."
     }
+   },
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Do not let the crop go short of water from flowering to grain filling, and do not give high nitrogen with too little potash.",
+     "hi": "फूल आने से दाना भरने तक फसल में पानी की कमी न होने दें, और कम पोटाश के साथ ज़्यादा नाइट्रोजन न दें।",
+     "mr": "फुलोऱ्यापासून दाणे भरेपर्यंत पिकाला पाण्याचा ताण पडू देऊ नका, आणि कमी पालाशसोबत जास्त नत्र देऊ नका."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize (cultural practices for diseases)",
+    "added_by": "organic_practices"
    }
   ],
   "expert_trigger": {
@@ -3668,6 +3869,27 @@
      "en": "Treat next season's seed with Trichoderma viride at 5 g per kg.",
      "hi": "अगले मौसम के बीज को ट्राइकोडर्मा विरिडी 5 ग्राम प्रति किलो से उपचारित करें।",
      "mr": "पुढील हंगामाच्या बियाण्यास ट्रायकोडर्मा व्हिरिडी 5 ग्रॅम प्रति किलो प्रक्रिया करा."
+    }
+   },
+   {
+    "tier": "chemical",
+    "ingredient": "mefentrifluconazole_pyraclostrobin_sc",
+    "dose_per_litre": 1.0,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray when the first spots with rings appear on the lower leaves.",
+     "hi": "निचली पत्तियों पर छल्लेदार धब्बे पहली बार दिखें तब छिड़कें।",
+     "mr": "खालच्या पानांवर वर्तुळाकार ठिपके पहिल्यांदा दिसताच फवारा."
+    },
+    "verified": true,
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Soybean",
+     "pest": "Frog eye leaf spot and target leaf spot",
+     "formulation_per_ha": "400–500 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 24
     }
    }
   ],

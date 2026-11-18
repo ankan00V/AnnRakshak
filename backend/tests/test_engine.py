@@ -912,3 +912,34 @@ def test_homemade_options_name_their_source_and_read_in_the_farmers_language():
     assert any(h["prep"] == "nske_5" and "50 g" in h["dose"] and "500 g" in h["dose"] for h in faw)
     # and an advisory with none says nothing rather than something made up
     assert advisory.compose(kb, "rice_blast", "en", 1.0)["homemade"] == []
+
+
+def test_every_pest_and_disease_gives_an_organic_route_and_a_chemical_answer():
+    # A farmer always gets both sides. Organic: at least two steps before any
+    # chemical, field practice and natural control or an organic product. Chemical:
+    # a product CIB&RC registers for that crop and pest, or a plain statement
+    # that India registers none, never an empty space.
+    for target, adv in kb.advisories.items():
+        if kb.targets[target].get("kind") not in ("pest", "disease", "virus"):
+            continue
+        a = advisory.compose(kb, target, "en", 1.0)
+        organic = [r for r in a["ladder"] if r["tier"] != "chemical"] + a["organic"] + a["homemade"]
+        assert len(organic) >= 2, f"{target}: {len(organic)} organic step(s)"
+        chem = [r for r in a["ladder"] if r["tier"] == "chemical"]
+        assert chem or a["chemical_none"], f"{target}: no chemical and no word on why"
+        assert not (chem and a["chemical_none"]), target
+        for r in chem:
+            assert r["dose"], f"{target}: {r['product']} has no dose"
+
+
+def test_seed_treatment_rungs_read_as_seed_treatments():
+    wilt = advisory.compose(kb, "cotton_wilt", "hi", 2.0)
+    seed = [r for r in wilt["ladder"] if r["tier"] == "chemical"]
+    assert seed and seed[0]["use"] == "seed" and "बीज" in seed[0]["dose"]
+    assert "for_field" not in seed[0]  # a dose per kg of seed, not a tank to fill
+
+
+def test_a_field_quantity_is_given_in_kilograms_and_litres_when_it_is_large():
+    a = advisory.compose(kb, "rice_false_smut", "en", 30.0)
+    chem = next(r for r in a["ladder"] if r["tier"] == "chemical")
+    assert " kg in " in chem["for_field"] and " g in " not in chem["for_field"]
