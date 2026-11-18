@@ -33,6 +33,7 @@ import io
 import json
 import sys
 import time
+import urllib.parse
 import urllib.request
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
@@ -53,6 +54,7 @@ CSV_OUT = ROOT / "data" / "processed" / "cds_images.csv"
 EXISTING = [p for p in (ROOT / "data" / "processed").glob("*_640") if p != OUT]
 FIELDS = ["path", "train_class", "target", "crop", "source", "bg", "dhash"]
 CLS = "maize_turcicum_leaf_blight"
+OSF_HOSTS = {"api.osf.io", "osf.io", "files.osf.io"}
 
 
 def _get(url: str, binary: bool = False):
@@ -70,6 +72,8 @@ def _get(url: str, binary: bool = False):
 def _children(url: str) -> list[dict]:
     out = []
     while url:
+        if urllib.parse.urlparse(url).hostname not in OSF_HOSTS:
+            raise OSError(f"listing points away from OSF: {url[:80]}")
         d = _get(url)
         out += d["data"]
         url = d["links"].get("next")
@@ -91,17 +95,32 @@ def nlb_files() -> list[dict]:
 
 
 def fetch(f: dict) -> Path | None:
+    """One photo, kept only if it matches the SHA-256 OSF publishes for it.
+    The name and the link come from a remote listing, so neither is trusted:
+    the name must be a plain file name, the link must be OSF's, and a file
+    with no published hash is not kept at all."""
     a = f["attributes"]
-    dst = RAW / a["name"]
-    want = (a.get("extra") or {}).get("hashes", {}).get("sha256")
-    if not (dst.exists() and want and hashlib.sha256(dst.read_bytes()).hexdigest() == want):
-        try:
-            dst.write_bytes(_get(f["links"]["download"], binary=True))
-        except OSError:
-            return None  # a dropped download; a rerun fetches it
-    if want and hashlib.sha256(dst.read_bytes()).hexdigest() != want:
-        dst.unlink()
+    name = str(a.get("name") or "")
+    if Path(name).name != name or name in ("", ".", "..") or not name.lower().endswith((".jpg", ".jpeg", ".png")):
         return None
+    dst = RAW / name
+    if dst.resolve().parent != RAW.resolve():
+        return None
+    want = (a.get("extra") or {}).get("hashes", {}).get("sha256")
+    url = f["links"].get("download") or ""
+    if not want or urllib.parse.urlparse(url).hostname not in OSF_HOSTS:
+        return None
+    if dst.exists() and hashlib.sha256(dst.read_bytes()).hexdigest() == want:
+        return dst
+    try:
+        data = _get(url, binary=True)
+    except OSError:
+        return None  # a dropped download; a rerun fetches it
+    if hashlib.sha256(data).hexdigest() != want:
+        return None
+    tmp = dst.with_suffix(dst.suffix + ".part")
+    tmp.write_bytes(data)
+    tmp.replace(dst)
     return dst
 
 
