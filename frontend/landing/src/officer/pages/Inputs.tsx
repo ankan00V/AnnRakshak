@@ -2,12 +2,13 @@ import { Download, Package } from 'lucide-react'
 import { api } from '../../api/client'
 import { useAsync } from '../../lib/hooks'
 import { Card, ErrorBox } from '../../ui/kit'
-import { CardHead, PageHead, PanelBone } from '../panels'
+import { CardHead, DemandCard, PageHead, PanelBone } from '../panels'
 
 /** Procurement. Tricho-cards are reared to order on a 45-day lead, so the week
  *  a pest starts building is the week to indent — not the week damage shows. */
 export default function Inputs() {
   const indent = useAsync(() => api.indent(), [])
+  const baseline = useAsync(() => api.pesticideBaseline(), [])
 
   return (
     <>
@@ -80,6 +81,7 @@ export default function Inputs() {
           </div>
         )}
       </Card>
+      {baseline.data?.available && <DemandCard p={baseline.data} />}
     </>
   )
 }

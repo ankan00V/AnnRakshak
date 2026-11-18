@@ -1407,3 +1407,25 @@ def test_a_photo_sent_twice_from_the_outbox_is_diagnosed_once(client):
     bad = client.post("/api/farms/1/diagnose", files={"image": ("x.jpg", _leaf_jpeg(), "image/jpeg")},
                       data={"lang": "en", "client_ref": "../../etc"})
     assert bad.status_code == 422
+
+
+def test_the_pesticide_baseline_runs_to_the_latest_dppqs_year(client):
+    """MoSPI's series stops at 2023-24; the DPPQS Statistical Database carries
+    it on. The officer sees one series, the years the two share agree, demand
+    stays apart from use, and the partial 2025-26 pesticide-wise year is left
+    out of the trends."""
+    client.post("/api/auth/demo", json={"role": "expert"})
+    p = client.get("/api/officials/pesticides", params={"state": "Maharashtra"}).json()
+    assert p["available"] and p["state"] == "Maharashtra"
+    years = [y for y, _ in p["chemical"]]
+    assert years == sorted(years) and len(years) == len(set(years)), "one series, no repeated year"
+    assert years[0] <= "2016-17" and years[-1] >= "2025-26", "MoSPI's early years joined to DPPQS's latest"
+    assert dict(map(tuple, p["chemical"]))["2023-24"] == 8719, "the shared year disagrees between sources"
+    assert p["rank"] and p["states_ranked"] > 20 and 0 < p["latest_share_pct"] < 100
+    d = p["demand"]
+    assert d["projected"]["year"] == "2026-27" and d["projected"]["chemical"] > 0
+    assert "formulation" in d["unit"], "demand must say it is counted in formulation"
+    s = p["sprayed"]
+    assert {g["id"] for g in s["groups"]} >= {"i", "f", "h"}
+    assert all(y != "2025-26" for g in s["groups"] for y, _ in g["series"]), "a partial year in a trend"
+    assert len(s["top"]) == 6 and all(t["group"] != "Bio-pesticides" for t in s["top"])

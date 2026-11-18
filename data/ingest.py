@@ -357,6 +357,165 @@ def mospi_pesticides() -> None:
           f"Maharashtra chemical {mh.get('chemical', [])[-1:]}, bio {mh.get('bio', [])[-1:]})")
 
 
+PPQS = "https://ppqs.gov.in/sites/default/files/"
+# The DPPQS Statistical Database (ppqs.gov.in/statistical-database): the
+# primary source the MoSPI series above republishes, two years further on.
+PPQS_FILES = {
+    "chemical": "03_state-wise_consumption_of_chemical_pesticides_0.xlsx",
+    "bio": "04_state-wise_consumption_of_bio-pesticides_0.xlsx",
+    "demand_chemical": "01_state-wise_demand_of_chemical_pesticides_0.xlsx",
+    "demand_bio": "02_state-wise_demand_of_bio-pesticides_0.xlsx",
+    "by_pesticide": "10_pesticide-wise_consumption_of_indigenuous_pesticides_0.xlsx",
+}
+PPQS_GROUPS = {"i": "Insecticides", "f": "Fungicides", "h": "Weedicides", "bp": "Bio-pesticides",
+               "pgr": "Plant growth regulators", "r": "Rodenticides", "misc": "Miscellaneous"}
+# DPPQS spellings that differ from the MoSPI names the dashboard keys on.
+PPQS_STATE_ALIASES = {"pondicherry": "puducherry", "orissa": "odisha",
+                      "a and n islands": "andaman and nicobar islands", "andaman and nicobar": "andaman and nicobar islands",
+                      "andaman nicobar islands": "andaman and nicobar islands",
+                      "j and k": "jammu and kashmir", "nct of delhi": "delhi"}
+
+
+def _state_key(name: str) -> str:
+    import re  # noqa: PLC0415
+    k = re.sub(r"[^a-z ]+", " ", str(name).lower().replace("&", " and "))
+    k = " ".join(k.split())
+    return PPQS_STATE_ALIASES.get(k, k)
+
+
+def _year(h) -> str | None:
+    """'2022-23 ', '2025-26*' and 'Projected Demand for 2026-27' all name a year."""
+    import re  # noqa: PLC0415
+    m = re.search(r"(20\d\d)\s*-\s*(\d\d)", str(h or ""))
+    return f"{m.group(1)}-{m.group(2)}" if m else None
+
+
+def _ppqs_value(v):
+    """A number, or None for 'NR' (not reported), blanks and dashes. A state
+    that did not report is not a state that used nothing."""
+    if isinstance(v, (int, float)):
+        return round(float(v), 3)
+    try:
+        return round(float(str(v).replace(",", "").strip()), 3)
+    except ValueError:
+        return None
+
+
+def ppqs_pesticides() -> None:
+    """State-wise pesticide use and demand, and pesticide-wise use, from the
+    DPPQS Statistical Database (2021-22 to 2025-26), into
+    backend/kb/ppqs_pesticides.json.
+
+    Kept apart from the MoSPI file, which carries the years before 2021-22:
+    the dashboard joins the two, DPPQS winning where they overlap (they agree:
+    Maharashtra 2023-24 is 8,719 t in both). Demand is in tonnes of
+    formulation while use mixes technical grade and formulation, so the two are
+    stored side by side and never subtracted."""
+    import subprocess  # noqa: PLC0415
+    from datetime import date  # noqa: PLC0415
+
+    import openpyxl  # noqa: PLC0415
+
+    print("ppqs pesticides:")
+    raw = RAW / "ppqs"
+    raw.mkdir(parents=True, exist_ok=True)
+    for name in PPQS_FILES.values():
+        dst = raw / name
+        try:
+            subprocess.run(["curl", "-sfL", "--max-time", "40", "-A", "Mozilla/5.0", "-o", str(dst), PPQS + name],
+                           check=True, timeout=60)
+        except Exception as exc:  # network is optional for ingest: keep the last copy
+            print(f"  {name}: download failed ({exc}); {'using the copy on disk' if dst.exists() else 'skipped'}")
+    if not all((raw / n).exists() for n in PPQS_FILES.values()):
+        print("  not every DPPQS sheet is on disk; backend/kb/ppqs_pesticides.json left as it was")
+        return
+
+    mospi = json.loads((KB / "mospi_pesticides.json").read_text()) if (KB / "mospi_pesticides.json").exists() else {}
+    known = {_state_key(n): n for n in mospi.get("states", {})}
+
+    def table(name: str):
+        ws = openpyxl.load_workbook(raw / name, read_only=True, data_only=True).worksheets[0]
+        rows = [list(r) for r in ws.iter_rows(values_only=True) if any(c not in (None, "") for c in r)]
+        head = next(i for i, r in enumerate(rows) if any(_year(c) for c in r))
+        cols = [(j, _year(c), "projected" in str(c).lower()) for j, c in enumerate(rows[head]) if _year(c)]
+        return rows[head + 1:], cols
+
+    states: dict = {}
+    unmatched: set[str] = set()
+    national: dict = {}
+    for kind in ("chemical", "bio", "demand_chemical", "demand_bio"):
+        body, cols = table(PPQS_FILES[kind])
+        for r in body:
+            label = next((c for c in r[:3] if isinstance(c, str) and c.strip()), "")
+            if "total" in label.lower():
+                if "grand" in label.lower() or label.strip().lower() == "total":
+                    national[kind] = [[y, v] for j, y, proj in cols if not proj and (v := _ppqs_value(r[j])) is not None]
+                continue
+            if not isinstance(r[0], (int, float)) or not label:
+                continue  # notes, sub-headings, sub-totals
+            key = _state_key(label)
+            name = known.get(key)
+            if name is None:
+                unmatched.add(label.strip())
+                name = " ".join(label.split())
+            entry = states.setdefault(name, {})
+            for j, y, proj in cols:
+                v = _ppqs_value(r[j])
+                if v is None:
+                    continue
+                if proj:
+                    entry.setdefault("projected", {"year": y})[kind.replace("demand_", "")] = v
+                else:
+                    entry.setdefault(kind, []).append([y, v])
+
+    body, cols = table(PPQS_FILES["by_pesticide"])
+    pesticides, by_group = [], defaultdict(lambda: defaultdict(float))
+    for r in body:
+        if not isinstance(r[0], (int, float)) or not isinstance(r[1], str):
+            continue
+        group = str(r[2] or "").strip().lower()
+        series = [[y, v] for j, y, _ in cols if (v := _ppqs_value(r[j])) is not None]
+        pesticides.append({"name": " ".join(r[1].split()), "group": group, "series": series})
+        for y, v in series:
+            by_group[group][y] += v
+
+    out = {
+        "_source": "Directorate of Plant Protection, Quarantine & Storage (DPPQS), Statistical Database, "
+                   "ppqs.gov.in/statistical-database: state-wise consumption and demand of chemical and "
+                   "bio-pesticides, and pesticide-wise consumption of indigenous pesticides, from States/UTs' "
+                   "reports on inputs of plant protection.",
+        "_fetched": date.today().isoformat(),
+        "_units": {
+            "chemical": "tonnes (technical grade/formulation, as reported by states)",
+            "bio": "tonnes of formulation",
+            "demand_chemical": "tonnes of formulation (estimated)",
+            "demand_bio": "tonnes of formulation (estimated)",
+            "by_pesticide": "tonnes (technical grade/formulation)",
+        },
+        "_notes": [
+            "NR (not reported) is left out, never counted as zero; national totals are DPPQS's own.",
+            "Demand is in tonnes of formulation and use mixes technical grade and formulation, so the two "
+            "are not compared.",
+            "Pesticide-wise 2025-26 covers 16 States/UTs (Agenda Report on Plant Protection, kharif 2026); "
+            "2024-25 is the latest complete year.",
+        ],
+        "partial_years": {"by_pesticide": ["2025-26"]},
+        "groups": PPQS_GROUPS,
+        "national": {
+            **{k: v for k, v in national.items()},
+            "by_group": {g: sorted([y, round(v, 1)] for y, v in ys.items()) for g, ys in by_group.items()},
+        },
+        "states": dict(sorted(states.items())),
+        "pesticides": pesticides,
+    }
+    (KB / "ppqs_pesticides.json").write_text(json.dumps(out, indent=1, ensure_ascii=False))
+    mh = states.get("Maharashtra", {})
+    print(f"  wrote backend/kb/ppqs_pesticides.json ({len(states)} states, {len(pesticides)} pesticides; "
+          f"Maharashtra chemical {mh.get('chemical', [])[-1:]}, projected {mh.get('projected')})")
+    if unmatched:
+        print(f"  not in the MoSPI list, kept under DPPQS's spelling: {', '.join(sorted(unmatched))}")
+
+
 def _clean_name(s: str) -> str:
     """Repository text is double-encoded in places (Â“ Â” Â• &#8722;); compare on
     plain words only."""
@@ -397,4 +556,5 @@ if __name__ == "__main__":
     icar_images()
     extra_images()
     mospi_pesticides()
+    ppqs_pesticides()
     icar_technologies()
