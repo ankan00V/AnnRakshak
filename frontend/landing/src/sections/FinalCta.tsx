@@ -28,13 +28,16 @@ export default function FinalCta() {
           harvest; behind it, a harvest, filmed by the team: the combine at the
           top, the words on the paddy below it, and the page ends on deep green
           under the four facts and the footer. */}
-      {/* The clip's top half is the village behind the field, so it plays as
-          a band zoomed to its lower half: the combine along the top, the
-          words on the paddy beneath it. The band's shape follows the width,
-          so the combine stays clear of the words at every size. */}
+      {/* The clip is cut from the 1080p original to the combine and the paddy
+          (the village behind them is left out), slowed to 60% with the
+          in-between frames interpolated, so the three-second shot plays as a
+          calm five. It plays as a band: the
+          combine along the top, the words on the paddy beneath it. The band's
+          shape follows the width, so the combine stays clear of the words at
+          every size. */}
       <div className="absolute inset-x-0 top-0 h-[128vw] sm:h-[72vw] lg:h-[46vw]">
         <FootageBackdrop src="/footage/harvest.mp4" poster="/footage/harvest-poster.webp"
-          objectClass="object-[50%_100%] origin-[50%_100%] scale-[1.75]"
+          objectClass="object-[50%_30%]"
           scrim={<>
             <div className="absolute inset-0 bg-gradient-to-b from-[#0e2a17]/5 via-[#0e2a17]/25 via-[50%] to-[#0e2a17] to-[96%]" />
             <div className="absolute inset-0 bg-[radial-gradient(40%_22%_at_50%_64%,rgba(10,30,16,0.5),transparent_75%)]" />

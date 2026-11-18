@@ -80,8 +80,25 @@ export interface LadderRung {
   timing?: string
   verified?: boolean
   label_rule?: string
+  /** The registered waiting period before harvest, as a sentence. */
+  waiting?: string
   for_field?: string
   quantity?: { amount: number; unit: string; water_l: number }
+}
+
+/** A registered bio-pesticide or neem product for this problem, offered
+ *  before any chemical. Every one rests on a CIB&RC registration. */
+export interface OrganicOption {
+  ingredient: string
+  product: string
+  kind: 'bio-agent' | 'botanical'
+  use: 'spray' | 'seed' | 'root_dip'
+  dose: string
+  timing?: string
+  waiting?: string
+  for_field?: string
+  quantity?: { amount: number; unit: string; water_l: number | null }
+  source?: string
 }
 
 export interface Citation {
@@ -125,6 +142,8 @@ export interface Advisory {
   what_to_check: string
   what_to_avoid: string[]
   ladder: LadderRung[]
+  /** Registered organic products; empty when none is registered for this problem. */
+  organic?: OrganicOption[]
   expert_trigger: string
   citations: Citation[]
   icar_options: IcarTech[]
@@ -894,13 +913,31 @@ export interface PesticideBaseline {
   available: boolean
   state: string
   source: string
+  /** The source of the years before DPPQS's own, when the two are joined. */
+  earlier_source?: string | null
   unit_note: string
+  fetched?: string | null
   chemical: [string, number][]
   bio: [string, number][]
   india_chemical: [string, number][]
   latest_share_pct: number | null
   rank: number | null
   states_ranked: number
+  /** The state's estimated demand, in tonnes of formulation: never compared
+   *  with use, which states report partly in technical grade. */
+  demand?: {
+    chemical: [string, number][]
+    bio: [string, number][]
+    projected: { year: string; chemical?: number; bio?: number } | null
+    unit: string
+    note: string
+  } | null
+  /** What is sprayed across India, by kind and by ingredient. */
+  sprayed?: {
+    groups: { id: string; name: string; series: [string, number][]; change_pct: number | null }[]
+    top: { name: string; group: string; series: [string, number][] }[]
+    note: string
+  } | null
 }
 
 export interface KccPanel {
