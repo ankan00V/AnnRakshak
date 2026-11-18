@@ -18,6 +18,20 @@ const store = {
   set: (k: string, v: string) => { try { localStorage.setItem(k, v) } catch { /* private mode */ } },
 }
 
+/** A step's target as it is drawn on this screen, if it is.
+ *
+ *  Parts of the app exist twice — the header's controls, the weather panel,
+ *  the tabs — once laid out for a phone and once for a wide screen, with one
+ *  of the two display:none and both carrying the same data-tour. Asked by
+ *  selector, the page answers with the first in the document whether or not
+ *  it is drawn; the tour then put its spotlight on an element with no size,
+ *  which is the top-left corner of the screen, and its card in the middle of
+ *  nowhere: Weather and Language on a laptop, Spray check and Alerts on a
+ *  phone. An element that is not drawn has no boxes, so the first that has
+ *  one is the one the farmer is looking at. */
+const drawn = (target: string): Element | undefined =>
+  [...document.querySelectorAll(`[data-tour="${target}"]`)].find((el) => el.getClientRects().length > 0)
+
 const Ctx = createContext<{ start: () => void }>({ start: () => undefined })
 export const useTour = () => useContext(Ctx)
 
@@ -131,7 +145,9 @@ export function TourProvider({ children }: { children: ReactNode }) {
     if (!muted.current) void audio.current.play().catch(() => undefined)
 
     const steps: DriveStep[] = TOUR_STEPS.map((s) => ({
-      element: s.target ? `[data-tour="${s.target}"]` : undefined,
+      // Undefined while it is not drawn, which driver.js reads as "not here
+      // yet" and waits on; its own type only admits the found case.
+      element: s.target ? (() => drawn(s.target!)) as () => Element : undefined,
       waitForElement: s.target ? 5000 : undefined,
       skipMissingElement: true, // a card that is not on screen (no weather yet) is skipped, not waited on forever
       disableActiveInteraction: !s.tap,
@@ -184,6 +200,26 @@ export function TourProvider({ children }: { children: ReactNode }) {
         return
       }
       tour.current?.destroy()
+
+      // Keep the spotlight on its target. driver.js measures it again when the
+      // page scrolls or the window changes size, and at no other time — but
+      // the page moves under a step without either: the weather arrives and
+      // pushes the cards under it down, the field's photo loads, a font swaps
+      // in. So the page's own size is watched, and the target's.
+      // And a target can stop being the drawn one while its step is up: turn
+      // a tablet and the phone's copy gives way to the wide one. Then the
+      // step is found again rather than left pointing at the copy that went.
+      const settle = () => {
+        const d = tour.current
+        if (!d?.isActive()) return
+        const i = d.getActiveIndex(), el = d.getActiveElement()
+        if (i != null && TOUR_STEPS[i]?.target && el && !el.getClientRects().length) d.drive(i)
+        else d.refresh()
+      }
+      const watch = new ResizeObserver(settle)
+      watch.observe(document.body)
+      window.addEventListener('resize', settle)
+
       tour.current = driver({
         steps,
         showProgress: true,
@@ -196,12 +232,35 @@ export function TourProvider({ children }: { children: ReactNode }) {
         overlayOpacity: 0.62,
         stagePadding: 6,
         stageRadius: 18,
-        smoothScroll: true,
+        // The page jumps to a step's card rather than gliding to it. A glide
+        // is the browser's to run, in its own time: on a busy or throttled
+        // screen it started seconds late, and until it did the spotlight sat
+        // on a card that was still off the screen. The spotlight itself still
+        // travels from the last card to this one, so the move is not abrupt.
+        smoothScroll: false,
         allowClose: true,
         onPopoverRender: (pop, { index }) => controls(pop, index ?? 0),
-        onHighlighted: (_el, _step, { index }) => speak(index ?? 0),
-        onDeselected: () => stop(),
-        onDestroyed: () => stop(),
+        // A tall panel goes to the top of the screen, not its middle. Centred,
+        // the weather on a phone leaves less room beneath it than the tour's
+        // own card needs, and the card then sat on the thing it was describing.
+        // (Where the page cannot scroll that far, driver.js centres it as before.)
+        onHighlightStarted: (el) => {
+          const r = el?.getBoundingClientRect()
+          if (r && r.height > window.innerHeight * 0.4) window.scrollBy(0, r.top - 16)
+        },
+        onHighlighted: (el, _step, { index }) => { if (el) watch.observe(el); speak(index ?? 0) },
+        onDeselected: (el) => { if (el) watch.unobserve(el); stop() },
+        onDestroyed: () => { watch.disconnect(); window.removeEventListener('resize', settle); stop() },
+        // Spray check and Alerts open their own screens when tapped, and the
+        // steps before them are about Home. Back from there used to wait five
+        // seconds on each card that was no longer on screen and skip it, all
+        // the way to the welcome; now it goes back to Home first.
+        onPrevClick: () => {
+          const d = tour.current
+          const before = TOUR_STEPS[(d?.getActiveIndex() ?? 0) - 1]
+          if (before?.target && !drawn(before.target) && where.current !== '/app' && where.current !== '/app/') navigate('/app')
+          d?.movePrevious()
+        },
       })
       tour.current.drive()
     }

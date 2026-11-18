@@ -14,16 +14,18 @@ export interface TourStep {
   tap?: boolean
 }
 
+// In the order the cards come down the Home screen, so the spotlight walks
+// the page once from the top instead of jumping down to the weather and back.
 export const TOUR_STEPS: TourStep[] = [
   { id: 'welcome' },
   { id: 'farm', target: 'farm', side: 'bottom' },
-  { id: 'weather', target: 'weather', side: 'bottom' },
-  { id: 'live', target: 'live', side: 'top' },
   { id: 'scan', target: 'scan', side: 'top' },
-  { id: 'checks', target: 'checks', side: 'top' },
+  { id: 'live', target: 'live', side: 'top' },
+  { id: 'weather', target: 'weather', side: 'bottom' },
+  { id: 'checks', target: 'checks', side: 'bottom' },
   { id: 'spray', target: 'nav-spray', tap: true },
   { id: 'alerts', target: 'nav-alerts', tap: true },
-  { id: 'krishi', target: 'krishi', side: 'left' },
+  { id: 'krishi', target: 'krishi', side: 'top' },
   { id: 'lang', target: 'lang', side: 'bottom' },
   { id: 'done' },
 ]
