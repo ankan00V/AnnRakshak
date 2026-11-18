@@ -1759,19 +1759,25 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Gather and destroy the flowers webbed shut every week; terminate the crop by December and graze or shred the stalks."
+     "en": "Gather and destroy the flowers webbed shut every week; terminate the crop by December and graze or shred the stalks.",
+     "hi": "हर हफ़्ते जाले से बंद हुए फूल इकट्ठा करके नष्ट करें; दिसंबर तक फसल खत्म कर दें और डंठलों को पशुओं से चरवा दें या बारीक काट दें।",
+     "mr": "दर आठवड्याला जाळ्याने बंद झालेली फुले गोळा करून नष्ट करा; डिसेंबरपर्यंत पीक संपवा आणि पऱ्हाट्या जनावरांना चारा किंवा बारीक तुकडे करा."
     }
    },
    {
     "tier": "cultural",
     "action": {
-     "en": "Install pheromone traps at 5 per hectare from 45 days after sowing to watch moth numbers."
+     "en": "Install pheromone traps at 5 per hectare from 45 days after sowing to watch moth numbers.",
+     "hi": "पतंगों की संख्या पर नज़र रखने के लिए बुवाई के 45 दिन बाद से प्रति हेक्टेयर 5 फेरोमोन ट्रैप लगाएँ।",
+     "mr": "पतंगांची संख्या पाहण्यासाठी पेरणीनंतर 45 दिवसांपासून हेक्टरी 5 कामगंध सापळे लावा."
     }
    },
    {
     "tier": "biological",
     "action": {
-     "en": "Release Trichogramma bactrae egg parasitoids at 1.5 lakh per hectare; use pheromone-based mating disruption where available."
+     "en": "Release Trichogramma bactrae egg parasitoids at 1.5 lakh per hectare; use pheromone-based mating disruption where available.",
+     "hi": "प्रति हेक्टेयर 1.5 लाख ट्राइकोग्रामा बैक्ट्री अंड परजीवी छोड़ें; जहाँ उपलब्ध हो, फेरोमोन से मिलन-बाधा विधि अपनाएँ।",
+     "mr": "हेक्टरी 1.5 लाख ट्रायकोग्रामा बॅक्ट्री अंडी-परोपजीवी सोडा; उपलब्ध असल्यास कामगंधावर आधारित मीलन-अडथळा पद्धत वापरा."
     }
    },
    {
@@ -1782,7 +1788,9 @@
     "water_l_per_acre": 200,
     "verified": true,
     "timing": {
-     "en": "Only after the threshold is crossed."
+     "en": "Only after the threshold is crossed.",
+     "hi": "केवल आर्थिक सीमा पार होने के बाद ही।",
+     "mr": "फक्त आर्थिक नुकसान पातळी ओलांडल्यानंतरच."
     },
     "registration": {
      "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
@@ -1801,7 +1809,9 @@
     "water_l_per_acre": 200,
     "verified": true,
     "timing": {
-     "en": "Rotate with profenofos; do not repeat the same ingredient."
+     "en": "Rotate with profenofos; do not repeat the same ingredient.",
+     "hi": "प्रोफेनोफॉस के साथ बदल-बदल कर इस्तेमाल करें; एक ही दवा दोबारा न दोहराएँ।",
+     "mr": "प्रोफेनोफॉससोबत आलटून-पालटून वापरा; तेच औषध पुन्हा वापरू नका."
     },
     "registration": {
      "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
@@ -1814,7 +1824,9 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if more than 10% of green bolls carry larvae."
+   "en": "Call an expert if more than 10% of green bolls carry larvae.",
+   "hi": "अगर 10% से ज़्यादा हरे टिंडों में इल्लियाँ हों तो विशेषज्ञ को बुलाएँ।",
+   "mr": "10% पेक्षा जास्त हिरव्या बोंडांमध्ये अळ्या असल्यास तज्ज्ञांना बोलवा."
   },
   "citations": [
    {
@@ -1868,13 +1880,17 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Grow a border of marigold or maize as a trap crop; set bird perches (10 per acre)."
+     "en": "Grow a border of marigold or maize as a trap crop; set bird perches (10 per acre).",
+     "hi": "फँसाऊ फसल के रूप में खेत की मेड़ पर गेंदा या मक्का लगाएँ; पक्षियों के बैठने के लिए ठिकाने लगाएँ (प्रति एकड़ 10)।",
+     "mr": "सापळा पीक म्हणून बांधावर झेंडू किंवा मका लावा; पक्ष्यांसाठी बसण्याचे थांबे लावा (एकरी 10)."
     }
    },
    {
     "tier": "biological",
     "action": {
-     "en": "Spray HaNPV at 250 larval equivalents per hectare in the evening, or neem seed kernel extract 5%."
+     "en": "Spray HaNPV at 250 larval equivalents per hectare in the evening, or neem seed kernel extract 5%.",
+     "hi": "शाम को प्रति हेक्टेयर 250 लार्वल इक्विवेलेंट HaNPV छिड़कें, या 5% नीम बीज गिरी अर्क।",
+     "mr": "संध्याकाळी हेक्टरी 250 अळी-समतुल्य HaNPV फवारा, किंवा 5% निंबोळी अर्क."
     }
    },
    {
@@ -1885,7 +1901,9 @@
     "water_l_per_acre": 200,
     "verified": true,
     "timing": {
-     "en": "Only after the threshold is crossed."
+     "en": "Only after the threshold is crossed.",
+     "hi": "केवल आर्थिक सीमा पार होने के बाद ही।",
+     "mr": "फक्त आर्थिक नुकसान पातळी ओलांडल्यानंतरच."
     },
     "registration": {
      "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
@@ -1904,7 +1922,9 @@
     "water_l_per_acre": 250,
     "verified": true,
     "timing": {
-     "en": "Rotate with emamectin."
+     "en": "Rotate with emamectin.",
+     "hi": "इमामेक्टिन के साथ बदल-बदल कर इस्तेमाल करें।",
+     "mr": "इमामेक्टिनसोबत आलटून-पालटून वापरा."
     },
     "registration": {
      "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
@@ -1917,7 +1937,9 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if more than 10% of squares and bolls are bored."
+   "en": "Call an expert if more than 10% of squares and bolls are bored.",
+   "hi": "अगर 10% से ज़्यादा कलियों और टिंडों में छेद हों तो विशेषज्ञ को बुलाएँ।",
+   "mr": "10% पेक्षा जास्त पाते व बोंडांना छिद्रे असल्यास तज्ज्ञांना बोलवा."
   },
   "citations": [
    {
@@ -2016,13 +2038,17 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Put up yellow sticky traps (10 per acre) at the height of the crop; remove weed hosts around the field."
+     "en": "Put up yellow sticky traps (10 per acre) at the height of the crop; remove weed hosts around the field.",
+     "hi": "फसल की ऊँचाई पर पीले चिपचिपे ट्रैप लगाएँ (प्रति एकड़ 10); खेत के आसपास के खरपतवार हटाएँ जिन पर कीट पलते हैं।",
+     "mr": "पिकाच्या उंचीवर पिवळे चिकट सापळे लावा (एकरी 10); शेताभोवतीची किडीला आश्रय देणारी तणे काढा."
     }
    },
    {
     "tier": "biological",
     "action": {
-     "en": "Spray neem oil at 5 ml per litre, or Lecanicillium lecanii at 5 g per litre in humid weather."
+     "en": "Spray neem oil at 5 ml per litre, or Lecanicillium lecanii at 5 g per litre in humid weather.",
+     "hi": "नीम का तेल 5 मिली प्रति लीटर छिड़कें, या नम मौसम में लेकानिसिलियम लेकानी 5 ग्राम प्रति लीटर।",
+     "mr": "निंबोळी तेल 5 मिली प्रति लिटर फवारा, किंवा दमट हवामानात लेकॅनिसिलियम लेकॅनी 5 ग्रॅम प्रति लिटर."
     }
    },
    {
@@ -2033,7 +2059,9 @@
     "water_l_per_acre": 200,
     "verified": true,
     "timing": {
-     "en": "Only after the threshold is crossed; acts on eggs and young hoppers."
+     "en": "Only after the threshold is crossed; acts on eggs and young hoppers.",
+     "hi": "केवल आर्थिक सीमा पार होने के बाद ही; यह अंडों और छोटे कीटों पर असर करता है।",
+     "mr": "फक्त आर्थिक नुकसान पातळी ओलांडल्यानंतरच; हे अंडी व लहान किडींवर काम करते."
     },
     "registration": {
      "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
@@ -2052,7 +2080,9 @@
     "water_l_per_acre": 200,
     "verified": true,
     "timing": {
-     "en": "Alternative; rotate, never repeat back to back."
+     "en": "Alternative; rotate, never repeat back to back.",
+     "hi": "विकल्प; बदल-बदल कर इस्तेमाल करें, लगातार दो बार कभी न दोहराएँ।",
+     "mr": "पर्याय; आलटून-पालटून वापरा, सलग दोनदा कधीही वापरू नका."
     },
     "registration": {
      "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
@@ -2065,7 +2095,9 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if leaves turn black with sooty mould or leaf curl spreads."
+   "en": "Call an expert if leaves turn black with sooty mould or leaf curl spreads.",
+   "hi": "अगर पत्तियाँ काली फफूँद से काली पड़ें या पत्ती मरोड़ फैले तो विशेषज्ञ को बुलाएँ।",
+   "mr": "पाने काजळीसारख्या बुरशीने काळी पडल्यास किंवा पर्णगुच्छ (पाने आकसणे) पसरल्यास तज्ज्ञांना बोलवा."
   },
   "citations": [
    {
@@ -2149,13 +2181,17 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Grow hairy-leaved, jassid-tolerant varieties; avoid excess nitrogen and close spacing."
+     "en": "Grow hairy-leaved, jassid-tolerant varieties; avoid excess nitrogen and close spacing.",
+     "hi": "रोएँदार पत्ती वाली, जैसिड-सहनशील किस्में उगाएँ; ज़्यादा नाइट्रोजन और घनी बुवाई से बचें।",
+     "mr": "केसाळ पानांचे, तुडतुडे-सहनशील वाण लावा; जास्त नत्र व दाट लागवड टाळा."
     }
    },
    {
     "tier": "biological",
     "action": {
-     "en": "Spray neem oil at 5 ml per litre; conserve lacewings and ladybird beetles."
+     "en": "Spray neem oil at 5 ml per litre; conserve lacewings and ladybird beetles.",
+     "hi": "नीम का तेल 5 मिली प्रति लीटर छिड़कें; लेसविंग और लेडीबर्ड भृंगों को बचाएँ।",
+     "mr": "निंबोळी तेल 5 मिली प्रति लिटर फवारा; क्रायसोपा (लेसविंग) व लेडीबर्ड भुंगे वाचवा."
     }
    },
    {
@@ -2166,7 +2202,9 @@
     "water_l_per_acre": 200,
     "verified": true,
     "timing": {
-     "en": "Only after the threshold is crossed."
+     "en": "Only after the threshold is crossed.",
+     "hi": "केवल आर्थिक सीमा पार होने के बाद ही।",
+     "mr": "फक्त आर्थिक नुकसान पातळी ओलांडल्यानंतरच."
     },
     "registration": {
      "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
@@ -2179,7 +2217,9 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if leaves turn reddish-brown and dry across the field."
+   "en": "Call an expert if leaves turn reddish-brown and dry across the field.",
+   "hi": "अगर पूरे खेत में पत्तियाँ लाल-भूरी होकर सूखने लगें तो विशेषज्ञ को बुलाएँ।",
+   "mr": "संपूर्ण शेतात पाने लालसर-तपकिरी होऊन सुकू लागल्यास तज्ज्ञांना बोलवा."
   },
   "citations": [
    {
@@ -2243,7 +2283,9 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Pull out infected plants early and bury them in a pit; put up yellow sticky traps; grow YMV-resistant varieties next season."
+     "en": "Pull out infected plants early and bury them in a pit; put up yellow sticky traps; grow YMV-resistant varieties next season.",
+     "hi": "संक्रमित पौधों को जल्दी उखाड़कर गड्ढे में दबा दें; पीले चिपचिपे ट्रैप लगाएँ; अगले मौसम में पीला मोज़ेक प्रतिरोधी किस्में उगाएँ।",
+     "mr": "बाधित झाडे लवकर उपटून खड्ड्यात पुरा; पिवळे चिकट सापळे लावा; पुढील हंगामात पिवळा मोझॅक प्रतिकारक वाण लावा."
     }
    },
    {
@@ -2254,7 +2296,9 @@
     "water_l_per_acre": 200,
     "verified": true,
     "timing": {
-     "en": "Against the whiteflies that spread it only, when whiteflies are seen."
+     "en": "Against the whiteflies that spread it only, when whiteflies are seen.",
+     "hi": "केवल इसे फैलाने वाली सफेद मक्खी के विरुद्ध, जब सफेद मक्खी दिखे।",
+     "mr": "फक्त हा रोग पसरवणाऱ्या पांढऱ्या माशीविरुद्ध, पांढरी माशी दिसल्यावर."
     },
     "registration": {
      "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
@@ -2267,7 +2311,9 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if more than 5% of plants show mosaic before flowering."
+   "en": "Call an expert if more than 5% of plants show mosaic before flowering.",
+   "hi": "अगर फूल आने से पहले 5% से ज़्यादा पौधों में मोज़ेक दिखे तो विशेषज्ञ को बुलाएँ।",
+   "mr": "फुलोऱ्यापूर्वी 5% पेक्षा जास्त झाडांवर मोझॅक दिसल्यास तज्ज्ञांना बोलवा."
   },
   "citations": [
    {
@@ -2314,7 +2360,9 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Cut and destroy girdled plant parts every few days; plough deep in summer."
+     "en": "Cut and destroy girdled plant parts every few days; plough deep in summer.",
+     "hi": "हर कुछ दिनों में चक्र भृंग से कटे पौधों के हिस्से काटकर नष्ट करें; गर्मी में गहरी जुताई करें।",
+     "mr": "दर काही दिवसांनी चक्रभुंग्याने कापलेले झाडांचे भाग कापून नष्ट करा; उन्हाळ्यात खोल नांगरट करा."
     }
    },
    {
@@ -2335,7 +2383,9 @@
     "water_l_per_acre": 200,
     "verified": true,
     "timing": {
-     "en": "At first girdling, before flowering."
+     "en": "At first girdling, before flowering.",
+     "hi": "पहली बार चक्र (गर्डलिंग) दिखते ही, फूल आने से पहले।",
+     "mr": "पहिले चक्र (गर्डलिंग) दिसताच, फुलोऱ्यापूर्वी."
     },
     "registration": {
      "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
@@ -2354,7 +2404,9 @@
     "water_l_per_acre": 200,
     "verified": true,
     "timing": {
-     "en": "Alternative; also controls defoliating caterpillars."
+     "en": "Alternative; also controls defoliating caterpillars.",
+     "hi": "विकल्प; यह पत्ते खाने वाली इल्लियों को भी नियंत्रित करता है।",
+     "mr": "पर्याय; पाने खाणाऱ्या अळ्यांचेही नियंत्रण करते."
     },
     "registration": {
      "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
@@ -2367,7 +2419,9 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if more than 10% of plants are girdled."
+   "en": "Call an expert if more than 10% of plants are girdled.",
+   "hi": "अगर 10% से ज़्यादा पौधे चक्र भृंग से कटे हों तो विशेषज्ञ को बुलाएँ।",
+   "mr": "10% पेक्षा जास्त झाडे चक्रभुंग्याने बाधित असल्यास तज्ज्ञांना बोलवा."
   },
   "citations": [
    {
@@ -2394,13 +2448,17 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Pluck and destroy leaves carrying egg masses or larval groups; set pheromone traps at 5 per acre."
+     "en": "Pluck and destroy leaves carrying egg masses or larval groups; set pheromone traps at 5 per acre.",
+     "hi": "अंडों के गुच्छे या इल्लियों के झुंड वाली पत्तियाँ तोड़कर नष्ट करें; प्रति एकड़ 5 फेरोमोन ट्रैप लगाएँ।",
+     "mr": "अंडीपुंज किंवा अळ्यांचे समूह असलेली पाने तोडून नष्ट करा; एकरी 5 कामगंध सापळे लावा."
     }
    },
    {
     "tier": "biological",
     "action": {
-     "en": "Spray SlNPV at 250 larval equivalents per hectare or Bacillus thuringiensis in the evening."
+     "en": "Spray SlNPV at 250 larval equivalents per hectare or Bacillus thuringiensis in the evening.",
+     "hi": "शाम को प्रति हेक्टेयर 250 लार्वल इक्विवेलेंट SlNPV या बैसिलस थुरिंजिएंसिस छिड़कें।",
+     "mr": "संध्याकाळी हेक्टरी 250 अळी-समतुल्य SlNPV किंवा बॅसिलस थुरिंजिएन्सिस फवारा."
     }
    },
    {
@@ -2411,7 +2469,9 @@
     "water_l_per_acre": 200,
     "verified": true,
     "timing": {
-     "en": "When larvae exceed about 4 per metre of row."
+     "en": "When larvae exceed about 4 per metre of row.",
+     "hi": "जब कतार के प्रति मीटर लगभग 4 से ज़्यादा इल्लियाँ हों।",
+     "mr": "जेव्हा ओळीच्या प्रति मीटरमध्ये सुमारे 4 पेक्षा जास्त अळ्या असतील."
     },
     "registration": {
      "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
@@ -2424,7 +2484,9 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if defoliation passes 30% before pod filling."
+   "en": "Call an expert if defoliation passes 30% before pod filling.",
+   "hi": "अगर फली भरने से पहले 30% से ज़्यादा पत्ते झड़ जाएँ तो विशेषज्ञ को बुलाएँ।",
+   "mr": "शेंगा भरण्यापूर्वी 30% पेक्षा जास्त पाने गळाल्यास तज्ज्ञांना बोलवा."
   },
   "citations": [
    {
@@ -2488,7 +2550,9 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Grow rust-tolerant varieties and sow early to escape late-season rust."
+     "en": "Grow rust-tolerant varieties and sow early to escape late-season rust.",
+     "hi": "गेरुई-सहनशील किस्में उगाएँ और देर से आने वाली गेरुई से बचने के लिए जल्दी बुवाई करें।",
+     "mr": "तांबेरा-सहनशील वाण लावा आणि हंगामाच्या शेवटी येणारा तांबेरा टाळण्यासाठी लवकर पेरणी करा."
     }
    },
    {
@@ -2499,7 +2563,9 @@
     "water_l_per_acre": 200,
     "verified": true,
     "timing": {
-     "en": "At first pustules; repeat after 15 days if weather stays wet."
+     "en": "At first pustules; repeat after 15 days if weather stays wet.",
+     "hi": "पहले फफोले दिखते ही; अगर मौसम नम बना रहे तो 15 दिन बाद दोहराएँ।",
+     "mr": "पहिले फोड दिसताच; हवामान ओलसर राहिल्यास 15 दिवसांनी पुन्हा करा."
     },
     "registration": {
      "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
@@ -2518,7 +2584,9 @@
     "water_l_per_acre": 200,
     "verified": true,
     "timing": {
-     "en": "Alternative to propiconazole."
+     "en": "Alternative to propiconazole.",
+     "hi": "प्रोपिकोनाज़ोल का विकल्प।",
+     "mr": "प्रोपिकोनाझोलला पर्याय."
     },
     "registration": {
      "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
@@ -2531,7 +2599,9 @@
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if raised rust spots reach the top leaves at pod filling."
+   "en": "Call an expert if raised rust spots reach the top leaves at pod filling.",
+   "hi": "अगर फली भरने के समय उभरे गेरुई धब्बे ऊपर की पत्तियों तक पहुँच जाएँ तो विशेषज्ञ को बुलाएँ।",
+   "mr": "शेंगा भरताना उठावदार तांबेरा ठिपके वरच्या पानांपर्यंत पोहोचल्यास तज्ज्ञांना बोलवा."
   },
   "citations": [
    {
@@ -3642,7 +3712,7 @@
     "water_l_per_acre": 200,
     "verified": true,
     "timing": {
-     "en": "Only if more than 1 in 4 leaves is scraped and the crop is still tillering.",
+     "en": "Only if more than 1 in 4 leaves is scraped and the crop is still putting out new shoots.",
      "hi": "तभी जब हर 4 में से 1 से ज़्यादा पत्ती खुरची हो और फसल अभी कल्ले फूट रही हो।",
      "mr": "दर 4 पैकी 1 पेक्षा जास्त पाने खरवडली असतील आणि पीक अजून फुटवे अवस्थेत असेल तरच."
     },

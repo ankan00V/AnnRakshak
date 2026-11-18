@@ -1,4 +1,5 @@
 import Reveal from '../ui/Reveal'
+import { useFarmer } from '../farmer/FarmerContext'
 import FootageBackdrop from '../ui/FootageBackdrop'
 
 /** One rice field's season, in the team's own footage from the ground (and a
@@ -9,23 +10,23 @@ import FootageBackdrop from '../ui/FootageBackdrop'
  *  in the photograph. Day 126 is the harvest the phenology model predicted
  *  for a real rice field sown on 13 July, from that field's own weather. */
 const SEASON = [
-  { video: '/footage/new-season.mp4', img: '/footage/new-season-poster.webp', pos: 'object-[62%_55%]', day: 'Day 1', stage: 'Sowing', line: 'The day it goes in, the count starts.' },
-  { video: '', img: '/field/rice.webp', pos: 'object-center', day: 'Day 41', stage: 'Tillering', line: 'Told where to look, before anything shows.' },
-  { video: '/footage/field.mp4', img: '/footage/field-poster.webp', pos: 'object-[52%_50%]', day: 'Day 126', stage: 'Harvest', line: 'A harvest date worked out, not guessed.' },
-  { video: '/footage/baling.mp4', img: '/footage/baling-poster.webp', pos: 'object-[45%_60%]', day: '', stage: 'After harvest', line: 'The season closes, and is kept.' },
+  { video: '/footage/new-season.mp4', img: '/footage/new-season-poster.webp', pos: 'object-[62%_55%]', day: 1, stage: 'landSowing', line: 'landSowingLine' },
+  { video: '', img: '/field/rice.webp', pos: 'object-center', day: 41, stage: 'landTillering', line: 'landTilleringLine' },
+  { video: '/footage/field.mp4', img: '/footage/field-poster.webp', pos: 'object-[52%_50%]', day: 126, stage: 'landHarvest', line: 'landHarvestLine' },
+  { video: '/footage/baling.mp4', img: '/footage/baling-poster.webp', pos: 'object-[45%_60%]', day: 0, stage: 'landAfterHarvest', line: 'landAfterHarvestLine' },
 ]
 
 export default function InTheField() {
+  const { t } = useFarmer()
   return (
     <section id="in-the-field" className="w-full bg-[#f6f1e6] text-[#1f3a26]">
       <div className="mx-auto grid max-w-[1720px] gap-10 px-6 py-14 md:px-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,3fr)] lg:items-center lg:gap-[3vw] lg:px-[7vw] lg:py-[clamp(48px,4vw,80px)]">
         <Reveal>
           <h2 className="font-display text-[34px] leading-[1.08] tracking-[-0.01em] text-balance lg:text-[clamp(28px,2.35vw,46px)]">
-            By the time you can see it, it has already spread.
+            {t('landFieldTitle')}
           </h2>
           <p className="mt-4 text-[15px] leading-relaxed text-[#3d4a40] text-pretty lg:mt-[1.2vw] lg:text-[clamp(13px,0.95vw,17px)]">
-            A leaf disease spreads for 3–7 days before anyone notices. So AnnRakshak watches each
-            field from the day it is sown.
+            {t('landFieldSub')}
           </p>
         </Reveal>
 
@@ -44,9 +45,9 @@ export default function InTheField() {
                   </div>
                   <figcaption className="px-4 pb-4 pt-3 lg:px-[1.1vw] lg:pb-[1.1vw] lg:pt-[0.8vw]">
                     <p className="text-[14px] font-semibold lg:text-[clamp(13px,0.95vw,17px)]">
-                      {day && <span className="text-[#9a6210]">{day} · </span>}{stage}
+                      {day > 0 && <span className="text-[#9a6210]">{t('landDay').replace('{n}', String(day))} · </span>}{t(stage)}
                     </p>
-                    <p className="mt-1 text-[13px] leading-snug text-[#55615a] lg:text-[clamp(12px,0.85vw,15px)]">{line}</p>
+                    <p className="mt-1 text-[13px] leading-snug text-[#55615a] lg:text-[clamp(12px,0.85vw,15px)]">{t(line)}</p>
                   </figcaption>
                 </figure>
               </li>

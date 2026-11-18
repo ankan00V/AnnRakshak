@@ -10,20 +10,21 @@ import { useFarmer } from './farmer/FarmerContext'
 const EASE = 'ease-[cubic-bezier(0.76,0,0.24,1)]'
 
 const NAV_ITEMS = [
-  { label: 'How It Works', id: 'how-it-works' },
-  { label: 'Features', id: 'features' },
-  { label: 'Impact', id: 'impact' },
-  { label: 'For Officials', id: 'for-officials' },
+  { label: 'landNavHow', id: 'how-it-works' },
+  { label: 'landNavFeatures', id: 'features' },
+  { label: 'landNavImpact', id: 'impact' },
+  { label: 'landNavOfficials', id: 'for-officials' },
 ]
 
-const MENU_ITEMS = [...NAV_ITEMS, { label: 'Contact', id: 'contact' }]
+const MENU_ITEMS = [...NAV_ITEMS, { label: 'landNavContact', id: 'contact' }]
 
 function Hamburger({ open, onClick }: { open: boolean; onClick: () => void }) {
+  const { t } = useFarmer()
   const line = `block h-[2px] rounded-full bg-white transition-all duration-500 ${EASE}`
   return (
     <button
       onClick={onClick}
-      aria-label="Open menu"
+      aria-label={t('landOpenMenu')}
       aria-expanded={open}
       className="flex flex-col gap-[5px] p-2 -m-2 xl:hidden"
     >
@@ -55,14 +56,14 @@ export default function Navbar() {
             <span className="rounded-full bg-white p-[3px] shadow-sm"><BrandMark size={38} /></span>
             <span className="leading-tight">
               <span className="block text-[18px] font-semibold tracking-tight">AnnRakshak</span>
-              <span className="block text-[11px] text-white/75">Together for Healthy Crops</span>
+              <span className="block text-[11px] text-white/75">{t('landTagline')}</span>
             </span>
           </span>
           <div className="hidden items-center gap-8 xl:flex 2xl:gap-10">
             {NAV_ITEMS.map(({ label, id }) => (
               <button key={id} onClick={() => smoothScrollTo(id)}
                 className="whitespace-nowrap text-[14px] font-medium text-white/85 transition-colors [text-shadow:0_1px_10px_rgba(0,0,0,0.55)] hover:text-white">
-                {label}
+                {t(label)}
               </button>
             ))}
           </div>
@@ -108,7 +109,7 @@ export default function Navbar() {
             </span>
             <button
               onClick={() => setOpen(false)}
-              aria-label="Close menu"
+              aria-label={t('landCloseMenu')}
               className="flex flex-col gap-[5px] p-2 -m-2"
             >
               <span
@@ -130,7 +131,7 @@ export default function Navbar() {
                   open ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
                 }`}
               >
-                {label}
+                {t(label)}
               </button>
             ))}
           </nav>

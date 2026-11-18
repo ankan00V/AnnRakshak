@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Play, X } from 'lucide-react'
 import Navbar from './Navbar'
+import { useFarmer } from './farmer/FarmerContext'
 import { BellSolid, LeafSolid, SprayBottleSolid, SunSolid } from './ui/SolidIcons'
 
 /** The first screen: who it is for, what it does, and the app doing it.
@@ -14,6 +15,11 @@ import { BellSolid, LeafSolid, SprayBottleSolid, SunSolid } from './ui/SolidIcon
  */
 export default function Hero() {
   const [video, setVideo] = useState(false)
+  const { t, lang } = useFarmer()
+  // The emphasised word is found inside the translated title; where a language
+  // puts it elsewhere or words it differently, the title is shown plain.
+  const title = t('landHeroTitle'), emph = t('landHeroEmph')
+  const at = title.lastIndexOf(emph)
   return (
     <>
       <section className="relative w-full overflow-hidden bg-[#10301b]">
@@ -42,30 +48,30 @@ export default function Hero() {
           <div className="mx-auto max-w-[1720px] px-6 pb-32 pt-6 md:px-12 lg:px-[7vw] lg:pb-[clamp(130px,11vw,210px)] lg:pt-[clamp(32px,3.2vw,64px)]">
             <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:w-[46%] lg:max-w-none lg:text-left">
               <h1 className="font-display text-[40px] leading-[1.04] tracking-[-0.01em] text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.25)] sm:text-[54px] lg:text-[clamp(44px,4.15vw,80px)]">
-                Crop and Pest <br className="hidden sm:block" />
-                Detection for Every{' '}
-                <span className="relative inline-block pr-1 italic text-[#f0c060]">
-                  Farmer
+                {lang === 'en' ? <>Crop and Pest <br className="hidden sm:block" />Detection for Every{' '}</> : at > 0 ? title.slice(0, at) : at < 0 ? title : ''}
+                {(lang === 'en' || at >= 0) && <span className="relative inline-block pr-1 italic text-[#f0c060]">
+                  {lang === 'en' ? 'Farmer' : emph}
                   {/* A brush stroke: heavy under the word, thinning out to the right. */}
                   <svg aria-hidden viewBox="0 0 400 34" className="absolute -bottom-[0.3em] left-[2%] w-[105%] lg:w-[150%]" fill="#e8b450">
                     <path d="M4 27 C 50 20, 120 15, 200 14 C 280 13, 350 9, 398 2 C 352 13, 284 19, 204 20.5 C 130 22, 60 25.5, 4 27 Z" />
                   </svg>
-                </span>
+                </span>}
+                {lang !== 'en' && at >= 0 && title.slice(at + emph.length)}
               </h1>
               <p className="mx-auto mt-9 max-w-xl text-[17px] leading-relaxed text-white/90 lg:mx-0 lg:mt-[clamp(26px,2.2vw,40px)] lg:max-w-[33vw] lg:text-[clamp(15px,1.12vw,20px)] lg:leading-[1.6]">
-                We help farmers catch crop disease and pest damage early and protect every harvest before it&apos;s too late.
+                {t('landHeroSub')}
               </p>
               <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row lg:mt-[clamp(22px,1.9vw,36px)] lg:justify-start lg:gap-[1.2vw]">
                 <Link to="/app"
                   className="group inline-flex min-h-[52px] items-center gap-2 rounded-full bg-[#f6e3b4] px-8 text-[17px] font-semibold text-[#173a22] shadow-[0_14px_30px_-14px_rgba(0,0,0,0.6)] transition hover:bg-[#f9ebc8]
                              lg:min-h-[clamp(46px,3.35vw,60px)] lg:px-[clamp(22px,2vw,36px)] lg:text-[clamp(15px,1.05vw,18px)]">
-                  See It Detect <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                  {t('landSeeIt')} <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" aria-hidden />
                 </Link>
                 <button onClick={() => setVideo(true)}
                   className="inline-flex min-h-[52px] items-center gap-3 rounded-full border border-white/70 bg-black/10 px-7 text-[17px] font-semibold text-white backdrop-blur-[2px] transition hover:bg-white/10
                              lg:min-h-[clamp(46px,3.35vw,60px)] lg:px-[clamp(18px,1.6vw,30px)] lg:text-[clamp(15px,1.05vw,18px)]">
                   <span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/80"><Play className="h-4 w-4 fill-white" aria-hidden /></span>
-                  Watch Demo
+                  {t('landWatchDemo')}
                 </button>
               </div>
             </div>
@@ -81,7 +87,7 @@ export default function Hero() {
             <path d="M30 4 C 26 16, 20 26, 10 36" /><path d="M54 22 C 44 28, 34 32, 22 40" />
           </svg>
           <img src="/photos/hero-phone.webp" width={911} height={1513}
-            alt="The AnnRakshak Scan screen on a phone: photograph a sick plant, open the camera"
+            alt={t('landHeroAlt')}
             className="block h-full w-auto max-w-none rotate-[4deg] drop-shadow-[0_30px_40px_rgba(0,0,0,0.35)]" />
         </div>
 
@@ -112,11 +118,12 @@ export default function Hero() {
 
 /** The four everyday jobs, on the seam between the field and the page. */
 function FeatureStrip() {
+  const { t } = useFarmer()
   const items = [
-    [LeafSolid, 'Scan Crops', 'Detect diseases instantly', 'bg-[#e4eedb]'],
-    [SprayBottleSolid, 'Spray Check', 'Ensure safe usage', 'bg-[#e4eedb]'],
-    [SunSolid, 'Check Weather', 'Plan better, grow smarter', ''],
-    [BellSolid, 'Get Alerts', 'Stay informed', 'bg-[#e4eedb]'],
+    [LeafSolid, t('landFScan'), t('landFScanSub'), 'bg-[#e4eedb]'],
+    [SprayBottleSolid, t('landFSpray'), t('landFSpraySub'), 'bg-[#e4eedb]'],
+    [SunSolid, t('landFWeather'), t('landFWeatherSub'), ''],
+    [BellSolid, t('landFAlerts'), t('landFAlertsSub'), 'bg-[#e4eedb]'],
   ] as const
   return (
     <div className="relative z-20 -mt-6 bg-[#f6f1e6] px-4 md:px-12 lg:-mt-[2px] lg:px-[7vw] lg:pt-[0.6vw]">
@@ -142,6 +149,7 @@ function FeatureStrip() {
 /** The launch film, played over the page. */
 
 function DemoVideo({ onClose }: { onClose: () => void }) {
+  const { t } = useFarmer()
   const ref = useRef<HTMLButtonElement>(null)
   useEffect(() => {
     ref.current?.focus()
@@ -152,9 +160,9 @@ function DemoVideo({ onClose }: { onClose: () => void }) {
     return () => { window.removeEventListener('keydown', esc); document.body.style.overflow = before }
   }, [onClose])
   return (
-    <div role="dialog" aria-modal="true" aria-label="AnnRakshak demo video" onClick={onClose}
+    <div role="dialog" aria-modal="true" aria-label={t('landVideoLabel')} onClick={onClose}
       className="fixed inset-0 z-[80] flex items-center justify-center bg-black/85 p-4 animate-fadein">
-      <button ref={ref} onClick={onClose} aria-label="Close video"
+      <button ref={ref} onClick={onClose} aria-label={t('landCloseVideo')}
         className="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25">
         <X className="h-6 w-6" />
       </button>

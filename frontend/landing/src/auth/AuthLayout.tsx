@@ -42,7 +42,7 @@ function useCopy() {
 }
 
 function Frame() {
-  const { setLang } = useFarmer()
+  const { setLang, t } = useFarmer()
   const { me, loading } = useAuth()
   const [params] = useSearchParams()
   const { pathname } = useLocation()
@@ -77,7 +77,7 @@ function Frame() {
           <span className="rounded-full bg-white p-[3px] shadow-sm"><BrandMark size={34} /></span>
           <span className="leading-tight">
             <span className="block text-[17px] font-semibold tracking-tight">AnnRakshak</span>
-            <span className="hidden text-[11px] text-cream/75 sm:block">Together for Healthy Crops</span>
+            <span className="hidden text-[11px] text-cream/75 sm:block">{t('landTagline')}</span>
           </span>
         </Link>
         <div className="flex items-center gap-2">

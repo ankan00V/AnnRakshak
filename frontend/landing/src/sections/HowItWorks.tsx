@@ -1,4 +1,5 @@
 import { ArrowRight } from 'lucide-react'
+import { useFarmer } from '../farmer/FarmerContext'
 import Reveal from '../ui/Reveal'
 
 /** How it works, shown with the app itself: three real screens, in order —
@@ -8,21 +9,21 @@ import Reveal from '../ui/Reveal'
 const STEPS = [
   {
     src: '/photos/phone-scan.webp',
-    alt: 'The scan screen: a camera frame to fill with the sick leaf, with buttons to open the camera or choose from the gallery',
-    title: 'Take a photo',
-    line: 'Point the camera at the sick leaf, in daylight. No typing, no forms.',
+    alt: 'landStep1Alt',
+    title: 'landStep1',
+    line: 'landStep1Line',
   },
   {
     src: '/photos/phone-result.webp',
-    alt: 'The answer: a rice panicle with where the AI looked, named False smut, 97% sure',
-    title: 'See what it is',
-    line: 'It names the disease, marks where it looked, and says how sure it is.',
+    alt: 'landStep2Alt',
+    title: 'landStep2',
+    line: 'landStep2Line',
   },
   {
     src: '/photos/phone-treat.webp',
-    alt: 'The treatment: what not to do, with a listen button, then the safest field practice first and the chemical only on request',
-    title: 'Treat it safely',
-    line: 'What not to do, then the safest step first. Chemicals only if it keeps spreading.',
+    alt: 'landStep3Alt',
+    title: 'landStep3',
+    line: 'landStep3Line',
   },
 ]
 
@@ -42,6 +43,7 @@ function Leaf({ className = '' }: { className?: string }) {
 }
 
 export default function HowItWorks() {
+  const { t } = useFarmer()
   return (
     <section id="how-it-works" className="w-full bg-[#f6f1e6] px-3 md:px-6 lg:px-[2.6vw]">
       <div className="relative mx-auto max-w-[1840px] overflow-hidden rounded-[28px] bg-[#1d4a2c] text-cream lg:rounded-[36px]">
@@ -52,7 +54,7 @@ export default function HowItWorks() {
         <div className="relative px-5 py-12 md:px-10 lg:px-[4.4vw] lg:py-[clamp(40px,3.6vw,72px)]">
           <Reveal>
             <h2 className="font-display text-[32px] leading-[1.08] tracking-[-0.01em] text-balance lg:text-[clamp(28px,2.35vw,46px)]">
-              From a photo to a safe treatment.
+              {t('landHowTitle')}
             </h2>
           </Reveal>
 
@@ -64,11 +66,11 @@ export default function HowItWorks() {
             {STEPS.map(({ src, alt, title, line }, i) => (
               <li key={title} className="relative w-[72%] shrink-0 snap-start sm:w-[46%] md:w-auto">
                 <Reveal delay={i * 90} className="flex flex-col items-center text-center">
-                  <img src={src} alt={alt} width={620} height={1266} loading="lazy" decoding="async"
+                  <img src={src} alt={t(alt)} width={620} height={1266} loading="lazy" decoding="async"
                     className="w-full max-w-[260px] drop-shadow-[0_28px_36px_rgba(0,0,0,0.45)] md:max-w-[240px] lg:w-[clamp(220px,19vw,340px)] lg:max-w-none" />
                   <span className="mt-6 flex h-9 w-9 items-center justify-center rounded-full border border-[#e8b450]/70 font-display text-[18px] text-[#f0c060] lg:mt-[1.8vw] lg:h-[clamp(30px,2.2vw,40px)] lg:w-[clamp(30px,2.2vw,40px)] lg:text-[clamp(15px,1.15vw,20px)]">{i + 1}</span>
-                  <p className="mt-3 text-[19px] font-semibold leading-snug lg:mt-[0.8vw] lg:text-[clamp(17px,1.3vw,23px)]">{title}</p>
-                  <p className="mx-auto mt-1.5 max-w-[30ch] text-[14px] leading-relaxed text-cream/75 text-pretty lg:text-[clamp(13px,0.95vw,17px)]">{line}</p>
+                  <p className="mt-3 text-[19px] font-semibold leading-snug lg:mt-[0.8vw] lg:text-[clamp(17px,1.3vw,23px)]">{t(title)}</p>
+                  <p className="mx-auto mt-1.5 max-w-[30ch] text-[14px] leading-relaxed text-cream/75 text-pretty lg:text-[clamp(13px,0.95vw,17px)]">{t(line)}</p>
                 </Reveal>
                 {i < STEPS.length - 1 && (
                   <ArrowRight aria-hidden className="absolute -right-[2.4vw] top-[34%] hidden h-6 w-6 -translate-y-1/2 translate-x-1/2 text-cream/55 md:block" />

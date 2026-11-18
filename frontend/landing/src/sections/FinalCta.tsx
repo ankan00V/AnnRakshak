@@ -13,10 +13,10 @@ const LANGUAGES = LANGS.filter((l) => l.ready).length
 /** Who we are, in four lines a farmer or an officer would care about. The
  *  datasets behind the advice are in the docs; this strip is about the app. */
 const ABOUT = [
-  { name: 'Anna + rakshak', line: 'Harvest, and its protector. The name is the whole job.' },
-  { name: 'Four crops', line: 'Rice, maize, cotton and soybean — each diagnosed from one photo.' },
-  { name: `${LANGUAGES} languages`, line: 'Every alert and answer read aloud, for those who do not read.' },
-  { name: 'A person behind it', line: 'When the app is not sure, a KVK expert or an officer answers.' },
+  { name: 'Anna + rakshak', line: 'landAboutName' },
+  { name: 'landAboutCrops', line: 'landAboutCropsLine' },
+  { name: 'landAboutLangs', line: 'landAboutLangsLine' },
+  { name: 'landAboutPerson', line: 'landAboutPersonLine' },
 ]
 
 export default function FinalCta() {
@@ -91,8 +91,8 @@ export default function FinalCta() {
           <div className="mt-14 grid gap-x-8 gap-y-6 border-t border-cream/15 pt-8 sm:grid-cols-2 lg:mt-[clamp(56px,5vw,96px)] lg:grid-cols-4 lg:gap-0">
             {ABOUT.map(({ name, line }, i) => (
               <div key={name} className={`lg:px-[1.6vw] ${i ? 'lg:border-l lg:border-cream/15' : 'lg:pl-0'}`}>
-                <p className="text-[15px] font-semibold text-[#f0c060]">{name}</p>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-cream/75 text-pretty">{line}</p>
+                <p className="text-[15px] font-semibold text-[#f0c060]">{name.startsWith('land') ? t(name).replace('{n}', String(LANGUAGES)) : name}</p>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-cream/75 text-pretty">{t(line)}</p>
               </div>
             ))}
           </div>
@@ -103,11 +103,11 @@ export default function FinalCta() {
             <span className="rounded-full bg-white p-[2px]"><BrandMark size={28} /></span>AnnRakshak
           </span>
           <div className="flex items-center gap-2">
-            <a href="mailto:team@annrakshak.in" aria-label="Email the team"
+            <a href="mailto:team@annrakshak.in" aria-label={t('landEmailTeam')}
               className="grid h-11 w-11 place-items-center rounded-full text-cream/75 transition-colors hover:bg-white/10 hover:text-cream">
               <Mail className="h-[18px] w-[18px]" />
             </a>
-            <a href="https://github.com/annrakshak" aria-label="Project repository"
+            <a href="https://github.com/annrakshak" aria-label={t('landRepo')}
               className="grid h-11 w-11 place-items-center rounded-full text-cream/75 transition-colors hover:bg-white/10 hover:text-cream">
               <Globe className="h-[18px] w-[18px]" />
             </a>

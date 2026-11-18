@@ -943,3 +943,65 @@ def test_a_field_quantity_is_given_in_kilograms_and_litres_when_it_is_large():
     a = advisory.compose(kb, "rice_false_smut", "en", 30.0)
     chem = next(r for r in a["ladder"] if r["tier"] == "chemical")
     assert " kg in " in chem["for_field"] and " g in " not in chem["for_field"]
+
+
+def test_a_number_cannot_change_in_translation():
+    # Translated one by one (18 Nov 2026), "18,000-20,000 eggs" came back from
+    # Malayalam as 1,000 and from Punjabi as 000. Numbers now travel as markers.
+    from app.i18n import protect, restore
+
+    src = "Tricho-card: 18,000-20,000 eggs; 1.5 g per litre at 06:00, 5 times at 7-10 day intervals."
+    safe, names = protect(src, "ml")
+    for n in ("18,000-20,000", "1.5", "06:00", "7-10"):
+        assert n not in safe, f"{n} reached the translator"
+    assert restore(safe, names) == src
+    # a translator that drops a marker loses the line (it stays English), never the number
+    assert restore(safe.replace("XX0XX", "", 1), names) is None
+
+
+def test_a_masking_token_left_by_the_service_never_reaches_the_farmer():
+    from app.i18n import restore
+
+    assert restore("വിളവ് ശേഷി <ഐ. ഡി. 1> ക്യു/ഹെക്ടർ.", []) is None
+
+
+def test_glossary_terms_come_back_as_the_extension_service_words():
+    from app.i18n import GLOSSARY, protect, restore
+
+    safe, names = protect("A virus that kills only fall armyworm larvae.", "ta")
+    assert "armyworm" not in safe
+    assert GLOSSARY["fall armyworm"]["ta"] in restore(safe, names)
+
+
+def test_every_glossary_term_has_a_word_in_every_machine_language():
+    from app.i18n import GLOSSARY, MACHINE, NAMES_ONLY
+
+    langs = [x for x in MACHINE if x != "od"]
+    for term, words in {**GLOSSARY, **NAMES_ONLY}.items():
+        assert term == term.lower(), term
+        missing = [x for x in langs if not (words.get(x) or "").strip()]
+        assert not missing, (term, missing)
+
+
+def test_field_words_are_swapped_whole_and_longest_first():
+    """'10 hills' came back as ten mountains and 'at heading' as 'in the
+    title'. A term matches only as a whole word, the longest name wins, and
+    a plain word that shares letters is left alone."""
+    from app.i18n import GLOSSARY, protect
+
+    _, names = protect("Count dead hearts on 10 hills at heading.", "pa")
+    assert "#" + GLOSSARY["dead hearts"]["pa"] in names and "#" + GLOSSARY["hills"]["pa"] in names
+    safe, _ = protect("Check 5 spots of 1 square metre; plants wilt at noon.", "pa")
+    assert "square metre" in safe and "wilt" in safe  # 'squares' and the names-only 'wilt' do not match
+    _, names = protect("Downy mildew (crazy top) on rice.", "ta")
+    assert names == ["#" + GLOSSARY["downy mildew (crazy top)"]["ta"]]
+
+
+def test_a_pest_name_comes_from_the_glossary_not_the_machine_memory():
+    """'Rice hispa' came back as papaya, pumpkin, gram flour and swan; the
+    name shown is the hand-written one whatever the memory holds."""
+    from app.i18n import NAMES_ONLY, lookup
+
+    assert lookup("Rice hispa", "pa") == "ਝੋਨੇ ਦੀ ਹਿਸਪਾ ਭੂੰਡੀ"
+    assert lookup("Wilt", "ta") == NAMES_ONLY["wilt"]["ta"]
+    assert lookup("Rice hispa", "hi") is None  # Hindi is authored in the KB, never looked up
