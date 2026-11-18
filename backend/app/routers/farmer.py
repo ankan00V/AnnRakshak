@@ -642,6 +642,10 @@ class LabelCheckIn(BaseModel):
     farm_id: int
     product: str = Field(min_length=1, max_length=120)
     problem_id: int | None = None
+    # The problem the farmer picked to check against: any one the app knows for
+    # this field's crop, or "none" to check against the crop alone. Absent, the
+    # field's latest diagnosis is used, as before.
+    target: str | None = Field(default=None, max_length=60)
     lang: Lang = "en"
 
 
@@ -664,15 +668,28 @@ async def _read_capped(upload: UploadFile) -> bytes:
     return b"".join(chunks)
 
 
-def _label_target(db: Session, farm: Farm, problem_id: int | None) -> str | None:
-    """The problem a spray is being checked against: the one named, else the
-    field's latest open diagnosis. A healthy result is no target at all.
+def _label_target(db: Session, kb: KB, farm: Farm, problem_id: int | None, target: str | None = None) -> str | None:
+    """The problem a spray is being checked against: the one the farmer picked,
+    else the problem named, else the field's latest open diagnosis. A healthy
+    result is no target at all.
+
+    A farmer may want to check a bottle against something other than the last
+    photo: a problem a neighbour has, or one the extension officer warned of.
+    So any problem the app knows for this field's crop can be picked, and
+    "none" checks the product against the crop alone. One for another crop is
+    refused: the crop check and the problem check must agree on the field.
 
     The problem id arrives in the body, where the router's ownership check
     cannot see it — that check reads the URL. So it is checked here: naming
     somebody else's problem would otherwise answer which disease is on their
     field, which is the one thing a farmer's record is supposed to keep."""
-    if problem_id is not None:
+    if target is not None:
+        if target == "none":
+            return None
+        t = kb.targets.get(target)
+        if t is None or t["crop"] != farm.crop:
+            raise HTTPException(422, "that problem is not one of this crop's")
+    elif problem_id is not None:
         problem = _problem(db, problem_id)
         if problem.farm_id != farm.id:
             raise HTTPException(404, "problem not found")
@@ -697,7 +714,7 @@ def label_check(body: LabelCheckIn, request: Request, db: Session = Depends(get_
     # can only ever say no.
     farm = _farm(db, body.farm_id)
     auth.check_farm(auth.signed_in(request, db), farm)
-    target = _label_target(db, farm, body.problem_id)
+    target = _label_target(db, kb, farm, body.problem_id, body.target)
     out = labelcheck.check(kb, body.product, farm.crop, target, body.lang) | {"target": target}
     # The verified verdict never waits on a model. When we hold no record of
     # what was typed, the app asks /labelcheck/note separately for the AI's
@@ -722,7 +739,7 @@ def label_note(body: LabelCheckIn, request: Request, db: Session = Depends(get_d
     a dose, and the verified refusal from /labelcheck is never replaced."""
     farm = _farm(db, body.farm_id)
     auth.check_farm(auth.signed_in(request, db), farm)
-    target = _label_target(db, farm, body.problem_id)
+    target = _label_target(db, kb, farm, body.problem_id, body.target)
     if labelcheck.check(kb, body.product, farm.crop, target, body.lang)["tone"] != "unknown":
         return {"suggestion": None}  # a product we know about gets the verified answer only
     limit(f"labelnote:{farm.id}", 30, 60)

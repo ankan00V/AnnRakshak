@@ -544,7 +544,7 @@ const en = {
   learnedNote: 'Adjusted slightly using confirmed cases in your district',
 
   sprayTitle: 'Check before you spray',
-  spraySub: 'Tell us the product on the bottle. We check it against your crop and your diagnosed problem.',
+  spraySub: 'Tell us the product on the bottle. We check it against your crop and the problem you choose: your latest diagnosis, unless you pick another.',
   productName: 'Product or active ingredient, e.g. Mancozeb',
   check: 'Check',
   speak: 'Speak',
@@ -558,6 +558,8 @@ const en = {
   neverSafeNote: 'We only warn about wrong sprays. We never call a pesticide "safe" — the printed label decides the dose.',
   forProblem: 'Checking against',
   noDiagnosisYet: 'No diagnosed problem yet',
+  latestDiagnosis: 'latest diagnosis',
+  checkCropOnly: 'No specific problem: check for the crop only',
 
   alertsTitle: 'Alerts & traps',
   trig_weather: 'Weather',

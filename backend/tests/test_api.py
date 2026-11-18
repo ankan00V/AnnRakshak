@@ -1429,3 +1429,19 @@ def test_the_pesticide_baseline_runs_to_the_latest_dppqs_year(client):
     assert {g["id"] for g in s["groups"]} >= {"i", "f", "h"}
     assert all(y != "2025-26" for g in s["groups"] for y, _ in g["series"]), "a partial year in a trend"
     assert len(s["top"]) == 6 and all(t["group"] != "Bio-pesticides" for t in s["top"])
+
+
+def test_the_farmer_picks_the_problem_a_spray_is_checked_against(client):
+    """Not only the last photo: any problem of this field's crop can be picked,
+    and the verdict follows the pick. One of another crop is refused, and
+    "none" checks the product against the crop alone."""
+    crop = client.get("/api/farms/1/home?lang=en").json()["farm"]["crop"]
+    assert crop == "rice", "this test needs the rice demo field"
+    ask = {"farm_id": 1, "product": "tricyclazole", "lang": "en"}
+    blast = client.post("/api/labelcheck", json=ask | {"target": "rice_blast"}).json()
+    assert blast["target"] == "rice_blast" and blast["tone"] == "ok"
+    borer = client.post("/api/labelcheck", json=ask | {"target": "rice_yellow_stem_borer"}).json()
+    assert borer["target"] == "rice_yellow_stem_borer" and borer["tone"] == "stop"  # a fungicide on an insect
+    assert client.post("/api/labelcheck", json=ask | {"target": "maize_common_rust"}).status_code == 422
+    assert client.post("/api/labelcheck", json=ask | {"target": "rice_nothing_like_it"}).status_code == 422
+    assert client.post("/api/labelcheck", json=ask | {"target": "none"}).json()["target"] is None
