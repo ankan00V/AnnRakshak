@@ -236,8 +236,11 @@ def test_label_check_never_endorses():
 
 def test_label_check_verdicts():
     chk = lambda q, t: labelcheck.check(kb, q, "rice", t, "en")["code"]  # noqa: E731
-    assert chk("copper oxychloride", "rice_bacterial_leaf_blight") == "NO_OBJECTION_FOUND"
-    assert chk("mancozeb", "rice_bacterial_leaf_blight") == "NOT_FOR_TARGET"
+    # Copper oxychloride is not registered on rice (CIB&RC major uses, 30.09.2026);
+    # copper hydroxide 53.8% DF is, for bacterial leaf blight.
+    assert chk("copper oxychloride", "rice_bacterial_leaf_blight") == "WRONG_CROP"
+    assert chk("Copper hydroxide 53.8% DF", "rice_bacterial_leaf_blight") == "NO_OBJECTION_FOUND"
+    assert chk("tricyclazole", "rice_bacterial_leaf_blight") == "NOT_FOR_TARGET"
     assert chk("emamectin", "rice_bacterial_leaf_blight") == "WRONG_CLASS"
     assert chk("roundup", "rice_brown_spot") == "HERBICIDE"
     assert chk("spinetoram", "rice_leaf_folder") == "WRONG_CROP"
@@ -729,3 +732,100 @@ def test_a_half_written_window_still_cannot_fire():
     assert "temperature band or the rain" in s.detail["why"], s.detail
     assert risk.missing_weather_keys({"rh_min": 85, "days": 3, "t_min": 20, "t_max": 30}) == []
     assert risk.missing_weather_keys({"rh_min": 85, "days": 3, "rain_total_min": 40}) == []
+
+
+def test_the_most_specific_product_name_wins():
+    """'Copper hydroxide 53.8% DF' contains 'copper hydroxide', an alias of the
+    77% WP. Taking the first match named the wrong product."""
+    assert kb.match_pesticide("Copper hydroxide 53.8% DF") == "copper_hydroxide_53_8df"
+    assert kb.match_pesticide("copper hydroxide") == "copper_hydroxide_77wp"
+    assert kb.match_pesticide("Buprofezin 70% DF") == "buprofezin_70df"
+    assert kb.match_pesticide("thiamethoxam + lambda-cyhalothrin") == "thiamethoxam_lambda_zc"
+    assert kb.match_pesticide("mancozeb") == "mancozeb_75wp"
+
+
+def test_every_chemical_rung_rests_on_a_registered_use():
+    """No spray reaches a farmer unless the CIB&RC major-uses list registers that
+    product on that crop for that pest (data/verify_doses.py), and its dose is
+    the registered amount per hectare at the registered water volume."""
+    import re
+    acre = 0.4047
+    for target, adv in kb.advisories.items():
+        crop = target.split("_")[0]
+        for rung in adv["ladder"]:
+            if rung["tier"] != "chemical":
+                continue
+            reg = rung.get("registration")
+            assert rung.get("verified") and reg, (target, rung["ingredient"])
+            assert reg["source"].startswith("CIB&RC Major Uses of Pesticides"), target
+            names = {"rice": ("rice", "paddy"), "maize": ("maize",), "cotton": ("cotton",), "soybean": ("soybean",)}
+            assert any(n in reg["crop"].lower() for n in names[crop]), (target, reg["crop"])
+            if rung.get("dose_per_litre") is None:
+                continue
+            # product per hectare at our dose and water, against the registered range
+            per_ha = rung["dose_per_litre"] * rung["water_l_per_acre"] / acre
+            nums = [float(x) for x in re.findall(r"\d+(?:\.\d+)?", reg["formulation_per_ha"].replace(",", ""))]
+            if "kg" in reg["formulation_per_ha"]:
+                nums = [n * 1000 for n in nums]
+            if "%" in reg["formulation_per_ha"]:
+                continue  # a concentration, checked by hand
+            lo, hi = min(nums), max(nums)
+            assert 0.9 * lo <= per_ha <= 1.1 * hi, (target, rung["ingredient"], round(per_ha), reg["formulation_per_ha"])
+
+
+def test_the_waiting_period_reaches_the_farmer():
+    a = advisory.compose(kb, "rice_blast", "hi", area_acres=1)
+    chem = next(r for r in a["ladder"] if r["tier"] == "chemical")
+    assert "30" in chem["waiting"] and chem["verified"]
+
+
+def test_every_organic_option_rests_on_a_registered_use():
+    """The organic options are the bio-pesticides and neem products the CIB&RC
+    bio lists register for that crop and pest (data/organic_options.py), at the
+    registered amount per hectare."""
+    import re
+    acre = 0.4047
+    names = {"rice": ("rice", "paddy"), "maize": ("maize",), "cotton": ("cotton",), "soybean": ("soybean",)}
+    seen = 0
+    for target, adv in kb.advisories.items():
+        crop = target.split("_")[0]
+        for o in adv.get("organic", []):
+            seen += 1
+            assert kb.pesticides[o["ingredient"]].get("organic"), (target, o["ingredient"])
+            reg = o["registration"]
+            assert reg["source"].startswith("CIB&RC Major Uses of Pesticides — Bio-"), target
+            assert any(n in reg["crop"].lower() for n in names[crop]), (target, reg["crop"])
+            if o["use"] != "spray":
+                continue
+            if o.get("per_acre"):
+                per_ha = o["per_acre"]["amount"] / acre
+            else:
+                per_ha = o["dose_per_litre"] * o["water_l_per_acre"] / acre
+            text = reg["formulation_per_ha"]
+            nums = [float(x) for x in re.findall(r"\d+(?:\.\d+)?", text)]
+            if "kg" in text or "litre" in text:
+                nums = [n * 1000 for n in nums]
+            lo, hi = min(nums), max(nums)
+            assert 0.9 * lo <= per_ha <= 1.1 * hi, (target, o["ingredient"], round(per_ha), text)
+    assert seen >= 25
+
+
+def test_organic_options_come_before_the_chemical_and_say_when_there_are_none():
+    a = advisory.compose(kb, "rice_leaf_folder", "en", area_acres=1)
+    products = [o["product"] for o in a["organic"]]
+    assert any("thuringiensis" in p for p in products) and any("Azadirachtin" in p for p in products)
+    neem = next(o for o in a["organic"] if o["kind"] == "botanical")
+    assert neem["for_field"] and "5 days" in neem["waiting"]
+    assert advisory.compose(kb, "maize_ear_rot", "en")["organic"] == []
+    hi = advisory.compose(kb, "rice_bacterial_leaf_blight", "hi")
+    dip = next(o for o in hi["organic"] if o["use"] == "root_dip")
+    assert "30" in dip["dose"] and "मिनट" in dip["dose"]
+
+
+def test_the_spray_check_knows_registered_organic_products():
+    chk = lambda q, c, t: labelcheck.check(kb, q, c, t, "en")["code"]  # noqa: E731
+    assert chk("neem", "rice", "rice_leaf_folder") == "NO_OBJECTION_FOUND"
+    assert chk("Trichoderma viride", "rice", "rice_sheath_blight") == "NO_OBJECTION_FOUND"
+    assert chk("Trichoderma viride", "rice", "rice_blast") == "NOT_FOR_TARGET"
+    assert chk("Beauveria bassiana 1.5% AS", "maize", "maize_fall_armyworm") == "NO_OBJECTION_FOUND"
+    assert chk("Bacillus thuringiensis", "rice", "rice_sheath_blight") == "WRONG_CLASS"

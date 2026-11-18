@@ -1,5 +1,5 @@
 {
- "_note": "One advisory per target. Ladder order is cultural -> biological -> chemical and the loader refuses any other order. Chemical rungs name an ingredient from pesticides.json; 'verified' flips to true only after a team member checks the ingredient/crop/target/dose against the CIB&RC major-uses list (see backend/kb/KB_REVIEW.md). Doses are per litre of water for a knapsack spray unless 'dose_basis' says otherwise; the printed label stays the authority on dose.",
+ "_note": "One advisory per target. Ladder order is cultural -> biological -> chemical and the loader refuses any other order. Chemical rungs name an ingredient from pesticides.json. Every chemical rung is checked against the CIB&RC Major Uses of Pesticides lists (data/verify_doses.py): 'registration' records the row it rests on — crop, pest, formulation per hectare, water per hectare, waiting period — and a rung whose product is not registered for that crop and pest is not here. Doses are per litre of water at the registered water volume; the printed label stays the authority on dose. 'organic' lists the bio-pesticides and neem products registered for that crop and pest in the CIB&RC Major Uses lists for bio-insecticides and bio-fungicides (data/organic_options.py), each with the registration it rests on; a target with none registered has no 'organic' list.",
  "rice_blast": {
   "what_to_check": {
    "en": "Check the upper leaves of 10 plants along a diagonal, and the node just below the panicle.",
@@ -49,11 +49,19 @@
     "dose_per_litre": 0.6,
     "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "At first leaf spots; repeat at 50% heading if neck blast risk continues.",
      "hi": "पहले धब्बे दिखने पर; गर्दन झोंका का खतरा रहे तो 50% बाली आने पर दोहराएँ।",
      "mr": "पहिले ठिपके दिसताच; मान करपा धोका असल्यास 50% लोंबी आल्यावर पुन्हा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Paddy (Rice)",
+     "pest": "Blast",
+     "formulation_per_ha": "300–400 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 30
     }
    },
    {
@@ -62,11 +70,19 @@
     "dose_per_litre": 1.5,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Alternative to tricyclazole; do not use both in the same round.",
      "hi": "ट्राइसाइक्लाजोल का विकल्प; एक ही बार में दोनों न मिलाएँ।",
      "mr": "ट्रायसायक्लाझोलचा पर्याय; एकाच फवारणीत दोन्ही मिसळू नका."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Blast",
+     "formulation_per_ha": "750 ml",
+     "water_l_per_ha": "500–1000",
+     "waiting_days": 60
     }
    }
   ],
@@ -90,6 +106,50 @@
     "title": "Blast (leaf and collar) fact sheet",
     "publisher": "IRRI Rice Knowledge Bank",
     "url": "http://www.knowledgebank.irri.org"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "pseudomonas_0_5wp",
+    "use": "spray",
+    "per_acre": {
+     "amount": 400,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "Spray when the first spots appear.",
+     "hi": "पहले धब्बे दिखते ही छिड़कें।",
+     "mr": "पहिले ठिपके दिसताच फवारा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
+     "crop": "Rice",
+     "pest": "Leaf and neck blast (Pyricularia oryzae)",
+     "formulation_per_ha": "1 kg",
+     "water_l_per_ha": null,
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "pseudomonas_0_5wp",
+    "use": "seed",
+    "per_kg_seed": {
+     "amount": 10,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "For your next sowing: coat the seed evenly, dry it in shade, then sow.",
+     "hi": "अगली बुवाई के लिए: बीज पर समान रूप से लगाएँ, छाया में सुखाएँ, फिर बोएँ।",
+     "mr": "पुढील पेरणीसाठी: बियाण्यावर सारखे लावा, सावलीत वाळवा, मग पेरा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
+     "crop": "Rice",
+     "pest": "Leaf and neck blast (Pyricularia oryzae)",
+     "formulation_per_ha": "10 g/kg seed",
+     "water_l_per_ha": null,
+     "waiting_days": null
+    }
    }
   ]
  },
@@ -130,28 +190,44 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "mancozeb_75wp",
-    "dose_per_litre": 2.5,
-    "dose_unit": "g",
+    "ingredient": "flutriafol_23sc",
+    "dose_per_litre": 1.2,
+    "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "When spots appear on more than a few leaves; repeat after 10–15 days if needed.",
      "hi": "कई पत्तियों पर धब्बे दिखें तब; ज़रूरत हो तो 10–15 दिन बाद दोहराएँ।",
      "mr": "अनेक पानांवर ठिपके दिसल्यास; गरज असल्यास 10–15 दिवसांनी पुन्हा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Rice",
+     "pest": "Sheath blight & brown spot",
+     "formulation_per_ha": "600 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 24
     }
    },
    {
     "tier": "chemical",
-    "ingredient": "propiconazole_25ec",
-    "dose_per_litre": 1.0,
-    "dose_unit": "ml",
+    "ingredient": "mancozeb_hexaconazole_wg",
+    "dose_per_litre": 2.5,
+    "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Alternative when grain discolouration threatens at heading.",
      "hi": "बाली के समय दानों के बदरंग होने का खतरा हो तो विकल्प।",
      "mr": "लोंबी अवस्थेत दाणे काळवंडण्याचा धोका असल्यास पर्याय."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Rice",
+     "pest": "Blast, sheath blight, brown spot, grain discolouration",
+     "formulation_per_ha": "1250 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 30
     }
    }
   ],
@@ -170,6 +246,29 @@
     "title": "Rice Knowledge Management Portal — Brown spot",
     "publisher": "ICAR-Indian Institute of Rice Research",
     "url": "https://www.rkmp.co.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "pseudomonas_1_5wp",
+    "use": "seed",
+    "per_kg_seed": {
+     "amount": 5,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "For your next sowing: coat the seed evenly, dry it in shade, then sow.",
+     "hi": "अगली बुवाई के लिए: बीज पर समान रूप से लगाएँ, छाया में सुखाएँ, फिर बोएँ।",
+     "mr": "पुढील पेरणीसाठी: बियाण्यावर सारखे लावा, सावलीत वाळवा, मग पेरा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
+     "crop": "Paddy",
+     "pest": "Leaf spot (Helminthosporium oryzae)",
+     "formulation_per_ha": "5 g/kg seed",
+     "water_l_per_ha": null,
+     "waiting_days": null
+    }
    }
   ]
  },
@@ -223,15 +322,23 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "copper_oxychloride_50wp",
-    "dose_per_litre": 2.5,
+    "ingredient": "copper_hydroxide_53_8df",
+    "dose_per_litre": 3.0,
     "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Slows spread to new leaves; no spray cures leaves that are already infected.",
      "hi": "नई पत्तियों पर फैलाव धीमा करता है; संक्रमित पत्तियाँ ठीक नहीं होतीं।",
      "mr": "नव्या पानांवरचा प्रसार कमी करते; आधीच बाधित पाने बरी होत नाहीत."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "False smut, bacterial leaf blight",
+     "formulation_per_ha": "1500 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 10
     }
    }
   ],
@@ -250,6 +357,69 @@
     "title": "Bacterial blight fact sheet",
     "publisher": "IRRI Rice Knowledge Bank",
     "url": "http://www.knowledgebank.irri.org"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "bacillus_subtilis_2as",
+    "use": "spray",
+    "dose_per_litre": 4,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray 40–45 days after transplanting.",
+     "hi": "रोपाई के 40–45 दिन बाद छिड़कें।",
+     "mr": "पुनर्लागवडीनंतर 40–45 दिवसांनी फवारा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
+     "crop": "Paddy",
+     "pest": "Bacterial leaf blight (Xanthomonas oryzae pv. oryzae)",
+     "formulation_per_ha": "1.87-2.50 litre",
+     "water_l_per_ha": "500",
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "bacillus_subtilis_2as",
+    "use": "root_dip",
+    "dose_per_litre": 10,
+    "dose_unit": "ml",
+    "minutes": 30,
+    "timing": {
+     "en": "At transplanting, before the seedlings go into the field.",
+     "hi": "रोपाई के समय, पौध खेत में लगाने से पहले।",
+     "mr": "पुनर्लागवडीच्या वेळी, रोपे शेतात लावण्यापूर्वी."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
+     "crop": "Paddy",
+     "pest": "Bacterial leaf blight (Xanthomonas oryzae pv. oryzae)",
+     "formulation_per_ha": "10 ml/litre of water",
+     "water_l_per_ha": null,
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "pseudomonas_1_5wp",
+    "use": "seed",
+    "per_kg_seed": {
+     "amount": 5,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "For your next sowing: coat the seed evenly, dry it in shade, then sow.",
+     "hi": "अगली बुवाई के लिए: बीज पर समान रूप से लगाएँ, छाया में सुखाएँ, फिर बोएँ।",
+     "mr": "पुढील पेरणीसाठी: बियाण्यावर सारखे लावा, सावलीत वाळवा, मग पेरा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
+     "crop": "Paddy",
+     "pest": "Bacterial leaf blight (Xanthomonas oryzae)",
+     "formulation_per_ha": "5 g/kg seed",
+     "water_l_per_ha": null,
+     "waiting_days": null
+    }
    }
   ]
  },
@@ -289,24 +459,40 @@
     "dose_per_litre": 2.0,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Direct the spray at the lower stems where the patches are.",
      "hi": "छिड़काव नीचे तने पर करें जहाँ धब्बे हैं।",
      "mr": "फवारणी खालच्या खोडावर, जिथे चट्टे आहेत तिथे करा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Blast, sheath blight",
+     "formulation_per_ha": "1000 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 40
     }
    },
    {
     "tier": "chemical",
     "ingredient": "validamycin_3l",
-    "dose_per_litre": 2.5,
+    "dose_per_litre": 2.7,
     "dose_unit": "ml",
-    "water_l_per_acre": 200,
-    "verified": false,
+    "water_l_per_acre": 300,
+    "verified": true,
     "timing": {
      "en": "Alternative to hexaconazole.",
      "hi": "हेक्साकोनाजोल का विकल्प।",
      "mr": "हेक्झाकोनाझोलचा पर्याय."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Sheath blight",
+     "formulation_per_ha": "2000 ml",
+     "water_l_per_ha": "750",
+     "waiting_days": 14
     }
    }
   ],
@@ -325,6 +511,28 @@
     "title": "Rice Knowledge Management Portal — Sheath blight",
     "publisher": "ICAR-Indian Institute of Rice Research",
     "url": "https://www.rkmp.co.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "trichoderma_viride_1wp",
+    "use": "spray",
+    "dose_per_litre": 5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Start 30 days after planting; spray three times, 15 days apart.",
+     "hi": "रोपाई के 30 दिन बाद शुरू करें; 15 दिन के अंतर पर तीन बार छिड़कें।",
+     "mr": "लागवडीनंतर 30 दिवसांनी सुरू करा; 15 दिवसांच्या अंतराने तीन वेळा फवारा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
+     "crop": "Paddy",
+     "pest": "Sheath blight (Rhizoctonia solani)",
+     "formulation_per_ha": "2.5 kg",
+     "water_l_per_ha": "500",
+     "waiting_days": null
+    }
    }
   ]
  },
@@ -357,28 +565,23 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "propiconazole_25ec",
-    "dose_per_litre": 1.0,
-    "dose_unit": "ml",
-    "water_l_per_acre": 200,
-    "verified": false,
+    "ingredient": "copper_hydroxide_77wp",
+    "dose_per_litre": 2.7,
+    "dose_unit": "g",
+    "water_l_per_acre": 300,
+    "verified": true,
     "timing": {
      "en": "Preventive only: at boot-leaf stage, before panicles emerge. Too late once balls are visible.",
      "hi": "केवल बचाव के लिए: बाली निकलने से पहले। गेंदें दिखने के बाद देर हो चुकी होती है।",
      "mr": "फक्त प्रतिबंधासाठी: लोंबी बाहेर पडण्यापूर्वी. गोळे दिसल्यावर उशीर झालेला असतो."
-    }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "copper_hydroxide_77wp",
-    "dose_per_litre": 2.0,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "Alternative preventive spray at boot-leaf stage.",
-     "hi": "बाली निकलने से पहले का वैकल्पिक बचाव छिड़काव।",
-     "mr": "लोंबी येण्यापूर्वी पर्यायी प्रतिबंधक फवारणी."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "False smut",
+     "formulation_per_ha": "2000 g",
+     "water_l_per_ha": "750",
+     "waiting_days": null
     }
    }
   ],
@@ -436,11 +639,19 @@
     "dose_per_litre": 0.2,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Only against the small green insects that spread it, and only if there are many of them.",
      "hi": "केवल फुदके के विरुद्ध, और तभी जब फुदके ज़्यादा हों।",
      "mr": "फक्त तुडतुड्यांविरुद्ध, आणि तुडतुडे जास्त असल्यासच."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Paddy (Rice)",
+     "pest": "Green leaf hopper (the tungro vector), plant hoppers",
+     "formulation_per_ha": "100–125 ml",
+     "water_l_per_ha": "500–700",
+     "waiting_days": 40
     }
    }
   ],
@@ -498,11 +709,19 @@
     "dose_per_litre": 0.3,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Only after the threshold is crossed.",
      "hi": "केवल कार्रवाई सीमा पार होने के बाद।",
      "mr": "फक्त कृती मर्यादा ओलांडल्यानंतर."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Rice",
+     "pest": "Stem borer, leaf folder",
+     "formulation_per_ha": "150 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 47
     }
    }
   ],
@@ -521,6 +740,68 @@
     "title": "Rice Knowledge Management Portal — Leaf folder",
     "publisher": "ICAR-Indian Institute of Rice Research",
     "url": "https://www.rkmp.co.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "bt_kurstaki_wp",
+    "use": "spray",
+    "dose_per_litre": 3,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray in the evening when young caterpillars are seen; sunlight breaks Bt down.",
+     "hi": "छोटी इल्लियाँ दिखें तो शाम को छिड़कें; धूप Bt को नष्ट कर देती है।",
+     "mr": "लहान अळ्या दिसताच संध्याकाळी फवारा; उन्हाने Bt नष्ट होते."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Stem borer & Leaf folder",
+     "formulation_per_ha": "1.50 kg",
+     "water_l_per_ha": "500-750",
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "beauveria_1_15wp",
+    "use": "spray",
+    "dose_per_litre": 3.4,
+    "dose_unit": "g",
+    "water_l_per_acre": 300,
+    "timing": {
+     "en": "Spray in the evening on a moist crop; the fungus needs humidity to infect the pest.",
+     "hi": "शाम को नम फसल पर छिड़कें; फफूंद को कीट को संक्रमित करने के लिए नमी चाहिए।",
+     "mr": "संध्याकाळी ओलसर पिकावर फवारा; बुरशीला किडीला बाधित करण्यासाठी ओलावा लागतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Leaf folder (Cnaphalocrocis medinalis)",
+     "formulation_per_ha": "2.5 kg",
+     "water_l_per_ha": "750-850",
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "azadirachtin_0_15ec",
+    "use": "spray",
+    "dose_per_litre": 3,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray early, when the pest first appears; neem stops feeding and egg-laying more than it kills.",
+     "hi": "कीट दिखते ही जल्दी छिड़कें; नीम कीट को मारने से ज़्यादा उसका खाना और अंडे देना रोकता है।",
+     "mr": "कीड दिसताच लवकर फवारा; कडुनिंब कीड मारण्यापेक्षा तिचे खाणे आणि अंडी घालणे थांबवतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Brown plant hopper, Leaf folder",
+     "formulation_per_ha": "1500-2500 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 5
+    }
    }
   ]
  },
@@ -568,11 +849,19 @@
     "dose_per_litre": null,
     "dose_basis": "4 kg granules per acre, broadcast in 3–5 cm of standing water",
     "water_l_per_acre": null,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Only after the dead-heart threshold is crossed.",
      "hi": "केवल मृत गोभ सीमा पार होने के बाद।",
      "mr": "फक्त मेलेल्या गाभ्यांची मर्यादा ओलांडल्यानंतर."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Yellow stem borer, leaf folder",
+     "formulation_per_ha": "10 kg",
+     "water_l_per_ha": "broadcast",
+     "waiting_days": 53
     }
    }
   ],
@@ -591,6 +880,48 @@
     "title": "Rice Knowledge Management Portal — Yellow stem borer",
     "publisher": "ICAR-Indian Institute of Rice Research",
     "url": "https://www.rkmp.co.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "bt_kurstaki_wp",
+    "use": "spray",
+    "dose_per_litre": 3,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray in the evening when young caterpillars are seen; sunlight breaks Bt down.",
+     "hi": "छोटी इल्लियाँ दिखें तो शाम को छिड़कें; धूप Bt को नष्ट कर देती है।",
+     "mr": "लहान अळ्या दिसताच संध्याकाळी फवारा; उन्हाने Bt नष्ट होते."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Stem borer & Leaf folder",
+     "formulation_per_ha": "1.50 kg",
+     "water_l_per_ha": "500-750",
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "azadirachtin_5",
+    "use": "spray",
+    "dose_per_litre": 0.5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 160,
+    "timing": {
+     "en": "Spray early, when the pest first appears; neem stops feeding and egg-laying more than it kills.",
+     "hi": "कीट दिखते ही जल्दी छिड़कें; नीम कीट को मारने से ज़्यादा उसका खाना और अंडे देना रोकता है।",
+     "mr": "कीड दिसताच लवकर फवारा; कडुनिंब कीड मारण्यापेक्षा तिचे खाणे आणि अंडी घालणे थांबवतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Brown plant hopper, Leaf folder, Stem borer",
+     "formulation_per_ha": "200 ml",
+     "water_l_per_ha": "400",
+     "waiting_days": 5
+    }
    }
   ]
  },
@@ -635,24 +966,40 @@
     "dose_per_litre": 0.6,
     "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Aim the nozzle at the base of the plants, not the leaves.",
      "hi": "नोज़ल पौधे के निचले भाग पर रखें, पत्तियों पर नहीं।",
      "mr": "नोझल रोपांच्या तळाकडे ठेवा, पानांवर नव्हे."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Paddy (Rice)",
+     "pest": "Brown plant hopper",
+     "formulation_per_ha": "300 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 19
     }
    },
    {
     "tier": "chemical",
-    "ingredient": "buprofezin_25sc",
-    "dose_per_litre": 1.6,
-    "dose_unit": "ml",
+    "ingredient": "buprofezin_70df",
+    "dose_per_litre": 0.5,
+    "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Alternative; acts on the young hoppers.",
      "hi": "विकल्प; शिशुओं पर असर करता है।",
      "mr": "पर्याय; पिल्लांवर परिणाम करते."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Rice",
+     "pest": "Brown plant hopper",
+     "formulation_per_ha": "250 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 24
     }
    }
   ],
@@ -671,6 +1018,48 @@
     "title": "Planthopper fact sheet",
     "publisher": "IRRI Rice Knowledge Bank",
     "url": "http://www.knowledgebank.irri.org"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "metarhizium_1_15wp",
+    "use": "spray",
+    "dose_per_litre": 5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray the base of the plants in the evening; the fungus needs humidity to infect the hoppers.",
+     "hi": "शाम को पौधों के निचले हिस्से पर छिड़कें; फफूंद को फुदकों को संक्रमित करने के लिए नमी चाहिए।",
+     "mr": "संध्याकाळी चुडांच्या बुडख्यावर फवारा; बुरशीला तुडतुड्यांना बाधित करण्यासाठी ओलावा लागतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Rice",
+     "pest": "Brown plant hopper (Nilaparvata lugens)",
+     "formulation_per_ha": "2.5 kg",
+     "water_l_per_ha": "500",
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "azadirachtin_0_15ec",
+    "use": "spray",
+    "dose_per_litre": 3,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray early, when the pest first appears; neem stops feeding and egg-laying more than it kills.",
+     "hi": "कीट दिखते ही जल्दी छिड़कें; नीम कीट को मारने से ज़्यादा उसका खाना और अंडे देना रोकता है।",
+     "mr": "कीड दिसताच लवकर फवारा; कडुनिंब कीड मारण्यापेक्षा तिचे खाणे आणि अंडी घालणे थांबवतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Brown plant hopper, Leaf folder",
+     "formulation_per_ha": "1500-2500 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 5
+    }
    }
   ]
  },
@@ -709,25 +1098,41 @@
     "ingredient": "mancozeb_75wp",
     "dose_per_litre": 2.5,
     "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
+    "water_l_per_acre": 300,
+    "verified": true,
     "timing": {
      "en": "At first lesions; repeat after 10–14 days if wet weather continues.",
      "hi": "पहले धब्बे पर; नमी बनी रहे तो 10–14 दिन बाद दोहराएँ।",
      "mr": "पहिल्या चट्ट्यांवर; ओलसर हवामान राहिल्यास 10–14 दिवसांनी पुन्हा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Maize",
+     "pest": "Leaf blight, downy mildew",
+     "formulation_per_ha": "1.5–2 kg",
+     "water_l_per_ha": "750",
+     "waiting_days": null
     }
    },
    {
     "tier": "chemical",
-    "ingredient": "propiconazole_25ec",
+    "ingredient": "kresoxim_methyl_44_3sc",
     "dose_per_litre": 1.0,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Alternative when lesions are spreading fast before tasseling.",
      "hi": "नर मंजरी से पहले धब्बे तेज़ी से फैलें तो विकल्प।",
      "mr": "तुरा येण्यापूर्वी चट्टे वेगाने पसरत असतील तर पर्याय."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Maize",
+     "pest": "Turcicum leaf blight, rust",
+     "formulation_per_ha": "500 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 25
     }
    }
   ],
@@ -781,12 +1186,20 @@
     "ingredient": "mancozeb_75wp",
     "dose_per_litre": 2.5,
     "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
+    "water_l_per_acre": 300,
+    "verified": true,
     "timing": {
      "en": "At first spots; repeat after 10–14 days if needed.",
      "hi": "पहले धब्बे पर; ज़रूरत हो तो 10–14 दिन बाद दोहराएँ।",
      "mr": "पहिल्या ठिपक्यांवर; गरज असल्यास 10–14 दिवसांनी पुन्हा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Maize",
+     "pest": "Leaf blight, downy mildew",
+     "formulation_per_ha": "1.5–2 kg",
+     "water_l_per_ha": "750",
+     "waiting_days": null
     }
    }
   ],
@@ -832,28 +1245,23 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "mancozeb_75wp",
-    "dose_per_litre": 2.5,
-    "dose_unit": "g",
+    "ingredient": "kresoxim_methyl_44_3sc",
+    "dose_per_litre": 1.0,
+    "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "When raised rust spots appear on the upper leaves before the top flower opens.",
      "hi": "नर मंजरी से पहले ऊपरी पत्तियों पर दाने दिखें तब।",
      "mr": "तुरा येण्यापूर्वी वरच्या पानांवर फोड दिसल्यास."
-    }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "propiconazole_25ec",
-    "dose_per_litre": 1.0,
-    "dose_unit": "ml",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "Alternative to mancozeb.",
-     "hi": "मैंकोजेब का विकल्प।",
-     "mr": "मॅन्कोझेबचा पर्याय."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Maize",
+     "pest": "Turcicum leaf blight, rust",
+     "formulation_per_ha": "500 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 25
     }
    }
   ],
@@ -904,19 +1312,6 @@
      "hi": "अगले मौसम में बुवाई के समय स्यूडोमोनास या ट्राइकोडर्मा मिट्टी में दें।",
      "mr": "पुढील हंगामात पेरणीवेळी स्युडोमोनास किंवा ट्रायकोडर्मा जमिनीत द्या."
     }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "validamycin_3l",
-    "dose_per_litre": 2.5,
-    "dose_unit": "ml",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "Direct the spray at the lower stem and sheaths.",
-     "hi": "छिड़काव निचले तने और आवरणों पर करें।",
-     "mr": "फवारणी खालच्या खोडावर व आवरणांवर करा."
-    }
    }
   ],
   "expert_trigger": {
@@ -961,15 +1356,23 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "metalaxyl_mancozeb_72wp",
+    "ingredient": "mancozeb_75wp",
     "dose_per_litre": 2.5,
     "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
+    "water_l_per_acre": 300,
+    "verified": true,
     "timing": {
      "en": "On young crops in the first 3–4 weeks when infection is spreading.",
      "hi": "पहले 3–4 हफ्तों में जब संक्रमण फैल रहा हो।",
      "mr": "पहिल्या 3–4 आठवड्यांत संसर्ग पसरत असताना."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Maize",
+     "pest": "Leaf blight, downy mildew",
+     "formulation_per_ha": "1.5–2 kg",
+     "water_l_per_ha": "750",
+     "waiting_days": null
     }
    }
   ],
@@ -1036,41 +1439,23 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "emamectin_benzoate_5sg",
-    "dose_per_litre": 0.4,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "Only after the threshold is crossed; into the whorl.",
-     "hi": "केवल सीमा पार होने पर; गोभ में।",
-     "mr": "फक्त मर्यादा ओलांडल्यावर; पोंग्यात."
-    }
-   },
-   {
-    "tier": "chemical",
     "ingredient": "chlorantraniliprole_18_5sc",
     "dose_per_litre": 0.4,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
-     "en": "Rotate with emamectin; do not repeat the same ingredient.",
-     "hi": "इमामेक्टिन के साथ बदल-बदलकर; एक ही दवा न दोहराएँ।",
-     "mr": "इमामेक्टिनसोबत आलटून-पालटून; तेच औषध पुन्हा वापरू नका."
-    }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "spinetoram_11_7sc",
-    "dose_per_litre": 0.5,
-    "dose_unit": "ml",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "Third option for rotation.",
-     "hi": "बदल-बदलकर उपयोग का तीसरा विकल्प।",
-     "mr": "आलटून-पालटून वापरासाठी तिसरा पर्याय."
+     "en": "Only after the threshold is crossed; into the whorl.",
+     "hi": "केवल सीमा पार होने पर; गोभ में।",
+     "mr": "फक्त मर्यादा ओलांडल्यावर; पोंग्यात."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Maize",
+     "pest": "Stem borers, fall armyworm",
+     "formulation_per_ha": "200 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 10
     }
    }
   ],
@@ -1089,6 +1474,28 @@
     "title": "Fall armyworm: Integrated pest management",
     "publisher": "Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://ppqs.gov.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "beauveria_1_5as",
+    "use": "spray",
+    "dose_per_litre": 6.3,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray into the leaf whorl in the evening while the larvae are small.",
+     "hi": "इल्लियाँ छोटी हों तब शाम को पत्तियों के गोभ में छिड़कें।",
+     "mr": "अळ्या लहान असताना संध्याकाळी पोंग्यात फवारा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Maize",
+     "pest": "Fall army worm (Spodoptera frugiperda)",
+     "formulation_per_ha": "3125 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": null
+    }
    }
   ]
  },
@@ -1125,14 +1532,22 @@
    {
     "tier": "chemical",
     "ingredient": "chlorantraniliprole_18_5sc",
-    "dose_per_litre": 0.3,
+    "dose_per_litre": 0.4,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Only after the threshold is crossed; into the whorl.",
      "hi": "केवल सीमा पार होने पर; गोभ में।",
      "mr": "फक्त मर्यादा ओलांडल्यावर; पोंग्यात."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Maize",
+     "pest": "Stem borers, fall armyworm",
+     "formulation_per_ha": "200 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 10
     }
    }
   ],
@@ -1194,12 +1609,20 @@
    {
     "tier": "chemical",
     "ingredient": "profenofos_50ec",
-    "dose_per_litre": 2.0,
+    "dose_per_litre": 3.0,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Only after the threshold is crossed."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Bollworm",
+     "formulation_per_ha": "1500–2000 ml",
+     "water_l_per_ha": "500–1000",
+     "waiting_days": 15
     }
    },
    {
@@ -1208,9 +1631,17 @@
     "dose_per_litre": 2.0,
     "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Rotate with profenofos; do not repeat the same ingredient."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Bollworms",
+     "formulation_per_ha": "1000 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 30
     }
    }
   ],
@@ -1227,6 +1658,28 @@
     "title": "AESA-based IPM Package: Cotton",
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "azadirachtin_0_15ec",
+    "use": "spray",
+    "dose_per_litre": 5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray from first flowering, before the larvae enter the bolls; it cannot reach larvae already inside.",
+     "hi": "पहले फूल आने से छिड़कें, इल्ली के टिंडे में घुसने से पहले; अंदर घुसी इल्ली तक यह नहीं पहुँचता।",
+     "mr": "पहिल्या फुलोऱ्यापासून, अळी बोंडात शिरण्यापूर्वी फवारा; आत शिरलेल्या अळीपर्यंत ते पोहोचत नाही."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "White fly, Bollworms",
+     "formulation_per_ha": "2500-5000 ml",
+     "water_l_per_ha": "500-1000",
+     "waiting_days": 5
+    }
    }
   ]
  },
@@ -1262,20 +1715,36 @@
     "dose_per_litre": 0.4,
     "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Only after the threshold is crossed."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Boll worms",
+     "formulation_per_ha": "190–220 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 10
     }
    },
    {
     "tier": "chemical",
     "ingredient": "indoxacarb_14_5sc",
-    "dose_per_litre": 1.0,
+    "dose_per_litre": 0.8,
     "dose_unit": "ml",
-    "water_l_per_acre": 200,
-    "verified": false,
+    "water_l_per_acre": 250,
+    "verified": true,
     "timing": {
      "en": "Rotate with emamectin."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Bollworm",
+     "formulation_per_ha": "500 ml",
+     "water_l_per_ha": "600–1000",
+     "waiting_days": 16
     }
    }
   ],
@@ -1292,6 +1761,68 @@
     "title": "AESA-based IPM Package: Cotton",
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "hanpv_0_43as",
+    "use": "spray",
+    "dose_per_litre": 5.4,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray in the evening when the caterpillars are small; the virus works on young larvae.",
+     "hi": "इल्लियाँ छोटी हों तब शाम को छिड़कें; विषाणु छोटी इल्लियों पर असर करता है।",
+     "mr": "अळ्या लहान असताना संध्याकाळी फवारा; विषाणू लहान अळ्यांवर परिणाम करतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Helicoverpa armigera",
+     "formulation_per_ha": "2700 ml",
+     "water_l_per_ha": "400-600",
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "bt_kurstaki_wp",
+    "use": "spray",
+    "dose_per_litre": 1.5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray in the evening when young caterpillars are seen; sunlight breaks Bt down.",
+     "hi": "छोटी इल्लियाँ दिखें तो शाम को छिड़कें; धूप Bt को नष्ट कर देती है।",
+     "mr": "लहान अळ्या दिसताच संध्याकाळी फवारा; उन्हाने Bt नष्ट होते."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Bollworms, Spodoptera",
+     "formulation_per_ha": "0.75-1.00 kg",
+     "water_l_per_ha": "500-750",
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "azadirachtin_0_15ec",
+    "use": "spray",
+    "dose_per_litre": 5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray early, when the pest first appears; neem stops feeding and egg-laying more than it kills.",
+     "hi": "कीट दिखते ही जल्दी छिड़कें; नीम कीट को मारने से ज़्यादा उसका खाना और अंडे देना रोकता है।",
+     "mr": "कीड दिसताच लवकर फवारा; कडुनिंब कीड मारण्यापेक्षा तिचे खाणे आणि अंडी घालणे थांबवतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "White fly, Bollworms",
+     "formulation_per_ha": "2500-5000 ml",
+     "water_l_per_ha": "500-1000",
+     "waiting_days": 5
+    }
    }
   ]
  },
@@ -1332,9 +1863,17 @@
     "dose_per_litre": 1.0,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Only after the threshold is crossed; acts on eggs and young hoppers."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Whitefly",
+     "formulation_per_ha": "500–700 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 50
     }
    },
    {
@@ -1343,9 +1882,17 @@
     "dose_per_litre": 1.2,
     "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Alternative; rotate, never repeat back to back."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Whiteflies, aphids, thrips, jassids",
+     "formulation_per_ha": "600 g",
+     "water_l_per_ha": "500–1000",
+     "waiting_days": 21
     }
    }
   ],
@@ -1357,6 +1904,48 @@
     "title": "Whitefly management advisory",
     "publisher": "ICAR-Central Institute for Cotton Research, Nagpur",
     "url": "https://cicr.org.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "lecanicillium_1_15wp",
+    "use": "spray",
+    "dose_per_litre": 5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray in the evening on a moist crop; the fungus needs humidity to infect the pest.",
+     "hi": "शाम को नम फसल पर छिड़कें; फफूंद को कीट को संक्रमित करने के लिए नमी चाहिए।",
+     "mr": "संध्याकाळी ओलसर पिकावर फवारा; बुरशीला किडीला बाधित करण्यासाठी ओलावा लागतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "White flies",
+     "formulation_per_ha": "2500 g",
+     "water_l_per_ha": "500",
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "azadirachtin_0_15ec",
+    "use": "spray",
+    "dose_per_litre": 5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray early, when the pest first appears; neem stops feeding and egg-laying more than it kills.",
+     "hi": "कीट दिखते ही जल्दी छिड़कें; नीम कीट को मारने से ज़्यादा उसका खाना और अंडे देना रोकता है।",
+     "mr": "कीड दिसताच लवकर फवारा; कडुनिंब कीड मारण्यापेक्षा तिचे खाणे आणि अंडी घालणे थांबवतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "White fly, Bollworms",
+     "formulation_per_ha": "2500-5000 ml",
+     "water_l_per_ha": "500-1000",
+     "waiting_days": 5
+    }
    }
   ]
  },
@@ -1392,9 +1981,17 @@
     "dose_per_litre": 0.3,
     "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Only after the threshold is crossed."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Aphids, jassids, thrips, whiteflies",
+     "formulation_per_ha": "150 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 25
     }
    }
   ],
@@ -1406,6 +2003,28 @@
     "title": "Sucking pest management in cotton",
     "publisher": "ICAR-Central Institute for Cotton Research, Nagpur",
     "url": "https://cicr.org.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "azadirachtin_5",
+    "use": "spray",
+    "dose_per_litre": 0.5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 300,
+    "timing": {
+     "en": "Spray early, when the pest first appears; neem stops feeding and egg-laying more than it kills.",
+     "hi": "कीट दिखते ही जल्दी छिड़कें; नीम कीट को मारने से ज़्यादा उसका खाना और अंडे देना रोकता है।",
+     "mr": "कीड दिसताच लवकर फवारा; कडुनिंब कीड मारण्यापेक्षा तिचे खाणे आणि अंडी घालणे थांबवतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Whitefly, Leaf hoppers, Helicoverpa armigera, Aphids",
+     "formulation_per_ha": "375 ml",
+     "water_l_per_ha": "750",
+     "waiting_days": 5
+    }
    }
   ]
  },
@@ -1431,13 +2050,21 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "thiamethoxam_25wg",
-    "dose_per_litre": 0.2,
-    "dose_unit": "g",
+    "ingredient": "pyriproxyfen_bifenthrin_ec",
+    "dose_per_litre": 2.0,
+    "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Against the whiteflies that spread it only, when whiteflies are seen."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Soybean",
+     "pest": "Whitefly (the yellow mosaic vector)",
+     "formulation_per_ha": "1000 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 35
     }
    }
   ],
@@ -1483,9 +2110,17 @@
     "dose_per_litre": 1.5,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "At first girdling, before flowering."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Soybean",
+     "pest": "Girdle beetle",
+     "formulation_per_ha": "750 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 17
     }
    },
    {
@@ -1494,9 +2129,17 @@
     "dose_per_litre": 0.3,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Alternative; also controls defoliating caterpillars."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Soybean",
+     "pest": "Girdle beetle, tobacco caterpillar, green semilooper, stem fly",
+     "formulation_per_ha": "150 ml",
+     "water_l_per_ha": "500–750",
+     "waiting_days": 22
     }
    }
   ],
@@ -1543,9 +2186,17 @@
     "dose_per_litre": 0.3,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "When larvae exceed about 4 per metre of row."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Soybean",
+     "pest": "Girdle beetle, tobacco caterpillar, green semilooper, stem fly",
+     "formulation_per_ha": "150 ml",
+     "water_l_per_ha": "500–750",
+     "waiting_days": 22
     }
    }
   ],
@@ -1557,6 +2208,28 @@
     "title": "Soybean: Package of practices",
     "publisher": "ICAR-Indian Institute of Soybean Research, Indore",
     "url": "https://iisrindore.icar.gov.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "bt_kurstaki_wp",
+    "use": "spray",
+    "dose_per_litre": 1.5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray in the evening when young caterpillars are seen; sunlight breaks Bt down.",
+     "hi": "छोटी इल्लियाँ दिखें तो शाम को छिड़कें; धूप Bt को नष्ट कर देती है।",
+     "mr": "लहान अळ्या दिसताच संध्याकाळी फवारा; उन्हाने Bt नष्ट होते."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Soybean",
+     "pest": "Spodoptera, Heliothis, Spilosoma, Semilooper, Leaf miner",
+     "formulation_per_ha": "0.75 kg",
+     "water_l_per_ha": "500-750",
+     "waiting_days": null
+    }
    }
   ]
  },
@@ -1586,20 +2259,36 @@
     "dose_per_litre": 1.0,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "At first pustules; repeat after 15 days if weather stays wet."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Soybean",
+     "pest": "Rust (Phakopsora pachyrhizi)",
+     "formulation_per_ha": "500 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 26
     }
    },
    {
     "tier": "chemical",
     "ingredient": "hexaconazole_5ec",
-    "dose_per_litre": 1.6,
+    "dose_per_litre": 1.0,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Alternative to propiconazole."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Soybean",
+     "pest": "Rust",
+     "formulation_per_ha": "0.1% (100 ml / 100 L)",
+     "water_l_per_ha": "as required",
+     "waiting_days": 30
     }
    }
   ],
@@ -1703,15 +2392,23 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "chlorantraniliprole_0_4gr",
-    "dose_per_litre": null,
-    "dose_basis": "4 kg granules per acre, broadcast in 3–5 cm of standing water",
-    "water_l_per_acre": null,
-    "verified": false,
+    "ingredient": "chlorantraniliprole_18_5sc",
+    "dose_per_litre": 0.3,
+    "water_l_per_acre": 200,
+    "verified": true,
     "timing": {
      "en": "Only after the dead-heart threshold is crossed.",
      "hi": "केवल मृत गोभ सीमा पार होने के बाद।",
      "mr": "फक्त मेलेल्या गाभ्यांची मर्यादा ओलांडल्यानंतर."
+    },
+    "dose_unit": "ml",
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Rice",
+     "pest": "Stem borer, leaf folder",
+     "formulation_per_ha": "150 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 47
     }
    }
   ],
@@ -1730,6 +2427,48 @@
     "title": "AESA-based IPM Package: Rice",
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "bt_kurstaki_wp",
+    "use": "spray",
+    "dose_per_litre": 3,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray in the evening when young caterpillars are seen; sunlight breaks Bt down.",
+     "hi": "छोटी इल्लियाँ दिखें तो शाम को छिड़कें; धूप Bt को नष्ट कर देती है।",
+     "mr": "लहान अळ्या दिसताच संध्याकाळी फवारा; उन्हाने Bt नष्ट होते."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Stem borer & Leaf folder",
+     "formulation_per_ha": "1.50 kg",
+     "water_l_per_ha": "500-750",
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "azadirachtin_5",
+    "use": "spray",
+    "dose_per_litre": 0.5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 160,
+    "timing": {
+     "en": "Spray early, when the pest first appears; neem stops feeding and egg-laying more than it kills.",
+     "hi": "कीट दिखते ही जल्दी छिड़कें; नीम कीट को मारने से ज़्यादा उसका खाना और अंडे देना रोकता है।",
+     "mr": "कीड दिसताच लवकर फवारा; कडुनिंब कीड मारण्यापेक्षा तिचे खाणे आणि अंडी घालणे थांबवतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Brown plant hopper, Leaf folder, Stem borer",
+     "formulation_per_ha": "200 ml",
+     "water_l_per_ha": "400",
+     "waiting_days": 5
+    }
    }
   ]
  },
@@ -1753,19 +2492,6 @@
      "en": "Destroy infected residue, rotate with a non-cereal crop and keep balanced nitrogen and potash.",
      "hi": "रोगी अवशेष नष्ट करें, गैर-अनाज फसल से फसल-चक्र करें और संतुलित नाइट्रोजन-पोटाश दें।",
      "mr": "रोगट अवशेष नष्ट करा, तृणधान्य नसलेल्या पिकाची फेरपालट करा व संतुलित नत्र-पालाश द्या."
-    }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "mancozeb_75wp",
-    "dose_per_litre": 2.5,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "When spots spread to the upper leaves before tasseling.",
-     "hi": "नर मंजरी से पहले धब्बे ऊपरी पत्तियों तक फैलें तब।",
-     "mr": "तुरा येण्यापूर्वी ठिपके वरच्या पानांवर पसरल्यास."
     }
    }
   ],
@@ -1819,15 +2545,23 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "thiamethoxam_25wg",
-    "dose_per_litre": 0.2,
-    "dose_unit": "g",
+    "ingredient": "thiamethoxam_lambda_zc",
+    "dose_per_litre": 0.25,
+    "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Only if colonies cover the top flower on more than 1 in 5 plants before pollen is shed.",
      "hi": "केवल तब जब परागण से पहले 5 में से 1 से ज़्यादा पौधों की नर मंजरी झुंडों से ढकी हो।",
      "mr": "फक्त परागीभवनापूर्वी 5 पैकी 1 पेक्षा जास्त झाडांचे तुरे वसाहतींनी झाकलेले असल्यास."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Maize",
+     "pest": "Aphid, shoot fly, stem borer",
+     "formulation_per_ha": "125 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 42
     }
    }
   ],
@@ -1883,19 +2617,6 @@
      "hi": "पहले धब्बे दिखते ही स्यूडोमोनास फ्लोरेसेंस 5 ग्राम प्रति लीटर छिड़कें।",
      "mr": "पहिले ठिपके दिसताच स्यूडोमोनास फ्लुरोसन्स 5 ग्रॅम प्रति लिटर फवारा."
     }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "copper_oxychloride_50wp",
-    "dose_per_litre": 2.5,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "At first spots in wet weather; repeat after 10–15 days if it keeps spreading.",
-     "hi": "नम मौसम में पहले धब्बों पर; फैलता रहे तो 10–15 दिन बाद दोहराएँ।",
-     "mr": "ओलसर हवामानात पहिल्या ठिपक्यांवर; पसरत राहिल्यास 10–15 दिवसांनी पुन्हा."
-    }
    }
   ],
   "expert_trigger": {
@@ -1918,6 +2639,29 @@
     "title": "Crop protection — Cotton",
     "publisher": "TNAU Agritech Portal",
     "url": "https://agritech.tnau.ac.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "pseudomonas_0_5wp",
+    "use": "seed",
+    "per_kg_seed": {
+     "amount": 10,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "For your next sowing: coat the seed evenly, dry it in shade, then sow.",
+     "hi": "अगली बुवाई के लिए: बीज पर समान रूप से लगाएँ, छाया में सुखाएँ, फिर बोएँ।",
+     "mr": "पुढील पेरणीसाठी: बियाण्यावर सारखे लावा, सावलीत वाळवा, मग पेरा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Bacterial leaf blight",
+     "formulation_per_ha": "10 g/kg seed",
+     "water_l_per_ha": null,
+     "waiting_days": null
+    }
    }
   ]
  },
@@ -1962,11 +2706,19 @@
     "dose_per_litre": 1.0,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Only when whiteflies exceed 8–10 adults per leaf; against the whitefly, not the virus.",
      "hi": "सफ़ेद मक्खी प्रति पत्ती 8–10 से ज़्यादा हो तभी; सफ़ेद मक्खी के लिए, विषाणु के लिए नहीं।",
      "mr": "पांढऱ्या माशा प्रति पान 8–10 पेक्षा जास्त असतील तेव्हाच; पांढऱ्या माशीसाठी, विषाणूसाठी नाही."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Whitefly (the leaf curl vector)",
+     "formulation_per_ha": "500–700 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 50
     }
    },
    {
@@ -1975,11 +2727,19 @@
     "dose_per_litre": 1.2,
     "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Alternative to rotate with; not on consecutive sprays.",
      "hi": "बदल-बदल कर डालने का विकल्प; लगातार दो छिड़काव में नहीं।",
      "mr": "आलटून-पालटून वापरायचा पर्याय; लागोपाठ दोन फवारण्यांत नाही."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Whiteflies (the leaf curl vector), aphids, thrips, jassids",
+     "formulation_per_ha": "600 g",
+     "water_l_per_ha": "500–1000",
+     "waiting_days": 21
     }
    }
   ],
@@ -1998,6 +2758,48 @@
     "title": "AESA-based IPM Package: Cotton",
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "lecanicillium_1_15wp",
+    "use": "spray",
+    "dose_per_litre": 5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray in the evening on a moist crop; the fungus needs humidity to infect the pest.",
+     "hi": "शाम को नम फसल पर छिड़कें; फफूंद को कीट को संक्रमित करने के लिए नमी चाहिए।",
+     "mr": "संध्याकाळी ओलसर पिकावर फवारा; बुरशीला किडीला बाधित करण्यासाठी ओलावा लागतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "White flies",
+     "formulation_per_ha": "2500 g",
+     "water_l_per_ha": "500",
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "azadirachtin_0_15ec",
+    "use": "spray",
+    "dose_per_litre": 5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray early, when the pest first appears; neem stops feeding and egg-laying more than it kills.",
+     "hi": "कीट दिखते ही जल्दी छिड़कें; नीम कीट को मारने से ज़्यादा उसका खाना और अंडे देना रोकता है।",
+     "mr": "कीड दिसताच लवकर फवारा; कडुनिंब कीड मारण्यापेक्षा तिचे खाणे आणि अंडी घालणे थांबवतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "White fly, Bollworms",
+     "formulation_per_ha": "2500-5000 ml",
+     "water_l_per_ha": "500-1000",
+     "waiting_days": 5
+    }
    }
   ]
  },
@@ -2034,19 +2836,6 @@
      "en": "Drench the soil around nearby plants with Trichoderma viride at 5 g per litre; treat next season's seed with 4 g per kg.",
      "hi": "आसपास के पौधों की जड़ों में ट्राइकोडर्मा विरिडी 5 ग्राम प्रति लीटर डालें; अगले मौसम के बीज को 4 ग्राम प्रति किलो से उपचारित करें।",
      "mr": "जवळच्या झाडांच्या मुळांशी ट्रायकोडर्मा व्हिरिडी 5 ग्रॅम प्रति लिटर ओता; पुढील हंगामाच्या बियाण्यास 4 ग्रॅम प्रति किलो प्रक्रिया करा."
-    }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "carbendazim_50wp",
-    "dose_per_litre": 1.0,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "As a root-zone drench around plants next to the wilted ones, not as a leaf spray.",
-     "hi": "मुरझाए पौधों के पास के पौधों की जड़ों में डालें, पत्तियों पर छिड़काव नहीं।",
-     "mr": "मरगळलेल्या झाडांशेजारील झाडांच्या मुळांशी ओता, पानांवर फवारणी नाही."
     }
    }
   ],
@@ -2100,28 +2889,23 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "mancozeb_75wp",
-    "dose_per_litre": 2.5,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "When spots spread to the middle leaves; repeat after 15 days if wet weather continues.",
-     "hi": "धब्बे बीच की पत्तियों तक फैलें तब; नमी बनी रहे तो 15 दिन बाद दोहराएँ।",
-     "mr": "ठिपके मधल्या पानांपर्यंत पसरल्यावर; ओलसर हवामान राहिल्यास 15 दिवसांनी पुन्हा."
-    }
-   },
-   {
-    "tier": "chemical",
     "ingredient": "propiconazole_25ec",
     "dose_per_litre": 1.0,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
-     "en": "Alternative if spots keep spreading after mancozeb.",
-     "hi": "मैंकोज़ेब के बाद भी धब्बे फैलते रहें तो विकल्प।",
-     "mr": "मॅन्कोझेबनंतरही ठिपके पसरत राहिल्यास पर्याय."
+     "en": "When spots spread to the middle leaves; repeat after 15 days if wet weather continues.",
+     "hi": "धब्बे बीच की पत्तियों तक फैलें तब; नमी बनी रहे तो 15 दिन बाद दोहराएँ।",
+     "mr": "ठिपके मधल्या पानांपर्यंत पसरल्यावर; ओलसर हवामान राहिल्यास 15 दिवसांनी पुन्हा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Alternaria leaf spot",
+     "formulation_per_ha": "500 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 23
     }
    }
   ],
@@ -2189,11 +2973,19 @@
     "dose_per_litre": 0.3,
     "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Only when more than 1 in 10 plants have aphid clusters and natural enemies are few.",
      "hi": "जब 10 में से 1 से ज़्यादा पौधों पर माहू के झुंड हों और मित्र कीट कम हों तभी।",
      "mr": "10 पैकी 1 पेक्षा जास्त झाडांवर माव्याचे थवे असतील व मित्रकीटक कमी असतील तेव्हाच."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Aphids, jassids, thrips, whiteflies",
+     "formulation_per_ha": "150 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 25
     }
    }
   ],
@@ -2212,6 +3004,28 @@
     "title": "AESA-based IPM Package: Cotton",
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "azadirachtin_5",
+    "use": "spray",
+    "dose_per_litre": 0.5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 300,
+    "timing": {
+     "en": "Spray early, when the pest first appears; neem stops feeding and egg-laying more than it kills.",
+     "hi": "कीट दिखते ही जल्दी छिड़कें; नीम कीट को मारने से ज़्यादा उसका खाना और अंडे देना रोकता है।",
+     "mr": "कीड दिसताच लवकर फवारा; कडुनिंब कीड मारण्यापेक्षा तिचे खाणे आणि अंडी घालणे थांबवतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Whitefly, Leaf hoppers, Helicoverpa armigera, Aphids",
+     "formulation_per_ha": "375 ml",
+     "water_l_per_ha": "750",
+     "waiting_days": 5
+    }
    }
   ]
  },
@@ -2247,15 +3061,23 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "hexaconazole_5ec",
-    "dose_per_litre": 2.0,
-    "dose_unit": "ml",
+    "ingredient": "pyraclostrobin_20wg",
+    "dose_per_litre": 0.8,
+    "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "When spots appear on upper leaves before pod filling.",
      "hi": "दाना भरने से पहले ऊपरी पत्तियों पर धब्बे दिखें तब।",
      "mr": "दाणे भरण्यापूर्वी वरच्या पानांवर ठिपके दिसल्यावर."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Soybean",
+     "pest": "Frog eye leaf spot (Cercospora)",
+     "formulation_per_ha": "375–500 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 26
     }
    }
   ],
@@ -2306,19 +3128,6 @@
      "hi": "बुवाई से पहले बीज को ट्राइकोडर्मा विरिडी 5 ग्राम प्रति किलो से उपचारित करें।",
      "mr": "पेरणीपूर्वी बियाण्यास ट्रायकोडर्मा व्हिरिडी 5 ग्रॅम प्रति किलो प्रक्रिया करा."
     }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "carbendazim_50wp",
-    "dose_per_litre": 1.0,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "If spots climb past the middle of the plant before pod filling.",
-     "hi": "दाना भरने से पहले धब्बे पौधे के बीच से ऊपर चढ़ें तो।",
-     "mr": "दाणे भरण्यापूर्वी ठिपके झाडाच्या मध्यापेक्षा वर चढल्यास."
-    }
    }
   ],
   "expert_trigger": {
@@ -2367,32 +3176,6 @@
      "en": "Spray Trichoderma harzianum at 5 g per litre at the first spots.",
      "hi": "पहले धब्बों पर ट्राइकोडर्मा हरजियानम 5 ग्राम प्रति लीटर छिड़कें।",
      "mr": "पहिल्या ठिपक्यांवर ट्रायकोडर्मा हर्जियानम 5 ग्रॅम प्रति लिटर फवारा."
-    }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "propiconazole_25ec",
-    "dose_per_litre": 1.0,
-    "dose_unit": "ml",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "When spots reach the leaves just below the cob before the top flower opens.",
-     "hi": "नर मंजरी से पहले धब्बे भुट्टे के नीचे की पत्तियों तक पहुँचें तब।",
-     "mr": "तुरा येण्यापूर्वी ठिपके कणसाखालच्या पानांपर्यंत पोहोचल्यावर."
-    }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "mancozeb_75wp",
-    "dose_per_litre": 2.5,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "Alternative; repeat after 10–14 days in wet weather.",
-     "hi": "विकल्प; नम मौसम में 10–14 दिन बाद दोहराएँ।",
-     "mr": "पर्याय; ओलसर हवामानात 10–14 दिवसांनी पुन्हा."
     }
    }
   ],
@@ -2506,11 +3289,19 @@
     "dose_per_litre": 2.5,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Only if more than 1 in 4 leaves is scraped and the crop is still tillering.",
      "hi": "तभी जब हर 4 में से 1 से ज़्यादा पत्ती खुरची हो और फसल अभी कल्ले फूट रही हो।",
      "mr": "दर 4 पैकी 1 पेक्षा जास्त पाने खरवडली असतील आणि पीक अजून फुटवे अवस्थेत असेल तरच."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Paddy (Rice)",
+     "pest": "Hispa",
+     "formulation_per_ha": "1250 ml",
+     "water_l_per_ha": "500–1000",
+     "waiting_days": null
     }
    }
   ],
@@ -2565,19 +3356,6 @@
      "en": "Next season, coat the seed with Pseudomonas fluorescens at 10 g per kg and soak-dry before sowing.",
      "hi": "अगले मौसम में बीज को स्यूडोमोनास फ्लोरेसेंस 10 ग्राम प्रति किलो से उपचारित करें और बोने से पहले सुखा लें।",
      "mr": "पुढील हंगामात बियाण्यास स्युडोमोनास फ्लुरोसेन्स 10 ग्रॅम प्रति किलो लावा आणि पेरणीपूर्वी वाळवा."
-    }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "copper_oxychloride_50wp",
-    "dose_per_litre": 3.0,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "Only if streaks are spreading fast before panicle initiation; copper slows it, it does not cure it.",
-     "hi": "तभी जब बाली बनने से पहले धारियाँ तेज़ी से फैल रही हों; ताँबा रोकता है, ठीक नहीं करता।",
-     "mr": "लोंबी तयार होण्यापूर्वी रेषा झपाट्याने पसरत असतील तरच; तांबे रोग आटोक्यात ठेवते, बरे करत नाही."
     }
    }
   ],
@@ -2687,19 +3465,6 @@
      "hi": "अगले मौसम में बीज को ट्राइकोडर्मा विरिडी 4 ग्राम प्रति किलो से उपचारित करें और नर्सरी अच्छी निकासी वाली क्यारी पर लगाएँ।",
      "mr": "पुढील हंगामात बियाण्यास ट्रायकोडर्मा व्हिरिडी 4 ग्रॅम प्रति किलो लावा आणि रोपवाटिका उत्तम निचरा असलेल्या वाफ्यावर करा."
     }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "metalaxyl_mancozeb_72wp",
-    "dose_per_litre": 2.0,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "Seed treatment before sowing is what works; a spray only helps early, on young plants in wet patches.",
-     "hi": "बोने से पहले बीज उपचार ही काम करता है; छिड़काव केवल शुरुआत में, गीले हिस्सों के छोटे पौधों पर मदद करता है।",
-     "mr": "पेरणीपूर्वी बीजप्रक्रिया हाच उपयुक्त उपाय; फवारणी फक्त सुरुवातीला, ओल्या भागातील लहान रोपांवर उपयोगी."
-    }
    }
   ],
   "expert_trigger": {
@@ -2754,19 +3519,6 @@
      "hi": "अगले मौसम के बीज को ट्राइकोडर्मा विरिडी 5 ग्राम प्रति किलो से उपचारित करें।",
      "mr": "पुढील हंगामाच्या बियाण्यास ट्रायकोडर्मा व्हिरिडी 5 ग्रॅम प्रति किलो प्रक्रिया करा."
     }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "propiconazole_25ec",
-    "dose_per_litre": 1.0,
-    "dose_unit": "ml",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "When ringed spots show on the lower third of the plants, before pod filling.",
-     "hi": "जब पौधों के निचले एक-तिहाई भाग पर छल्लेदार धब्बे दिखें, दाना भरने से पहले।",
-     "mr": "झाडांच्या खालच्या एक तृतीयांश भागावर वलयी ठिपके दिसल्यावर, दाणे भरण्यापूर्वी."
-    }
    }
   ],
   "expert_trigger": {
@@ -2819,15 +3571,23 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "hexaconazole_5ec",
-    "dose_per_litre": 2.0,
-    "dose_unit": "ml",
+    "ingredient": "azoxystrobin_mancozeb_wg",
+    "dose_per_litre": 3.0,
+    "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "As pods start to form, when the top leaves first go bronze.",
      "hi": "फलियाँ बनने के शुरू में, जब ऊपरी पत्तियाँ पहली बार ताँबई पड़ें।",
      "mr": "शेंगा लागू लागताना, वरची पाने प्रथम तांबूस पडल्यावर."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Soybean",
+     "pest": "Cercospora leaf spot, Myrothecium leaf spot",
+     "formulation_per_ha": "1500 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 30
     }
    }
   ],
@@ -2877,19 +3637,6 @@
      "en": "Treat next season's seed with Trichoderma viride at 5 g per kg.",
      "hi": "अगले मौसम के बीज को ट्राइकोडर्मा विरिडी 5 ग्राम प्रति किलो से उपचारित करें।",
      "mr": "पुढील हंगामाच्या बियाण्यास ट्रायकोडर्मा व्हिरिडी 5 ग्रॅम प्रति किलो प्रक्रिया करा."
-    }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "metalaxyl_mancozeb_72wp",
-    "dose_per_litre": 2.0,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "Only if the fuzzy patches pass a quarter of the leaves during a long wet spell.",
-     "hi": "तभी जब लंबी नमी में रोएँदार धब्बे चौथाई से ज़्यादा पत्तियों पर फैल जाएँ।",
-     "mr": "दीर्घ ओल्या हवामानात लवदार ठिपके एक चतुर्थांशापेक्षा जास्त पानांवर गेले तरच."
     }
    }
   ],
@@ -2944,19 +3691,6 @@
      "en": "Treat next season's seed with Pseudomonas fluorescens at 10 g per kg.",
      "hi": "अगले मौसम के बीज को स्यूडोमोनास फ्लोरेसेंस 10 ग्राम प्रति किलो से उपचारित करें।",
      "mr": "पुढील हंगामाच्या बियाण्यास स्युडोमोनास फ्लुरोसेन्स 10 ग्रॅम प्रति किलो लावा."
-    }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "copper_oxychloride_50wp",
-    "dose_per_litre": 3.0,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "If angular spots keep spreading on the new leaves in a cool wet spell — copper slows it; nothing cures it.",
-     "hi": "ठंडी-नम अवधि में नई पत्तियों पर कोणदार धब्बे बढ़ते रहें तो — ताँबा इसे धीमा करता है, ठीक कोई नहीं करता।",
-     "mr": "थंड-ओल्या काळात कोवळ्या पानांवर कोनाकृती ठिपके वाढतच राहिले तर — तांबे रोग मंदावते, बरा करत नाही."
     }
    }
   ],

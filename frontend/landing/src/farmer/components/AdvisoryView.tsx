@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Ban, BadgeCheck, BookOpen, ChevronDown, FlaskConical, Leaf, ListChecks, Phone, PhoneCall, ShieldAlert, Sprout } from 'lucide-react'
-import type { Advisory, IcarTech, LadderRung } from '../../api/types'
+import type { Advisory, IcarTech, LadderRung, OrganicOption } from '../../api/types'
 import { ListenButton, Pill } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
 import { PANEL } from '../tokens'
@@ -13,8 +13,8 @@ const TIER = {
 }
 
 /** The advisory in the order the product promises: what NOT to do first and
- *  loudest, then the ladder cultural → biological → chemical, with the
- *  chemical rung collapsed until the farmer asks for it. */
+ *  loudest, then the ladder cultural → biological, then the registered organic
+ *  products, and the chemical rung last, collapsed until the farmer asks. */
 export default function AdvisoryView({ advisory }: { advisory: Advisory }) {
   const { t, lang } = useFarmer()
   const [showChem, setShowChem] = useState(false)
@@ -25,6 +25,9 @@ export default function AdvisoryView({ advisory }: { advisory: Advisory }) {
     advisory.name + '.',
     t('whatToAvoid') + ': ' + advisory.what_to_avoid.join(' '),
     t('whatToDo') + ': ' + nonChem.map((r) => r.action).join(' '),
+    ...(advisory.organic?.length
+      ? [t('organicTitle') + ': ' + advisory.organic.map((o) => `${o.product}. ${o.dose}`).join(' ')]
+      : []),
     advisory.what_to_check,
   ].join(' ')
 
@@ -55,6 +58,8 @@ export default function AdvisoryView({ advisory }: { advisory: Advisory }) {
             <Rung key={i} rung={r} n={i + 1} />
           ))}
         </ol>
+
+        {advisory.organic && <Organic options={advisory.organic} />}
 
         {chem.length > 0 && (
           <div className="mt-5 rounded-[20px] bg-[#f5f7f1] p-4">
@@ -153,6 +158,7 @@ function Rung({ rung, n }: { rung: LadderRung; n: number }) {
               </p>
             )}
             {rung.timing && <p className="text-[13px] text-soil-dark/75">{rung.timing}</p>}
+            {rung.waiting && <p className="text-[13px] font-medium text-soil-dark/85">{rung.waiting}</p>}
             <p className="text-[13px] flex items-start gap-1.5 text-soil-dark/75">
               <ShieldAlert className="w-3.5 h-3.5 text-ochre shrink-0 mt-0.5" aria-hidden />
               {rung.label_rule}
@@ -162,6 +168,56 @@ function Rung({ rung, n }: { rung: LadderRung; n: number }) {
         )}
       </div>
     </li>
+  )
+}
+
+const USE_KEY = { spray: 'useSpray', seed: 'useSeed', root_dip: 'useRootDip' } as const
+
+/** The organic products India registers for this problem, between the field
+ *  steps and the chemical — or a plain statement that there are none. */
+function Organic({ options }: { options: OrganicOption[] }) {
+  const { t } = useFarmer()
+  const living = options.some((o) => o.kind === 'bio-agent')
+  return (
+    <div className="mt-6 rounded-[22px] bg-[#f3f6e4] p-4 ring-1 ring-[#55631a]/10 lg:p-5">
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#e2eac0] text-[#55631a]">
+          <Leaf className="h-5 w-5" aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-[17px] font-semibold tracking-tight text-[#3d4812]">{t('organicTitle')}</h3>
+          <p className="text-[14px] leading-snug text-soil-dark/75">
+            {options.length > 0 ? t('organicSub') : t('organicNone')}
+          </p>
+        </div>
+      </div>
+      {options.length > 0 && (
+        <ul className="mt-4 space-y-3">
+          {options.map((o, i) => (
+            <li key={i} className="rounded-[18px] bg-white p-4 ring-1 ring-soil-dark/[0.05]">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Pill tone="leaf" className="!text-[12px]">{t(USE_KEY[o.use])}</Pill>
+                <Pill tone="neutral" className="!text-[12px]">{t(o.kind === 'botanical' ? 'organicBotanical' : 'organicBio')}</Pill>
+              </div>
+              <p className="mt-2 text-[15px] font-semibold leading-snug">{o.product}</p>
+              <p className="mt-1 text-[14px] leading-snug">{o.dose}</p>
+              {o.for_field && (
+                <p className="mt-1.5 rounded-lg bg-cream px-2 py-1.5 text-[13px]">
+                  <span className="font-medium">{t('doseForField')}: </span>
+                  {o.for_field.replace(/^[^:]+:\s*/, '')}
+                </p>
+              )}
+              {o.timing && <p className="mt-1.5 text-[13px] text-soil-dark/75">{o.timing}</p>}
+              {o.waiting && <p className="mt-1 text-[13px] font-medium text-soil-dark/85">{o.waiting}</p>}
+              <p className="mt-2 flex items-center gap-1.5 text-[12px] text-[#55631a]">
+                <BadgeCheck className="h-3.5 w-3.5 shrink-0" aria-hidden /> {t('organicRegistered')}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+      {living && <p className="mt-3 text-[13px] leading-snug text-soil-dark/70">{t('organicCare')}</p>}
+    </div>
   )
 }
 

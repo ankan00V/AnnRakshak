@@ -162,11 +162,22 @@ class KB:
             return None
         if q in self.pesticides:
             return q
+        # The most specific name wins. "Copper hydroxide 53.8% DF" contains
+        # "copper hydroxide", an alias of the 77% WP; the first match was the
+        # wrong product, registered for different uses, so the spray check
+        # refused a use the label allows. A name found inside the query is
+        # ranked by its length; a query found inside a name keeps file order.
+        best, best_len = None, -1
         for pid, p in self.pesticides.items():
             names = [p["name"].lower(), *[a.lower() for a in p.get("aliases", [])]]
-            if any(q == n or q in n or n in q for n in names):
+            if q in names:
                 return pid
-        return None
+            within = [len(n) for n in names if n in q]
+            if within and max(within) > best_len:
+                best, best_len = pid, max(within)
+            elif best is None and any(q in n for n in names):
+                best, best_len = pid, 0
+        return best
 
     def technologies_for(
         self, *, target: str | None = None, crop: str | None = None, audience: str | None = None
@@ -207,8 +218,8 @@ class KB:
         """(crop, target) pairs where our advisories use this ingredient."""
         out = []
         for tid, adv in self.advisories.items():
-            for rung in adv["ladder"]:
-                if rung.get("ingredient") == ingredient:
+            for rung in [*adv["ladder"], *adv.get("organic", [])]:
+                if rung.get("ingredient") == ingredient and (self.targets[tid]["crop"], tid) not in out:
                     out.append((self.targets[tid]["crop"], tid))
         return out
 
@@ -260,6 +271,16 @@ def validate(kb: KB) -> list[str]:
                     errors.append(f"advisory {tid}: herbicide {ing} on a pest/disease ladder")
                 if r.get("dose_per_litre") is None and not r.get("dose_basis"):
                     errors.append(f"advisory {tid}: chemical rung {ing} has no dose")
+        for o in adv.get("organic", []):
+            ing = o.get("ingredient")
+            if not kb.pesticides.get(ing, {}).get("organic"):
+                errors.append(f"advisory {tid}: organic option {ing} is not an organic product")
+            if not (o.get("registration") or {}).get("source", "").startswith("CIB&RC"):
+                errors.append(f"advisory {tid}: organic option {ing} has no registration")
+            if o.get("use") not in ("spray", "seed", "root_dip"):
+                errors.append(f"advisory {tid}: organic option {ing} has an unknown use")
+            if not (o.get("dose_per_litre") or o.get("per_acre") or o.get("per_kg_seed")):
+                errors.append(f"advisory {tid}: organic option {ing} has no dose")
         if not adv.get("citations"):
             errors.append(f"advisory {tid}: no citation")
         if not adv.get("what_to_avoid"):
