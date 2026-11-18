@@ -446,8 +446,9 @@ MLD's are green leaves with small whitish-tan flecks and short streaks, not the
 long cigar-shaped lesions of northern blight or the straight-sided tan lesions
 of southern blight. The sb4 photos are mostly red-purple streaking along the
 midrib, yellowing and dried tips, which looks like stress or senescence rather
-than either blight. Naming them as either would be a guess. For real turcicum
-and maydis photos, the ICAR-IIMR Ludhiana set (below) is still the lead.
+than either blight. Naming them as either would be a guess. Northern blight
+came instead from a set labelled by disease (§13). Southern blight (maydis)
+still has no field set; the ICAR-IIMR Ludhiana set (below) is the lead.
 
 **The thinnest classes: nothing public.** Maize aphid, Curvularia leaf spot
 and downy mildew, rice skipper and white stem borer each have 6 to 8 photos.
@@ -460,7 +461,23 @@ Searched Mendeley, Hugging Face, Zenodo and the dataset-survey literature:
 
 These classes will come from the field. Team photos go through the app;
 an expert confirms them; `ml/export_confirmed.py` turns the confirmations into
-training data.
+training data. The one labelled downy mildew set found ("Bulai Daun",
+Indonesian, on Roboflow Universe) needs a Roboflow account to download.
+
+What to photograph: at least 30 photos per class, from at least 3 fields. Use
+a phone in daylight, from about a hand's length, with one problem per photo.
+Take a few wider shots as well, because the app is now asked for those.
+
+| Class | Photograph | Not to be confused with |
+|---|---|---|
+| Maize aphid | Colonies of small blue-green aphids on the whorl, tassel and upper leaves; sticky honeydew and sooty mould under them | Fall armyworm frass in the whorl |
+| Curvularia leaf spot | Small round to oval spots, 1-2 mm, pale centre with a dark brown ring and a yellow halo | Maydis blight (longer, straight-sided lesions) |
+| Maize downy mildew | Chlorotic stripes running the leaf's length, white downy growth on the underside in the early morning, plants stunted | Nutrient striping (no down on the underside) |
+| Rice skipper | Leaf ends rolled and tied lengthwise into tubes, green caterpillar with a large head inside | Leaf folder (folds leaf lengthwise, white scraped streaks) |
+| Rice white stem borer | Dead hearts and white ears together with the adult: a white moth with no dot on the wing (yellow stem borer has a black dot). Species can only be named from the moth or the larva | Yellow stem borer |
+
+Each photo should be confirmed in the expert console by someone who saw the
+plant, not only the photo.
 
 **`ml/export_confirmed.py` had a leak, now closed.** Of the 26 photos experts
 had confirmed in the app's database, 8 were held-out test photos (the team
@@ -484,6 +501,27 @@ PlantVillage's crops other than maize and soybean. They showed two things:
   becoming rice advice is the farm's registered crop (CROP_MISMATCH) and the
   per-class bars, not familiarity. Worth a negative "not our crop" set in the
   familiarity bank, measured on these photos.
+
+## 13. CD&S — northern leaf blight in the field (18 Nov 2026)
+
+| Source | Kept | What it is |
+|---|---|---|
+| `data/ingest_cds.py` | 497 | CD&S dataset (Ahmad, Saraswat, El Gamal & Johal, Purdue; arXiv 2110.12084; OSF `s6ru5`), `Dataset_Original` northern leaf blight, train and test folders |
+
+Handheld photos from maize field trials, sorted by disease by the
+researchers. All 497 were new to our data. A sample was checked by eye: long,
+cigar-shaped tan lesions, northern leaf blight as it looks in the field. The
+set's other folders are the same photos with the background removed or
+replaced, so they are not used. Its gray leaf spot is not used either
+(already plentiful), and its northern leaf spot is not a problem the app
+advises on. Each file is checked against the SHA-256 OSF publishes for it.
+
+Looked at for the same class and not used: the Cornell NLB set (Wiesner-Hanks
+et al. 2018, OSF `p67rz`). Its lesion annotations are gone from OSF (all three
+CSVs return 404), and the paper says some photos have no visible lesion; the
+study that first used them split them roughly 1,028 with lesions to 768
+without. Without the annotations, labelling the set as blight would be wrong
+for about 4 photos in 10.
 
 ## Evaluated and turned down
 

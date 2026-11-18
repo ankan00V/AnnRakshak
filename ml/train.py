@@ -73,6 +73,7 @@ RICEBD_MANIFEST = ROOT / "data" / "processed" / "ricebd_images.csv"
 HF_MANIFEST = ROOT / "data" / "processed" / "hf_images.csv"
 VNRICE_MANIFEST = ROOT / "data" / "processed" / "vnrice_images.csv"
 MENDELEY2_MANIFEST = ROOT / "data" / "processed" / "mendeley2_images.csv"
+CDS_MANIFEST = ROOT / "data" / "processed" / "cds_images.csv"
 ART = ROOT / "ml" / "artifacts"
 CKPT = ROOT / "ml" / "artifacts" / "epoch_checkpoint.pt"
 REP = ROOT / "ml" / "reports"
@@ -612,6 +613,8 @@ def main():
                     help="add rice false smut from Odisha and Hugging Face (data/ingest_vnrice.py)")
     ap.add_argument("--with-mendeley2", action="store_true",
                     help="add the Bangladesh maize and cotton aphid sets (data/ingest_mendeley2.py)")
+    ap.add_argument("--with-cds", action="store_true",
+                    help="add CD&S field photos of northern leaf blight (data/ingest_cds.py)")
     ap.add_argument("--with-more", action="store_true",
                     help="also the cotton, soybean and extra maize/rice sets (data/processed/more_images.csv)")
     ap.add_argument("--lr-feat", type=float, default=None,
@@ -814,7 +817,8 @@ def main_extra(args):
             ("with_ricebd", RICEBD_MANIFEST, THIN_CAP, "Sirajganj/Pabna rice (data/ingest_ricebd.py)"),
             ("with_hf", HF_MANIFEST, THIN_CAP, "Hugging Face maize and cotton (data/ingest_hf.py)"),
             ("with_vnrice", VNRICE_MANIFEST, THIN_CAP, "rice false smut, Odisha and Hugging Face (data/ingest_vnrice.py)"),
-            ("with_mendeley2", MENDELEY2_MANIFEST, THIN_CAP, "Bangladesh maize and cotton aphid (data/ingest_mendeley2.py)")):
+            ("with_mendeley2", MENDELEY2_MANIFEST, THIN_CAP, "Bangladesh maize and cotton aphid (data/ingest_mendeley2.py)"),
+            ("with_cds", CDS_MANIFEST, THIN_CAP, "CD&S northern leaf blight (data/ingest_cds.py)")):
         if getattr(args, flag, False) and manifest.exists():
             x_tr, x_va, x_te = load_extra_split(manifest, cap, cap, set())
             e_tr, e_va, e_te = e_tr + x_tr, e_va + x_va, e_te + x_te
@@ -952,7 +956,8 @@ def main_extra(args):
                f"{'+local' if getattr(args, 'with_local', False) else ''}"
                f"{'+cotton' if getattr(args, 'with_cotton', False) else ''}"
                f"{'+thin' if getattr(args, 'with_dhan', False) else ''}"
-               f"{'+wave3' if getattr(args, 'with_vnrice', False) else ''}-"
+               f"{'+wave3' if getattr(args, 'with_vnrice', False) else ''}"
+               f"{'+cds' if getattr(args, 'with_cds', False) else ''}-"
                f"efficientnet_v2_s-{'warmstart' if init else 'finetune'}-"
                f"{datetime.now(UTC):%Y%m%d}")
     meta = {
