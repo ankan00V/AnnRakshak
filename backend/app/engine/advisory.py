@@ -12,7 +12,7 @@ product amount come from one place.
 
 from __future__ import annotations
 
-from app.kb import KB, TIER_ORDER, tr
+from app.kb import KB, TIER_ORDER, tr, trl
 
 UNIT_WORDS = {
     "g": {"en": "g per litre of water", "hi": "ग्राम प्रति लीटर पानी", "mr": "ग्रॅम प्रति लिटर पाणी"},
@@ -45,6 +45,16 @@ FOR_AREA_DRY = {
     "en": "For your {area} acre field: about {qty} {unit}.",
     "hi": "आपके {area} एकड़ खेत के लिए: लगभग {qty} {unit}।",
     "mr": "तुमच्या {area} एकर शेतासाठी: सुमारे {qty} {unit}.",
+}
+HOME_KERNEL = {
+    "en": "{n} g of kernel per litre of water: {tank} g for a 10-litre tank.",
+    "hi": "प्रति लीटर पानी {n} ग्राम गिरी: 10 लीटर की टंकी के लिए {tank} ग्राम।",
+    "mr": "प्रति लिटर पाण्यात {n} ग्रॅम गर: 10 लिटरच्या टाकीसाठी {tank} ग्रॅम.",
+}
+HOME_OIL = {
+    "en": "{n} ml of neem oil and {d} ml of liquid detergent per litre of water: {tank} ml of oil for a 10-litre tank.",
+    "hi": "प्रति लीटर पानी {n} मिली नीम तेल और {d} मिली तरल डिटर्जेंट: 10 लीटर की टंकी के लिए {tank} मिली तेल।",
+    "mr": "प्रति लिटर पाण्यात {n} मिली निंबोळी तेल आणि {d} मिली द्रव डिटर्जंट: 10 लिटरच्या टाकीसाठी {tank} मिली तेल.",
 }
 PER_KG_SEED = {
     "en": "{n} {unit} per kg of seed.",
@@ -105,6 +115,7 @@ def compose(kb: KB, target: str, lang: str, area_acres: float | None = None) -> 
 
     order = [TIER_ORDER[r["tier"]] for r in ladder_out]
     organic = [_organic(kb, o, lang, area_acres) for o in adv.get("organic", [])]
+    homemade = [_homemade(kb, h, lang) for h in adv.get("homemade", [])]
     if order != sorted(order):
         raise LadderOrderError(f"{target}: ladder not chemical-last at composition")
 
@@ -118,6 +129,8 @@ def compose(kb: KB, target: str, lang: str, area_acres: float | None = None) -> 
         "ladder": ladder_out,
         # Registered bio-pesticides and neem products, before any chemical.
         "organic": organic,
+        # Neem preparations made at home, where a government IPM source names them.
+        "homemade": homemade,
         "expert_trigger": tr(adv["expert_trigger"], lang),
         "citations": adv["citations"],
         # ICAR-released products and tools for this problem, with who to call.
@@ -171,6 +184,24 @@ def _organic(kb: KB, o: dict, lang: str, area_acres: float | None) -> dict:
     else:
         item |= _spray_dose(o, lang, area_acres)
     return item
+
+
+def _homemade(kb: KB, h: dict, lang: str) -> dict:
+    prep = kb.homemade[h["prep"]]
+    n = h["per_litre"]["amount"]
+    if h["per_litre"]["unit"] == "g":
+        dose = tr(HOME_KERNEL, lang).format(n=_fmt(n), tank=_fmt(n * 10))
+    else:
+        dose = tr(HOME_OIL, lang).format(n=_fmt(n), d=_fmt(h.get("detergent_ml_per_litre", 2)), tank=_fmt(n * 10))
+    return {
+        "prep": h["prep"],
+        "name": tr(prep["name"], lang),
+        "dose": dose,
+        "timing": tr(h["timing"], lang),
+        "recipe": trl(prep["recipe"], lang),
+        "source": h["source"],
+        "recipe_source": prep.get("recipe_source"),
+    }
 
 
 def healthy_note(lang: str) -> str:

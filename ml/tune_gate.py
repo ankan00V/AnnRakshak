@@ -53,6 +53,10 @@ TARGET_PRECISION = 0.95
 0.868 precision at 0.70 to 0.957 at 0.90. A class already above it at the
 global gate needs no entry of its own."""
 
+MIN_CONFIRM_ERRORS = 5
+"""How many held-out mistakes one look-alike must account for before a class is
+asked about it on every photo: fewer is a stray image, not a pattern."""
+
 MEANINGFUL_GAIN = 0.02
 """How much precision a higher bar must buy a class that cannot reach the
 target before it is worth the recall it costs. Below this the bar is noise on a
@@ -178,9 +182,29 @@ def report(said: list, args) -> None:
             said_best = "—" if best_p is None else f"{best_p:.3f} at {best_bar:.2f} (recall {best_rec:.3f})"
             print(f"  {r['target']}: best {said_best}, on {r['seen']} held-out images")
 
+    # A class no bar makes reliable gets one more check before advice: the
+    # field question that tells it from the class it is most often wrongly
+    # advised in place of — when one exists and that class is a real share of
+    # the mistakes, not one stray photo.
+    cues = {frozenset(c["pair"]) for c in json.loads((ROOT / "backend" / "kb" / "cues.json").read_text())}
+    confirm: dict[str, tuple[str, int, int, int]] = {}
+    for t, bar in sorted({**{r["target"]: BARS[0] for r in rows}, **needs}.items()):
+        advised = [(truth, p) for truth, p, c in said if p == t and c >= bar]
+        wrong = [truth for truth, p in advised if truth != p]
+        if not advised or 1 - len(wrong) / len(advised) >= TARGET_PRECISION:
+            continue
+        counts = sorted(((wrong.count(w), w) for w in set(wrong)), reverse=True)
+        n, partner = counts[0]
+        if frozenset((t, partner)) in cues and n >= MIN_CONFIRM_ERRORS and 2 * n >= len(wrong):
+            confirm[t] = (partner, n, len(wrong), len(advised))
+    print(f"\n{len(confirm)} class(es) get a look-alike question before advice:")
+    for t, (partner, n, w, a) in confirm.items():
+        print(f"  {t}: {w} of {a} advised were wrong, {n} of them {partner}")
+
     if args.write:
         write_config(needs, rows)
-        print("\nconfig.TARGET_GATE rewritten.")
+        write_confirm(confirm)
+        print("\nconfig.TARGET_GATE and config.CONFIRM_LOOKALIKE rewritten.")
 
 
 def write_config(needs: dict[str, float], rows: list[dict]) -> None:
@@ -216,6 +240,32 @@ def write_config(needs: dict[str, float], rows: list[dict]) -> None:
         "Between GATE and this bar the gate asks the look-alike question or sends the",
         "photo to an expert. Drop an entry once expert confirmations show the class",
         'holds up on farmers\' field photos."""',
+        "",
+    ]
+    cfg.write_text(s[:start] + "\n".join(lines) + s[end:])
+
+
+def write_confirm(confirm: dict[str, tuple[str, int, int, int]]) -> None:
+    from datetime import date
+
+    cfg = ROOT / "backend" / "app" / "config.py"
+    s = cfg.read_text()
+    start = s.index("CONFIRM_LOOKALIKE: dict[str, str] = {")
+    end = s.index("def lookalike_for(")
+    lines = ["CONFIRM_LOOKALIKE: dict[str, str] = {"]
+    lines += [f'    "{t}": "{p}",' for t, (p, *_rest) in confirm.items()]
+    lines.append("}")
+    detail = [f"{t.replace('_', ' ')}: {w} of {a} advised were wrong, {n} of them {p.replace('_', ' ')}"
+              for t, (p, n, w, a) in confirm.items()]
+    lines += [
+        '"""Classes that stay below the target precision at every bar, and whose',
+        "mistakes are mostly one look-alike that a field question separates. When the",
+        "model names one of these above its bar, the farmer is asked that question",
+        "before the advice (LOOKALIKE_CONFIRM); the answer settles it the way it does",
+        f"for two close guesses. Measured by ml/tune_gate.py on held-out images ({date.today()}):",
+        (";\n".join(detail) if detail else "none") + '."""',
+        "",
+        "",
         "",
     ]
     cfg.write_text(s[:start] + "\n".join(lines) + s[end:])

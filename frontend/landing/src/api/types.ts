@@ -101,6 +101,17 @@ export interface OrganicOption {
   source?: string
 }
 
+/** A neem preparation made at home, where a government IPM source names it. */
+export interface HomemadeOption {
+  prep: string
+  name: string
+  dose: string
+  timing: string
+  recipe: string[]
+  source: string
+  recipe_source?: string | null
+}
+
 export interface Citation {
   title: string
   publisher: string
@@ -144,6 +155,7 @@ export interface Advisory {
   ladder: LadderRung[]
   /** Registered organic products; empty when none is registered for this problem. */
   organic?: OrganicOption[]
+  homemade?: HomemadeOption[]
   expert_trigger: string
   citations: Citation[]
   icar_options: IcarTech[]
@@ -391,6 +403,9 @@ export interface Heatmap {
   cols: number
   method: string
   class: string
+  /** On a photo the model found unfamiliar: the part to photograph up close,
+   *  as [x0, y0, x1, y1] fractions of the square frame. */
+  closer_region?: number[]
 }
 
 export interface Gate {
@@ -479,6 +494,7 @@ export interface ProblemView {
   image_url: string | null
   gate_outcome: GateOutcome | null
   gate_reason: string | null
+  closer_region?: number[] | null
   confidence: number | null
   is_stub: boolean | null
   advisory_source: string | null

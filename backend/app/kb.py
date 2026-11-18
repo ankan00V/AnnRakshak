@@ -76,6 +76,7 @@ class KB:
     institutes: dict[str, dict] = field(default_factory=dict)
     technologies: list[dict] = field(default_factory=list)
     agromet: dict = field(default_factory=dict)
+    homemade: dict = field(default_factory=dict)
     _cue_index: dict[frozenset, dict] = field(default_factory=dict)
 
     # --- lookups ---------------------------------------------------------
@@ -281,6 +282,16 @@ def validate(kb: KB) -> list[str]:
                 errors.append(f"advisory {tid}: organic option {ing} has an unknown use")
             if not (o.get("dose_per_litre") or o.get("per_acre") or o.get("per_kg_seed")):
                 errors.append(f"advisory {tid}: organic option {ing} has no dose")
+        for h in adv.get("homemade", []):
+            prep = h.get("prep")
+            if prep not in kb.homemade:
+                errors.append(f"advisory {tid}: homemade option {prep} is not a known preparation")
+            if not (h.get("per_litre") or {}).get("amount"):
+                errors.append(f"advisory {tid}: homemade option {prep} has no strength")
+            if not h.get("source"):
+                errors.append(f"advisory {tid}: homemade option {prep} has no source")
+            if any(not (h.get("timing") or {}).get(lang) for lang in ("en", "hi", "mr")):
+                errors.append(f"advisory {tid}: homemade option {prep} timing is not in en, hi and mr")
         if not adv.get("citations"):
             errors.append(f"advisory {tid}: no citation")
         if not adv.get("what_to_avoid"):
@@ -432,6 +443,8 @@ def load_kb(kb_dir: Path = KB_DIR) -> KB:
         kb.institutes, kb.technologies = tech["institutes"], tech["technologies"]
     if (kb_dir / "agromet.json").exists():
         kb.agromet = _load("agromet.json", kb_dir)
+    if (kb_dir / "homemade.json").exists():
+        kb.homemade = _load("homemade.json", kb_dir)
     errors = validate(kb)
     if errors:
         raise KBError("knowledge base refused:\n  " + "\n  ".join(errors))

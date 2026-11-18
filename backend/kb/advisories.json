@@ -1061,6 +1061,35 @@
      "waiting_days": 5
     }
    }
+  ],
+  "homemade": [
+   {
+    "prep": "neem_oil",
+    "per_litre": {
+     "amount": 5,
+     "unit": "ml"
+    },
+    "detergent_ml_per_litre": 2,
+    "timing": {
+     "en": "Spray the base of the plants, where the hoppers sit. It cuts egg-laying rather than killing outright.",
+     "hi": "पौधों के निचले हिस्से पर छिड़कें, जहाँ फुदके बैठते हैं। यह मारने से ज़्यादा अंडे देना कम करता है।",
+     "mr": "चुडांच्या बुडख्यावर फवारा, जिथे तुडतुडे बसतात. हे मारण्यापेक्षा अंडी घालणे कमी करते."
+    },
+    "source": "DPPQS advisory on brown planthopper in rice"
+   },
+   {
+    "prep": "nske_5",
+    "per_litre": {
+     "amount": 50,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "While the count is still below about 10 hoppers per hill; aim at the base of the plants.",
+     "hi": "जब तक गिनती प्रति पौधा लगभग 10 फुदकों से कम हो; पौधों के निचले हिस्से पर छिड़कें।",
+     "mr": "मोजणी प्रति चूड सुमारे 10 तुडतुड्यांपेक्षा कमी असेपर्यंत; चुडांच्या बुडख्यावर फवारा."
+    },
+    "source": "DPPQS advisory on brown planthopper in rice"
+   }
   ]
  },
  "maize_turcicum_leaf_blight": {
@@ -1496,6 +1525,21 @@
      "water_l_per_ha": "500",
      "waiting_days": null
     }
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "nske_5",
+    "per_litre": {
+     "amount": 50,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "Spray into the whorl while the young larvae are still scraping windows in the leaves, from the seedling to the early whorl stage.",
+     "hi": "जब छोटी इल्लियाँ पत्तों को खुरचकर खिड़की जैसे निशान बना रही हों, तब पौध से शुरुआती गोभ अवस्था तक गोभ में छिड़कें।",
+     "mr": "लहान अळ्या पानांवर खरवडून खिडकीसारख्या खुणा करत असताना, रोपावस्थेपासून सुरुवातीच्या पोंगा अवस्थेपर्यंत पोंग्यात फवारा."
+    },
+    "source": "ICAR-IIMR, Identification and management of fall armyworm"
    }
   ]
  },
@@ -1947,6 +1991,21 @@
      "waiting_days": 5
     }
    }
+  ],
+  "homemade": [
+   {
+    "prep": "nske_5",
+    "per_litre": {
+     "amount": 50,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "Spray when you first see the insects under the leaves, covering the undersides.",
+     "hi": "पत्तों के नीचे कीट दिखते ही छिड़कें, पत्तों की निचली सतह पर अच्छी तरह।",
+     "mr": "पानांच्या खाली किडे दिसताच फवारा, पानांच्या खालच्या बाजूला नीट."
+    },
+    "source": "APEDA Farmer Connect: IPM with recommended pesticides (Government of India)"
+   }
   ]
  },
  "cotton_jassid": {
@@ -2026,6 +2085,21 @@
      "waiting_days": 5
     }
    }
+  ],
+  "homemade": [
+   {
+    "prep": "nske_5",
+    "per_litre": {
+     "amount": 50,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "Spray when you first see the insects under the leaves, covering the undersides.",
+     "hi": "पत्तों के नीचे कीट दिखते ही छिड़कें, पत्तों की निचली सतह पर अच्छी तरह।",
+     "mr": "पानांच्या खाली किडे दिसताच फवारा, पानांच्या खालच्या बाजूला नीट."
+    },
+    "source": "APEDA Farmer Connect: IPM with recommended pesticides (Government of India)"
+   }
   ]
  },
  "soybean_yellow_mosaic": {
@@ -2081,6 +2155,21 @@
     "title": "AESA-based IPM Package: Soybean",
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "nske_5",
+    "per_litre": {
+     "amount": 50,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "It keeps down the whitefly that spreads the virus; it does not cure plants already infected.",
+     "hi": "यह वायरस फैलाने वाली सफेद मक्खी को कम करता है; पहले से संक्रमित पौधों को ठीक नहीं करता।",
+     "mr": "हे विषाणू पसरवणाऱ्या पांढऱ्या माशीला कमी करते; आधीच बाधित झाडे बरी करत नाही."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Soybean"
    }
   ]
  },
@@ -2231,6 +2320,21 @@
      "waiting_days": null
     }
    }
+  ],
+  "homemade": [
+   {
+    "prep": "nske_5",
+    "per_litre": {
+     "amount": 50,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "Spray while the caterpillars are small, when you first see leaves eaten from the underside.",
+     "hi": "इल्लियाँ छोटी हों तभी छिड़कें, जब पत्ते नीचे से खाए हुए पहली बार दिखें।",
+     "mr": "अळ्या लहान असतानाच फवारा, पाने खालून खाल्लेली पहिल्यांदा दिसताच."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Soybean"
+   }
   ]
  },
  "soybean_rust": {
@@ -2300,6 +2404,22 @@
     "title": "Soybean: Package of practices",
     "publisher": "ICAR-Indian Institute of Soybean Research, Indore",
     "url": "https://iisrindore.icar.gov.in"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "neem_oil",
+    "per_litre": {
+     "amount": 10,
+     "unit": "ml"
+    },
+    "detergent_ml_per_litre": 2,
+    "timing": {
+     "en": "Three sprays: 30, 45 and 60 days after sowing.",
+     "hi": "तीन छिड़काव: बुवाई के 30, 45 और 60 दिन बाद।",
+     "mr": "तीन फवारण्या: पेरणीनंतर 30, 45 आणि 60 दिवसांनी."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Soybean"
    }
   ]
  },
@@ -2801,6 +2921,21 @@
      "waiting_days": 5
     }
    }
+  ],
+  "homemade": [
+   {
+    "prep": "nske_5",
+    "per_litre": {
+     "amount": 50,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "It keeps down the whitefly that spreads the virus; it does not cure plants already infected.",
+     "hi": "यह वायरस फैलाने वाली सफेद मक्खी को कम करता है; पहले से संक्रमित पौधों को ठीक नहीं करता।",
+     "mr": "हे विषाणू पसरवणाऱ्या पांढऱ्या माशीला कमी करते; आधीच बाधित झाडे बरी करत नाही."
+    },
+    "source": "APEDA Farmer Connect: IPM with recommended pesticides (Government of India)"
+   }
   ]
  },
  "cotton_wilt": {
@@ -3026,6 +3161,21 @@
      "water_l_per_ha": "750",
      "waiting_days": 5
     }
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "nske_5",
+    "per_litre": {
+     "amount": 50,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "Spray when you first see the insects under the leaves, covering the undersides.",
+     "hi": "पत्तों के नीचे कीट दिखते ही छिड़कें, पत्तों की निचली सतह पर अच्छी तरह।",
+     "mr": "पानांच्या खाली किडे दिसताच फवारा, पानांच्या खालच्या बाजूला नीट."
+    },
+    "source": "APEDA Farmer Connect: IPM with recommended pesticides (Government of India)"
    }
   ]
  },

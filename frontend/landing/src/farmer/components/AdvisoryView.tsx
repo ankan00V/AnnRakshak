@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Ban, BadgeCheck, BookOpen, ChevronDown, FlaskConical, Leaf, ListChecks, Phone, PhoneCall, ShieldAlert, Sprout } from 'lucide-react'
-import type { Advisory, IcarTech, LadderRung, OrganicOption } from '../../api/types'
+import { Ban, BadgeCheck, BookOpen, ChevronDown, CookingPot, FlaskConical, Leaf, ListChecks, Phone, PhoneCall, ShieldAlert, Sprout } from 'lucide-react'
+import type { Advisory, HomemadeOption, IcarTech, LadderRung, OrganicOption } from '../../api/types'
 import { ListenButton, Pill } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
 import { PANEL } from '../tokens'
@@ -27,6 +27,9 @@ export default function AdvisoryView({ advisory }: { advisory: Advisory }) {
     t('whatToDo') + ': ' + nonChem.map((r) => r.action).join(' '),
     ...(advisory.organic?.length
       ? [t('organicTitle') + ': ' + advisory.organic.map((o) => `${o.product}. ${o.dose}`).join(' ')]
+      : []),
+    ...(advisory.homemade?.length
+      ? [t('homemadeTitle') + ': ' + advisory.homemade.map((h) => `${h.name}. ${h.dose} ${h.timing}`).join(' ')]
       : []),
     advisory.what_to_check,
   ].join(' ')
@@ -59,7 +62,7 @@ export default function AdvisoryView({ advisory }: { advisory: Advisory }) {
           ))}
         </ol>
 
-        {advisory.organic && <Organic options={advisory.organic} />}
+        {advisory.organic && <Organic options={advisory.organic} homemade={advisory.homemade ?? []} />}
 
         {chem.length > 0 && (
           <div className="mt-5 rounded-[20px] bg-[#f5f7f1] p-4">
@@ -175,7 +178,7 @@ const USE_KEY = { spray: 'useSpray', seed: 'useSeed', root_dip: 'useRootDip' } a
 
 /** The organic products India registers for this problem, between the field
  *  steps and the chemical — or a plain statement that there are none. */
-function Organic({ options }: { options: OrganicOption[] }) {
+function Organic({ options, homemade }: { options: OrganicOption[]; homemade: HomemadeOption[] }) {
   const { t } = useFarmer()
   const living = options.some((o) => o.kind === 'bio-agent')
   return (
@@ -187,7 +190,7 @@ function Organic({ options }: { options: OrganicOption[] }) {
         <div className="min-w-0 flex-1">
           <h3 className="text-[17px] font-semibold tracking-tight text-[#3d4812]">{t('organicTitle')}</h3>
           <p className="text-[14px] leading-snug text-soil-dark/75">
-            {options.length > 0 ? t('organicSub') : t('organicNone')}
+            {options.length > 0 ? t('organicSub') : homemade.length > 0 ? t('organicNoneHome') : t('organicNone')}
           </p>
         </div>
       </div>
@@ -217,6 +220,46 @@ function Organic({ options }: { options: OrganicOption[] }) {
         </ul>
       )}
       {living && <p className="mt-3 text-[13px] leading-snug text-soil-dark/70">{t('organicCare')}</p>}
+      {homemade.length > 0 && <Homemade items={homemade} />}
+    </div>
+  )
+}
+
+/** Neem preparations the farmer makes at home. Not registered products, so
+ *  no label and no waiting period: the strength, when to spray, how to make
+ *  it, and the government source that recommends it for this problem. */
+function Homemade({ items }: { items: HomemadeOption[] }) {
+  const { t } = useFarmer()
+  return (
+    <div className="mt-5 border-t border-[#55631a]/15 pt-4">
+      <div className="flex items-start gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e2eac0] text-[#55631a]">
+          <CookingPot className="h-5 w-5" aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h4 className="text-[16px] font-semibold tracking-tight text-[#3d4812]">{t('homemadeTitle')}</h4>
+          <p className="text-[13px] leading-snug text-soil-dark/75">{t('homemadeSub')}</p>
+        </div>
+      </div>
+      <ul className="mt-3 space-y-3">
+        {items.map((h, i) => (
+          <li key={i} className="rounded-[18px] bg-white p-4 ring-1 ring-soil-dark/[0.05]">
+            <p className="text-[15px] font-semibold leading-snug">{h.name}</p>
+            <p className="mt-1 text-[14px] leading-snug">{h.dose}</p>
+            <p className="mt-1.5 text-[13px] text-soil-dark/75">{h.timing}</p>
+            <details className="group mt-2.5 rounded-xl bg-[#f6f8ef] px-3 py-2">
+              <summary className="flex min-h-[36px] cursor-pointer list-none items-center justify-between text-[14px] font-medium text-[#3d4812]">
+                {t('homemadeRecipe')}
+                <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden />
+              </summary>
+              <ol className="mt-1 list-decimal space-y-1 pb-1 pl-5 text-[13px] leading-snug">
+                {h.recipe.map((step, j) => <li key={j}>{step}</li>)}
+              </ol>
+            </details>
+            <p className="mt-2 text-[12px] text-soil-dark/65">{t('homemadeSource')}: {h.source}</p>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

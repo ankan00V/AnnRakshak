@@ -15,7 +15,9 @@ Order matters:
      higher bar (config.TARGET_GATE)          the runner-up, else escalate
   5. top-1 is inspection-tier             → escalate (a photo can't settle it)
   6. no advisory in the knowledge base    → escalate
-  7. otherwise                            → advise
+  7. a class no bar makes reliable        → clarify with the cue for the class it
+     (config.CONFIRM_LOOKALIKE)               is most often mistaken for
+  8. otherwise                            → advise
 
 Ambiguity (3) is checked before the absolute gate (4): 0.52 vs 0.44 is worth a
 question even though neither clears the gate, while 0.66 vs 0.10 is clear but
@@ -28,7 +30,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Literal
 
-from app.config import FLOOR, GATE, MARGIN, gate_for
+from app.config import FLOOR, GATE, MARGIN, gate_for, lookalike_for
 
 Outcome = Literal["advise", "clarify", "escalate", "retake"]
 """'retake' is only for a photo that is not a crop at all — an expert's time is
@@ -78,11 +80,25 @@ def threshold_of(reason: str, top_target: str | None) -> float:
         return FLOOR
     if reason in ("AMBIGUOUS", "AMBIGUOUS_NO_CUE"):
         return MARGIN
-    if reason in ("LAB_CLASS_CONFIRM", "LAB_CLASS_BELOW_GATE") and top_target:
+    if reason in ("LAB_CLASS_CONFIRM", "LAB_CLASS_BELOW_GATE", "LOOKALIKE_CONFIRM") and top_target:
         return gate_for(top_target)
     if reason == "CROP_NOT_SUPPORTED":
         return 0.0
     return GATE
+
+
+def clarify_cue(reason: str, top1: str, top2: str, cue_for: Callable[[str, str], dict | None]) -> dict | None:
+    """The field question a clarify decision asks. Two close guesses are told
+    apart from each other, and so is a class below its own bar from the
+    runner-up. Above its bar, a class no bar makes reliable is told apart from
+    the class it is usually mistaken for. Shared with services.result_view,
+    which shows a stored result again and has only its reason and guesses."""
+    if reason in ("AMBIGUOUS", "LAB_CLASS_CONFIRM"):
+        return cue_for(top1, top2)
+    if reason == "LOOKALIKE_CONFIRM":
+        partner = lookalike_for(top1)
+        return cue_for(top1, partner) if partner else None
+    return None
 
 
 def decide(
@@ -123,7 +139,7 @@ def decide(
 
     bar = gate_for(top1.target)
     if top1.confidence < bar:  # a lab-trained class, between the global gate and its own
-        cue = cue_for(top1.target, top2.target)
+        cue = clarify_cue("LAB_CLASS_CONFIRM", top1.target, top2.target, cue_for)
         if cue is not None:
             return out("clarify", "LAB_CLASS_CONFIRM", bar, cue["id"])
         return out("escalate", "LAB_CLASS_BELOW_GATE", bar)
@@ -136,5 +152,9 @@ def decide(
 
     if not has_advisory(top1.target):
         return out("escalate", "NO_KB_ENTRY", GATE)
+
+    cue = clarify_cue("LOOKALIKE_CONFIRM", top1.target, top2.target, cue_for)
+    if cue is not None:
+        return out("clarify", "LOOKALIKE_CONFIRM", bar, cue["id"])
 
     return out("advise", "ABOVE_GATE", GATE)

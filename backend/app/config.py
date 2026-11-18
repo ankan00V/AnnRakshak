@@ -197,6 +197,25 @@ def gate_for(target: str) -> float:
     return TARGET_GATE.get(target, GATE)
 
 
+CONFIRM_LOOKALIKE: dict[str, str] = {
+    "rice_blast": "rice_brown_spot",
+    "rice_sheath_blight": "rice_bacterial_leaf_blight",
+}
+"""Classes that stay below the target precision at every bar, and whose
+mistakes are mostly one look-alike that a field question separates. When the
+model names one of these above its bar, the farmer is asked that question
+before the advice (LOOKALIKE_CONFIRM); the answer settles it the way it does
+for two close guesses. Measured by ml/tune_gate.py on held-out images (2026-11-18):
+rice blast: 22 of 349 advised were wrong, 13 of them rice brown spot;
+rice sheath blight: 10 of 71 advised were wrong, 5 of them rice bacterial leaf blight."""
+
+
+def lookalike_for(target: str) -> str | None:
+    """The class this one is most often wrongly advised in place of, when no bar
+    makes it reliable and a field question tells the two apart."""
+    return CONFIRM_LOOKALIKE.get(target)
+
+
 # --- Learning from field confirmations -------------------------------------
 
 PRIOR_FULL_COUNT = 10

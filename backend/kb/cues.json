@@ -60,6 +60,21 @@
   "source": "ICAR-IIRR Rice Knowledge Management Portal (Sheath blight)"
  },
  {
+  "id": "sheath_blight_vs_blb_position",
+  "pair": [
+   "rice_sheath_blight",
+   "rice_bacterial_leaf_blight"
+  ],
+  "yes_means": "rice_sheath_blight",
+  "question": {
+   "en": "Are the patches on the stem sheath near the water line, rather than on the flat leaf blade?",
+   "hi": "क्या धब्बे पानी की सतह के पास तने के आवरण पर हैं, पत्ती के चपटे भाग पर नहीं?",
+   "mr": "चट्टे पाण्याच्या पातळीजवळ खोडाच्या आवरणावर आहेत का, पानाच्या सपाट भागावर नाहीत?"
+  },
+  "why": "Sheath blight starts as oval greyish-green lesions on the leaf sheath near the water line and climbs; bacterial leaf blight starts on the leaf blade at the tip or edge and runs down it as a wavy yellow stripe.",
+  "source": "ICAR-IIRR Rice Knowledge Management Portal (Sheath blight; Bacterial leaf blight); IRRI Rice Knowledge Bank"
+ },
+ {
   "id": "tungro_vs_blb_stunting",
   "pair": [
    "rice_tungro",

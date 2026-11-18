@@ -8,7 +8,7 @@ import pytest
 
 from app import config
 from app.config import FLOOR, GATE, MARGIN, PRIOR_MAX_BIAS
-from app.engine import advisory, assign, doubt, labelcheck, prior, risk, vision
+from app.engine import advisory, assign, doubt, gate, labelcheck, prior, risk, vision
 from app.engine.gate import Prediction, TopK, decide
 from app.engine.weather import Day, Window
 from app.kb import KB, get_kb, validate
@@ -95,6 +95,9 @@ def test_vegetation_decides_retake_versus_expert_for_an_unfamiliar_photo():
         def analyse(self, img, k=3, with_heatmap=True):
             return [("maize_fall_armyworm", 0.25), ("maize_aphid", 0.23)], {"grid": []}, 0.1
 
+        def survey(self, imgs, k=3):  # no part of it is familiar either
+            return [([("maize_fall_armyworm", 0.25), ("maize_aphid", 0.23)], 0.1) for _ in imgs]
+
         def is_familiar(self, fam):
             return False
 
@@ -111,6 +114,45 @@ def test_vegetation_decides_retake_versus_expert_for_an_unfamiliar_photo():
         buf = io.BytesIO()
         grey.save(buf, format="JPEG")
         assert vision.classify(buf.getvalue(), "maize").oos_reason == "NOT_A_CROP_PHOTO"
+    finally:
+        vision._real_model = _REAL_MODEL
+        vision._real_model.cache_clear()
+
+
+def test_an_unfamiliar_wide_photo_marks_the_part_to_photograph_up_close():
+    # A wide shot of a field can be unfamiliar as a whole while one part of it
+    # looks like the close-ups the model learnt from: the false smut panicle in
+    # a green canopy. That part is marked for a close-up. It does not answer for
+    # the photo, which still goes to an expert: read from a part, held-out
+    # photos were advised wrongly more often than rightly.
+    from PIL import Image
+
+    from app.engine import vision
+
+    familiar_part = 4  # the middle of the 3x3 grid of half-size squares
+
+    class WideShot:
+        version, temperature = "test-0", 1.0
+
+        def analyse(self, img, k=3, with_heatmap=True):
+            return [("rice_bacterial_leaf_blight", 0.5), ("rice_false_smut", 0.3)], {"grid": [[0.0]]}, 0.2
+
+        def survey(self, imgs, k=3):
+            return [([("rice_false_smut", 0.9)], 0.8 if i == familiar_part else 0.3) for i in range(len(imgs))]
+
+        def is_familiar(self, fam):
+            return fam >= 0.5
+
+    vision._real_model.cache_clear()
+    try:
+        vision._real_model = lambda: WideShot()  # type: ignore[assignment]
+        field = Image.new("RGB", (200, 200), (70, 130, 50))
+        buf = io.BytesIO()
+        field.save(buf, format="JPEG")
+        topk = vision.classify(buf.getvalue(), "rice")
+        assert (topk.out_of_scope, topk.oos_reason) == (True, "UNFAMILIAR_PHOTO")
+        assert topk.predictions[0].target == "rice_bacterial_leaf_blight"  # the whole photo's, not the part's
+        assert topk.heatmap["closer_region"] == [0.25, 0.25, 0.75, 0.75]
     finally:
         vision._real_model = _REAL_MODEL
         vision._real_model.cache_clear()
@@ -407,11 +449,33 @@ def test_a_lab_trained_class_must_clear_its_own_higher_bar():
     assert (d.outcome, d.reason) == ("clarify", "LAB_CLASS_CONFIRM") and d.cue_id
     d = run_gate(topk(("rice_blast", under), ("rice_leaf_folder", 0.05)))
     assert (d.outcome, d.reason) == ("escalate", "LAB_CLASS_BELOW_GATE")
-    assert run_gate(topk(("rice_blast", over), ("rice_brown_spot", 0.01))).outcome == "advise"
+    # above its bar it is advised, unless it is one no bar makes reliable
+    # (asked about below, in test_a_class_no_bar_makes_reliable_...)
+    steady = next(t for t in config.TARGET_GATE if not config.lookalike_for(t)
+                  and kb.targets[t]["tier"] == "diagnosable" and t in kb.advisories)
+    assert run_gate(topk((steady, 0.99), ("rice_leaf_folder", 0.005)), crop=steady.split("_")[0]).outcome == "advise"
     # a class on the global gate is unaffected by any of it
     plain = next(t for t in ("rice_false_smut", "rice_skipper", "soybean_healthy")
                  if config.gate_for(t) == config.GATE)
     assert run_gate(topk((plain, 0.75), ("rice_blast", 0.05))).outcome == "advise"
+
+
+def test_a_class_no_bar_makes_reliable_is_confirmed_with_its_look_alike_question():
+    # rice_blast stays below 0.95 precision at every bar, and most of its
+    # mistakes are brown spot, which the spot-shape question separates. So
+    # even a confident blast is asked about first — whatever came second —
+    # and the answer settles it the way it does for two close guesses.
+    assert config.lookalike_for("rice_blast"), "this test needs a class with a look-alike to confirm"
+    partner = config.lookalike_for("rice_blast")
+    cue = kb.cue_for("rice_blast", partner)
+    for runner_up in (partner, "rice_leaf_folder"):
+        d = run_gate(topk(("rice_blast", 0.99), (runner_up, 0.005)))
+        assert (d.outcome, d.reason, d.cue_id) == ("clarify", "LOOKALIKE_CONFIRM", cue["id"])
+    # the stored result asks the same question when it is shown again
+    assert gate.clarify_cue("LOOKALIKE_CONFIRM", "rice_blast", "rice_leaf_folder", kb.cue_for) is cue
+    # every entry has a question that tells the pair apart
+    for t, p in config.CONFIRM_LOOKALIKE.items():
+        assert kb.cue_for(t, p), f"{t}: no field question separates it from {p}"
 
 
 def test_closed_form_cam_is_the_same_map_as_grad_cam():
@@ -829,3 +893,22 @@ def test_the_spray_check_knows_registered_organic_products():
     assert chk("Trichoderma viride", "rice", "rice_blast") == "NOT_FOR_TARGET"
     assert chk("Beauveria bassiana 1.5% AS", "maize", "maize_fall_armyworm") == "NO_OBJECTION_FOUND"
     assert chk("Bacillus thuringiensis", "rice", "rice_sheath_blight") == "WRONG_CLASS"
+
+
+def test_homemade_options_name_their_source_and_read_in_the_farmers_language():
+    # A preparation made at home has no label and no registration, so the
+    # government source that recommends it for this problem is what it rests on.
+    with_homemade = [t for t, a in kb.advisories.items() if a.get("homemade")]
+    assert with_homemade, "no advisory offers a homemade option"
+    for t in with_homemade:
+        for lang in ("en", "hi", "mr"):
+            out = advisory.compose(kb, t, lang, 1.0)["homemade"]
+            for h in out:
+                assert h["source"] and h["recipe"] and h["dose"] and h["timing"]
+                if lang != "en":  # authored, never the English left standing in
+                    assert h["name"] != kb.homemade[h["prep"]]["name"]["en"]
+    # strength reaches the farmer as the source gives it: 5% NSKE is 50 g a litre
+    faw = advisory.compose(kb, "maize_fall_armyworm", "en", 1.0)["homemade"]
+    assert any(h["prep"] == "nske_5" and "50 g" in h["dose"] and "500 g" in h["dose"] for h in faw)
+    # and an advisory with none says nothing rather than something made up
+    assert advisory.compose(kb, "rice_blast", "en", 1.0)["homemade"] == []

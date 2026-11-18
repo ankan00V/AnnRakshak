@@ -586,6 +586,7 @@ const REASON_LABEL: Record<string, string> = {
   LIVE_FEW_VIEWS: 'Live call: too few clear views',
   NOT_A_CROP_PHOTO: 'Not a photo of a crop',
   LAB_CLASS_CONFIRM: 'Lab-trained class, asked to confirm',
+  LOOKALIKE_CONFIRM: 'Often mistaken for a look-alike, asked to confirm',
 }
 const reasonLabel = (r: string) =>
   REASON_LABEL[r] ?? r.charAt(0) + r.slice(1).toLowerCase().replace(/_/g, ' ')

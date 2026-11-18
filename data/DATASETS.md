@@ -98,6 +98,19 @@ Maharashtra = four IMD subdivisions — Konkan & Goa, Madhya Maharashtra, Marath
 - Left out because the list gives no dose: Trichoderma viride 5% LF for rice brown spot (water volume only). The other problems have no bio product registered on that crop for that pest, and the app says so rather than offering one.
 - The spray check now recognises these products: neem on rice leaf folder is a registered use; Trichoderma on rice blast is not. `tests/test_engine.py` holds every option to its registered crop and its dose per hectare.
 
+## 3d. Made at home — neem preparations from government IPM guidance (18 Nov 2026)
+
+- What: neem seed kernel extract (NSKE) 5% and neem oil sprays, shown under the registered organic products as "Made at home". They are not registered products, so each rests on a government source that names the preparation, the strength and the pest. The table is `data/homemade_options.py`, which writes `backend/kb/homemade.json` (the two recipes) and a `homemade` list into the advisories.
+- Sources, raw copies in `data/raw/ipm/`:
+  - NCIPM & DPPQS, *Integrated Pest Management Package* for rice, maize, cotton and soybean (`niphm.gov.in/IPMPackages/<Crop>.pdf`). Soybean: NSKE 5% for early-stage larvae and sucking pests; raw neem oil 1% at 30, 45 and 60 days after sowing for rust. The rice, maize and cotton packages name only registered neem formulations, which §3c already covers.
+  - DPPQS advisory on brown planthopper (`ppqs.gov.in/sites/default/files/rce_bph_advisory.pdf`): neem oil 5 ml with 2 ml liquid detergent per litre at the base of the plants; NSKE 5% while the count is below the threshold.
+  - APEDA Farmer Connect, IPM with recommended pesticides (Government of India): cotton aphid, jassid, thrips and whitefly, NSKE 5%; cotton leaf curl, control the whitefly; soybean defoliators and sucking insects, NSKE 5%.
+  - ICAR-IIMR, *Identification and management of fall armyworm* (on Vikaspedia): 5% NSKE while the young larvae scrape the leaf surface.
+  - NSKE recipe: TNAU Agritech (on Vikaspedia). 5 kg of kernels from seed under 8 months old to 100 litres with detergent, i.e. 500 g to a 10-litre tank; spray after 3:30 pm.
+- **10 options on 9 problems**: maize fall armyworm; cotton whitefly, aphid, jassid and leaf curl (through the whitefly); soybean tobacco caterpillar, yellow mosaic (through the whitefly) and rust; rice brown planthopper (neem oil, and NSKE below the threshold).
+- Left out: the soybean package's cow-urine, cow-milk and asafoetida sprays. They are in a government document, but nothing in it or behind it measures what they do. Also left out: neem cake for maize nematodes, which is not a problem the app advises on.
+- `tests/test_engine.py` requires each option to name its source and to read in Hindi and Marathi, not English left standing in; it also checks that NSKE reaches the farmer as 50 g a litre.
+
 ## 4. ICAR Technology repository
 
 - Source: data.gov.in resource "ICAR Technology Repository" (columns: Technology Name, Brief Description, Benefits/Utility, Contact Details), Government Open Data License.
@@ -419,6 +432,58 @@ familiarity check. A wider shot of an early infection, with small orange balls
 scattered through a green panicle, is named false smut at 0.60–0.85 but still
 scores below the familiarity threshold and goes to an expert. Early-stage,
 distant photographs of false smut are the next thing to find.
+
+## 12. What was looked for on 18 Nov 2026, and what it settled
+
+**Unsorted maize blight: turned down after looking.** About 700 photos were
+left out of §11 because their sets say "Leaf Blight" or "Corn Leaf Blight"
+without saying which: 489 in MLD (`3myfctrgk3`) and 220 in `sb4wwjs8bz`. The
+plan was for the deployed model to propose turcicum or maydis and for a person
+to check every proposal. The model proposed none: 213 were already in our data,
+87 it found unfamiliar, and the rest it read as gray leaf spot (353), fall
+armyworm damage (122), healthy (108) and others. Looking at them settles why.
+MLD's are green leaves with small whitish-tan flecks and short streaks, not the
+long cigar-shaped lesions of northern blight or the straight-sided tan lesions
+of southern blight. The sb4 photos are mostly red-purple streaking along the
+midrib, yellowing and dried tips, which looks like stress or senescence rather
+than either blight. Naming them as either would be a guess. For real turcicum
+and maydis photos, the ICAR-IIMR Ludhiana set (below) is still the lead.
+
+**The thinnest classes: nothing public.** Maize aphid, Curvularia leaf spot
+and downy mildew, rice skipper and white stem borer each have 6 to 8 photos.
+Searched Mendeley, Hugging Face, Zenodo and the dataset-survey literature:
+- `sb4wwjs8bz`'s description lists a Curvularia class, but no such files are in it.
+- No open field set exists for maize aphid or maize downy mildew.
+- Mendeley `hnfjs42d5g` (Bangladesh, 2025) has dead hearts and white heads, but
+  those symptoms are shared by every stem borer and do not say white from yellow,
+  so the label would be a guess.
+
+These classes will come from the field. Team photos go through the app;
+an expert confirms them; `ml/export_confirmed.py` turns the confirmations into
+training data.
+
+**`ml/export_confirmed.py` had a leak, now closed.** Of the 26 photos experts
+had confirmed in the app's database, 8 were held-out test photos (the team
+checks the app with dataset photos) and 10 were the same upload confirmed again.
+Trained on, the first kind is a test answer learnt by heart. Both are now left
+out by perceptual hash, so the export holds 8 clean photos.
+
+**Plants that are not our crops: `data/fetch_ood.py`.** 600 photos, none
+trained on, for testing the photo checks: bean leaves (`AI-Lab-Makerere/beans`),
+field weeds (DeepWeeds, `Project-AgML/rangeland_weeds_australia`) and
+PlantVillage's crops other than maize and soybean. They showed two things:
+- **The zoom-in was tested, and it does not answer.** Reading a wide, unfamiliar
+  photo from its most familiar part was proposed to rescue a farmer's wide shot
+  of false smut. On held-out photos the model found unfamiliar, it was right
+  10 times in 29 when it went on to advise, and it carried 158 of these 600
+  other-plant photos through to advice. It now only marks the part to
+  photograph up close (`vision.closer_region`), and the photo still goes to an
+  expert.
+- **The familiarity check alone passes about a third of other-plant photos**:
+  beans 66 of 200, weeds 79, PlantVillage 44. What then stops a bean leaf
+  becoming rice advice is the farm's registered crop (CROP_MISMATCH) and the
+  per-class bars, not familiarity. Worth a negative "not our crop" set in the
+  familiarity bank, measured on these photos.
 
 ## Evaluated and turned down
 

@@ -213,6 +213,23 @@ class Classifier:
     def is_familiar(self, fam: float | None) -> bool:
         return fam is None or self.familiar_min is None or fam >= self.familiar_min
 
+    def survey(self, imgs: list[Image.Image], k: int = 3) -> list[tuple[list[tuple[str, float]], float | None]]:
+        """(top-k targets, familiarity) for several images in one batch, with no
+        heatmap: the cheap first pass over the parts of a photo."""
+        x = torch.stack([self.tf(im.convert("RGB")) for im in imgs])
+        with torch.no_grad():
+            feat = self.model.pooled(x)
+            probs = torch.softmax(self.model.head(feat) / self.temperature, dim=1).numpy()
+        out = []
+        for p, f in zip(probs, feat):
+            by_target: dict[str, float] = {}
+            for cls, v in zip(self.classes, p):
+                t = self.class_to_target[cls]
+                by_target[t] = by_target.get(t, 0.0) + float(v)
+            ranked = sorted(by_target.items(), key=lambda kv: kv[1], reverse=True)[:k]
+            out.append(([(t, round(c, 4)) for t, c in ranked], self.familiarity(f)))
+        return out
+
     def predict(self, img: Image.Image, k: int = 3, with_heatmap: bool = True) -> tuple[list[tuple[str, float]], dict | None]:
         preds, heatmap, _ = self.analyse(img, k, with_heatmap)
         return preds, heatmap
