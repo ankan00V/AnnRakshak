@@ -120,6 +120,39 @@ def _hash(salt: str, code: str) -> str:
     return hashlib.sha256(f"{salt}:{code}".encode()).hexdigest()
 
 
+def resend_in(ch: OtpChallenge) -> int:
+    """Seconds until another code may be sent to where this one went."""
+    return max(0, config.OTP_RESEND_SECONDS - int((now() - ch.created_at).total_seconds()))
+
+
+def expires_in(ch: OtpChallenge) -> int:
+    """Seconds this code has left."""
+    return max(0, int((ch.expires_at - now()).total_seconds()))
+
+
+def pending_otp(db: Session, *, dest: str, purpose: str, role: str) -> OtpChallenge | None:
+    """The code just sent to `dest`, while it is still too soon to send another.
+
+    Asking again inside that window used to be refused with "please wait",
+    which is right for a second email but wrong for the person asking: the
+    first code had arrived, and the screen that should take it had been lost
+    (a reload, a second tab, a reply that never got back to the phone). They
+    were left holding a good code with nowhere to type it. Now the same
+    request gets the same challenge back, and nothing new is sent.
+
+    Only a code that is still good, for the same sign-in or sign-up by the
+    same role: anything else still waits its turn. It tells the caller
+    nothing a fresh request would not — a challenge id is no use without the
+    code, and its tries are counted the same."""
+    last = db.scalar(select(OtpChallenge).where(OtpChallenge.destination == dest)
+                     .order_by(OtpChallenge.id.desc()).limit(1))
+    if (last is None or resend_in(last) <= 0 or last.purpose != purpose or last.role != role
+            or last.consumed_at is not None or last.expires_at <= now()
+            or last.attempts >= config.OTP_MAX_ATTEMPTS):
+        return None
+    return last
+
+
 def issue_otp(db: Session, *, channel: str, dest: str, purpose: str, role: str,
               lang: str = "en") -> tuple[OtpChallenge, str]:
     last = db.scalar(select(OtpChallenge).where(OtpChallenge.destination == dest)

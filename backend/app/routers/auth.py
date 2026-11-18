@@ -310,7 +310,14 @@ def check_identifiers(body: CheckIn, request: Request, db: Session = Depends(get
 def _send_code(db: Session, *, channel: str, dest: str, purpose: str, role: str, lang: str):
     """Issue one code and send it by one channel. The challenge on success;
     None when the send failed, with the challenge rolled back so that a code
-    nobody received is not the one the next screen checks against."""
+    nobody received is not the one the next screen checks against.
+
+    A code sent here moments ago and still unused is handed back rather than
+    refused (see auth.pending_otp), before the rate limit: a second tap is not
+    a second message."""
+    held = auth.pending_otp(db, dest=dest, purpose=purpose, role=role)
+    if held is not None:
+        return held
     limit(f"otp:dest:{dest}", 5, 900)
     ch, code = auth.issue_otp(db, channel=channel, dest=dest, purpose=purpose, role=role, lang=lang)
     if channel == "sms":
@@ -373,7 +380,7 @@ def request_otp(body: OtpIn, request: Request, db: Session = Depends(get_db)):
     if ch is None:
         raise HTTPException(502, _say("sms_failed" if routes[-1][0] == "sms" else "mail_failed", lang))
     return {"challenge_id": ch.public_id, "channel": ch.channel, "sent_to": auth.mask(ch.channel, ch.destination),
-            "expires_in": config.OTP_TTL_MINUTES * 60, "resend_in": config.OTP_RESEND_SECONDS,
+            "expires_in": auth.expires_in(ch), "resend_in": auth.resend_in(ch),
             "digits": config.OTP_DIGITS}
 
 
@@ -886,7 +893,7 @@ def add_email(body: EmailIn, request: Request, db: Session = Depends(get_db)):
     if ch is None:
         raise HTTPException(502, _say("mail_failed", lang))
     return {"challenge_id": ch.public_id, "channel": "email", "sent_to": auth.mask("email", email),
-            "expires_in": config.OTP_TTL_MINUTES * 60, "resend_in": config.OTP_RESEND_SECONDS,
+            "expires_in": auth.expires_in(ch), "resend_in": auth.resend_in(ch),
             "digits": config.OTP_DIGITS}
 
 
