@@ -1386,3 +1386,30 @@ def test_a_used_code_is_not_handed_back_and_the_wait_still_holds(client, mail, m
     client.post("/api/auth/logout")
     r = client.post("/api/auth/otp", json={"role": "farmer", "purpose": "login", "identifier": "9876543210"})
     assert r.status_code == 429 and "wait" in r.json()["detail"]
+
+
+def test_only_the_device_that_asked_is_handed_the_code_again(client, mail, monkeypatch):
+    """Anyone who knows a farmer's number could otherwise ask for a code inside
+    the wait, be handed the farmer's own challenge, and spend its tries on wrong
+    guesses until the code in the farmer's hand stops working. The challenge
+    comes back only to the device whose cookie it was sent with; anyone else
+    waits, as they always did."""
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    assert farmer_signup(client, mail).status_code == 201
+    client.post("/api/auth/logout")
+    monkeypatch.setattr(config, "OTP_RESEND_SECONDS", 30)
+    _codes_sent_a_minute_ago()
+    ask = {"role": "farmer", "purpose": "login", "identifier": "9876543210"}
+    first = client.post("/api/auth/otp", json=ask)
+    assert first.status_code == 200, first.text
+    assert "ar_otp_hold" in first.headers.get("set-cookie", "")
+    with TestClient(app) as stranger:  # another device: no cookie from the first request
+        r = stranger.post("/api/auth/otp", json=ask)
+        assert r.status_code == 429 and "challenge_id" not in r.text
+    # and a forged cookie is no better than none
+    with TestClient(app, cookies={"ar_otp_hold": "guess"}) as forger:
+        assert forger.post("/api/auth/otp", json=ask).status_code == 429
+    assert client.post("/api/auth/otp", json=ask).json()["challenge_id"] == first.json()["challenge_id"]

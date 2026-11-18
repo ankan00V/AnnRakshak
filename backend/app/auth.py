@@ -130,27 +130,49 @@ def expires_in(ch: OtpChallenge) -> int:
     return max(0, int((ch.expires_at - now()).total_seconds()))
 
 
-def pending_otp(db: Session, *, dest: str, purpose: str, role: str) -> OtpChallenge | None:
-    """The code just sent to `dest`, while it is still too soon to send another.
+OTP_HOLDER_COOKIE = "ar_otp_hold"
+"""Marks the device that asked for a code, so a second request from that
+device can be handed the same challenge and nobody else's can."""
+
+
+def pending_otp(db: Session, *, dest: str, purpose: str, role: str, holder: str | None) -> OtpChallenge | None:
+    """The code just sent to `dest`, while it is still too soon to send another,
+    handed back to the device that asked for it.
 
     Asking again inside that window used to be refused with "please wait",
     which is right for a second email but wrong for the person asking: the
     first code had arrived, and the screen that should take it had been lost
     (a reload, a second tab, a reply that never got back to the phone). They
     were left holding a good code with nowhere to type it. Now the same
-    request gets the same challenge back, and nothing new is sent.
+    request from the same device gets the same challenge back, and nothing new
+    is sent.
 
-    Only a code that is still good, for the same sign-in or sign-up by the
-    same role: anything else still waits its turn. It tells the caller
-    nothing a fresh request would not — a challenge id is no use without the
-    code, and its tries are counted the same."""
+    Only to that device. Anyone who knows the number or address could
+    otherwise ask too, receive the challenge, and spend its tries on wrong
+    guesses, locking the real person out of the code in their hand. The device
+    is known by the httponly cookie set when the code was sent (`holder`),
+    whose hash the challenge keeps; anyone else waits, as before. And only a
+    code still good for the same sign-in or sign-up by the same role."""
+    if not holder:
+        return None
     last = db.scalar(select(OtpChallenge).where(OtpChallenge.destination == dest)
                      .order_by(OtpChallenge.id.desc()).limit(1))
     if (last is None or resend_in(last) <= 0 or last.purpose != purpose or last.role != role
             or last.consumed_at is not None or last.expires_at <= now()
-            or last.attempts >= config.OTP_MAX_ATTEMPTS):
+            or last.attempts >= config.OTP_MAX_ATTEMPTS
+            or not last.holder_hash or not hmac.compare_digest(last.holder_hash, _token_hash(holder))):
         return None
     return last
+
+
+def hold_otp(ch: OtpChallenge, response: Response, holder: str | None) -> None:
+    """Bind a new challenge to the device that asked for it: reuse its cookie
+    token if it has one, else give it one."""
+    token = holder or secrets.token_urlsafe(24)
+    ch.holder_hash = _token_hash(token)
+    response.set_cookie(OTP_HOLDER_COOKIE, token, httponly=True, samesite="strict",
+                        secure=config.COOKIE_SECURE, path="/api/auth",
+                        max_age=config.OTP_TTL_MINUTES * 60)
 
 
 def issue_otp(db: Session, *, channel: str, dest: str, purpose: str, role: str,

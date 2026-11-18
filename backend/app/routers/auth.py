@@ -307,19 +307,22 @@ def check_identifiers(body: CheckIn, request: Request, db: Session = Depends(get
             "message": _say(f"{field}_taken", lang) if field else None}
 
 
-def _send_code(db: Session, *, channel: str, dest: str, purpose: str, role: str, lang: str):
+def _send_code(db: Session, *, channel: str, dest: str, purpose: str, role: str, lang: str,
+               request: Request, response: Response):
     """Issue one code and send it by one channel. The challenge on success;
     None when the send failed, with the challenge rolled back so that a code
     nobody received is not the one the next screen checks against.
 
     A code sent here moments ago and still unused is handed back rather than
     refused (see auth.pending_otp), before the rate limit: a second tap is not
-    a second message."""
-    held = auth.pending_otp(db, dest=dest, purpose=purpose, role=role)
+    a second message — from the device that asked; anyone else waits."""
+    holder = request.cookies.get(auth.OTP_HOLDER_COOKIE)
+    held = auth.pending_otp(db, dest=dest, purpose=purpose, role=role, holder=holder)
     if held is not None:
         return held
     limit(f"otp:dest:{dest}", 5, 900)
     ch, code = auth.issue_otp(db, channel=channel, dest=dest, purpose=purpose, role=role, lang=lang)
+    auth.hold_otp(ch, response, holder)
     if channel == "sms":
         status, err = sms.send(dest, sms.otp_text(code, config.OTP_TTL_MINUTES, lang), kind="otp",
                                variables={"otp": code, "mins": config.OTP_TTL_MINUTES})
@@ -338,7 +341,7 @@ def _send_code(db: Session, *, channel: str, dest: str, purpose: str, role: str,
 
 
 @router.post("/otp")
-def request_otp(body: OtpIn, request: Request, db: Session = Depends(get_db)):
+def request_otp(body: OtpIn, request: Request, response: Response, db: Session = Depends(get_db)):
     limit(f"otp:ip:{client_ip(request)}", 20, 900)
     lang = body.lang if body.lang in LANGS else "en"
     # Both sign-up and login start here, so one check covers both screens.
@@ -374,7 +377,8 @@ def request_otp(body: OtpIn, request: Request, db: Session = Depends(get_db)):
             raise HTTPException(409, _say("no_email", lang))
     ch = None
     for channel, dest in routes:
-        ch = _send_code(db, channel=channel, dest=dest, purpose=body.purpose, role=body.role, lang=lang)
+        ch = _send_code(db, channel=channel, dest=dest, purpose=body.purpose, role=body.role, lang=lang,
+                        request=request, response=response)
         if ch is not None:
             break
     if ch is None:
@@ -874,7 +878,7 @@ class EmailCodeIn(BaseModel):
 
 
 @router.post("/me/email")
-def add_email(body: EmailIn, request: Request, db: Session = Depends(get_db)):
+def add_email(body: EmailIn, request: Request, response: Response, db: Session = Depends(get_db)):
     """Send a code to an address the signed-in person wants on their account:
     the one they typed when they signed up by SMS, or a new one. It is only
     theirs once that code comes back."""
@@ -889,7 +893,8 @@ def add_email(body: EmailIn, request: Request, db: Session = Depends(get_db)):
     if _by(db, User.email, email) is not None:
         raise HTTPException(409, {"message": _say("email_taken", lang), "field": "email"})
     user.pending_email = email
-    ch = _send_code(db, channel="email", dest=email, purpose="email", role=user.role, lang=lang)
+    ch = _send_code(db, channel="email", dest=email, purpose="email", role=user.role, lang=lang,
+                    request=request, response=response)
     if ch is None:
         raise HTTPException(502, _say("mail_failed", lang))
     return {"challenge_id": ch.public_id, "channel": "email", "sent_to": auth.mask("email", email),
