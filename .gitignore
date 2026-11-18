@@ -39,9 +39,11 @@ skills-lock.json
 backend/reviews/
 
 # Markdown: only READMEs are published. Every other .md (reports, notes, demo
-# scripts, dataset write-ups) stays on the machine that made it.
+# scripts, dataset write-ups) stays on the machine that made it. The one
+# exception is data/DATASETS.md: where every training photo comes from.
 *.md
 !README.md
+!data/DATASETS.md
 
 # Raw per-image scores behind a gate decision (ml/tune_gate.py): a derived
 # measurement, regenerated from the model and the split whenever it is needed.
