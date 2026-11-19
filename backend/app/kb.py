@@ -77,6 +77,9 @@ class KB:
     technologies: list[dict] = field(default_factory=list)
     agromet: dict = field(default_factory=dict)
     homemade: dict = field(default_factory=dict)
+    registrations: dict = field(default_factory=dict)
+    """ingredient -> [{crop, targets, register_says, source, line}]: where the
+    CIB&RC major-uses lists register each product (kb/registrations.json)."""
     _cue_index: dict[frozenset, dict] = field(default_factory=dict)
 
     # --- lookups ---------------------------------------------------------
@@ -216,13 +219,26 @@ class KB:
         return view
 
     def registered_uses(self, ingredient: str) -> list[tuple[str, str]]:
-        """(crop, target) pairs where our advisories use this ingredient."""
+        """(crop, target) pairs this product is registered for: every entry of
+        the CIB&RC register (kb/registrations.json), and every place our own
+        advice uses it. Our advice alone named two or three products a problem,
+        so carbendazim on rice blast — on the register at 250-500 g/ha — was
+        told "Do not spray this"."""
         out = []
         for tid, adv in self.advisories.items():
             for rung in [*adv["ladder"], *adv.get("organic", [])]:
                 if rung.get("ingredient") == ingredient and (self.targets[tid]["crop"], tid) not in out:
                     out.append((self.targets[tid]["crop"], tid))
+        for reg in self.registrations.get(ingredient, []):
+            for tid in reg["targets"]:
+                if (reg["crop"], tid) not in out:
+                    out.append((reg["crop"], tid))
         return out
+
+    def registered_crops(self, ingredient: str) -> set[str]:
+        """Crops the register lists this product on at all, for any pest."""
+        return {c for c, _ in self.registered_uses(ingredient)} | \
+            {r["crop"] for r in self.registrations.get(ingredient, [])}
 
 
 def _load(name: str, kb_dir: Path):
@@ -365,6 +381,17 @@ def validate(kb: KB) -> list[str]:
                         errors.append(f"technology {tid}: {key} missing {lang}")
 
     errors += validate_agromet(kb)
+    for ing, regs in kb.registrations.items():
+        if ing not in kb.pesticides:
+            errors.append(f"registrations: {ing} is not in pesticides.json")
+        for reg in regs:
+            if reg.get("crop") not in crops:
+                errors.append(f"registrations: {ing} names unknown crop {reg.get('crop')}")
+            if not reg.get("source") or not reg.get("register_says"):
+                errors.append(f"registrations: {ing} on {reg.get('crop')} has no source or register wording")
+            for tid in reg.get("targets", []):
+                if tid not in kb.targets or kb.targets[tid]["crop"] != reg.get("crop"):
+                    errors.append(f"registrations: {ing} lists {tid}, not a {reg.get('crop')} target")
     return errors
 
 
@@ -447,6 +474,8 @@ def load_kb(kb_dir: Path = KB_DIR) -> KB:
         kb.agromet = _load("agromet.json", kb_dir)
     if (kb_dir / "homemade.json").exists():
         kb.homemade = _load("homemade.json", kb_dir)
+    if (kb_dir / "registrations.json").exists():
+        kb.registrations = _load("registrations.json", kb_dir)["products"]
     errors = validate(kb)
     if errors:
         raise KBError("knowledge base refused:\n  " + "\n  ".join(errors))

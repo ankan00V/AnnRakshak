@@ -97,6 +97,12 @@ Maharashtra = four IMD subdivisions — Konkan & Goa, Madhya Maharashtra, Marath
   - maize banded leaf and sheath blight: Ipconazole + Metalaxyl ME seed treatment. The list does not say per how much seed its amount is, so the app gives no number and sends the farmer to the label.
 - **Ten pests and diseases have no registered pesticide in India in either list**: rice bacterial leaf streak, bacterial panicle blight, downy mildew and skipper; maize gray leaf spot, Curvularia leaf spot and ear rot; soybean Septoria brown spot, downy mildew and bacterial blight. Rows that say only "leaf spot" are not taken to cover a disease they do not name. For these the app says plainly that nothing is registered and that nothing should be sprayed (`chemical_none`). `tests/test_engine.py` requires every pest and disease to carry either a registered chemical or that statement.
 
+## 3b-ii. The spray check reads the register, not our shortlist (19 Nov 2026)
+
+- `backend/kb/registrations.json`: for each of the 53 non-herbicide products in `pesticides.json`, the crop and pests the same CIB&RC lists (as on 30.09.2026) register it for on rice, maize, cotton and soybean, with the register's own wording and the line its block starts on. Read by hand: a script that parsed the PDF text pulled rows from neighbouring products into a block, which for a pesticide verdict is worse than no record.
+- Why: the spray check said "Do not spray this" to any product our advice did not name — carbendazim 50% WP on rice blast and spinetoram 11.7% SC on rice leaf folder are both on the register.
+- Rules: the register's words decide the target ("stem borer" on rice is yellow and white stem borer; a bare "bollworm" is the American bollworm, pink bollworm only where named; a bare "leaf spot" or "leaf blight" covers no disease it does not name, as above); a seed-treatment-only row is not a spray use when the product has spray rows on that crop; copper oxychloride 50% WP and metalaxyl 8% + mancozeb 64% WP are not on the register for these crops.
+
 ## 3c. Organic options — the CIB&RC bio-pesticide lists (17 Nov 2026)
 
 - Source: the same CIB&RC Major Uses lists, the **bio-insecticides** and **bio-fungicides** files (as on 30.09.2026): living products (Trichoderma, Pseudomonas, Bacillus subtilis, Bt, Beauveria, Metarhizium, Verticillium, HaNPV) and neem (azadirachtin) products, each with crop, pest, dose per hectare, water and waiting period.

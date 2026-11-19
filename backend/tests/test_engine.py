@@ -285,8 +285,31 @@ def test_label_check_verdicts():
     assert chk("tricyclazole", "rice_bacterial_leaf_blight") == "NOT_FOR_TARGET"
     assert chk("emamectin", "rice_bacterial_leaf_blight") == "WRONG_CLASS"
     assert chk("roundup", "rice_brown_spot") == "HERBICIDE"
-    assert chk("spinetoram", "rice_leaf_folder") == "WRONG_CROP"
     assert chk("unobtainium 9000", "rice_brown_spot") == "NOT_IN_RECORDS"
+    assert labelcheck.check(kb, "carbendazim", "soybean", "soybean_rust", "en")["code"] == "WRONG_CROP"
+
+
+def test_a_product_on_the_register_is_not_refused_for_missing_from_our_advice():
+    """The verdict came from the two or three products our advice names, so a
+    registered product was told "Do not spray this": carbendazim 50% WP on rice
+    blast (250-500 g/ha), spinetoram 11.7% SC on rice leaf folder. Both are on
+    the CIB&RC major-uses list as on 30.09.2026."""
+    chk = lambda q, crop, t: labelcheck.check(kb, q, crop, t, "en")["code"]  # noqa: E731
+    assert chk("carbendazim 50 WP", "rice", "rice_blast") == "NO_OBJECTION_FOUND"
+    assert chk("spinetoram", "rice", "rice_leaf_folder") == "NO_OBJECTION_FOUND"
+    assert chk("chlorantraniliprole 18.5 SC", "maize", "maize_fall_armyworm") == "NO_OBJECTION_FOUND"
+    # Registered on the crop, but only as a seed treatment for this problem.
+    assert chk("carbendazim", "rice", "rice_sheath_blight") == "NOT_FOR_TARGET"
+    # Registered on soybean, but for pests the app does not diagnose there.
+    assert chk("flonicamid", "soybean", "soybean_girdle_beetle") == "NOT_FOR_TARGET"
+
+
+def test_every_registration_says_where_it_was_read():
+    for ing, regs in kb.registrations.items():
+        assert ing in kb.pesticides, ing
+        for reg in regs:
+            assert reg["source"].startswith("CIB&RC") and reg["register_says"] and reg["line"] > 0, (ing, reg)
+            assert all(kb.targets[t]["crop"] == reg["crop"] for t in reg["targets"]), (ing, reg)
 
 
 # --- risk ------------------------------------------------------------------
