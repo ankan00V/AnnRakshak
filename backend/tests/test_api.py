@@ -1445,3 +1445,26 @@ def test_the_farmer_picks_the_problem_a_spray_is_checked_against(client):
     assert client.post("/api/labelcheck", json=ask | {"target": "maize_common_rust"}).status_code == 422
     assert client.post("/api/labelcheck", json=ask | {"target": "rice_nothing_like_it"}).status_code == 422
     assert client.post("/api/labelcheck", json=ask | {"target": "none"}).json()["target"] is None
+
+
+def test_startup_waits_for_a_database_that_is_not_reachable_yet(monkeypatch):
+    """At login the network comes up after the server: the database host did
+    not resolve, startup failed, and the app hung on every screen."""
+    import asyncio
+
+    from sqlalchemy.exc import OperationalError
+
+    from app import main
+
+    calls = []
+
+    def flaky():
+        calls.append(1)
+        if len(calls) < 3:
+            raise OperationalError("connect", {}, Exception("failed to resolve host"))
+
+    monkeypatch.setattr(main, "init_db", flaky)
+    real_sleep = asyncio.sleep
+    monkeypatch.setattr(main.asyncio, "sleep", lambda s: real_sleep(0))
+    asyncio.run(main._init_db_when_reachable())
+    assert len(calls) == 3
