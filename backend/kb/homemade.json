@@ -1,0 +1,58 @@
+{
+ "nske_5": {
+  "name": {
+   "en": "Neem seed kernel extract (NSKE) 5%",
+   "hi": "नीम बीज गिरी अर्क (NSKE) 5%",
+   "mr": "निंबोळी अर्क (NSKE) 5%"
+  },
+  "recipe": {
+   "en": [
+    "For one 10-litre tank: 500 g of dry neem seed kernels, from seeds less than 8 months old.",
+    "Pound them to a coarse powder and soak overnight in 1 litre of water.",
+    "In the morning stir until the water turns milky, then filter through a double layer of cloth.",
+    "Make it up to 10 litres. Mix 20 g of detergent into a paste and stir it in, so the spray sticks.",
+    "Use it the same day, and spray after 3:30 in the afternoon."
+   ],
+   "hi": [
+    "10 लीटर की एक टंकी के लिए: 500 ग्राम सूखी नीम की गिरी, 8 महीने से कम पुराने बीजों से।",
+    "इन्हें दरदरा कूटकर रात भर 1 लीटर पानी में भिगो दें।",
+    "सुबह पानी दूधिया होने तक हिलाएँ, फिर कपड़े की दोहरी परत से छान लें।",
+    "इसे 10 लीटर कर लें। 20 ग्राम डिटर्जेंट का पेस्ट बनाकर मिलाएँ, ताकि घोल पत्तों पर चिपके।",
+    "इसे उसी दिन इस्तेमाल करें, और दोपहर 3:30 के बाद छिड़कें।"
+   ],
+   "mr": [
+    "10 लिटरच्या एका टाकीसाठी: 500 ग्रॅम वाळलेल्या निंबोळ्यांचे गर, 8 महिन्यांपेक्षा कमी जुन्या बियांचे.",
+    "ते जाडसर कुटून रात्रभर 1 लिटर पाण्यात भिजवा.",
+    "सकाळी पाणी दुधाळ होईपर्यंत ढवळा, मग कापडाच्या दुहेरी थरातून गाळा.",
+    "ते 10 लिटर करा. 20 ग्रॅम डिटर्जंटची पेस्ट करून मिसळा, म्हणजे फवारा पानांवर चिकटेल.",
+    "ते त्याच दिवशी वापरा, आणि दुपारी 3:30 नंतर फवारा."
+   ]
+  },
+  "recipe_source": "TNAU Agritech, Neem seed kernel extract (Vikaspedia)"
+ },
+ "neem_oil": {
+  "name": {
+   "en": "Neem oil spray",
+   "hi": "नीम तेल का छिड़काव",
+   "mr": "निंबोळी तेलाची फवारणी"
+  },
+  "recipe": {
+   "en": [
+    "Mix the neem oil with the liquid detergent first, then add it to the water and stir well.",
+    "Shake the tank as you spray: the oil floats if it is left to stand.",
+    "Use it the same day."
+   ],
+   "hi": [
+    "पहले नीम तेल को तरल डिटर्जेंट में मिलाएँ, फिर पानी में डालकर अच्छी तरह हिलाएँ।",
+    "छिड़कते समय टंकी हिलाते रहें: रखा रहने पर तेल ऊपर तैरने लगता है।",
+    "इसे उसी दिन इस्तेमाल करें।"
+   ],
+   "mr": [
+    "आधी निंबोळी तेल द्रव डिटर्जंटमध्ये मिसळा, मग पाण्यात घालून चांगले ढवळा.",
+    "फवारताना टाकी हलवत राहा: ठेवून दिल्यास तेल वर तरंगते.",
+    "ते त्याच दिवशी वापरा."
+   ]
+  },
+  "recipe_source": "DPPQS advisory on brown planthopper in rice"
+ }
+}

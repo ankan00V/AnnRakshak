@@ -1,33 +1,31 @@
 import { Link } from 'react-router-dom'
-import { ChevronRight, Sprout, UserCheck } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { useFarmer } from '../farmer/FarmerContext'
 
+/** The fork: which of the two apps is yours, each with a picture of who it
+ *  is for. The question itself is on the photograph above or beside it. */
 export default function SignupChoose() {
   const { t } = useFarmer()
   const cards = [
-    { to: '/signup/farmer', icon: Sprout, title: t('authFarmerCard'), sub: t('authFarmerCardSub'), tone: 'bg-leaf/15 text-leaf-deep' },
-    { to: '/signup/expert', icon: UserCheck, title: t('authExpertCard'), sub: t('authExpertCardSub'), tone: 'bg-ochre/20 text-[#8a5a17]' },
+    { to: '/signup/farmer', img: '/photos/card-farmer-app.webp', pos: 'object-[70%_35%]', title: t('authFarmerCard'), sub: t('authFarmerCardSub') },
+    { to: '/signup/expert', img: '/photos/card-expert.webp', pos: 'object-[45%_30%]', title: t('authExpertCard'), sub: t('authExpertCardSub') },
   ]
   return (
     <div className="space-y-6">
-      {/* On a laptop the side panel already asks the question. */}
-      <div className="lg:hidden">
-        <h1 className="font-instrument-serif text-[34px] leading-tight">{t('authWhoAreYou')}</h1>
-        <p className="mt-1 text-[15px] text-soil-dark/75">{t('authWhoSub')}</p>
-      </div>
-      <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4">
-        {cards.map(({ to, icon: Icon, title, sub, tone }) => (
+      <div className="grid gap-4 sm:grid-cols-2">
+        {cards.map(({ to, img, pos, title, sub }) => (
           <Link key={to} to={to}
-            className="flex items-center gap-4 rounded-2xl bg-white border border-soil-dark/10 p-4 hover:border-leaf/50 active:bg-cream transition-colors
-                       lg:flex-col lg:items-start lg:gap-3 lg:p-6 lg:h-full lg:transition-all lg:hover:-translate-y-0.5">
-            <span className={`shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center ${tone}`}>
-              <Icon className="w-7 h-7" aria-hidden />
+            className="group flex flex-col overflow-hidden rounded-[24px] bg-white ring-1 ring-black/[0.06] shadow-[0_18px_40px_-28px_rgba(43,29,18,0.55)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_48px_-28px_rgba(43,29,18,0.6)]">
+            <span className="relative block aspect-[16/10] overflow-hidden">
+              <img src={img} alt="" decoding="async" className={`h-full w-full object-cover ${pos} transition-transform duration-700 group-hover:scale-[1.04]`} />
             </span>
-            <span className="flex-1 min-w-0 lg:flex-none">
-              <span className="block text-[17px] lg:text-[19px] font-semibold">{title}</span>
-              <span className="block mt-0.5 lg:mt-1.5 text-[14px] text-soil-dark/75 leading-snug lg:leading-relaxed">{sub}</span>
+            <span className="flex flex-1 flex-col p-5">
+              <span className="font-display text-[24px] leading-tight text-[#1f3a26]">{title}</span>
+              <span className="mt-1.5 text-[14px] leading-relaxed text-soil-dark/75">{sub}</span>
+              <span className="mt-4 inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#1d4a2c]">
+                {t('authNext')} <ArrowRight aria-hidden className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </span>
             </span>
-            <ChevronRight aria-hidden className="w-5 h-5 text-soil-dark/55 shrink-0 lg:mt-auto lg:self-end lg:text-leaf-deep" />
           </Link>
         ))}
       </div>

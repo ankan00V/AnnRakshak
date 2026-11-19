@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Ban, FlaskConical, HelpCircle, Info, Leaf, Loader2, Search, ShieldCheck, Sparkles, SprayCan } from 'lucide-react'
+import { Ban, ChevronDown, FlaskConical, HelpCircle, Info, Leaf, Loader2, Search, ShieldCheck, Sparkles, SprayCan } from 'lucide-react'
 import { api } from '../../api/client'
 import type { LabelVerdict } from '../../api/types'
 import { useAsync } from '../../lib/hooks'
@@ -52,6 +52,20 @@ export default function Spray() {
     }
   }
   const current = home.data?.problems.find((p) => p.status === 'open' && p.name)
+  // What the product is checked against: the latest diagnosis unless the farmer
+  // picks another of this crop's problems, or none for the crop alone.
+  const crop = home.data?.farm?.crop
+  const choices = useAsync(
+    () => (crop ? api.targets(lang, crop) : Promise.resolve([])), [lang, crop], ['targets', crop ?? '', lang].join(':'))
+  const [picked, setPicked] = useState<string | null>(null)
+  const latest = current?.target && !current.target.endsWith('_healthy') ? current.target : null
+  const target = picked ?? latest ?? 'none'
+  // The latest diagnosis is listed even before the crop's problems arrive, so
+  // the picker never flashes "no specific problem" while they load.
+  const listed = choices.data ?? (latest && current?.name ? [{ id: latest, name: current.name }] : [])
+  const problems = listed
+    .filter((c) => !c.id.endsWith('_healthy'))
+    .sort((a, b) => (a.id === latest ? -1 : b.id === latest ? 1 : a.name.localeCompare(b.name)))
 
   // Language switched with a verdict on screen: check the same product again,
   // so the verdict and the AI note come back in the new language.
@@ -61,14 +75,14 @@ export default function Spray() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang])
 
-  const check = async (text = q) => {
+  const check = async (text = q, against = target) => {
     if (!text.trim()) return
     setBusy(true)
     setError(null)
     try {
       const id = ++asked.current
       checked.current = text.trim()
-      const verdict = await api.labelCheck(farmId!, text.trim(), lang)
+      const verdict = await api.labelCheck(farmId!, text.trim(), lang, against)
       if (id !== asked.current) return
       setV(verdict)
       // A new product starts unlogged: the last one's "logged" is not this one's.
@@ -76,7 +90,7 @@ export default function Spray() {
       setLogFailed(false)
       setNote(verdict.note_available ? 'loading' : null)
       if (verdict.note_available) {
-        api.labelNote(farmId!, text.trim(), lang)
+        api.labelNote(farmId!, text.trim(), lang, against)
           .then((r) => id === asked.current && setNote(r.suggestion ?? 'none'))
           .catch(() => id === asked.current && setNote('none'))
       }
@@ -104,18 +118,40 @@ export default function Spray() {
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px]">
       <div className="min-w-0 space-y-6">
         <section className={`${PANEL} p-5 lg:p-6`}>
-          {/* What the product is being checked against: the field's own open problem. */}
-          <div className="flex items-center gap-3 rounded-[20px] bg-[#f5f7f1] p-2.5">
-            <span className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-[#e3efd9]">
-              {current?.image_url
-                ? <img src={current.image_url} alt="" className="h-full w-full object-cover" />
-                : <span className="flex h-full w-full items-center justify-center text-[#2f6a39]"><Leaf className="h-6 w-6" aria-hidden /></span>}
-            </span>
-            <span className="min-w-0">
-              <span className="block text-[13px] text-soil-dark/75">{t('forProblem')}</span>
-              <span className="block text-[16px] font-semibold leading-snug">
-                {current?.name ?? (home.data ? t('noDiagnosisYet') : '…')}
+          {/* What the product is checked against: the latest diagnosis by
+              default, any other problem of this crop, or the crop alone. */}
+          <div className="rounded-[20px] bg-[#f5f7f1] p-2.5">
+            <div className="flex items-center gap-3">
+              <span className="h-12 w-12 shrink-0 overflow-hidden rounded-2xl bg-[#e3efd9]">
+                {target === latest && current?.image_url
+                  ? <img src={current.image_url} alt="" className="h-full w-full object-cover" />
+                  : <span className="flex h-full w-full items-center justify-center text-[#2f6a39]"><Leaf className="h-6 w-6" aria-hidden /></span>}
               </span>
+              <span className="min-w-0">
+                <label htmlFor="spray-target" className="block text-[14px] font-medium text-soil-dark/80">{t('forProblem')}</label>
+                {!latest && home.data && <span className="block text-[12px] text-soil-dark/65">{t('noDiagnosisYet')}</span>}
+              </span>
+            </div>
+            <span className="relative mt-2.5 block">
+              <select
+                id="spray-target"
+                value={target}
+                onChange={(e) => {
+                  setPicked(e.target.value)
+                  // a verdict on screen is for the old choice: check it again
+                  if (checked.current) void check(checked.current, e.target.value)
+                }}
+                disabled={!home.data}
+                className="min-h-[48px] w-full appearance-none rounded-xl bg-white py-2 pl-3 pr-9 text-[16px] font-semibold leading-snug ring-1 ring-soil-dark/10 focus:outline-none focus:ring-2 focus:ring-[#2f6a39]"
+              >
+                {problems.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}{p.id === latest ? ` (${t('latestDiagnosis')})` : ''}
+                  </option>
+                ))}
+                <option value="none">{t('checkCropOnly')}</option>
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-soil-dark/60" aria-hidden />
             </span>
           </div>
 

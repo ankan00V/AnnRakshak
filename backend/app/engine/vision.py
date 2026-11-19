@@ -109,6 +109,62 @@ def _real_model():
     return Classifier(Path(ARTIFACTS), meta)
 
 
+CLOSER_LOOK_SCALES = ((0.5, 3), (0.7, 2))
+"""(side as a share of the photo's short side, positions along each axis): a
+3x3 grid of half-size squares and a 2x2 grid of larger ones, 13 views."""
+
+
+def _views(img: Image.Image) -> list[tuple[float, float, float, float]]:
+    """Square parts of the photo, as (x0, y0, x1, y1) in pixels."""
+    w, h = img.size
+    boxes = []
+    for share, n in CLOSER_LOOK_SCALES:
+        side = share * min(w, h)
+        xs = [i * (w - side) / (n - 1) for i in range(n)]
+        ys = [i * (h - side) / (n - 1) for i in range(n)]
+        boxes += [(x, y, x + side, y + side) for y in ys for x in xs]
+    return boxes
+
+
+def _in_frame(box, size: tuple[int, int]) -> list[float] | None:
+    """A part of the photo as fractions of the frame the farmer sees: the
+    photo's central square, the same square the model reads. None when the
+    part lies outside it."""
+    w, h = size
+    s = min(w, h)
+    ox, oy = (w - s) / 2, (h - s) / 2
+    x0, y0, x1, y1 = box
+    f = [max(0.0, (x0 - ox) / s), max(0.0, (y0 - oy) / s), min(1.0, (x1 - ox) / s), min(1.0, (y1 - oy) / s)]
+    if f[2] - f[0] < 0.1 or f[3] - f[1] < 0.1:
+        return None
+    return [round(v, 3) for v in f]
+
+
+def closer_region(model, img: Image.Image) -> list[float] | None:
+    """Where a close-up would help, in a plant photo the model found unfamiliar
+    as a whole.
+
+    A wide shot of a field is unlike the close-ups the model learnt from, even
+    when the problem is plainly in it: an early false smut panicle, a few orange
+    balls in a green canopy. The photo is cut into parts and the part most like
+    the training photos is marked, so the farmer can photograph that part up
+    close. It is not used to answer. Read from a part, held-out photos the
+    model found unfamiliar were advised correctly 10 times in 29, and 158 of
+    600 photos of other plants (beans, weeds, PlantVillage's other crops) went
+    on to advice (2026-11-18, data/fetch_ood.py) — a close-up the farmer takes
+    goes through every check from the start instead."""
+    boxes = _views(img)
+    surveyed = model.survey([img.crop(tuple(round(v) for v in b)) for b in boxes])
+    order = sorted(range(len(boxes)), key=lambda i: surveyed[i][1] if surveyed[i][1] is not None else -1, reverse=True)
+    for i in order:
+        if not model.is_familiar(surveyed[i][1]):
+            return None
+        region = _in_frame(boxes[i], img.size)
+        if region is not None:
+            return region
+    return None
+
+
 def model_status() -> dict:
     m = _real_model()
     return {"is_stub": m is None, "model_version": m.version if m else "stub-0"}
@@ -133,6 +189,9 @@ def classify(image_bytes: bytes, farm_crop: str, scenario: str | None = None) ->
             if veg < CLEARLY_VEGETATION:
                 return TopK(topk.predictions, topk.model_version, False,
                             out_of_scope=True, oos_reason="NOT_A_CROP_PHOTO", heatmap=None)
+            region = closer_region(model, img)
+            if region is not None and heatmap is not None:
+                heatmap = {**heatmap, "closer_region": region}
             return TopK(topk.predictions, topk.model_version, False,
                         out_of_scope=True, oos_reason="UNFAMILIAR_PHOTO", heatmap=heatmap)
     else:

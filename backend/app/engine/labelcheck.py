@@ -162,7 +162,7 @@ def check(kb: KB, query: str, crop: str, target: str | None, lang: str) -> dict:
         )
 
     uses = kb.registered_uses(ingredient)
-    if not any(c == crop for c, _ in uses):
+    if crop not in kb.registered_crops(ingredient):
         return verdict("WRONG_CROP", crop=crop_name)
     if (crop, target) not in uses:
         return verdict("NOT_FOR_TARGET", target=tr(kb.targets[target]["names"], lang))

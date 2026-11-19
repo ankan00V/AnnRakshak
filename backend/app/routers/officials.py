@@ -201,43 +201,107 @@ def hotspots(request: Request, days: int = 45, lang: str = "en",
     ]
     return {"points": points, "active_alerts": alerts, "radius_km": services.SPREAD_RADIUS_KM}
 
+def _read_kb(name: str) -> dict:
+    path = services.KB_DIR / name
+    return json.loads(path.read_text()) if path.exists() else {}
+
+
+def _join(older: list, newer: list) -> list:
+    """Two [year, value] series as one, the newer source winning a shared year."""
+    out = dict(map(tuple, older))
+    out.update(map(tuple, newer))
+    return [[y, v] for y, v in sorted(out.items())]
+
+
 @router.get("/pesticides")
 def pesticide_baseline(request: Request, db: Session = Depends(get_db), state: str | None = None):
-    """State pesticide consumption (MoSPI ENVSTATS / DPPQS), the baseline that
-    'more targeted pesticide use' is measured against.
+    """State pesticide use, the baseline that 'more targeted pesticide use' is
+    measured against, with the state's estimated demand and what is sprayed
+    nationally.
+
+    Two sources, one series: MoSPI ENVSTATS for 2014-15 to 2020-21 and the
+    DPPQS Statistical Database, which MoSPI republishes, for 2021-22 on — the
+    years both carry agree to the tonne, and DPPQS wins where they meet.
 
     Whose baseline: the state this officer works in, read off the districts
     they cover. It was pinned to Maharashtra, so every officer in the country
     was shown Maharashtra's tonnage as the number their work has to move.
     """
     state = state or next(iter(geo.states_of(_mine(request, db))), "Maharashtra")
-    path = services.KB_DIR / "mospi_pesticides.json"
-    if not path.exists():
+    mospi, ppqs = _read_kb("mospi_pesticides.json"), _read_kb("ppqs_pesticides.json")
+    if not mospi and not ppqs:
         return {"available": False}
-    data = json.loads(path.read_text())
-    states = data["states"]
-    india: dict[str, float] = defaultdict(float)
-    for s in states.values():
-        for year, v in s.get("chemical", []):
-            india[year] += v
-    mine = states.get(state, {})
-    chem = mine.get("chemical", [])
-    latest = chem[-1] if chem else None
-    ranking = sorted(
-        ((name, s["chemical"][-1][1]) for name, s in states.items() if s.get("chemical")),
-        key=lambda kv: -kv[1],
-    )
+    m_states, p_states = mospi.get("states", {}), ppqs.get("states", {})
+    names = set(m_states) | set(p_states)
+    chem = {n: _join(m_states.get(n, {}).get("chemical", []), p_states.get(n, {}).get("chemical", []))
+            for n in names}
+    bio = {n: _join(m_states.get(n, {}).get("bio", []), p_states.get(n, {}).get("bio", [])) for n in names}
+
+    # India's total for a year: DPPQS's own where it publishes one, else the
+    # sum of the states MoSPI reports.
+    summed: dict[str, float] = defaultdict(float)
+    for n in m_states:
+        for year, v in m_states[n].get("chemical", []):
+            summed[year] += v
+    india = _join(sorted(summed.items()), ppqs.get("national", {}).get("chemical", []))
+    india_by_year = dict(map(tuple, india))
+
+    mine = chem.get(state, [])
+    latest = mine[-1] if mine else None
+    # Ranked among the states that reported the same year: a state that did
+    # not report is not a state that used nothing.
+    ranking = sorted(((n, dict(map(tuple, s)).get(latest[0])) for n, s in chem.items() if latest),
+                     key=lambda kv: -(kv[1] or 0))
+    ranking = [(n, v) for n, v in ranking if v is not None]
+
+    p_mine = p_states.get(state, {})
+    partial = set(ppqs.get("partial_years", {}).get("by_pesticide", []))
+    groups = ppqs.get("national", {}).get("by_group", {})
+
+    def complete(series: list) -> list:
+        return [[y, v] for y, v in series if y not in partial]
+
+    sprayed = []
+    for gid, series in groups.items():
+        full = complete(series)
+        if len(full) >= 2 and gid in ("i", "f", "h", "bp"):
+            first, last = full[0], full[-1]
+            sprayed.append({"id": gid, "name": ppqs["groups"].get(gid, gid), "series": full,
+                            "change_pct": round(100 * (last[1] - first[1]) / first[1]) if first[1] else None})
+    top = sorted(
+        ({"name": x["name"], "group": ppqs["groups"].get(x["group"], x["group"]), "series": complete(x["series"])}
+         for x in ppqs.get("pesticides", []) if x["group"] in ("i", "f", "h") and complete(x["series"])),
+        key=lambda x: -x["series"][-1][1],
+    )[:6]
+
     return {
         "available": True,
         "state": state,
-        "source": data["_source"],
-        "unit_note": data["_unit_note"],
-        "chemical": chem,
-        "bio": mine.get("bio", []),
-        "india_chemical": sorted(india.items()),
-        "latest_share_pct": round(100 * latest[1] / india[latest[0]], 1) if latest and india[latest[0]] else None,
+        "source": ppqs.get("_source") or mospi.get("_source", ""),
+        "earlier_source": mospi.get("_source") if ppqs else None,
+        "unit_note": "Tonnes, technical grade or formulation, as the states report them.",
+        "fetched": ppqs.get("_fetched"),
+        "chemical": mine,
+        "bio": bio.get(state, []),
+        "india_chemical": india,
+        "latest_share_pct": round(100 * latest[1] / india_by_year[latest[0]], 1)
+        if latest and india_by_year.get(latest[0]) else None,
         "rank": next((i + 1 for i, (n, _) in enumerate(ranking) if n == state), None),
         "states_ranked": len(ranking),
+        "demand": {
+            "chemical": p_mine.get("demand_chemical", []),
+            "bio": p_mine.get("demand_bio", []),
+            "projected": p_mine.get("projected"),
+            "unit": "tonnes of formulation (estimated)",
+            "note": "Demand is counted in formulation and use partly in technical grade, so the two are not "
+                    "compared.",
+        } if p_mine else None,
+        "sprayed": {
+            "groups": sprayed,
+            "top": top,
+            "note": "Indigenous pesticides only, all India; 2025-26 is left out because only 16 States/UTs "
+                    "had reported it.",
+        } if sprayed else None,
     }
 
 

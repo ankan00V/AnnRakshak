@@ -6,6 +6,7 @@ import { bcp47 } from '../../lib/i18n'
 import { ErrorBox } from '../../ui/kit'
 import { HistorySkeleton, ProblemDetailSkeleton } from '../components/Skeletons'
 import AdvisoryView from '../components/AdvisoryView'
+import CloserLook from '../components/CloserLook'
 import LastKnown from '../components/LastKnown'
 import ProblemRow, { problemStatus } from '../components/ProblemRow'
 import { useFarmer } from '../FarmerContext'
@@ -111,6 +112,7 @@ export function ProblemDetail() {
           )}
         </div>
         <div className="min-w-0 space-y-6">
+          {d.closer_region && d.case?.status === 'open' && <CloserLook imageUrl={d.image_url} region={d.closer_region} />}
           {d.advisory && <AdvisoryView advisory={d.advisory} />}
         </div>
       </div>

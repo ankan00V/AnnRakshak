@@ -59,7 +59,12 @@ def memory(lang: str) -> dict[str, str]:
 
 
 def lookup(english: str, lang: str) -> str | None:
-    return memory(lang).get(english) if english else None
+    """A pest or disease name comes from the hand-written glossary first: the
+    machine translation of a bare name has no sentence around it to say what
+    it is (glossary.json)."""
+    if not english:
+        return None
+    return (glossary_name(english, lang) if lang not in AUTHORED else None) or memory(lang).get(english)
 
 
 @lru_cache
@@ -125,7 +130,126 @@ of their strings keep the name in Latin inside the sentence. So it travels as
 a marker and comes back spelled the way the people who named it spell it."""
 
 
-def protect(text: str) -> tuple[str, list[str]]:
+NUMBER = re.compile(r"(?<![X\d.,])\d+(?:[.,:]\d+)*(?:\s*[-\u2013]\s*\d+(?:[.,:]\d+)*)?(?![\dX])")
+"""A number, a range or a time as written: 3, 1.5, 18,000-20,000, 06:00."""
+
+NUM = "#"
+"""The prefix that marks a protected number in the names list."""
+
+
+GLOSSARY_FILE = MEMORY_DIR.parent / "glossary.json"
+_GLOSSARY = json.loads(GLOSSARY_FILE.read_text(encoding="utf-8"))
+GLOSSARY: dict[str, dict[str, str]] = _GLOSSARY["terms"]
+"""Farming terms the translators read as everyday words, with the term each
+language's extension services use (kb/glossary.json). "Fall armyworm" came
+back as the autumn armyworm, "sucking pests" as pulling pests, "tillering" (a
+rice plant putting out new shoots) as ploughing, "rice blast" as an explosion
+and "aphids" as rabbits. A term travels as a marker, like a number, and its
+word is put back after."""
+NAMES_ONLY: dict[str, dict[str, str]] = _GLOSSARY["names_only"]
+"""Names too common as plain words to swap inside a sentence ("wilt" is also a
+verb); used only where the whole text is the name."""
+GLOSS = re.compile(r"(?<![\w-])(?:" + "|".join(re.escape(t) for t in sorted(GLOSSARY, key=len, reverse=True))
+                   + r")(?![\w-])", re.I)
+
+
+_TA_SIGN = {"அ": "", "ஆ": "ா", "இ": "ி", "ஈ": "ீ", "உ": "ு", "ஊ": "ூ", "எ": "ெ", "ஏ": "ே", "ஐ": "ை", "ஒ": "ொ", "ஓ": "ோ"}
+
+
+def _join_ta(word: str, suf: str) -> str | None:
+    if suf[0] in _TA_SIGN:
+        sign, rest = _TA_SIGN[suf[0]], suf[1:]
+        if word.endswith("ம்"):
+            return word[:-2] + "த்த" + sign + rest   # பருவம் + இல் -> பருவத்தில்
+        if word.endswith("்") or word.endswith("ு"):
+            return word[:-1] + sign + rest           # கதிர் + இன் -> கதிரின்
+        return word + "ய" + sign + rest              # அசுவினி + ஐ -> அசுவினியை
+    if suf == "க்கு":
+        if word.endswith("ம்"):
+            return word[:-2] + "த்துக்கு"
+        if word.endswith("்") and not word.endswith("ய்"):
+            return word[:-1] + "ுக்கு"               # கதிர் + க்கு -> கதிருக்கு
+        return word + "க்கு"
+    return None
+
+
+def _join_kn(word: str, suf: str) -> str | None:
+    if word.endswith("ಗಳು"):                         # ತೆನೆಗಳು + ನಲ್ಲಿ -> ತೆನೆಗಳಲ್ಲಿ
+        stem = word[:-1]
+        return stem + {"ಅನ್ನು": "ನ್ನು", "ನಲ್ಲಿ": "ಲ್ಲಿ", "ನ": "", "ದ": "", "ಗೆ": "ಿಗೆ", "ಕ್ಕೆ": "ಿಗೆ"}.get(suf, None) \
+            if suf in ("ಅನ್ನು", "ನಲ್ಲಿ", "ನ", "ದ", "ಗೆ", "ಕ್ಕೆ") else None
+    last = word[-1]
+    if last in "ೆಿೇೀ":                              # ಒಣಗುವಿಕೆ + ಅನ್ನು -> ಒಣಗುವಿಕೆಯನ್ನು
+        end = {"ಅನ್ನು": "ಯನ್ನು", "ವನ್ನು": "ಯನ್ನು", "ನಲ್ಲಿ": "ಯಲ್ಲಿ", "ನ": "ಯ", "ದ": "ಯ", "ಯ": "ಯ", "ಗೆ": "ಗೆ", "ಕ್ಕೆ": "ಗೆ"}
+        return word + end[suf] if suf in end else None
+    if "\u0c95" <= last <= "\u0cb9":                 # ರೋಗ + ಅನ್ನು -> ರೋಗವನ್ನು
+        end = {"ಅನ್ನು": "ವನ್ನು", "ವನ್ನು": "ವನ್ನು", "ನಲ್ಲಿ": "ದಲ್ಲಿ", "ನ": "ದ", "ದ": "ದ", "ಗೆ": "ಕ್ಕೆ", "ಕ್ಕೆ": "ಕ್ಕೆ"}
+        return word + end[suf] if suf in end else None
+    return None
+
+
+def _join_te(word: str, suf: str) -> str | None:
+    if word.endswith("ం"):
+        return word + suf if suf == "లో" else None   # పొలం + లో -> పొలంలో
+    return word + suf
+
+
+def _join_bn(word: str, suf: str) -> str | None:
+    if suf == "এর":
+        return word + ("ের" if "\u0995" <= word[-1] <= "\u09b9" else "র")  # শীষ -> শীষের, গুটি -> গুটির
+    if suf == "কে":
+        return word + suf
+    return None
+
+
+_ENDINGS = {
+    "ta": ("ஐ|இல்|இன்|க்கு|ஆல்|உடன்|இலிருந்து|ஆக|இலும்|ஐயும்|உம்", _join_ta),
+    "kn": ("ಅನ್ನು|ವನ್ನು|ನಲ್ಲಿ|ನ|ಗೆ|ದ|ಕ್ಕೆ|ಯ", _join_kn),
+    "te": ("ను|లో|కు|ని|తో", _join_te),
+    "gu": ("ને|માં|નો|ની|નું|થી|ના|નાં", lambda w, s: w + s),
+    "bn": ("এর|কে", _join_bn),
+}
+
+
+@lru_cache
+def _ending_pattern(lang: str) -> re.Pattern | None:
+    if lang not in _ENDINGS:
+        return None
+    words = sorted({w[lang] for w in GLOSSARY.values() if w.get(lang)}, key=len, reverse=True)
+    return re.compile("(" + "|".join(re.escape(w) for w in words) + ") (" + _ENDINGS[lang][0] + r")(?=[\s,.;:!?—)'\"]|$)")
+
+
+def join_endings(text: str, lang: str) -> str:
+    """A glossary word travels as a marker, so the translator writes the case
+    ending after it as a word of its own: 'கதிர் இன்' for கதிரின், 'ರೋಗ ಅನ್ನು'
+    for ರೋಗವನ್ನು. The ending is joined back on by the language's own rule;
+    one with no safe rule is left as it came."""
+    pat = _ending_pattern(lang)
+    if not pat or not text:
+        return text
+
+    def join(m: re.Match) -> str:
+        joined = _ENDINGS[lang][1](m.group(1), m.group(2))
+        return joined if joined else m.group(0)
+
+    return pat.sub(join, text)
+
+
+def glossary_name(english: str, lang: str) -> str | None:
+    """The hand-written word for a text that is exactly one glossary name."""
+    key = english.strip().lower()
+    return (GLOSSARY.get(key) or NAMES_ONLY.get(key) or {}).get(lang)
+
+
+def protect(text: str, lang: str | None = None) -> tuple[str, list[str]]:
+    """Every placeholder, the app's name and every number travels as a marker.
+
+    Numbers were left to the translator until the translations were checked
+    number by number (18 Nov 2026): "18,000-20,000 eggs" came back from
+    Malayalam as 1,000 and from Punjabi as 000, a "25-30 q/ha" yield came back
+    as the service's own masking token "<ID 1>", and "3 days" as the word
+    three. A dose or a threshold that changes in translation is the worst
+    error this app can make, so a number now goes through untouched."""
     names = PLACEHOLDER.findall(text)
     out = DASH.sub(", ", text)
     for i, n in enumerate(names):
@@ -133,7 +257,20 @@ def protect(text: str) -> tuple[str, list[str]]:
     for _ in range(out.count(BRAND)):
         names.append(BRAND)
         out = out.replace(BRAND, marker(len(names) - 1), 1)
-    return out, names
+
+    def number(m: re.Match) -> str:
+        names.append(NUM + m.group(0))
+        return marker(len(names) - 1)
+
+    def term(m: re.Match) -> str:
+        word = GLOSSARY[m.group(0).lower()].get(lang or "")
+        if not word:
+            return m.group(0)
+        names.append(NUM + word)  # put back as written, like a number
+        return marker(len(names) - 1)
+
+    out = GLOSS.sub(term, out)
+    return NUMBER.sub(number, out), names
 
 
 def restore(text: str, names: list[str]) -> str | None:
@@ -150,9 +287,25 @@ def restore(text: str, names: list[str]) -> str | None:
         hits = text.count(marker(i)) + text.count(f"<{i}>")
         if hits != 1:
             return None
-        back = BRAND if n == BRAND else "{" + n + "}"
+        back = BRAND if n == BRAND else n[len(NUM):] if n.startswith(NUM) else "{" + n + "}"
         text = text.replace(marker(i), back).replace(f"<{i}>", back)
-    return re.sub(r"\s{2,}", " ", text).strip()
+    text = re.sub(r"\s{2,}", " ", text).strip()
+    if LEAKED.search(text):
+        return None  # the service's own masking token, or ours, left in the sentence
+    return text
+
+
+LEAKED = re.compile(r"<[^<>]{0,24}>|XX\s*\d+\s*XX")
+"""What a translation must never show a farmer: a masking token left behind."""
+
+RUNAWAY = re.compile(r"(\b\S{2,}\b)(?:[\s,]+\1){3,}")
+"""A word said four times running. The engine sometimes loops: a Malayalam
+line about late nitrogen came back with "nitrogen" forty-five times."""
+
+
+def runaway(source: str, text: str) -> bool:
+    """A translation that loops, or is far longer than its English."""
+    return bool(RUNAWAY.search(text) and not RUNAWAY.search(source)) or len(text) > 3 * len(source) + 40
 
 
 UNIT_BOUND = re.compile(r"\{[^{}]*\}\s*(?:km|mm|cm|kg|ml|°C|%|acres?|ha)\b")
@@ -197,16 +350,18 @@ def machine_translate(text: str, lang: str) -> str | None:
 
     if not text.strip() or not re.search(r"[A-Za-z]", text):
         return text  # numbers, units, symbols: nothing to translate
-    safe, names = protect(text)
+    safe, names = protect(text, lang)
     try:
         out = voice.translate(safe, "en", lang)
     except Exception:  # noqa: BLE001  one failed string must not stop the batch
         return None
-    holes = sum(1 for n in names if n != BRAND)
+    holes = sum(1 for n in names if n != BRAND and not n.startswith(NUM))
     if holes > 1 and UNIT_BOUND.search(text) and not kept_order(out, holes):
         return None  # shuffled: better in English than with the wrong number
     out = house_spelling(tidy(text, out), lang)
-    return restore(out, names) if names else out
+    if runaway(text, out):
+        return None  # a looping engine: better in English than forty repeats
+    return join_endings(restore(out, names), lang) if names else out
 
 
 SENTENCE_END = re.compile(r"[.।॥|!?]+\s*$")

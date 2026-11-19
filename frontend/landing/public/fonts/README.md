@@ -5,7 +5,8 @@ told Google the IP address of every visitor on first paint — a farmer, an
 officer, a judge — for files that are Open Font Licence and could always have
 been served from here. Now they are.
 
-Noto Sans, Inter and Instrument Serif, under the SIL Open Font
+Noto Sans, Inter, Instrument Serif and DM Serif Display (Latin only, for the
+landing page's display headings), under the SIL Open Font
 Licence 1.1 (`OFL.txt`). Source: https://fonts.google.com
 
 ## What is here, and what is deliberately not

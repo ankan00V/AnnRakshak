@@ -1335,3 +1335,81 @@ def test_a_real_account_stays_signed_in_for_the_day(client, mail):
         s = db.scalars(select(UserSession).where(UserSession.revoked_at.is_(None))
                        .order_by(UserSession.id.desc())).first()
         assert s.expires_at - s.created_at >= timedelta(hours=23), "a real session got the demo's short life"
+
+
+def _codes_sent_a_minute_ago():
+    """Move every code sent so far a minute into the past, out of the resend wait."""
+    with SessionLocal() as db:
+        for ch in db.scalars(select(OtpChallenge)).all():
+            ch.created_at -= timedelta(minutes=1)
+            ch.expires_at -= timedelta(minutes=1)
+        db.commit()
+
+
+def test_asking_again_moments_later_brings_back_the_code_already_sent(client, mail, monkeypatch):
+    """A farmer who has the code but lost the screen that takes it can get it back.
+
+    The code arrives, but the screen still says "Send code" — the page was
+    reloaded, or the reply never reached the phone. Tapping again used to get
+    "please wait 25 seconds", and the code in hand had nowhere to go. Now the
+    same request inside that wait returns the same challenge, sends nothing,
+    and that first code signs them in."""
+    assert farmer_signup(client, mail).status_code == 201
+    client.post("/api/auth/logout")
+    monkeypatch.setattr(config, "OTP_RESEND_SECONDS", 30)
+    _codes_sent_a_minute_ago()  # the sign-up's code
+    ask = {"role": "farmer", "purpose": "login", "identifier": "9876543210"}
+
+    first = client.post("/api/auth/otp", json=ask)
+    assert first.status_code == 200, first.text
+    code, emails = code_of(mail), len(mail)
+
+    again = client.post("/api/auth/otp", json=ask)
+    assert again.status_code == 200, again.text
+    assert again.json()["challenge_id"] == first.json()["challenge_id"]
+    assert len(mail) == emails  # nothing new was sent
+    assert 0 < again.json()["resend_in"] <= 30 and again.json()["expires_in"] <= first.json()["expires_in"]
+
+    r = client.post("/api/auth/login", json={"challenge_id": again.json()["challenge_id"], "code": code,
+                                             "role": "farmer"})
+    assert r.status_code == 200, r.text
+
+
+def test_a_used_code_is_not_handed_back_and_the_wait_still_holds(client, mail, monkeypatch):
+    """Only a code that is still good comes back. One already used, or sent for
+    another purpose, leaves the wait as it was: no second email inside it."""
+    assert farmer_signup(client, mail).status_code == 201
+    client.post("/api/auth/logout")
+    monkeypatch.setattr(config, "OTP_RESEND_SECONDS", 30)
+    _codes_sent_a_minute_ago()
+    assert login(client, mail, "9876543210").status_code == 200  # this code is now used
+    client.post("/api/auth/logout")
+    r = client.post("/api/auth/otp", json={"role": "farmer", "purpose": "login", "identifier": "9876543210"})
+    assert r.status_code == 429 and "wait" in r.json()["detail"]
+
+
+def test_only_the_device_that_asked_is_handed_the_code_again(client, mail, monkeypatch):
+    """Anyone who knows a farmer's number could otherwise ask for a code inside
+    the wait, be handed the farmer's own challenge, and spend its tries on wrong
+    guesses until the code in the farmer's hand stops working. The challenge
+    comes back only to the device whose cookie it was sent with; anyone else
+    waits, as they always did."""
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    assert farmer_signup(client, mail).status_code == 201
+    client.post("/api/auth/logout")
+    monkeypatch.setattr(config, "OTP_RESEND_SECONDS", 30)
+    _codes_sent_a_minute_ago()
+    ask = {"role": "farmer", "purpose": "login", "identifier": "9876543210"}
+    first = client.post("/api/auth/otp", json=ask)
+    assert first.status_code == 200, first.text
+    assert "ar_otp_hold" in first.headers.get("set-cookie", "")
+    with TestClient(app) as stranger:  # another device: no cookie from the first request
+        r = stranger.post("/api/auth/otp", json=ask)
+        assert r.status_code == 429 and "challenge_id" not in r.text
+    # and a forged cookie is no better than none
+    with TestClient(app, cookies={"ar_otp_hold": "guess"}) as forger:
+        assert forger.post("/api/auth/otp", json=ask).status_code == 429
+    assert client.post("/api/auth/otp", json=ask).json()["challenge_id"] == first.json()["challenge_id"]

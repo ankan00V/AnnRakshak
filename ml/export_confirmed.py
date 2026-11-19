@@ -10,6 +10,15 @@ The label is the expert's final label (a correction overrides the model).
 Targets the model has no class for (inspection-tier pests) are counted, not
 exported. A retrained model still goes live only through train.py's
 deploy-if-not-worse gate.
+
+Two kinds of photo are left out, both found in a real export (18 Nov 2026,
+8 and 10 of 26). A photo that is one the model is tested on: the team checks
+the app with photos from the datasets, and one of those confirmed and trained
+on is a test answer learnt by heart, which flatters every score after it. And
+a photo confirmed twice — the same upload checked again — which would count
+once in the data and twice in the weights. Both by perceptual hash (dHash,
+Hamming <= 4), against ml/artifacts/split.json's held-out photos and against
+what this export has already taken.
 """
 
 from __future__ import annotations
@@ -23,12 +32,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
+sys.path.insert(0, str(ROOT / "data"))
 
 from sqlalchemy import select  # noqa: E402
 
 from app.config import UPLOAD_DIR  # noqa: E402
 from app.db import SessionLocal  # noqa: E402
 from app.models import Confirmation, Diagnosis, Farm, Problem  # noqa: E402
+from ingest_more import dhash, near  # noqa: E402
+from PIL import Image  # noqa: E402
 
 ART = ROOT / "ml" / "artifacts"
 OUT = ROOT / "data" / "processed" / "confirmed"
@@ -47,7 +59,14 @@ def class_for(target: str, classes: list[str], c2t: dict[str, str]) -> str | Non
 def main() -> None:
     meta = json.loads((ART / "meta.json").read_text())
     classes, c2t = meta["classes"], meta["class_to_target"]
+    split = json.loads((ART / "split.json").read_text())
+    held_out = []
+    for p in split["test"] + split.get("extra_test", []):
+        with Image.open(ROOT / p) as im:
+            held_out.append(dhash(im))
+    taken: list[int] = []
     rows, skipped = [], Counter()
+    shutil.rmtree(OUT, ignore_errors=True)  # an earlier export's leftovers would not be in this manifest
     with SessionLocal() as db:
         for conf in db.scalars(select(Confirmation).order_by(Confirmation.id)).all():
             problem = db.get(Problem, conf.problem_id)
@@ -63,6 +82,15 @@ def main() -> None:
                 if not src.exists():
                     skipped["image file missing on this server"] += 1
                     continue
+                with Image.open(src) as im:
+                    h = dhash(im)
+                if near(h, held_out, 4):
+                    skipped["a held-out test photo"] += 1
+                    continue
+                if near(h, taken, 4):
+                    skipped["the same photo confirmed again"] += 1
+                    continue
+                taken.append(h)
                 dst = OUT / cls / f"c{conf.id}_d{d.id}.jpg"
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(src, dst)

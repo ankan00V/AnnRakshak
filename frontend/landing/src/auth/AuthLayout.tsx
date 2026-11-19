@@ -1,4 +1,3 @@
-import { Check, Sprout, UserCheck } from 'lucide-react'
 import { Link, Navigate, Outlet, useLocation, useSearchParams } from 'react-router-dom'
 import { FarmerProvider, useFarmer } from '../farmer/FarmerContext'
 import LanguagePicker from '../farmer/components/LanguagePicker'
@@ -6,17 +5,18 @@ import BrandMark from '../ui/BrandMark'
 import { PageSkeleton } from '../ui/kit'
 import { useAuth } from './AuthContext'
 import { homeOf, safeNext } from './helpers'
-import { ProgressProvider, useProgress } from './progress'
+import { ProgressProvider, useDraft, type Draft } from './progress'
+import { Handset, ProfilePreview } from './Preview'
 import Krishi from '../krishi/Krishi'
 
-/** Login and the two sign-ups: the brand, the language (a farmer should be
- *  able to sign up in Marathi from the first screen) and one column.
+/** Login and the two sign-ups: one calm card over the field. On a sign-up a
+ *  phone stands beside it, showing the profile the farmer or expert is making
+ *  as it fills in; login and the fork are the card alone.
  *
- *  One column is right on the phone the farmer actually holds. On a laptop it
- *  left a 400 px ribbon adrift in a 1500 px window, so from `lg` up the screen
- *  splits: the panel on the left says where you are and how far there is to go,
- *  and the form keeps the right half at a readable width. Nothing below `lg`
- *  changes. */
+ *  The brand and the language sit over the photograph on every screen: a
+ *  farmer should be able to sign up in Marathi from the first screen. On a
+ *  phone the card is the page, over the same photograph; the preview phone is
+ *  for screens with room beside the form. */
 export default function AuthLayout() {
   return (
     <FarmerProvider>
@@ -27,11 +27,27 @@ export default function AuthLayout() {
   )
 }
 
+/** What this screen is for, in the strings the forms already use, so it
+ *  speaks all eleven languages. */
+function useCopy() {
+  const { t } = useFarmer()
+  const { pathname } = useLocation()
+  return pathname.startsWith('/signup/farmer')
+    ? { title: t('authFarmerCard'), sub: t('authFarmerCardSub') }
+    : pathname.startsWith('/signup/expert')
+      ? { title: t('authExpertCard'), sub: t('authExpertCardSub') }
+      : pathname.startsWith('/signup')
+        ? { title: t('authWhoAreYou'), sub: t('authWhoSub') }
+        : { title: t('authLoginTitle'), sub: t('authLoginSub') }
+}
+
 function Frame() {
-  const { setLang } = useFarmer()
+  const { setLang, t } = useFarmer()
   const { me, loading } = useAuth()
   const [params] = useSearchParams()
   const { pathname } = useLocation()
+  const copy = useCopy()
+  const draft = useDraft()
   if (loading) return <PageSkeleton />
   // A signed-in person has no business on the sign-up forms — except the one
   // trying out the shared demonstration account, who reached here by pressing
@@ -46,152 +62,50 @@ function Frame() {
     return <Navigate to={safeNext(params.get('next')) ?? homeOf(me.role)} replace />
   }
   return (
-    /* On a laptop the window is the frame: header, panel and form are laid
-       out inside one screen and the form is the only thing that scrolls. The
-       panel used to be `100vh` minus a hard-coded header height, which is a
-       guess that is wrong the moment the header leaves the screen — it left a
-       band of cream under the green. Nothing below `lg` is framed: a phone
-       scrolls the page, as it should. */
-    <div className="min-h-screen bg-cream text-soil-dark lg:h-screen lg:min-h-0 lg:overflow-hidden lg:flex lg:flex-col">
-      <header className="bg-leaf-deep text-cream lg:shrink-0">
-        <div className="max-w-lg lg:max-w-none lg:w-full mx-auto flex items-center justify-between gap-3 px-4 lg:px-8 py-3">
-          <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
-            <BrandMark size={34} />
-            AnnRakshak
-          </Link>
-          <div className="flex items-center gap-2">
-            <Krishi anchor="header" />
-            <LanguagePicker onPick={setLang} />
-          </div>
+    <div className="relative min-h-screen bg-[#10301b] text-soil-dark">
+      {/* The field, held still behind everything, softened so the card is
+          the thing you look at. */}
+      <div aria-hidden className="fixed inset-0 overflow-hidden">
+        <img src="/photos/impact-tree.webp" alt="" decoding="async"
+          className="h-full w-full scale-105 object-cover object-[70%_55%] blur-[2px]" />
+        <div className="absolute inset-0 bg-[#0e2a17]/45" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-[#0e2a17]/60" />
+      </div>
+
+      <header className="relative z-20 flex items-center justify-between gap-3 px-4 py-3 text-cream md:px-8 md:py-5">
+        <Link to="/" className="inline-flex items-center gap-2.5">
+          <span className="rounded-full bg-white p-[3px] shadow-sm"><BrandMark size={34} /></span>
+          <span className="leading-tight">
+            <span className="block text-[17px] font-semibold tracking-tight">AnnRakshak</span>
+            <span className="hidden text-[11px] text-cream/75 sm:block">{t('landTagline')}</span>
+          </span>
+        </Link>
+        <div className="flex items-center gap-2">
+          <Krishi anchor="header" />
+          <LanguagePicker onPick={setLang} />
         </div>
       </header>
-      <div className="lg:flex-1 lg:min-h-0 lg:grid lg:grid-cols-[minmax(20rem,30%)_1fr] lg:items-stretch">
-        <Aside />
-        <div className="lg:h-full lg:overflow-y-auto">
-          {/* min-height, not height: a short step (the login box, the fork)
-              centres in the window, and a long one grows past it and scrolls
-              from its own top rather than having the top cut off. */}
-          <div className="lg:min-h-full lg:flex lg:flex-col lg:justify-center">
-            <main className="w-full max-w-lg lg:max-w-[44rem] mx-auto px-4 lg:px-10 pt-6 pb-16 lg:py-12 animate-fadein">
-              <Outlet />
-            </main>
+
+      <div className="relative z-10 mx-auto flex max-w-[1080px] items-start justify-center gap-14 px-3 pb-16 pt-2 md:px-8 lg:pt-8 xl:gap-20">
+        <main className={`w-full ${draft ? 'max-w-[580px]' : pathname.startsWith('/login') ? 'max-w-[480px]' : 'max-w-[620px]'} animate-fadein rounded-[28px] bg-white px-5 py-7 shadow-[0_40px_90px_-40px_rgba(0,0,0,0.65)] ring-1 ring-black/5 sm:px-9 sm:py-9`}>
+          <h1 className="font-display text-[30px] leading-[1.08] tracking-[-0.01em] text-[#1f3a26] sm:text-[34px]">{copy.title}</h1>
+          <p className="mt-2 text-[15px] leading-relaxed text-soil-dark/70">{copy.sub}</p>
+          <div className="mt-7">
+            <Outlet />
           </div>
-        </div>
+        </main>
+        {draft && <Beside draft={draft} />}
       </div>
     </div>
   )
 }
 
-/** The left half on a laptop: what this screen is for, and — on a sign-up —
- *  the whole walk with the current step lit. Every line here is a string the
- *  form already uses, so the panel speaks all eleven languages for free. */
-function Aside() {
-  const { t } = useFarmer()
-  const { pathname } = useLocation()
-  const progress = useProgress()
-
-  const copy = pathname.startsWith('/signup/farmer')
-    ? { title: t('authFarmerCard'), sub: t('authFarmerCardSub') }
-    : pathname.startsWith('/signup/expert')
-      ? { title: t('authExpertCard'), sub: t('authExpertCardSub') }
-      : pathname.startsWith('/signup')
-        ? { title: t('authWhoAreYou'), sub: t('authWhoSub') }
-        : { title: t('authLoginTitle'), sub: t('authLoginSub') }
-
+/** The phone beside a sign-up: the profile being made, held in view while a
+ *  long form scrolls. */
+function Beside({ draft }: { draft: Draft }) {
   return (
-    <aside className="relative hidden lg:flex flex-col gap-10 bg-leaf-deep text-cream px-10 py-12 h-full overflow-hidden">
-      <Watermark />
-      <div className="relative">
-        <h2 className="font-instrument-serif text-[34px] leading-tight">{copy.title}</h2>
-        <p className="mt-2.5 text-[14px] leading-relaxed text-cream/70">{copy.sub}</p>
-      </div>
-
-      {/* On the fork itself the two cards say this already; saying it twice on
-          one screen is noise. */}
-      {progress ? <Walk {...progress} /> : pathname.startsWith('/login') ? <Audiences /> : null}
-
-      <p className="relative mt-auto text-[12px] leading-relaxed text-cream/45">{t('authEmailNote')}</p>
-    </aside>
-  )
-}
-
-/** The emblem in the green, under the panel's empty half.
- *
- *  Pinned to a corner it was a badge with two straight edges cut off it, which
- *  reads as a mistake rather than a flourish. Here it is centred, large, and
- *  dissolved on every side by a radial mask, with a low warm glow under it: no
- *  edge of the artwork ever meets an edge of the panel, so what is left is a
- *  watermark in the surface rather than a cropped picture of one. */
-function Watermark() {
-  return (
-    <span aria-hidden className="pointer-events-none select-none absolute inset-0 overflow-hidden">
-      <span className="absolute left-1/2 -translate-x-1/2 bottom-[-14%] w-[150%] aspect-square rounded-full
-                       bg-[radial-gradient(circle_at_center,rgba(247,243,236,0.10),transparent_62%)]" />
-      <img src="/brand/emblem-512.png" alt=""
-        className="absolute left-1/2 -translate-x-1/2 bottom-[-22%] w-[128%] max-w-none opacity-[0.13] saturate-[0.3]
-                   [mask-image:radial-gradient(closest-side,#000_28%,transparent_76%)]
-                   [-webkit-mask-image:radial-gradient(closest-side,#000_28%,transparent_76%)]" />
-    </span>
-  )
-}
-
-/** The steps of this sign-up, done, open and still to come. */
-function Walk({ step, titles }: { step: number; titles: string[] }) {
-  const { t } = useFarmer()
-  return (
-    <ol className="relative space-y-0">
-      {titles.map((title, i) => {
-        const done = i < step
-        const here = i === step
-        return (
-          <li key={title + i} className="flex gap-3.5">
-            <span className="flex flex-col items-center">
-              <span className={`w-7 h-7 shrink-0 rounded-full border flex items-center justify-center text-[12px] font-semibold ${
-                done ? 'bg-cream/90 border-cream/90 text-leaf-deep'
-                  : here ? 'border-cream text-cream' : 'border-cream/25 text-cream/40'}`}>
-                {done ? <Check className="w-3.5 h-3.5" /> : i + 1}
-              </span>
-              {i < titles.length - 1 && (
-                <span className={`w-px flex-1 my-1 ${i < step ? 'bg-cream/70' : 'bg-cream/15'}`} />
-              )}
-            </span>
-            <span className={`pb-5 text-[14px] leading-tight ${
-              here ? 'font-semibold text-cream' : done ? 'text-cream/65' : 'text-cream/40'}`}>
-              {title}
-              {here && (
-                <span className="block mt-1 text-[11px] font-normal uppercase tracking-wider text-cream/45">
-                  {t('authStep').replace('{n}', String(step + 1)).replace('{total}', String(titles.length))}
-                </span>
-              )}
-            </span>
-          </li>
-        )
-      })}
-    </ol>
-  )
-}
-
-/** On login and on the fork, where there is no walk to draw: who the two apps
- *  are for, so somebody landing on the login screen can tell which one is theirs. */
-function Audiences() {
-  const { t } = useFarmer()
-  const rows = [
-    { icon: Sprout, title: t('authFarmerCard'), sub: t('authFarmerCardSub') },
-    { icon: UserCheck, title: t('authExpertCard'), sub: t('authExpertCardSub') },
-  ]
-  return (
-    <ul className="relative space-y-5">
-      {rows.map(({ icon: Icon, title, sub }) => (
-        <li key={title} className="flex gap-3.5">
-          <span className="w-9 h-9 shrink-0 rounded-xl bg-cream/10 flex items-center justify-center">
-            <Icon className="w-[18px] h-[18px]" />
-          </span>
-          <span>
-            <span className="block text-[14px] font-semibold">{title}</span>
-            <span className="block mt-1 text-[13px] leading-relaxed text-cream/60">{sub}</span>
-          </span>
-        </li>
-      ))}
-    </ul>
+    <div className="sticky top-8 hidden shrink-0 lg:block">
+      <Handset><ProfilePreview draft={draft} /></Handset>
+    </div>
   )
 }

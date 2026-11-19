@@ -76,8 +76,6 @@
      "Will it rain?",
      "weather today",
      "how is the weather",
-     "aaj barish hogi kya",
-     "paus padel ka",
      "will it rain tomorrow"
     ],
     "hi": [
@@ -110,6 +108,8 @@
     "thand",
     "barish hogi",
     "paus yenar",
+    "paus padel",
+    "aaj barish",
     "mausam kaisa",
     "tomorrow",
     "kal",

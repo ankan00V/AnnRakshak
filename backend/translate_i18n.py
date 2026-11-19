@@ -42,7 +42,7 @@ from datetime import date
 from pathlib import Path
 
 from app.config import KB_DIR, SARVAM_TRANSLATE_MODEL
-from app.i18n import (MACHINE, MEMORY_DIR, UNIT_BOUND, kept_order, protect, restore, tidy,
+from app.i18n import (BRAND, glossary_name, join_endings, runaway, MACHINE, MEMORY_DIR, NUM, UNIT_BOUND, kept_order, protect, restore, tidy,
                       translate_many)
 
 INDICTRANS2 = "ai4bharat/indictrans2-en-indic-dist-200M"
@@ -76,7 +76,7 @@ class IndicTrans2:
         order = sorted(strings, key=len)  # similar lengths per batch: less padding
         for i in range(0, len(order), batch):
             chunk = order[i:i + batch]
-            safe = [protect(x) for x in chunk]
+            safe = [protect(x, lang) for x in chunk]
             pre = self.ip.preprocess_batch([t for t, _ in safe], src_lang="eng_Latn", tgt_lang=tgt)
             x = self.tok(pre, truncation=True, padding="longest", return_tensors="pt",
                          return_attention_mask=True).to(self.device)
@@ -91,10 +91,13 @@ class IndicTrans2:
                     continue
                 # Same bar as the API path: a sentence that pins a placeholder
                 # to a unit must come back with them still paired.
-                if len(names) > 1 and UNIT_BOUND.search(src) and not kept_order(text, len(names)):
+                holes = sum(1 for n in names if n != BRAND and not n.startswith(NUM))
+                if holes > 1 and UNIT_BOUND.search(src) and not kept_order(text, holes):
                     continue
                 text = tidy(src, text)
-                text = restore(text, names) if names else text
+                if runaway(src, text):
+                    continue
+                text = join_endings(restore(text, names), lang) if names else text
                 if text:
                     done[src] = text
             if progress:
@@ -112,7 +115,7 @@ KB_FILES = ["crops.json", "targets.json", "advisories.json", "cues.json", "risk_
             "agromet.json", "icar_technologies.json", "krishi.json"]
 MODULES = ["app.services", "app.notify", "app.mailer", "app.live", "app.office", "app.engine.advisory", "app.engine.risk",
            "app.engine.fieldnow", "app.engine.livescan", "app.routers.weather", "app.auth", "app.routers.auth",
-           "app.krishi", "app.live"]
+           "app.krishi", "app.live", "app.sms", "app.report"]
 NOTE = ("Machine translated from the approved English (engines under 'models'); placeholders checked. "
         "Pending review by a native speaker — correct any line in place, the job never overwrites an existing entry.")
 
@@ -225,6 +228,8 @@ def main() -> None:
             continue
         t0 = time.time()
         texts = sorted(set(kb_todo) | set(ui_todo.values()))
+        named = {x: glossary_name(x, lang) for x in texts if glossary_name(x, lang)}  # a bare term: its word
+        texts = [x for x in texts if x not in named]
         report = lambda i, n: print(f"  {lang}: {i}/{n}", flush=True)  # noqa: E731
 
         def save(partial: dict[str, str]) -> None:
@@ -233,6 +238,8 @@ def main() -> None:
 
         done = engine.translate(texts, lang, progress=report, save=save, beams=args.beams) if engine \
             else translate_many(texts, lang, progress=report)
+        done.update(named)
+        texts += list(named)
         kb_have.update({s: done[s] for s in kb_todo if s in done})
         ui_have.update({k: done[v] for k, v in ui_todo.items() if v in done})
         write(lang, kb_path, ui_path, kb_have, ui_have, engine)

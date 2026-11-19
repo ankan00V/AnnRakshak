@@ -90,6 +90,11 @@ MESSAGES = {
         "hi": "यह ऐसा रोग लगता है जो मैंने प्रयोगशाला की फोटो से सीखा है, इसलिए सलाह से पहले खेत में एक छोटी जाँच चाहिए।",
         "mr": "हा रोग मी प्रयोगशाळेतील फोटोंवरून शिकलो आहे, म्हणून सल्ल्यापूर्वी शेतात एक छोटी तपासणी हवी.",
     },
+    "LOOKALIKE_CONFIRM": {
+        "en": "This disease is often mistaken for another that needs different treatment, so I want one quick check in your field before advising.",
+        "hi": "यह रोग अक्सर ऐसे दूसरे रोग से मिलता-जुलता लगता है जिसका इलाज अलग है, इसलिए सलाह से पहले खेत में एक छोटी जाँच चाहिए।",
+        "mr": "हा रोग अनेकदा वेगळा उपचार लागणाऱ्या दुसऱ्या रोगासारखा दिसतो, म्हणून सल्ल्यापूर्वी शेतात एक छोटी तपासणी हवी.",
+    },
     "LAB_CLASS_BELOW_GATE": {
         "en": "This may be a disease I learnt from lab photos, and I am not sure enough on a field photo. An expert will confirm.",
         "hi": "यह ऐसा रोग हो सकता है जो मैंने प्रयोगशाला की फोटो से सीखा है; खेत की फोटो पर मुझे पूरा भरोसा नहीं। विशेषज्ञ पुष्टि करेंगे।",
@@ -1015,12 +1020,7 @@ def diagnose(
             result |= _advise(db, kb, problem, top, "model", lang, farm)
     elif decision.outcome == "clarify":
         cue = next(c for c in kb.cues if c["id"] == decision.cue_id)
-        a, b = decision.alternatives[0].target, decision.alternatives[1].target
-        result["clarify"] = {
-            "cue_id": cue["id"],
-            "question": tr(cue["question"], lang),
-            "candidates": [kb.target_view(a, lang), kb.target_view(b, lang)],
-        }
+        result["clarify"] = _clarify_view(kb, cue, decision.alternatives[0].target, lang)
     elif decision.outcome == "escalate":
         case = escalate(db, problem, decision.reason)
         result["case"] = case_brief(db, case)
@@ -1030,6 +1030,17 @@ def diagnose(
 
     db.commit()
     return result
+
+
+def _clarify_view(kb: KB, cue: dict, top: str, lang: str) -> dict:
+    """The question and the two answers it can lead to: the model's own guess
+    first, then the other half of the pair the question separates — which is
+    the runner-up for two close guesses, and the usual look-alike for a
+    confirmation."""
+    other = next(t for t in cue["pair"] if t != top) if top in cue["pair"] else cue["pair"][1]
+    first = top if top in cue["pair"] else cue["pair"][0]
+    return {"cue_id": cue["id"], "question": tr(cue["question"], lang),
+            "candidates": [kb.target_view(first, lang), kb.target_view(other, lang)]}
 
 
 def result_view(db: Session, kb: KB, problem: Problem, lang: str) -> dict:
@@ -1064,10 +1075,9 @@ def result_view(db: Session, kb: KB, problem: Problem, lang: str) -> dict:
     elif diag.gate_outcome == "advise" and top and gate.is_healthy(top):
         out["healthy_note"] = advisory_engine.healthy_note(lang)
     elif diag.gate_outcome == "clarify" and len(preds) > 1:
-        cue = kb.cue_for(preds[0].target, preds[1].target)
+        cue = gate.clarify_cue(diag.gate_reason, preds[0].target, preds[1].target, kb.cue_for)
         if cue:
-            out["clarify"] = {"cue_id": cue["id"], "question": tr(cue["question"], lang),
-                              "candidates": [kb.target_view(preds[0].target, lang), kb.target_view(preds[1].target, lang)]}
+            out["clarify"] = _clarify_view(kb, cue, preds[0].target, lang)
     return out
 
 
@@ -1150,6 +1160,8 @@ def _problem_view(db: Session, kb: KB, problem: Problem, lang: str, last_diag, a
         "image_url": _image_url(last_diag.image_path) if last_diag else None,
         "gate_outcome": last_diag.gate_outcome if last_diag else None,
         "gate_reason": last_diag.gate_reason if last_diag else None,
+        # the part of an unfamiliar photo worth photographing up close
+        "closer_region": (last_diag.heatmap or {}).get("closer_region") if last_diag else None,
         "confidence": last_diag.confidence if last_diag else None,
         "is_stub": last_diag.is_stub if last_diag else None,
         "advisory_source": advisory_row.source if advisory_row else None,

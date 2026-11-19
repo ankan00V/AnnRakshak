@@ -8,7 +8,7 @@ import pytest
 
 from app import config
 from app.config import FLOOR, GATE, MARGIN, PRIOR_MAX_BIAS
-from app.engine import advisory, assign, doubt, labelcheck, prior, risk, vision
+from app.engine import advisory, assign, doubt, gate, labelcheck, prior, risk, vision
 from app.engine.gate import Prediction, TopK, decide
 from app.engine.weather import Day, Window
 from app.kb import KB, get_kb, validate
@@ -95,6 +95,9 @@ def test_vegetation_decides_retake_versus_expert_for_an_unfamiliar_photo():
         def analyse(self, img, k=3, with_heatmap=True):
             return [("maize_fall_armyworm", 0.25), ("maize_aphid", 0.23)], {"grid": []}, 0.1
 
+        def survey(self, imgs, k=3):  # no part of it is familiar either
+            return [([("maize_fall_armyworm", 0.25), ("maize_aphid", 0.23)], 0.1) for _ in imgs]
+
         def is_familiar(self, fam):
             return False
 
@@ -111,6 +114,45 @@ def test_vegetation_decides_retake_versus_expert_for_an_unfamiliar_photo():
         buf = io.BytesIO()
         grey.save(buf, format="JPEG")
         assert vision.classify(buf.getvalue(), "maize").oos_reason == "NOT_A_CROP_PHOTO"
+    finally:
+        vision._real_model = _REAL_MODEL
+        vision._real_model.cache_clear()
+
+
+def test_an_unfamiliar_wide_photo_marks_the_part_to_photograph_up_close():
+    # A wide shot of a field can be unfamiliar as a whole while one part of it
+    # looks like the close-ups the model learnt from: the false smut panicle in
+    # a green canopy. That part is marked for a close-up. It does not answer for
+    # the photo, which still goes to an expert: read from a part, held-out
+    # photos were advised wrongly more often than rightly.
+    from PIL import Image
+
+    from app.engine import vision
+
+    familiar_part = 4  # the middle of the 3x3 grid of half-size squares
+
+    class WideShot:
+        version, temperature = "test-0", 1.0
+
+        def analyse(self, img, k=3, with_heatmap=True):
+            return [("rice_bacterial_leaf_blight", 0.5), ("rice_false_smut", 0.3)], {"grid": [[0.0]]}, 0.2
+
+        def survey(self, imgs, k=3):
+            return [([("rice_false_smut", 0.9)], 0.8 if i == familiar_part else 0.3) for i in range(len(imgs))]
+
+        def is_familiar(self, fam):
+            return fam >= 0.5
+
+    vision._real_model.cache_clear()
+    try:
+        vision._real_model = lambda: WideShot()  # type: ignore[assignment]
+        field = Image.new("RGB", (200, 200), (70, 130, 50))
+        buf = io.BytesIO()
+        field.save(buf, format="JPEG")
+        topk = vision.classify(buf.getvalue(), "rice")
+        assert (topk.out_of_scope, topk.oos_reason) == (True, "UNFAMILIAR_PHOTO")
+        assert topk.predictions[0].target == "rice_bacterial_leaf_blight"  # the whole photo's, not the part's
+        assert topk.heatmap["closer_region"] == [0.25, 0.25, 0.75, 0.75]
     finally:
         vision._real_model = _REAL_MODEL
         vision._real_model.cache_clear()
@@ -236,12 +278,38 @@ def test_label_check_never_endorses():
 
 def test_label_check_verdicts():
     chk = lambda q, t: labelcheck.check(kb, q, "rice", t, "en")["code"]  # noqa: E731
-    assert chk("copper oxychloride", "rice_bacterial_leaf_blight") == "NO_OBJECTION_FOUND"
-    assert chk("mancozeb", "rice_bacterial_leaf_blight") == "NOT_FOR_TARGET"
+    # Copper oxychloride is not registered on rice (CIB&RC major uses, 30.09.2026);
+    # copper hydroxide 53.8% DF is, for bacterial leaf blight.
+    assert chk("copper oxychloride", "rice_bacterial_leaf_blight") == "WRONG_CROP"
+    assert chk("Copper hydroxide 53.8% DF", "rice_bacterial_leaf_blight") == "NO_OBJECTION_FOUND"
+    assert chk("tricyclazole", "rice_bacterial_leaf_blight") == "NOT_FOR_TARGET"
     assert chk("emamectin", "rice_bacterial_leaf_blight") == "WRONG_CLASS"
     assert chk("roundup", "rice_brown_spot") == "HERBICIDE"
-    assert chk("spinetoram", "rice_leaf_folder") == "WRONG_CROP"
     assert chk("unobtainium 9000", "rice_brown_spot") == "NOT_IN_RECORDS"
+    assert labelcheck.check(kb, "carbendazim", "soybean", "soybean_rust", "en")["code"] == "WRONG_CROP"
+
+
+def test_a_product_on_the_register_is_not_refused_for_missing_from_our_advice():
+    """The verdict came from the two or three products our advice names, so a
+    registered product was told "Do not spray this": carbendazim 50% WP on rice
+    blast (250-500 g/ha), spinetoram 11.7% SC on rice leaf folder. Both are on
+    the CIB&RC major-uses list as on 30.09.2026."""
+    chk = lambda q, crop, t: labelcheck.check(kb, q, crop, t, "en")["code"]  # noqa: E731
+    assert chk("carbendazim 50 WP", "rice", "rice_blast") == "NO_OBJECTION_FOUND"
+    assert chk("spinetoram", "rice", "rice_leaf_folder") == "NO_OBJECTION_FOUND"
+    assert chk("chlorantraniliprole 18.5 SC", "maize", "maize_fall_armyworm") == "NO_OBJECTION_FOUND"
+    # Registered on the crop, but only as a seed treatment for this problem.
+    assert chk("carbendazim", "rice", "rice_sheath_blight") == "NOT_FOR_TARGET"
+    # Registered on soybean, but for pests the app does not diagnose there.
+    assert chk("flonicamid", "soybean", "soybean_girdle_beetle") == "NOT_FOR_TARGET"
+
+
+def test_every_registration_says_where_it_was_read():
+    for ing, regs in kb.registrations.items():
+        assert ing in kb.pesticides, ing
+        for reg in regs:
+            assert reg["source"].startswith("CIB&RC") and reg["register_says"] and reg["line"] > 0, (ing, reg)
+            assert all(kb.targets[t]["crop"] == reg["crop"] for t in reg["targets"]), (ing, reg)
 
 
 # --- risk ------------------------------------------------------------------
@@ -404,11 +472,33 @@ def test_a_lab_trained_class_must_clear_its_own_higher_bar():
     assert (d.outcome, d.reason) == ("clarify", "LAB_CLASS_CONFIRM") and d.cue_id
     d = run_gate(topk(("rice_blast", under), ("rice_leaf_folder", 0.05)))
     assert (d.outcome, d.reason) == ("escalate", "LAB_CLASS_BELOW_GATE")
-    assert run_gate(topk(("rice_blast", over), ("rice_brown_spot", 0.01))).outcome == "advise"
+    # above its bar it is advised, unless it is one no bar makes reliable
+    # (asked about below, in test_a_class_no_bar_makes_reliable_...)
+    steady = next(t for t in config.TARGET_GATE if not config.lookalike_for(t)
+                  and kb.targets[t]["tier"] == "diagnosable" and t in kb.advisories)
+    assert run_gate(topk((steady, 0.99), ("rice_leaf_folder", 0.005)), crop=steady.split("_")[0]).outcome == "advise"
     # a class on the global gate is unaffected by any of it
     plain = next(t for t in ("rice_false_smut", "rice_skipper", "soybean_healthy")
                  if config.gate_for(t) == config.GATE)
     assert run_gate(topk((plain, 0.75), ("rice_blast", 0.05))).outcome == "advise"
+
+
+def test_a_class_no_bar_makes_reliable_is_confirmed_with_its_look_alike_question():
+    # rice_blast stays below 0.95 precision at every bar, and most of its
+    # mistakes are brown spot, which the spot-shape question separates. So
+    # even a confident blast is asked about first — whatever came second —
+    # and the answer settles it the way it does for two close guesses.
+    assert config.lookalike_for("rice_blast"), "this test needs a class with a look-alike to confirm"
+    partner = config.lookalike_for("rice_blast")
+    cue = kb.cue_for("rice_blast", partner)
+    for runner_up in (partner, "rice_leaf_folder"):
+        d = run_gate(topk(("rice_blast", 0.99), (runner_up, 0.005)))
+        assert (d.outcome, d.reason, d.cue_id) == ("clarify", "LOOKALIKE_CONFIRM", cue["id"])
+    # the stored result asks the same question when it is shown again
+    assert gate.clarify_cue("LOOKALIKE_CONFIRM", "rice_blast", "rice_leaf_folder", kb.cue_for) is cue
+    # every entry has a question that tells the pair apart
+    for t, p in config.CONFIRM_LOOKALIKE.items():
+        assert kb.cue_for(t, p), f"{t}: no field question separates it from {p}"
 
 
 def test_closed_form_cam_is_the_same_map_as_grad_cam():
@@ -729,3 +819,231 @@ def test_a_half_written_window_still_cannot_fire():
     assert "temperature band or the rain" in s.detail["why"], s.detail
     assert risk.missing_weather_keys({"rh_min": 85, "days": 3, "t_min": 20, "t_max": 30}) == []
     assert risk.missing_weather_keys({"rh_min": 85, "days": 3, "rain_total_min": 40}) == []
+
+
+def test_the_most_specific_product_name_wins():
+    """'Copper hydroxide 53.8% DF' contains 'copper hydroxide', an alias of the
+    77% WP. Taking the first match named the wrong product."""
+    assert kb.match_pesticide("Copper hydroxide 53.8% DF") == "copper_hydroxide_53_8df"
+    assert kb.match_pesticide("copper hydroxide") == "copper_hydroxide_77wp"
+    assert kb.match_pesticide("Buprofezin 70% DF") == "buprofezin_70df"
+    assert kb.match_pesticide("thiamethoxam + lambda-cyhalothrin") == "thiamethoxam_lambda_zc"
+    assert kb.match_pesticide("mancozeb") == "mancozeb_75wp"
+
+
+def test_every_chemical_rung_rests_on_a_registered_use():
+    """No spray reaches a farmer unless the CIB&RC major-uses list registers that
+    product on that crop for that pest (data/verify_doses.py), and its dose is
+    the registered amount per hectare at the registered water volume."""
+    import re
+    acre = 0.4047
+    for target, adv in kb.advisories.items():
+        crop = target.split("_")[0]
+        for rung in adv["ladder"]:
+            if rung["tier"] != "chemical":
+                continue
+            reg = rung.get("registration")
+            assert rung.get("verified") and reg, (target, rung["ingredient"])
+            assert reg["source"].startswith("CIB&RC Major Uses of Pesticides"), target
+            names = {"rice": ("rice", "paddy"), "maize": ("maize",), "cotton": ("cotton",), "soybean": ("soybean",)}
+            assert any(n in reg["crop"].lower() for n in names[crop]), (target, reg["crop"])
+            if rung.get("dose_per_litre") is None:
+                continue
+            # product per hectare at our dose and water, against the registered range
+            per_ha = rung["dose_per_litre"] * rung["water_l_per_acre"] / acre
+            nums = [float(x) for x in re.findall(r"\d+(?:\.\d+)?", reg["formulation_per_ha"].replace(",", ""))]
+            if "kg" in reg["formulation_per_ha"]:
+                nums = [n * 1000 for n in nums]
+            if "%" in reg["formulation_per_ha"]:
+                continue  # a concentration, checked by hand
+            lo, hi = min(nums), max(nums)
+            assert 0.9 * lo <= per_ha <= 1.1 * hi, (target, rung["ingredient"], round(per_ha), reg["formulation_per_ha"])
+
+
+def test_the_waiting_period_reaches_the_farmer():
+    a = advisory.compose(kb, "rice_blast", "hi", area_acres=1)
+    chem = next(r for r in a["ladder"] if r["tier"] == "chemical")
+    assert "30" in chem["waiting"] and chem["verified"]
+
+
+def test_every_organic_option_rests_on_a_registered_use():
+    """The organic options are the bio-pesticides and neem products the CIB&RC
+    bio lists register for that crop and pest (data/organic_options.py), at the
+    registered amount per hectare."""
+    import re
+    acre = 0.4047
+    names = {"rice": ("rice", "paddy"), "maize": ("maize",), "cotton": ("cotton",), "soybean": ("soybean",)}
+    seen = 0
+    for target, adv in kb.advisories.items():
+        crop = target.split("_")[0]
+        for o in adv.get("organic", []):
+            seen += 1
+            assert kb.pesticides[o["ingredient"]].get("organic"), (target, o["ingredient"])
+            reg = o["registration"]
+            assert reg["source"].startswith("CIB&RC Major Uses of Pesticides — Bio-"), target
+            assert any(n in reg["crop"].lower() for n in names[crop]), (target, reg["crop"])
+            if o["use"] != "spray":
+                continue
+            if o.get("per_acre"):
+                per_ha = o["per_acre"]["amount"] / acre
+            else:
+                per_ha = o["dose_per_litre"] * o["water_l_per_acre"] / acre
+            text = reg["formulation_per_ha"]
+            nums = [float(x) for x in re.findall(r"\d+(?:\.\d+)?", text)]
+            if "kg" in text or "litre" in text:
+                nums = [n * 1000 for n in nums]
+            lo, hi = min(nums), max(nums)
+            assert 0.9 * lo <= per_ha <= 1.1 * hi, (target, o["ingredient"], round(per_ha), text)
+    assert seen >= 25
+
+
+def test_organic_options_come_before_the_chemical_and_say_when_there_are_none():
+    a = advisory.compose(kb, "rice_leaf_folder", "en", area_acres=1)
+    products = [o["product"] for o in a["organic"]]
+    assert any("thuringiensis" in p for p in products) and any("Azadirachtin" in p for p in products)
+    neem = next(o for o in a["organic"] if o["kind"] == "botanical")
+    assert neem["for_field"] and "5 days" in neem["waiting"]
+    assert advisory.compose(kb, "maize_ear_rot", "en")["organic"] == []
+    hi = advisory.compose(kb, "rice_bacterial_leaf_blight", "hi")
+    dip = next(o for o in hi["organic"] if o["use"] == "root_dip")
+    assert "30" in dip["dose"] and "मिनट" in dip["dose"]
+
+
+def test_the_spray_check_knows_registered_organic_products():
+    chk = lambda q, c, t: labelcheck.check(kb, q, c, t, "en")["code"]  # noqa: E731
+    assert chk("neem", "rice", "rice_leaf_folder") == "NO_OBJECTION_FOUND"
+    assert chk("Trichoderma viride", "rice", "rice_sheath_blight") == "NO_OBJECTION_FOUND"
+    assert chk("Trichoderma viride", "rice", "rice_blast") == "NOT_FOR_TARGET"
+    assert chk("Beauveria bassiana 1.5% AS", "maize", "maize_fall_armyworm") == "NO_OBJECTION_FOUND"
+    assert chk("Bacillus thuringiensis", "rice", "rice_sheath_blight") == "WRONG_CLASS"
+
+
+def test_homemade_options_name_their_source_and_read_in_the_farmers_language():
+    # A preparation made at home has no label and no registration, so the
+    # government source that recommends it for this problem is what it rests on.
+    with_homemade = [t for t, a in kb.advisories.items() if a.get("homemade")]
+    assert with_homemade, "no advisory offers a homemade option"
+    for t in with_homemade:
+        for lang in ("en", "hi", "mr"):
+            out = advisory.compose(kb, t, lang, 1.0)["homemade"]
+            for h in out:
+                assert h["source"] and h["recipe"] and h["dose"] and h["timing"]
+                if lang != "en":  # authored, never the English left standing in
+                    assert h["name"] != kb.homemade[h["prep"]]["name"]["en"]
+    # strength reaches the farmer as the source gives it: 5% NSKE is 50 g a litre
+    faw = advisory.compose(kb, "maize_fall_armyworm", "en", 1.0)["homemade"]
+    assert any(h["prep"] == "nske_5" and "50 g" in h["dose"] and "500 g" in h["dose"] for h in faw)
+    # and an advisory with none says nothing rather than something made up
+    assert advisory.compose(kb, "rice_blast", "en", 1.0)["homemade"] == []
+
+
+def test_every_pest_and_disease_gives_an_organic_route_and_a_chemical_answer():
+    # A farmer always gets both sides. Organic: at least two steps before any
+    # chemical, field practice and natural control or an organic product. Chemical:
+    # a product CIB&RC registers for that crop and pest, or a plain statement
+    # that India registers none, never an empty space.
+    for target, adv in kb.advisories.items():
+        if kb.targets[target].get("kind") not in ("pest", "disease", "virus"):
+            continue
+        a = advisory.compose(kb, target, "en", 1.0)
+        organic = [r for r in a["ladder"] if r["tier"] != "chemical"] + a["organic"] + a["homemade"]
+        assert len(organic) >= 2, f"{target}: {len(organic)} organic step(s)"
+        chem = [r for r in a["ladder"] if r["tier"] == "chemical"]
+        assert chem or a["chemical_none"], f"{target}: no chemical and no word on why"
+        assert not (chem and a["chemical_none"]), target
+        for r in chem:
+            assert r["dose"], f"{target}: {r['product']} has no dose"
+
+
+def test_seed_treatment_rungs_read_as_seed_treatments():
+    wilt = advisory.compose(kb, "cotton_wilt", "hi", 2.0)
+    seed = [r for r in wilt["ladder"] if r["tier"] == "chemical"]
+    assert seed and seed[0]["use"] == "seed" and "बीज" in seed[0]["dose"]
+    assert "for_field" not in seed[0]  # a dose per kg of seed, not a tank to fill
+
+
+def test_a_field_quantity_is_given_in_kilograms_and_litres_when_it_is_large():
+    a = advisory.compose(kb, "rice_false_smut", "en", 30.0)
+    chem = next(r for r in a["ladder"] if r["tier"] == "chemical")
+    assert " kg in " in chem["for_field"] and " g in " not in chem["for_field"]
+
+
+def test_a_number_cannot_change_in_translation():
+    # Translated one by one (18 Nov 2026), "18,000-20,000 eggs" came back from
+    # Malayalam as 1,000 and from Punjabi as 000. Numbers now travel as markers.
+    from app.i18n import protect, restore
+
+    src = "Tricho-card: 18,000-20,000 eggs; 1.5 g per litre at 06:00, 5 times at 7-10 day intervals."
+    safe, names = protect(src, "ml")
+    for n in ("18,000-20,000", "1.5", "06:00", "7-10"):
+        assert n not in safe, f"{n} reached the translator"
+    assert restore(safe, names) == src
+    # a translator that drops a marker loses the line (it stays English), never the number
+    assert restore(safe.replace("XX0XX", "", 1), names) is None
+
+
+def test_a_masking_token_left_by_the_service_never_reaches_the_farmer():
+    from app.i18n import restore
+
+    assert restore("വിളവ് ശേഷി <ഐ. ഡി. 1> ക്യു/ഹെക്ടർ.", []) is None
+
+
+def test_glossary_terms_come_back_as_the_extension_service_words():
+    from app.i18n import GLOSSARY, protect, restore
+
+    safe, names = protect("A virus that kills only fall armyworm larvae.", "ta")
+    assert "armyworm" not in safe
+    assert GLOSSARY["fall armyworm"]["ta"] in restore(safe, names)
+
+
+def test_every_glossary_term_has_a_word_in_every_machine_language():
+    from app.i18n import GLOSSARY, MACHINE, NAMES_ONLY
+
+    langs = [x for x in MACHINE if x != "od"]
+    for term, words in {**GLOSSARY, **NAMES_ONLY}.items():
+        assert term == term.lower(), term
+        missing = [x for x in langs if not (words.get(x) or "").strip()]
+        assert not missing, (term, missing)
+
+
+def test_field_words_are_swapped_whole_and_longest_first():
+    """'10 hills' came back as ten mountains and 'at heading' as 'in the
+    title'. A term matches only as a whole word, the longest name wins, and
+    a plain word that shares letters is left alone."""
+    from app.i18n import GLOSSARY, protect
+
+    _, names = protect("Count dead hearts on 10 hills at heading.", "pa")
+    assert "#" + GLOSSARY["dead hearts"]["pa"] in names and "#" + GLOSSARY["hills"]["pa"] in names
+    safe, _ = protect("Check 5 spots of 1 square metre; plants wilt at noon.", "pa")
+    assert "square metre" in safe and "wilt" in safe  # 'squares' and the names-only 'wilt' do not match
+    _, names = protect("Downy mildew (crazy top) on rice.", "ta")
+    assert names == ["#" + GLOSSARY["downy mildew (crazy top)"]["ta"]]
+
+
+def test_a_pest_name_comes_from_the_glossary_not_the_machine_memory():
+    """'Rice hispa' came back as papaya, pumpkin, gram flour and swan; the
+    name shown is the hand-written one whatever the memory holds."""
+    from app.i18n import NAMES_ONLY, lookup
+
+    assert lookup("Rice hispa", "pa") == "ਝੋਨੇ ਦੀ ਹਿਸਪਾ ਭੂੰਡੀ"
+    assert lookup("Wilt", "ta") == NAMES_ONLY["wilt"]["ta"]
+    assert lookup("Rice hispa", "hi") is None  # Hindi is authored in the KB, never looked up
+
+
+def test_a_translation_that_loops_is_refused():
+    """A Malayalam line came back with "nitrogen" forty-five times."""
+    from app.i18n import runaway
+
+    src = "Do not give extra nitrogen late; heavy late nitrogen and hot nights make it worse."
+    assert runaway(src, "അധിക നൈട്രജൻ " + "നൈട്രജൻ " * 40)
+    assert not runaway(src, "വൈകി അധിക നൈട്രജൻ നൽകരുത്; ചൂടുള്ള രാത്രികളും ഇത് വഷളാക്കും.")
+
+
+def test_reference_photos_come_only_from_sets_whose_licence_allows_showing_them():
+    """Sets downloaded without a licence are for training only (DATASETS.md)."""
+    allowed = {"ICAR Data Use License", "CC0", "CC BY 4.0"}
+    for tid, p in kb.reference_photos.items():
+        assert tid in kb.targets, tid
+        assert p["licence"] in allowed and p["url"].startswith("https://"), (tid, p)
+        assert not p["path"].startswith(("paddy_640", "hf_640", "local_640", "confirmed")), (tid, p)
+        assert ".." not in p["path"], (tid, p)
