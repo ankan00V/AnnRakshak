@@ -42,7 +42,7 @@ from datetime import date
 from pathlib import Path
 
 from app.config import KB_DIR, SARVAM_TRANSLATE_MODEL
-from app.i18n import (BRAND, glossary_name, join_endings, MACHINE, MEMORY_DIR, NUM, UNIT_BOUND, kept_order, protect, restore, tidy,
+from app.i18n import (BRAND, glossary_name, join_endings, runaway, MACHINE, MEMORY_DIR, NUM, UNIT_BOUND, kept_order, protect, restore, tidy,
                       translate_many)
 
 INDICTRANS2 = "ai4bharat/indictrans2-en-indic-dist-200M"
@@ -95,6 +95,8 @@ class IndicTrans2:
                 if holes > 1 and UNIT_BOUND.search(src) and not kept_order(text, holes):
                     continue
                 text = tidy(src, text)
+                if runaway(src, text):
+                    continue
                 text = join_endings(restore(text, names), lang) if names else text
                 if text:
                     done[src] = text

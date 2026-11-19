@@ -298,6 +298,15 @@ def restore(text: str, names: list[str]) -> str | None:
 LEAKED = re.compile(r"<[^<>]{0,24}>|XX\s*\d+\s*XX")
 """What a translation must never show a farmer: a masking token left behind."""
 
+RUNAWAY = re.compile(r"(\b\S{2,}\b)(?:[\s,]+\1){3,}")
+"""A word said four times running. The engine sometimes loops: a Malayalam
+line about late nitrogen came back with "nitrogen" forty-five times."""
+
+
+def runaway(source: str, text: str) -> bool:
+    """A translation that loops, or is far longer than its English."""
+    return bool(RUNAWAY.search(text) and not RUNAWAY.search(source)) or len(text) > 3 * len(source) + 40
+
 
 UNIT_BOUND = re.compile(r"\{[^{}]*\}\s*(?:km|mm|cm|kg|ml|°C|%|acres?|ha)\b")
 """A placeholder that means nothing without the unit standing next to it."""
@@ -350,6 +359,8 @@ def machine_translate(text: str, lang: str) -> str | None:
     if holes > 1 and UNIT_BOUND.search(text) and not kept_order(out, holes):
         return None  # shuffled: better in English than with the wrong number
     out = house_spelling(tidy(text, out), lang)
+    if runaway(text, out):
+        return None  # a looping engine: better in English than forty repeats
     return join_endings(restore(out, names), lang) if names else out
 
 

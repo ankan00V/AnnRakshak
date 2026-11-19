@@ -1028,3 +1028,22 @@ def test_a_pest_name_comes_from_the_glossary_not_the_machine_memory():
     assert lookup("Rice hispa", "pa") == "ਝੋਨੇ ਦੀ ਹਿਸਪਾ ਭੂੰਡੀ"
     assert lookup("Wilt", "ta") == NAMES_ONLY["wilt"]["ta"]
     assert lookup("Rice hispa", "hi") is None  # Hindi is authored in the KB, never looked up
+
+
+def test_a_translation_that_loops_is_refused():
+    """A Malayalam line came back with "nitrogen" forty-five times."""
+    from app.i18n import runaway
+
+    src = "Do not give extra nitrogen late; heavy late nitrogen and hot nights make it worse."
+    assert runaway(src, "അധിക നൈട്രജൻ " + "നൈട്രജൻ " * 40)
+    assert not runaway(src, "വൈകി അധിക നൈട്രജൻ നൽകരുത്; ചൂടുള്ള രാത്രികളും ഇത് വഷളാക്കും.")
+
+
+def test_reference_photos_come_only_from_sets_whose_licence_allows_showing_them():
+    """Sets downloaded without a licence are for training only (DATASETS.md)."""
+    allowed = {"ICAR Data Use License", "CC0", "CC BY 4.0"}
+    for tid, p in kb.reference_photos.items():
+        assert tid in kb.targets, tid
+        assert p["licence"] in allowed and p["url"].startswith("https://"), (tid, p)
+        assert not p["path"].startswith(("paddy_640", "hf_640", "local_640", "confirmed")), (tid, p)
+        assert ".." not in p["path"], (tid, p)

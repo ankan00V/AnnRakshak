@@ -723,6 +723,7 @@ const en = {
   landAboutPersonLine: 'When the app is not sure, a KVK expert or an officer answers.',
   landEmailTeam: 'Email the team',
   landRepo: 'Project repository',
+  landPhotoCredits: 'Photographs of pests and diseases',
   landHeroTitle: 'Crop and Pest Detection for Every Farmer',
   landHeroEmph: 'Farmer',
   landHeroSub: 'We help farmers catch crop disease and pest damage early and protect every harvest before it\'s too late.',

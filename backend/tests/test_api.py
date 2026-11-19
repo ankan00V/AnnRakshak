@@ -1365,18 +1365,24 @@ def test_an_oversized_upload_is_refused_without_being_held(client, monkeypatch):
 
 
 def test_a_field_check_can_show_a_real_photo_of_the_problem(client):
-    """A farmer told to look for white stem borer should see one, not only its
-    name. Only a known problem's own folder can be reached by this route."""
+    """A farmer told to look for rice hispa should see one, not only its name:
+    the photo kb/reference_photos.json names, from a set whose licence allows
+    it. Nothing outside data/processed can be reached by this route."""
     from pathlib import Path
 
     from app.config import BACKEND_DIR
 
-    have = (Path(BACKEND_DIR).parent / "data" / "processed" / "icar_640" / "rice_white_stem_borer").is_dir()
-    r = client.get("/api/kb/photo/rice_white_stem_borer", follow_redirects=False)
+    from app.kb import get_kb
+
+    ref = get_kb().reference_photos.get("rice_hispa")
+    have = ref and (Path(BACKEND_DIR).parent / "data" / "processed" / ref["path"]).is_file()
+    r = client.get("/api/kb/photo/rice_hispa", follow_redirects=False)
     if have:
-        assert r.status_code == 302 and r.headers["location"].startswith("/samples/rice_white_stem_borer/")
+        assert r.status_code == 200 and r.headers["content-type"] == "image/jpeg" and len(r.content) > 1000
     else:
         assert r.status_code == 404
+    # Cotton wilt has no leaf photo that shows it: the screen draws its icon.
+    assert client.get("/api/kb/photo/cotton_wilt").status_code == 404
     for bad in ["..%2F..%2Fetc", "rice_blast/../../x", "not_a_target", "RICE_BLAST", "a" * 80]:
         assert client.get(f"/api/kb/photo/{bad}", follow_redirects=False).status_code == 404, bad
 

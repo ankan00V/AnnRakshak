@@ -8,7 +8,7 @@ from datetime import date
 from typing import Literal
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -110,18 +110,20 @@ def target_photo(target: str, kb: KB = Depends(get_kb)):
     like, not only its name. The ICAR field photographs the model was taught
     on; a problem without one is a 404, and the screen shows an icon instead.
 
-    The name is checked against the knowledge base before it touches the disk,
-    so nothing but a known problem's own folder can ever be read."""
-    if not _TARGET_ID.match(target) or target not in kb.targets:
+    The photo is the one kb/reference_photos.json names, chosen only from sets
+    whose licence lets the app show it (data/reference_photos.py); the ICAR set
+    alone left 34 of 48 problems without one. The name is checked against the
+    knowledge base before anything touches the disk, and the file must lie
+    inside data/processed, so nothing else can ever be read."""
+    if not _TARGET_ID.match(target) or target not in kb.targets or target not in kb.reference_photos:
         raise HTTPException(404, "no photo")
     from app.config import BACKEND_DIR  # noqa: PLC0415
 
-    folder = BACKEND_DIR.parent / "data" / "processed" / "icar_640" / target
-    files = sorted(f.name for f in folder.glob("*.jpg")) if folder.is_dir() else []
-    if not files:
+    root = (BACKEND_DIR.parent / "data" / "processed").resolve()
+    path = (root / kb.reference_photos[target]["path"]).resolve()
+    if not path.is_relative_to(root) or not path.is_file():
         raise HTTPException(404, "no photo")
-    return RedirectResponse(f"/samples/{target}/{files[0]}", status_code=302,
-                            headers={"Cache-Control": "private, max-age=86400"})
+    return FileResponse(path, media_type="image/jpeg", headers={"Cache-Control": "private, max-age=86400"})
 
 
 #: Where each mount's files actually live, so a sample can be checked before

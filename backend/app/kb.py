@@ -78,6 +78,9 @@ class KB:
     agromet: dict = field(default_factory=dict)
     homemade: dict = field(default_factory=dict)
     registrations: dict = field(default_factory=dict)
+    reference_photos: dict = field(default_factory=dict)
+    """target -> {path under data/processed, name, licence, url}: the picture
+    beside a field check, from licensed sets only (kb/reference_photos.json)."""
     """ingredient -> [{crop, targets, register_says, source, line}]: where the
     CIB&RC major-uses lists register each product (kb/registrations.json)."""
     _cue_index: dict[frozenset, dict] = field(default_factory=dict)
@@ -476,6 +479,8 @@ def load_kb(kb_dir: Path = KB_DIR) -> KB:
         kb.homemade = _load("homemade.json", kb_dir)
     if (kb_dir / "registrations.json").exists():
         kb.registrations = _load("registrations.json", kb_dir)["products"]
+    if (kb_dir / "reference_photos.json").exists():
+        kb.reference_photos = _load("reference_photos.json", kb_dir)["photos"]
     errors = validate(kb)
     if errors:
         raise KBError("knowledge base refused:\n  " + "\n  ".join(errors))
