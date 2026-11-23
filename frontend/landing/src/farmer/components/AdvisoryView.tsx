@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Ban, BadgeCheck, BookOpen, ChevronDown, CookingPot, FlaskConical, Leaf, ListChecks, Phone, PhoneCall, ShieldAlert, Sprout, Trees } from 'lucide-react'
 import type { Advisory, HomemadeOption, IcarTech, LadderRung, OrganicOption } from '../../api/types'
 import { ListenButton, Pill } from '../../ui/kit'
@@ -25,7 +25,6 @@ const TIER = {
  *       registered pesticides and have no tested dose — said in the heading. */
 export default function AdvisoryView({ advisory }: { advisory: Advisory }) {
   const { t, lang } = useFarmer()
-  const [showChem, setShowChem] = useState(false)
   const nonChem = advisory.ladder.filter((r) => r.tier !== 'chemical')
   const chem = advisory.ladder.filter((r) => r.tier === 'chemical')
   // A deficiency or a disorder is not a pest: its steps stand alone, with no
@@ -68,44 +67,13 @@ export default function AdvisoryView({ advisory }: { advisory: Advisory }) {
       <section className={`${PANEL} p-5 lg:p-6`}>
         <PanelHead icon={ListChecks} title={t('whatToDo')} sub={advisory.what_to_check} />
         {pestOrDisease ? (
-          <Organic rungs={nonChem} options={advisory.organic ?? []} homemade={advisory.homemade ?? []} />
+          <Choice advisory={advisory} nonChem={nonChem} chem={chem} />
         ) : (
           <ol className="mt-5 space-y-4">
             {nonChem.map((r, i) => (
               <Rung key={i} rung={r} n={i + 1} />
             ))}
           </ol>
-        )}
-
-        {chem.length > 0 && (
-          <div className="mt-5 rounded-[20px] bg-[#f5f7f1] p-4">
-            <p className="text-[14px] text-soil-dark/80">{t('chemicalLast')}</p>
-            <button
-              onClick={() => setShowChem((s) => !s)}
-              aria-expanded={showChem}
-              className="mt-3 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-white text-[15px] font-semibold text-[#9a2f17] ring-1 ring-[#9a2f17]/20"
-            >
-              <FlaskConical className="w-4 h-4" />
-              {showChem ? t('hideChemical') : t('showChemical')}
-              <ChevronDown className={`w-4 h-4 transition-transform ${showChem ? 'rotate-180' : ''}`} />
-            </button>
-            {showChem && (
-              <ol className="mt-3 space-y-3 animate-fadein">
-                {chem.map((r, i) => (
-                  <Rung key={i} rung={r} n={nonChem.length + i + 1} />
-                ))}
-              </ol>
-            )}
-          </div>
-        )}
-        {chem.length === 0 && advisory.chemical_none && (
-          <div className="mt-5 flex items-start gap-3 rounded-[20px] bg-[#f5f7f1] p-4">
-            <FlaskConical className="mt-0.5 h-5 w-5 shrink-0 text-[#9a2f17]" aria-hidden />
-            <div>
-              <p className="text-[14px] font-semibold text-[#9a2f17]">{t('chemicalNoneTitle')}</p>
-              <p className="mt-0.5 text-[14px] leading-snug text-soil-dark/85">{advisory.chemical_none}</p>
-            </div>
-          </div>
         )}
       </section>
 
@@ -189,125 +157,227 @@ function Rung({ rung, n }: { rung: LadderRung; n: number }) {
             {rung.source && <p className="mt-1 text-[12px] text-soil-dark/60">{t('homemadeSource')}: {rung.source}</p>}
           </>
         ) : (
-          <div className="mt-0.5 space-y-1">
-            <p className="text-[14px] font-semibold">{rung.product}</p>
-            {rung.use === 'seed' && <Pill tone="neutral" className="!text-[12px]">{t('useSeed')}</Pill>}
-            {rung.dose && <p className="text-[13px]">{rung.dose}</p>}
-            {rung.for_field && (
-              <p className="text-[13px] rounded-lg bg-cream px-2 py-1.5">
-                <span className="font-medium">{t('doseForField')}: </span>
-                {rung.for_field.replace(/^[^:]+:\s*/, '')}
-              </p>
-            )}
-            {rung.timing && <p className="text-[13px] text-soil-dark/75">{rung.timing}</p>}
-            {rung.waiting && <p className="text-[13px] font-medium text-soil-dark/85">{rung.waiting}</p>}
-            <p className="text-[13px] flex items-start gap-1.5 text-soil-dark/75">
-              <ShieldAlert className="w-3.5 h-3.5 text-ochre shrink-0 mt-0.5" aria-hidden />
-              {rung.label_rule}
-            </p>
-            {!rung.verified && <Pill tone="ochre">{t('dosePending')}</Pill>}
-          </div>
+          <>
+            <p className="mt-0.5 text-[14px] font-semibold">{rung.product}</p>
+            <ChemDetails rung={rung} />
+          </>
         )}
       </div>
     </li>
   )
 }
 
+/** A chemical product: dose, the farmer's field, when, waiting period, and
+ *  the rule that the printed label decides. */
+function ChemDetails({ rung }: { rung: LadderRung }) {
+  const { t } = useFarmer()
+  return (
+    <div className="mt-0.5 space-y-1.5">
+      {rung.use === 'seed' && <Pill tone="neutral" className="!text-[12px]">{t('useSeed')}</Pill>}
+      {rung.dose && <p className="text-[14px]">{rung.dose}</p>}
+      {rung.for_field && (
+        <p className="text-[13px] rounded-lg bg-cream px-2 py-1.5">
+          <span className="font-medium">{t('doseForField')}: </span>
+          {rung.for_field.replace(/^[^:]+:\s*/, '')}
+        </p>
+      )}
+      {rung.timing && <p className="text-[13px] text-soil-dark/75">{rung.timing}</p>}
+      {rung.waiting && <p className="text-[13px] font-medium text-soil-dark/85">{rung.waiting}</p>}
+      <p className="text-[13px] flex items-start gap-1.5 text-soil-dark/75">
+        <ShieldAlert className="w-3.5 h-3.5 text-ochre shrink-0 mt-0.5" aria-hidden />
+        {rung.label_rule}
+      </p>
+      {!rung.verified && <Pill tone="ochre">{t('dosePending')}</Pill>}
+    </div>
+  )
+}
+
 const USE_KEY = { spray: 'useSpray', seed: 'useSeed', root_dip: 'useRootDip', dispenser: 'useDispenser' } as const
 const KIND_KEY = { 'bio-agent': 'organicBio', botanical: 'organicBotanical', pheromone: 'organicPheromone' } as const
 
-/** One group of the organic options: who stands behind it, said first. */
-function Group({ icon: Icon, title, sub, children }: {
-  icon: typeof Leaf; title: string; sub: string; children: React.ReactNode
-}) {
+/** Organic and chemical, side by side.
+ *
+ *  Where the panel is narrow (a phone, or the side column of the history
+ *  screen) the two are cards next to each other at the top, and one is open
+ *  below at a time: organic first, so the chemical is something the farmer
+ *  chooses to look at. Where the panel itself is wide enough for two columns
+ *  (WIDE), both show at once. It is the panel's width that decides, not the
+ *  screen's: the same advice sits in a narrow column on a laptop. Inside,
+ *  every group and every product is a dropdown, so the screen opens on a short
+ *  list of headings rather than one long trail. */
+function Choice({ advisory, nonChem, chem }: { advisory: Advisory; nonChem: LadderRung[]; chem: LadderRung[] }) {
+  const { t } = useFarmer()
+  const [side, setSide] = useState<'organic' | 'chemical'>('organic')
+  const box = useRef<HTMLDivElement>(null)
+  const [wide, setWide] = useState(false)
+  useEffect(() => {
+    const el = box.current
+    if (!el) return
+    const ro = new ResizeObserver(([e]) => setWide(e.contentRect.width >= WIDE))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  const options = advisory.organic ?? []
+  const [recommended, natural] = byBacking(advisory.homemade ?? []).map(([, items]) => items)
+  const organicCount = nonChem.length + options.length + recommended.length + natural.length
+  const count = (n: number) => (n === 1 ? t('optCountOne') : t('optCount').replace('{n}', String(n)))
+  const tabs = [
+    { id: 'organic' as const, icon: Leaf, label: t('optOrganic'), sub: count(organicCount),
+      tone: 'bg-[#f3f6e4] text-[#3d4812] ring-[#55631a]/40' },
+    { id: 'chemical' as const, icon: FlaskConical, label: t('optChemical'),
+      sub: chem.length ? count(chem.length) : t('optNoneRegistered'),
+      tone: 'bg-[#fbeeea] text-[#9a2f17] ring-[#9a2f17]/40' },
+  ]
   return (
-    <section className="mt-5 border-t border-[#55631a]/15 pt-4 first:mt-0 first:border-t-0 first:pt-0">
-      <div className="flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e2eac0] text-[#55631a]">
-          <Icon className="h-5 w-5" aria-hidden />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h4 className="text-[16px] font-semibold tracking-tight text-[#3d4812]">{title}</h4>
-          <p className="text-[13px] leading-snug text-soil-dark/75">{sub}</p>
+    <div ref={box} className="mt-5">
+      {!wide && <div role="tablist" className="grid grid-cols-2 gap-2">
+        {tabs.map(({ id, icon: Icon, label, sub, tone }) => (
+          <button key={id} role="tab" aria-selected={side === id} onClick={() => setSide(id)}
+            className={`flex min-h-[60px] items-center gap-2.5 rounded-2xl px-3 text-left transition ${
+              side === id ? `${tone} ring-2` : 'bg-white text-soil-dark/70 ring-1 ring-soil-dark/10'}`}>
+            <Icon className="h-5 w-5 shrink-0" aria-hidden />
+            <span className="min-w-0">
+              <span className="block text-[15px] font-semibold leading-tight">{label}</span>
+              <span className="block text-[12px] opacity-80">{sub}</span>
+            </span>
+          </button>
+        ))}
+      </div>}
+
+      <div className={`grid gap-4 ${wide ? 'grid-cols-2 items-start' : 'mt-3'}`}>
+        <div className={wide || side === 'organic' ? '' : 'hidden'}>
+          <Column wide={wide} icon={Leaf} title={t('optOrganic')} sub={t('organicStart')} tone="bg-[#f3f6e4] ring-[#55631a]/10" iconTone="bg-[#e2eac0] text-[#55631a]">
+            <Dropdown icon={Sprout} title={t('organicSteps')} count={nonChem.length} defaultOpen>
+              <p className="mb-3 text-[13px] text-soil-dark/75">{t('organicStepsSub')}</p>
+              <ol className="space-y-4">
+                {nonChem.map((r, i) => <Rung key={i} rung={r} n={i + 1} />)}
+              </ol>
+            </Dropdown>
+            <Dropdown icon={BadgeCheck} title={t('organicProducts')} count={options.length}>
+              <p className="text-[13px] leading-snug text-soil-dark/75">{options.length ? t('organicSub') : t('organicNoProduct')}</p>
+              {options.length > 0 && <OrganicProducts options={options} />}
+            </Dropdown>
+            {recommended.length > 0 && (
+              <Dropdown icon={CookingPot} title={t('levelRecommended')} count={recommended.length}>
+                <p className="mb-3 text-[13px] leading-snug text-soil-dark/75">{t('homemadeSub')}</p>
+                <HomemadeList items={recommended} />
+              </Dropdown>
+            )}
+            {natural.length > 0 && (
+              <Dropdown icon={Trees} title={t('levelNatural')} count={natural.length}>
+                <p className="mb-3 rounded-xl bg-[#fdf6e3] p-3 text-[13px] leading-snug text-soil-dark/85">{t('levelNaturalSub')}</p>
+                <HomemadeList items={natural} />
+              </Dropdown>
+            )}
+          </Column>
+        </div>
+
+        <div className={wide || side === 'chemical' ? '' : 'hidden'}>
+          <Column wide={wide} icon={FlaskConical} title={t('optChemical')} sub={chem.length ? t('chemicalAfterOrganic') : ''} tone="bg-[#fbf3f0] ring-[#9a2f17]/10" iconTone="bg-[#f9dcd5] text-[#9a2f17]">
+            {chem.length > 0 ? (
+              chem.map((r, i) => (
+                <Dropdown key={i} icon={FlaskConical} title={r.product ?? ''} tone="text-[#9a2f17]"
+                  note={r.use === 'seed' ? t('useSeed') : undefined}>
+                  <ChemDetails rung={r} />
+                </Dropdown>
+              ))
+            ) : advisory.chemical_none ? (
+              <div className="rounded-[18px] bg-white p-4 ring-1 ring-soil-dark/[0.05]">
+                <p className="text-[14px] font-semibold text-[#9a2f17]">{t('chemicalNoneTitle')}</p>
+                <p className="mt-1 text-[14px] leading-snug text-soil-dark/85">{advisory.chemical_none}</p>
+              </div>
+            ) : null}
+          </Column>
         </div>
       </div>
-      <div className="mt-3">{children}</div>
+    </div>
+  )
+}
+
+/** The panel width, in px, from which organic and chemical sit in two columns. */
+const WIDE = 640
+
+/** One side of the choice: its heading, then its dropdowns. */
+function Column({ icon: Icon, title, sub, tone, iconTone, wide, children }: {
+  icon: typeof Leaf; title: string; sub: string; tone: string; iconTone: string; wide: boolean; children: React.ReactNode
+}) {
+  return (
+    <section className={`rounded-[22px] p-3 ring-1 sm:p-4 ${tone}`}>
+      {/* With tabs, the tab already names the side; the line under it is what is left. */}
+      <div className="flex items-start gap-3 px-1 pb-3">
+        {wide && (
+          <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${iconTone}`}>
+            <Icon className="h-5 w-5" aria-hidden />
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          {wide && <h3 className="text-[17px] font-semibold tracking-tight">{title}</h3>}
+          {sub && <p className="text-[13px] leading-snug text-soil-dark/75">{sub}</p>}
+        </div>
+      </div>
+      <div className="space-y-2">{children}</div>
     </section>
   )
 }
 
-/** Everything organic, in four groups by who stands behind it. A group with
- *  nothing in it is left out, except registered products: when India
- *  registers none, that is said, because it is worth knowing. */
-function Organic({ rungs, options, homemade }: { rungs: LadderRung[]; options: OrganicOption[]; homemade: HomemadeOption[] }) {
+/** A heading that opens to show what is under it: a group of options, or one
+ *  chemical product. The count says how much is inside before it is opened. */
+function Dropdown({ icon: Icon, title, count, note, tone = 'text-[#3d4812]', defaultOpen = false, children }: {
+  icon: typeof Leaf; title: string; count?: number; note?: string; tone?: string; defaultOpen?: boolean
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className="overflow-hidden rounded-[18px] bg-white ring-1 ring-soil-dark/[0.06]">
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open}
+        className="flex min-h-[56px] w-full items-center gap-3 px-3.5 py-2.5 text-left sm:px-4">
+        <Icon className={`h-5 w-5 shrink-0 ${tone}`} aria-hidden />
+        <span className="min-w-0 flex-1">
+          <span className={`block text-[15px] font-semibold leading-snug ${tone}`}>{title}</span>
+          {note && <span className="block text-[12px] text-soil-dark/65">{note}</span>}
+        </span>
+        {count !== undefined && (
+          <span className="shrink-0 rounded-full bg-soil-dark/[0.06] px-2 py-0.5 text-[12px] font-semibold tabular-nums text-soil-dark/70">{count}</span>
+        )}
+        <ChevronDown className={`h-5 w-5 shrink-0 text-soil-dark/50 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
+      </button>
+      {open && <div className="border-t border-soil-dark/[0.06] px-3.5 pb-4 pt-3 animate-fadein sm:px-4">{children}</div>}
+    </div>
+  )
+}
+
+/** The registered organic products: dose, the farmer's field, when, and the
+ *  registration it rests on. */
+function OrganicProducts({ options }: { options: OrganicOption[] }) {
   const { t } = useFarmer()
   const living = options.some((o) => o.kind === 'bio-agent')
-  const [recommended, natural] = byBacking(homemade).map(([, items]) => items)
   return (
-    <div className="mt-5 rounded-[22px] bg-[#f3f6e4] p-4 ring-1 ring-[#55631a]/10 lg:p-5">
-      <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#e2eac0] text-[#55631a]">
-          <Leaf className="h-5 w-5" aria-hidden />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-[17px] font-semibold tracking-tight text-[#3d4812]">{t('organicTitle')}</h3>
-          <p className="text-[14px] leading-snug text-soil-dark/75">{t('organicStart')}</p>
-        </div>
-      </div>
-
-      <div className="mt-4">
-        <Group icon={Sprout} title={t('organicSteps')} sub={t('organicStepsSub')}>
-          <ol className="space-y-4 rounded-[18px] bg-white p-3 ring-1 ring-soil-dark/[0.05] sm:p-4">
-            {rungs.map((r, i) => (
-              <Rung key={i} rung={r} n={i + 1} />
-            ))}
-          </ol>
-        </Group>
-
-        <Group icon={BadgeCheck} title={t('organicProducts')} sub={options.length ? t('organicSub') : t('organicNoProduct')}>
-          {options.length > 0 && (
-            <>
-              <ul className="space-y-3">
-                {options.map((o, i) => (
-                  <li key={i} className="rounded-[18px] bg-white p-4 ring-1 ring-soil-dark/[0.05]">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <Pill tone="leaf" className="!text-[12px]">{t(USE_KEY[o.use])}</Pill>
-                      <Pill tone="neutral" className="!text-[12px]">{t(KIND_KEY[o.kind] ?? 'organicBio')}</Pill>
-                    </div>
-                    <p className="mt-2 text-[15px] font-semibold leading-snug">{o.product}</p>
-                    <p className="mt-1 text-[14px] leading-snug">{o.dose}</p>
-                    {o.for_field && (
-                      <p className="mt-1.5 rounded-lg bg-cream px-2 py-1.5 text-[13px]">
-                        <span className="font-medium">{t('doseForField')}: </span>
-                        {o.for_field.replace(/^[^:]+:\s*/, '')}
-                      </p>
-                    )}
-                    {o.timing && <p className="mt-1.5 text-[13px] text-soil-dark/75">{o.timing}</p>}
-                    {o.waiting && <p className="mt-1 text-[13px] font-medium text-soil-dark/85">{o.waiting}</p>}
-                    <p className="mt-2 flex items-center gap-1.5 text-[12px] text-[#55631a]">
-                      <BadgeCheck className="h-3.5 w-3.5 shrink-0" aria-hidden /> {t('organicRegistered')}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-              {living && <p className="mt-3 text-[13px] leading-snug text-soil-dark/70">{t('organicCare')}</p>}
-            </>
-          )}
-        </Group>
-
-        {recommended.length > 0 && (
-          <Group icon={CookingPot} title={t('levelRecommended')} sub={t('homemadeSub')}>
-            <HomemadeList items={recommended} />
-          </Group>
-        )}
-
-        {natural.length > 0 && (
-          <Group icon={Trees} title={t('levelNatural')} sub={t('levelNaturalSub')}>
-            <HomemadeList items={natural} />
-          </Group>
-        )}
-      </div>
-    </div>
+    <>
+      <ul className="mt-3 space-y-3">
+        {options.map((o, i) => (
+          <li key={i} className="rounded-[16px] bg-[#f8faf3] p-3.5">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Pill tone="leaf" className="!text-[12px]">{t(USE_KEY[o.use])}</Pill>
+              <Pill tone="neutral" className="!text-[12px]">{t(KIND_KEY[o.kind] ?? 'organicBio')}</Pill>
+            </div>
+            <p className="mt-2 text-[15px] font-semibold leading-snug">{o.product}</p>
+            <p className="mt-1 text-[14px] leading-snug">{o.dose}</p>
+            {o.for_field && (
+              <p className="mt-1.5 rounded-lg bg-cream px-2 py-1.5 text-[13px]">
+                <span className="font-medium">{t('doseForField')}: </span>
+                {o.for_field.replace(/^[^:]+:\s*/, '')}
+              </p>
+            )}
+            {o.timing && <p className="mt-1.5 text-[13px] text-soil-dark/75">{o.timing}</p>}
+            {o.waiting && <p className="mt-1 text-[13px] font-medium text-soil-dark/85">{o.waiting}</p>}
+            <p className="mt-2 flex items-center gap-1.5 text-[12px] text-[#55631a]">
+              <BadgeCheck className="h-3.5 w-3.5 shrink-0" aria-hidden /> {t('organicRegistered')}
+            </p>
+          </li>
+        ))}
+      </ul>
+      {living && <p className="mt-3 text-[13px] leading-snug text-soil-dark/70">{t('organicCare')}</p>}
+    </>
   )
 }
 
@@ -319,7 +389,7 @@ function HomemadeList({ items }: { items: HomemadeOption[] }) {
   return (
     <ul className="space-y-3">
       {items.map((h, i) => (
-        <li key={i} className="rounded-[18px] bg-white p-4 ring-1 ring-soil-dark/[0.05]">
+        <li key={i} className="rounded-[16px] bg-[#f8faf3] p-3.5">
           <p className="text-[15px] font-semibold leading-snug">{h.name}</p>
           <p className="mt-1 text-[14px] leading-snug">{h.dose}</p>
           <p className="mt-1.5 text-[13px] text-soil-dark/75">{h.timing}</p>
