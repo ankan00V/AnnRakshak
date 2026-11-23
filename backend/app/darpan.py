@@ -24,7 +24,7 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import cropqa, llm, office, services
+from app import assistant, cropqa, llm, office, services
 from app.kb import KB, tr
 from app.models import Alert, Case, Confirmation, ExpertProfile, Farm, Problem, User
 
@@ -299,6 +299,14 @@ def _link(label: str, to: str) -> dict:
 def answer(db: Session, kb: KB, *, text: str, demo: bool, officer: User | None) -> dict:
     """One answer: lines an officer can read out, and the links behind them."""
     intent, args = route(text, db)
+    # A question with two parts, or one no intent matches, goes to the
+    # assistant, which looks up as many of these as it needs and is checked
+    # against what they return (app.assistant). If it cannot answer, the
+    # single-intent answer below stands.
+    if (intent == "unknown" or assistant.compound(text)) and llm.enabled():
+        helped = assistant.darpan(db, kb, question=text, demo=demo, officer=officer)
+        if helped is not None:
+            return helped
     fn = {
         "queue": _queue, "district": _district, "building": _building, "advisories": _advisories,
         "officers": _officers, "model": _model, "gaps": _gaps, "inputs": _inputs,

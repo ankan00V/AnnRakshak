@@ -27,7 +27,7 @@ from functools import lru_cache
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import cache, cropqa, llm, services, voice
+from app import assistant, cache, cropqa, llm, services, voice
 from app.i18n import local_date
 from app.config import KB_DIR
 from app.engine import agromet, agroweather
@@ -422,6 +422,15 @@ def answer(db: Session, kb: KB, *, text: str | None, topic: str | None, screen: 
                  (f" and was answered with topic {prev_topic}" if prev_topic else "")
     out = _answer(db, kb, text=text, topic=topic, screen=screen, lang=said, farm=farm, user=user, farms=farms,
                   before=before)
+    # The assistant takes the questions the fixed answers cannot: one with two
+    # parts, one nothing matched, one matched only loosely. It looks things up
+    # in the same functions and is checked against them (app.assistant); when
+    # it cannot answer, the fixed answer above stands.
+    if (text or "").strip() and topic is None and _wants_assistant(text or "", out) and llm.enabled():
+        helped = assistant.krishi(db, kb, question=(f"{before}. Now: " if before else "") + (text or ""),
+                                  lang=said, user=user, farms=farms or [], farm=farm)
+        if helped is not None:
+            out = {**helped, "suggestions": out.get("suggestions", [])}
     out["lang"] = said
     if roman and said != "en":
         native = [out.get("text") or "", *(out.get("steps") or [])]
@@ -433,6 +442,28 @@ def answer(db: Session, kb: KB, *, text: str | None, topic: str | None, screen: 
             out["go"] = [{"to": g["to"], "label": _english_label(g["to"], out.get("topic")) or g["label"]}
                          for g in out.get("go") or []]
     return out
+
+
+OUT_OF_SCOPE = ("price", "mandi", "bhav", "bhaav", "rate", "loan", "scheme", "yojana", "subsidy", "insurance",
+                "भाव", "मंडी", "बाजार", "कर्ज", "योजना", "अनुदान", "विमा", "बीमा")
+
+
+def _wants_assistant(text: str, out: dict) -> bool:
+    topic, score = out.get("topic"), out.get("score") or 0.0
+    words = f" {normalise(text)} "
+    if topic is None or assistant.compound(text) or any(f" {w}" in words for w in OUT_OF_SCOPE):
+        return True
+    if isinstance(topic, str) and topic.startswith(("crop:", "prep:")):
+        return False  # a pest, a product or a recipe: answered from the advisories already
+    t = index().topics.get(topic)
+    if t is None or topic in ("greeting", "thanks"):
+        return False
+    # "Which crops are supported" catches any question with a crop word in it;
+    # it has to be a strong match to stand. A live answer matched weakly is
+    # better looked up. An authored help topic the matcher or router chose stands.
+    if topic in ("crop_support", "diagnose_problem"):
+        return score < 0.40
+    return bool(t.get("live")) and score < CONFIDENT
 
 
 def _restyle_keeping_names(kb: KB, question: str, lines: list[str], lang: str) -> list[str] | None:
