@@ -194,7 +194,8 @@ disease it is — say what it could be and ask them to photograph it.
 - Anything outside farming and this app (prices, loans, politics, health): say briefly \
 you cannot help with that and that the Kisan Call Centre on 1800-180-1551 is free.
 
-Reply in {language}, as JSON and nothing else:
+When you have what you need, stop calling tools and reply with plain text (not a tool call) \
+in {language}, as JSON and nothing else:
 {{"text": "the answer in one or two short sentences", "points": ["one short line per detail, at most 6"]}}
 Short, plain words for someone reading a phone in the sun. No markdown, no greeting."""
 
@@ -368,8 +369,8 @@ behind it, then what to do next.
 - Anything outside these records (prices, schemes, other states): say you only answer \
 from this district's records.
 
-Reply as JSON and nothing else: {{"lines": ["short line", "..."]}} — at most 8 lines, \
-no markdown."""
+When you have what you need, stop calling tools and reply with plain text (not a tool \
+call), as JSON and nothing else: {{"lines": ["short line", "..."]}} — at most 8 lines, no markdown."""
 
 
 def darpan(db, kb: KB, *, question: str, demo: bool, officer) -> dict | None:

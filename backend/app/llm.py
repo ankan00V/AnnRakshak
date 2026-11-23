@@ -120,6 +120,7 @@ def chat_tools(messages: list[dict], tools: list[dict], *, max_tokens: int = 140
     if not GROQ_API_KEYS:
         return None
     start = next(_turn) % len(GROQ_API_KEYS)
+    malformed = 0
     for k in GROQ_API_KEYS[start:] + GROQ_API_KEYS[:start]:
         slot = hashlib.sha1(k.encode()).hexdigest()[:8]
         if _benched.get(slot, 0) > time.monotonic():
@@ -136,11 +137,37 @@ def chat_tools(messages: list[dict], tools: list[dict], *, max_tokens: int = 140
                 if msg.get("content"):
                     msg["content"] = _strip_thinking(msg["content"])
                 return msg
-        except (httpx.HTTPError, KeyError, IndexError, ValueError, TypeError):
-            pass
+            if r.status_code == 400:
+                # The model sometimes sends its final answer as a call to a
+                # tool named "JSON". Groq refuses it, but hands back what was
+                # generated: that is the answer, so it is taken from there.
+                # Any other 400 is this request's fault, not the key's: the
+                # key is not benched. A garbled generation is chance, so it is
+                # tried once more on the next key; twice garbled is given up.
+                got = _answer_from_refusal(r, {t["function"]["name"] for t in tools})
+                malformed += 1
+                if got is not None or malformed >= 2:
+                    return got
+                continue
+            log.warning("Groq tool call refused: %s", r.status_code)
+        except (httpx.HTTPError, KeyError, IndexError, ValueError, TypeError) as e:
+            log.warning("Groq tool call failed: %s", type(e).__name__)
         slow = time.monotonic() - started >= (timeout or LLM_TIMEOUT_S) - 0.5
         _benched[slot] = time.monotonic() + (BENCH_S if slow else BLIP_S)
         log.warning("a Groq key sits out %ss", BENCH_S if slow else BLIP_S)
+    return None
+
+
+def _answer_from_refusal(r: httpx.Response, tool_names: set[str]) -> dict | None:
+    try:
+        err = r.json().get("error") or {}
+        gen = json.loads(err.get("failed_generation") or "")
+    except ValueError:
+        log.warning("Groq refused the request: %s", r.text[:200])
+        return None
+    if isinstance(gen, dict) and gen.get("name") not in tool_names and isinstance(gen.get("arguments"), dict):
+        return {"content": json.dumps(gen["arguments"], ensure_ascii=False)}
+    log.warning("Groq refused the request: %s", (err.get("message") or "")[:200])
     return None
 
 

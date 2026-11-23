@@ -184,3 +184,27 @@ def test_any_talk_of_spraying_leads_with_the_apps_own_spray_window(world, script
     said = " ".join([out["text"], *out["steps"]])
     assert out["text"].startswith("No — don't spray now")
     assert "Spray today" not in said and "Spray 13:00" not in said and "All calm" in said
+
+
+def test_a_final_answer_sent_as_a_fake_tool_call_is_recovered_and_no_key_is_benched(monkeypatch):
+    """gpt-oss sometimes "calls" a tool named JSON with its answer. Groq refuses
+    that with a 400 that carries the generation; the answer is taken from it,
+    and the key is not benched — benching on it once sat all twelve keys out."""
+    import httpx
+
+    class Refusal:
+        status_code = 400
+        text = "refused"
+
+        def json(self):
+            return {"error": {"code": "tool_use_failed", "message": "attempted to call tool 'JSON'",
+                              "failed_generation": json.dumps({"name": "JSON", "arguments": {"lines": ["ok"]}})}}
+
+    calls = []
+    monkeypatch.setattr(llm, "GROQ_API_KEYS", ["k1", "k2"])
+    monkeypatch.setattr(llm, "_benched", {})
+    monkeypatch.setattr(httpx, "post", lambda *a, **k: (calls.append(1), Refusal())[1])
+    tools = [{"type": "function", "function": {"name": "brief", "parameters": {"type": "object", "properties": {}}}}]
+    msg = llm.chat_tools([{"role": "user", "content": "q"}], tools)
+    assert json.loads(msg["content"]) == {"lines": ["ok"]}
+    assert calls == [1] and llm._benched == {}
