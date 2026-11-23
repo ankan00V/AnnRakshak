@@ -171,3 +171,50 @@ def test_darpan_asks_which_crop_for_a_name_on_two(officer_world):
     with SessionLocal() as db:
         out = darpan.answer(db, kb, text="stem borer", demo=True, officer=None)
     assert out["intent"] == "pest" and "Which crop" in out["lines"][0]
+
+
+# --- amounts for the farmer's own field ----------------------------------------
+
+def test_every_cure_gives_the_amount_for_the_farmers_field():
+    """The standard dose and the same thing for this field. The only ones left
+    per unit are a cotton seed treatment (cotton has no single seed rate: a
+    hybrid pouch to 4 kg an acre), a seedling root dip, and a seed product whose
+    dose is the printed label's."""
+    without = []
+    for tid in kb.advisories:
+        a = advisory.compose(kb, tid, "en", 2.0)
+        for x in [*a["organic"], *[r for r in a["ladder"] if r["tier"] == "chemical"], *a["homemade"]]:
+            if not x.get("for_field"):
+                without.append((tid, x.get("use"), x.get("dose")))
+    assert all(tid.startswith("cotton_") and use == "seed" or use in ("root_dip",) or "label" in (dose or "")
+               for tid, use, dose in without), without
+    assert len(without) <= 5
+
+
+def test_field_amounts_scale_with_the_field_and_keep_the_standard_dose():
+    one = advisory.compose(kb, "rice_yellow_stem_borer", "en", 1.0)
+    three = advisory.compose(kb, "rice_yellow_stem_borer", "en", 3.0)
+    agni1 = next(h for h in one["homemade"] if h["prep"] == "agniastra")
+    agni3 = next(h for h in three["homemade"] if h["prep"] == "agniastra")
+    assert agni1["dose"] == agni3["dose"] and "6 to 8 litres in 200 litres" in agni1["dose"]
+    assert "6–8 litres in 200 litres of water" in agni1["for_field"]
+    assert "18–24 litres in 600 litres of water" in agni3["for_field"]
+    gran = next(r for r in three["ladder"] if r.get("ingredient") == "chlorantraniliprole_0_4gr")
+    assert "12 kg" in gran["for_field"]
+
+
+def test_a_seed_treatment_is_worked_out_for_the_whole_sowing():
+    a = advisory.compose(kb, "rice_blast", "en", 2.5)
+    seed = next(o for o in a["organic"] if o["use"] == "seed")
+    assert seed["dose"] == "10 g per kg of seed."
+    assert "about 20 kg of seed, so 200 g (at 8 kg of seed an acre)" in seed["for_field"]
+
+
+def test_krishi_gives_the_field_amount_when_a_field_is_open():
+    farm = Farm(farmer_name="x", crop="maize", sowing_date=date.today() - timedelta(days=30), district="Pune",
+                lat=18.5, lon=73.8, area_acres=3)
+    out = ask("how to control fall armyworm", farm=farm)
+    reg = next(s for s in out["steps"] if s.startswith("Registered organic"))
+    assert "6.3 ml per litre of water. For your 3 acre field: about 3.8 litres in 600 litres of water." in reg
+    recipe = ask("how to make agniastra", farm=farm)
+    assert any("For your 3 acre field: 18–24 litres in 600 litres of water" in s for s in recipe["steps"])

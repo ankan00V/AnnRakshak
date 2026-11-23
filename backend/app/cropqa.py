@@ -435,6 +435,12 @@ def _chips(tid: str, now: str, lang: str) -> list[dict]:
     return [{"id": f"crop:{tid}:{k}", "text": _t(label[k], lang)} for k in keys][:3]
 
 
+def _with_field(item: dict) -> str:
+    """The standard dose, and the amount for the farmer's own field after it."""
+    dose = (item.get("dose") or "").rstrip(". ")
+    return f"{dose}. {item['for_field']}" if item.get("for_field") else dose
+
+
 def pest_answer(kb: KB, tid: str, how: str, lang: str, area: float | None, also: list[str] | None = None) -> dict:
     """What to do about one named target, from its advisory, in `lang`."""
     adv = advisory_engine.compose(kb, tid, lang, area)
@@ -461,15 +467,15 @@ def pest_answer(kb: KB, tid: str, how: str, lang: str, area: float | None, also:
             for r in field[: (2 if organic_only else 1)]:
                 steps.append(_t("s_field", lang, x=r["action"]))
             for o in adv["organic"][: (2 if organic_only else 1)]:
-                steps.append(_t("s_reg", lang, product=o["product"], dose=o["dose"]))
+                steps.append(_t("s_reg", lang, product=o["product"], dose=_with_field(o)))
             for h in recommended[:1]:
-                steps.append(_t("s_home", lang, name=h["name"], dose=h["dose"]))
+                steps.append(_t("s_home", lang, name=h["name"], dose=_with_field(h)))
             if natural:
                 steps.append(_t("s_nf", lang, names=", ".join(h["name"] for h in natural)))
         if not organic_only:
             if chem:
                 for r in chem[: (2 if chem_only else 1)]:
-                    steps.append(_t("s_chem", lang, product=r["product"], dose=r.get("dose") or ""))
+                    steps.append(_t("s_chem", lang, product=r["product"], dose=_with_field(r)))
                 steps.append(_t("s_spray_check", lang))
             elif adv.get("chemical_none"):
                 steps.append(adv["chemical_none"])
@@ -491,11 +497,12 @@ def symptom_answer(kb: KB, cands: list[str], lang: str) -> dict:
             "steps": steps, "go": _go(lang), "suggestions": chips[:3]}
 
 
-def recipe_answer(kb: KB, prep: str, lang: str) -> dict:
+def recipe_answer(kb: KB, prep: str, lang: str, area: float | None = None) -> dict:
     p = kb.homemade[prep]
     steps = list(trl(p["recipe"], lang))
     if p.get("dose"):
-        steps.append(_t("rec_dose", lang, dose=tr(p["dose"], lang)))
+        field = advisory_engine._homemade(kb, {"prep": prep, "timing": {"en": ""}, "source": ""}, lang, area)["for_field"]
+        steps.append(_t("rec_dose", lang, dose=tr(p["dose"], lang) + (f" {field}" if field else "")))
     if p.get("backing") == "natural_farming":
         steps.append(_t("rec_nf", lang))
     if p.get("recipe_source"):
@@ -534,7 +541,7 @@ def from_topic(kb: KB, topic: str, lang: str, area: float | None) -> dict | None
     """A tapped chip: 'crop:<target>:<how>' or 'prep:<prep>'."""
     parts = topic.split(":")
     if parts[0] == "prep" and len(parts) == 2 and parts[1] in kb.homemade:
-        return recipe_answer(kb, parts[1], lang)
+        return recipe_answer(kb, parts[1], lang, area)
     if parts[0] == "crop" and len(parts) == 3 and parts[1] in kb.targets and parts[2] in (
             "control", "organic", "identify", "chemical"):
         return pest_answer(kb, parts[1], parts[2], lang, area)
@@ -558,7 +565,7 @@ def answer(kb: KB, text: str, lang: str, farm=None, app_score: float = 0.0) -> d
     # A preparation by name: its recipe.
     prep = prep_named(kb, text)
     if prep and (how == "recipe" or not find(kb, text)):
-        return recipe_answer(kb, prep, lang)
+        return recipe_answer(kb, prep, lang, area)
 
     hits = find(kb, text, named_crop)
     if not hits and named_crop is None and farm_crop:

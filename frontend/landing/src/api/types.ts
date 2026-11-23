@@ -121,6 +121,8 @@ export interface HomemadeOption {
   source: string
   recipe_source?: string | null
   backing: 'recommended' | 'natural_farming'
+  /** The amount for the farmer's own field, where the source gives one per acre. */
+  for_field?: string | null
 }
 
 export interface Citation {

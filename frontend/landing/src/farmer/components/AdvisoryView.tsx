@@ -1,4 +1,4 @@
-import { Ban, BadgeCheck, BookOpen, ChevronDown, CookingPot, FlaskConical, GraduationCap, Info, Leaf, ListChecks, Microscope, Phone, PhoneCall, Radio, ShieldAlert, Sprout } from 'lucide-react'
+import { Ban, BadgeCheck, BookOpen, ChevronDown, CookingPot, FlaskConical, GraduationCap, Info, LandPlot, Leaf, ListChecks, Microscope, Phone, PhoneCall, Radio, ShieldAlert, Sprout } from 'lucide-react'
 import type { Advisory, HomemadeOption, IcarTech, LadderRung, OrganicOption } from '../../api/types'
 import { ListenButton, Pill } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
@@ -308,10 +308,11 @@ function lead(text?: string): [string, string] {
 }
 
 /** The shared row: icon, what it is, the one fact, the dose on the right. */
-function Row({ icon: Icon, iconCls, title, fact, rest, dose, badge, extra }: {
-  icon: typeof Leaf; iconCls: string; title: string; fact?: string; rest?: string; dose?: string
+function Row({ icon: Icon, iconCls, title, field, rest, dose, badge, extra }: {
+  icon: typeof Leaf; iconCls: string; title: string; field?: string | null; rest?: string; dose?: string
   badge?: React.ReactNode; extra?: React.ReactNode
 }) {
+  const { t } = useFarmer()
   const short = dose && dose.length <= 30
   return (
     <li className="flex gap-3 px-3.5 py-3.5 sm:px-4">
@@ -320,11 +321,20 @@ function Row({ icon: Icon, iconCls, title, fact, rest, dose, badge, extra }: {
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-[15px] font-semibold leading-snug text-soil-dark [overflow-wrap:anywhere]">{title}</p>
-        {short && (
-          <span className="mt-1.5 inline-flex rounded-lg bg-cream px-2.5 py-1 text-[14px] font-semibold tabular-nums text-soil-dark ring-1 ring-soil-dark/[0.06]">{dose}</span>
+        {/* The standard dose, then the same thing for this farmer's own field. */}
+        {dose && (
+          <p className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-soil-dark/55">{t('doseNormal')}</span>
+            {short
+              ? <span className="rounded-lg bg-cream px-2.5 py-1 text-[14px] font-semibold tabular-nums text-soil-dark ring-1 ring-soil-dark/[0.06]">{dose}</span>
+              : <span className="text-[14px] font-medium leading-snug text-soil-dark/90">{dose}</span>}
+          </p>
         )}
-        {dose && !short && <p className="mt-1 text-[14px] font-medium leading-snug text-soil-dark/90">{dose}</p>}
-        {fact && <p className="mt-1 text-[14px] leading-snug text-soil-dark/85">{fact}</p>}
+        {field && (
+          <p className="mt-2 flex items-start gap-2 rounded-xl bg-[#eef5e6] px-3 py-2 text-[14px] font-semibold leading-snug text-[#1f3d2b]">
+            <LandPlot className="mt-0.5 h-4 w-4 shrink-0 text-[#2f6a39]" aria-hidden /> <span className="tabular-nums">{field}</span>
+          </p>
+        )}
         {rest && <p className="mt-0.5 text-[13px] leading-snug text-soil-dark/60">{rest}</p>}
         {badge && <div className="mt-2">{badge}</div>}
         {extra}
@@ -349,7 +359,7 @@ function ProductRow({ o }: { o: OrganicOption }) {
   return (
     <Row icon={Icon} iconCls="bg-[#eef3d6] text-[#55631a]" title={o.product} dose={o.dose}
       badge={<span className="flex flex-wrap gap-1"><Backing kind="registered" /><span className="rounded-full bg-soil-dark/[0.05] px-2 py-0.5 text-[11px] font-semibold text-soil-dark/70">{t(USE_KEY[o.use])}</span></span>}
-      fact={o.for_field?.replace(/^[^:]+:\s*/, '')}
+      field={o.for_field}
       rest={[o.timing, o.waiting].filter(Boolean).join(' ')} />
   )
 }
@@ -359,7 +369,7 @@ function HomeRow({ h }: { h: HomemadeOption }) {
   const natural = h.backing === 'natural_farming'
   return (
     <Row icon={natural ? Sprout : CookingPot} iconCls={natural ? 'bg-[#fbf0d8] text-[#7a5410]' : 'bg-[#e7eefb] text-[#284f8f]'}
-      title={h.name} dose={h.dose}
+      title={h.name} dose={h.dose} field={h.for_field}
       badge={<Backing kind={natural ? 'natural' : 'recommended'} source={h.source} />}
       rest={h.timing}
       extra={
@@ -385,7 +395,7 @@ function ChemRow({ rung }: { rung: LadderRung }) {
         {rung.use === 'seed' && <span className="rounded-full bg-soil-dark/[0.05] px-2 py-0.5 text-[11px] font-semibold text-soil-dark/70">{t('useSeed')}</span>}
         {!rung.verified && <span className="rounded-full bg-[#fbf0d8] px-2 py-0.5 text-[11px] font-semibold text-[#7a5410]">{t('dosePending')}</span>}
       </span>}
-      fact={rung.for_field?.replace(/^[^:]+:\s*/, '')}
+      field={rung.for_field}
       rest={[rung.waiting, rung.timing].filter(Boolean).join(' ')} />
   )
 }

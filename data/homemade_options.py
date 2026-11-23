@@ -156,6 +156,7 @@ PREPARATIONS = {
                    POISON["mr"].format(what="तंबाखू")],
         },
         "dose": PER_ACRE_6_8,
+        "per_acre": {"amount": [6, 8], "unit": "L", "water_l": 200},
         "recipe_source": NF,
     },
     "brahmastra": {
@@ -178,6 +179,7 @@ PREPARATIONS = {
                    POISON["mr"].format(what="धोतरा")],
         },
         "dose": PER_ACRE_6_8,
+        "per_acre": {"amount": [6, 8], "unit": "L", "water_l": 200},
         "recipe_source": NF,
     },
     "neemastra": {
@@ -199,6 +201,7 @@ PREPARATIONS = {
         "dose": {"en": "The whole 100 litres is enough for one acre: spray it as it is, without adding water.",
                  "hi": "पूरा 100 लीटर एक एकड़ के लिए काफ़ी है: इसे बिना और पानी मिलाए वैसे ही छिड़कें।",
                  "mr": "संपूर्ण 100 लिटर एका एकरासाठी पुरेसे आहे: त्यात आणखी पाणी न मिसळता तसेच फवारा."},
+        "per_acre": {"amount": 100, "unit": "L"},
         "recipe_source": NF,
     },
     "dashparni_ark": {
@@ -224,6 +227,7 @@ PREPARATIONS = {
                    "तंबाखू, धोतरा आणि रुई विषारी आहेत: हातमोजे घाला, मुले आणि जनावरांपासून दूर ठेवा, आणि नंतर हात धुवा."],
         },
         "dose": PER_ACRE_6_8,
+        "per_acre": {"amount": [6, 8], "unit": "L", "water_l": 200},
         "recipe_source": NF,
     },
     "sonthastra": {
@@ -242,6 +246,7 @@ PREPARATIONS = {
         "dose": {"en": "Mix it all into 200 litres of water and spray one acre.",
                  "hi": "यह सब 200 लीटर पानी में मिलाकर एक एकड़ में छिड़कें।",
                  "mr": "हे सर्व 200 लिटर पाण्यात मिसळून एक एकर फवारा."},
+        "per_acre": {"batches": 1},
         "recipe_source": NF,
     },
     "khatti_lassi": {
@@ -257,6 +262,7 @@ PREPARATIONS = {
         "dose": {"en": "Mix the 5 litres of buttermilk into 100 litres of water, stir in 50 g of turmeric powder, and spray one acre.",
                  "hi": "5 लीटर छाछ को 100 लीटर पानी में मिलाएँ, 50 ग्राम हल्दी पाउडर घोलें, और एक एकड़ में छिड़कें।",
                  "mr": "5 लिटर ताक 100 लिटर पाण्यात मिसळा, 50 ग्रॅम हळद पूड विरघळवा, आणि एक एकर फवारा."},
+        "per_acre": {"amount": 5, "unit": "L", "water_l": 100},
         "recipe_source": NF,
     },
 }
@@ -278,8 +284,8 @@ def neem_oil(ml: float, timing: dict, source: str) -> dict:
             "timing": timing, "source": source}
 
 
-def pau_neem(dose: dict, timing: dict, source: str) -> dict:
-    return {"prep": "pau_neem_extract", "dose": dose, "timing": timing, "source": source}
+def pau_neem(dose: dict, per_acre: dict, timing: dict, source: str) -> dict:
+    return {"prep": "pau_neem_extract", "dose": dose, "per_acre": per_acre, "timing": timing, "source": source}
 
 
 def nf(prep: str, timing: dict) -> dict:
@@ -335,7 +341,15 @@ HOMEMADE = {
         "hi": "जब छोटी इल्लियाँ पत्तों को खुरचकर खिड़की जैसे निशान बना रही हों, तब पौध से शुरुआती गोभ अवस्था तक गोभ में छिड़कें।",
         "mr": "लहान अळ्या पानांवर खरवडून खिडकीसारख्या खुणा करत असताना, रोपावस्थेपासून सुरुवातीच्या पोंगा अवस्थेपर्यंत पोंग्यात फवारा.",
     }, IIMR)],
-    "cotton_whitefly": [nske(SUCKING, APEDA)],
+    "cotton_whitefly": [
+        nske(SUCKING, APEDA),
+        pau_neem({"en": "1200 ml of the extract for one acre.", "hi": "एक एकड़ के लिए 1200 मिली अर्क।",
+                  "mr": "एका एकरासाठी 1200 मिली अर्क."}, {"amount": 1200, "unit": "ml"}, {
+            "en": "Spray when whitefly first appears early in the season, covering the undersides of the leaves.",
+            "hi": "मौसम की शुरुआत में सफेद मक्खी दिखते ही छिड़कें, पत्तों की निचली सतह पर अच्छी तरह।",
+            "mr": "हंगामाच्या सुरुवातीला पांढरी माशी दिसताच फवारा, पानांच्या खालच्या बाजूला नीट.",
+        }, PAU),
+    ],
     "cotton_aphid": [nske(SUCKING, APEDA)],
     "cotton_jassid": [nske(SUCKING, APEDA)],
     "cotton_leaf_curl": [nske(VECTOR, APEDA)],
@@ -351,6 +365,13 @@ HOMEMADE = {
         "mr": "तीन फवारण्या: पेरणीनंतर 30, 45 आणि 60 दिवसांनी.",
     }, SOY)],
     "rice_brown_planthopper": [
+        pau_neem({"en": "4 litres of the extract in 100 litres of water, for one acre.",
+                  "hi": "एक एकड़ के लिए 100 लीटर पानी में 4 लीटर अर्क।",
+                  "mr": "एका एकरासाठी 100 लिटर पाण्यात 4 लिटर अर्क."}, {"amount": 4, "unit": "L", "water_l": 100}, {
+            "en": "Spray at the first sign of hoppers, aiming at the base of the plants with a knapsack sprayer. Repeat if needed.",
+            "hi": "फुदके दिखते ही छिड़कें, नैपसैक स्प्रेयर से पौधों के निचले हिस्से की ओर। ज़रूरत हो तो दोहराएँ।",
+            "mr": "तुडतुडे दिसताच फवारा, नॅपसॅक पंपाने चुडांच्या बुडख्याकडे. गरज असल्यास पुन्हा फवारा.",
+        }, f"{PAU} (organic farming chapter)"),
         neem_oil(5, {
             "en": "Spray the base of the plants, where the hoppers sit. It cuts egg-laying rather than killing outright.",
             "hi": "पौधों के निचले हिस्से पर छिड़कें, जहाँ फुदके बैठते हैं। यह मारने से ज़्यादा अंडे देना कम करता है।",

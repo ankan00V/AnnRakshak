@@ -438,6 +438,7 @@ const en = {
   homemadeRecipe: 'How to make it',
   optOrganic: 'Organic',
   stepStart: 'Start here, in the field',
+  doseNormal: 'Standard dose',
   stepStartSub: 'Free. Do these first.',
   stepOrganic: 'Organic sprays and inputs',
   stepOrganicSub: 'If the problem keeps spreading.',

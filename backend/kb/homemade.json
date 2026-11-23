@@ -117,6 +117,14 @@
    "hi": "एक एकड़ के लिए 200 लीटर पानी में 6 से 8 लीटर।",
    "mr": "एका एकरासाठी 200 लिटर पाण्यात 6 ते 8 लिटर."
   },
+  "per_acre": {
+   "amount": [
+    6,
+    8
+   ],
+   "unit": "L",
+   "water_l": 200
+  },
   "recipe_source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)",
   "backing": "natural_farming"
  },
@@ -154,6 +162,14 @@
    "hi": "एक एकड़ के लिए 200 लीटर पानी में 6 से 8 लीटर।",
    "mr": "एका एकरासाठी 200 लिटर पाण्यात 6 ते 8 लिटर."
   },
+  "per_acre": {
+   "amount": [
+    6,
+    8
+   ],
+   "unit": "L",
+   "water_l": 200
+  },
   "recipe_source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)",
   "backing": "natural_farming"
  },
@@ -187,6 +203,10 @@
    "en": "The whole 100 litres is enough for one acre: spray it as it is, without adding water.",
    "hi": "पूरा 100 लीटर एक एकड़ के लिए काफ़ी है: इसे बिना और पानी मिलाए वैसे ही छिड़कें।",
    "mr": "संपूर्ण 100 लिटर एका एकरासाठी पुरेसे आहे: त्यात आणखी पाणी न मिसळता तसेच फवारा."
+  },
+  "per_acre": {
+   "amount": 100,
+   "unit": "L"
   },
   "recipe_source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)",
   "backing": "natural_farming"
@@ -228,6 +248,14 @@
    "hi": "एक एकड़ के लिए 200 लीटर पानी में 6 से 8 लीटर।",
    "mr": "एका एकरासाठी 200 लिटर पाण्यात 6 ते 8 लिटर."
   },
+  "per_acre": {
+   "amount": [
+    6,
+    8
+   ],
+   "unit": "L",
+   "water_l": 200
+  },
   "recipe_source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)",
   "backing": "natural_farming"
  },
@@ -259,6 +287,9 @@
    "hi": "यह सब 200 लीटर पानी में मिलाकर एक एकड़ में छिड़कें।",
    "mr": "हे सर्व 200 लिटर पाण्यात मिसळून एक एकर फवारा."
   },
+  "per_acre": {
+   "batches": 1
+  },
   "recipe_source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)",
   "backing": "natural_farming"
  },
@@ -286,6 +317,11 @@
    "en": "Mix the 5 litres of buttermilk into 100 litres of water, stir in 50 g of turmeric powder, and spray one acre.",
    "hi": "5 लीटर छाछ को 100 लीटर पानी में मिलाएँ, 50 ग्राम हल्दी पाउडर घोलें, और एक एकड़ में छिड़कें।",
    "mr": "5 लिटर ताक 100 लिटर पाण्यात मिसळा, 50 ग्रॅम हळद पूड विरघळवा, आणि एक एकर फवारा."
+  },
+  "per_acre": {
+   "amount": 5,
+   "unit": "L",
+   "water_l": 100
   },
   "recipe_source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)",
   "backing": "natural_farming"

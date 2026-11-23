@@ -1025,6 +1025,10 @@
      "formulation_per_ha": "10 kg",
      "water_l_per_ha": "broadcast",
      "waiting_days": 53
+    },
+    "per_acre": {
+     "amount": 4,
+     "unit": "kg"
     }
    }
   ],
@@ -1257,6 +1261,25 @@
    }
   ],
   "homemade": [
+   {
+    "prep": "pau_neem_extract",
+    "dose": {
+     "en": "4 litres of the extract in 100 litres of water, for one acre.",
+     "hi": "एक एकड़ के लिए 100 लीटर पानी में 4 लीटर अर्क।",
+     "mr": "एका एकरासाठी 100 लिटर पाण्यात 4 लिटर अर्क."
+    },
+    "per_acre": {
+     "amount": 4,
+     "unit": "L",
+     "water_l": 100
+    },
+    "timing": {
+     "en": "Spray at the first sign of hoppers, aiming at the base of the plants with a knapsack sprayer. Repeat if needed.",
+     "hi": "फुदके दिखते ही छिड़कें, नैपसैक स्प्रेयर से पौधों के निचले हिस्से की ओर। ज़रूरत हो तो दोहराएँ।",
+     "mr": "तुडतुडे दिसताच फवारा, नॅपसॅक पंपाने चुडांच्या बुडख्याकडे. गरज असल्यास पुन्हा फवारा."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026 (organic farming chapter)"
+   },
    {
     "prep": "neem_oil",
     "per_litre": {
@@ -2539,6 +2562,24 @@
      "mr": "पानांच्या खाली किडे दिसताच फवारा, पानांच्या खालच्या बाजूला नीट."
     },
     "source": "APEDA Farmer Connect: IPM with recommended pesticides (Government of India)"
+   },
+   {
+    "prep": "pau_neem_extract",
+    "dose": {
+     "en": "1200 ml of the extract for one acre.",
+     "hi": "एक एकड़ के लिए 1200 मिली अर्क।",
+     "mr": "एका एकरासाठी 1200 मिली अर्क."
+    },
+    "per_acre": {
+     "amount": 1200,
+     "unit": "ml"
+    },
+    "timing": {
+     "en": "Spray when whitefly first appears early in the season, covering the undersides of the leaves.",
+     "hi": "मौसम की शुरुआत में सफेद मक्खी दिखते ही छिड़कें, पत्तों की निचली सतह पर अच्छी तरह।",
+     "mr": "हंगामाच्या सुरुवातीला पांढरी माशी दिसताच फवारा, पानांच्या खालच्या बाजूला नीट."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026"
    },
    {
     "prep": "neemastra",
