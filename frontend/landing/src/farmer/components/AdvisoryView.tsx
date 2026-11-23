@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
-import { Ban, BadgeCheck, BookOpen, ChevronDown, CookingPot, FlaskConical, Leaf, ListChecks, Phone, PhoneCall, ShieldAlert, Sprout, Trees } from 'lucide-react'
+import { Ban, BadgeCheck, BookOpen, ChevronDown, CookingPot, FlaskConical, GraduationCap, Info, Leaf, ListChecks, Microscope, Phone, PhoneCall, Radio, ShieldAlert, Sprout } from 'lucide-react'
 import type { Advisory, HomemadeOption, IcarTech, LadderRung, OrganicOption } from '../../api/types'
 import { ListenButton, Pill } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
@@ -67,7 +66,7 @@ export default function AdvisoryView({ advisory }: { advisory: Advisory }) {
       <section className={`${PANEL} p-5 lg:p-6`}>
         <PanelHead icon={ListChecks} title={t('whatToDo')} sub={advisory.what_to_check} />
         {pestOrDisease ? (
-          <Choice advisory={advisory} nonChem={nonChem} chem={chem} />
+          <Ladder advisory={advisory} nonChem={nonChem} chem={chem} />
         ) : (
           <ol className="mt-5 space-y-4">
             {nonChem.map((r, i) => (
@@ -193,219 +192,201 @@ function ChemDetails({ rung }: { rung: LadderRung }) {
 }
 
 const USE_KEY = { spray: 'useSpray', seed: 'useSeed', root_dip: 'useRootDip', dispenser: 'useDispenser' } as const
-const KIND_KEY = { 'bio-agent': 'organicBio', botanical: 'organicBotanical', pheromone: 'organicPheromone' } as const
 
-/** Organic and chemical, side by side.
+/** What to do, as the treatment ladder an extension worker would draw.
  *
- *  Where the panel is narrow (a phone, or the side column of the history
- *  screen) the two are cards next to each other at the top, and one is open
- *  below at a time: organic first, so the chemical is something the farmer
- *  chooses to look at. Where the panel itself is wide enough for two columns
- *  (WIDE), both show at once. It is the panel's width that decides, not the
- *  screen's: the same advice sits in a narrow column on a laptop. Inside,
- *  every group and every product is a dropdown, so the screen opens on a short
- *  list of headings rather than one long trail. */
-function Choice({ advisory, nonChem, chem }: { advisory: Advisory; nonChem: LadderRung[]; chem: LadderRung[] }) {
+ *  Three steps on one rail, in the order they are tried: field work (free,
+ *  first), organic sprays and inputs, and the chemical, last. Nothing sits
+ *  behind a tab. Every option is one row of the same shape — what it is, the
+ *  one fact that matters, the dose — so an organic product and a chemical can
+ *  be compared by eye. A small badge says who stands behind each one. Only the
+ *  long recipes fold away. */
+function Ladder({ advisory, nonChem, chem }: { advisory: Advisory; nonChem: LadderRung[]; chem: LadderRung[] }) {
   const { t } = useFarmer()
-  const [side, setSide] = useState<'organic' | 'chemical'>('organic')
-  const box = useRef<HTMLDivElement>(null)
-  const [wide, setWide] = useState(false)
-  useEffect(() => {
-    const el = box.current
-    if (!el) return
-    const ro = new ResizeObserver(([e]) => setWide(e.contentRect.width >= WIDE))
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
   const options = advisory.organic ?? []
   const [recommended, natural] = byBacking(advisory.homemade ?? []).map(([, items]) => items)
-  const organicCount = nonChem.length + options.length + recommended.length + natural.length
-  const count = (n: number) => (n === 1 ? t('optCountOne') : t('optCount').replace('{n}', String(n)))
-  const tabs = [
-    { id: 'organic' as const, icon: Leaf, label: t('optOrganic'), sub: count(organicCount),
-      tone: 'bg-[#f3f6e4] text-[#3d4812] ring-[#55631a]/40' },
-    { id: 'chemical' as const, icon: FlaskConical, label: t('optChemical'),
-      sub: chem.length ? count(chem.length) : t('optNoneRegistered'),
-      tone: 'bg-[#fbeeea] text-[#9a2f17] ring-[#9a2f17]/40' },
-  ]
-  return (
-    <div ref={box} className="mt-5">
-      {!wide && <div role="tablist" className="grid grid-cols-2 gap-2">
-        {tabs.map(({ id, icon: Icon, label, sub, tone }) => (
-          <button key={id} role="tab" aria-selected={side === id} onClick={() => setSide(id)}
-            className={`flex min-h-[60px] items-center gap-2.5 rounded-2xl px-3 text-left transition ${
-              side === id ? `${tone} ring-2` : 'bg-white text-soil-dark/70 ring-1 ring-soil-dark/10'}`}>
-            <Icon className="h-5 w-5 shrink-0" aria-hidden />
-            <span className="min-w-0">
-              <span className="block text-[15px] font-semibold leading-tight">{label}</span>
-              <span className="block text-[12px] opacity-80">{sub}</span>
-            </span>
-          </button>
-        ))}
-      </div>}
-
-      <div className={`grid gap-4 ${wide ? 'grid-cols-2 items-start' : 'mt-3'}`}>
-        <div className={wide || side === 'organic' ? '' : 'hidden'}>
-          <Column wide={wide} icon={Leaf} title={t('optOrganic')} sub={t('organicStart')} tone="bg-[#f3f6e4] ring-[#55631a]/10" iconTone="bg-[#e2eac0] text-[#55631a]">
-            <Dropdown icon={Sprout} title={t('organicSteps')} count={nonChem.length} defaultOpen>
-              <p className="mb-3 text-[13px] text-soil-dark/75">{t('organicStepsSub')}</p>
-              <ol className="space-y-4">
-                {nonChem.map((r, i) => <Rung key={i} rung={r} n={i + 1} />)}
-              </ol>
-            </Dropdown>
-            <Dropdown icon={BadgeCheck} title={t('organicProducts')} count={options.length}>
-              <p className="text-[13px] leading-snug text-soil-dark/75">{options.length ? t('organicSub') : t('organicNoProduct')}</p>
-              {options.length > 0 && <OrganicProducts options={options} />}
-            </Dropdown>
-            {recommended.length > 0 && (
-              <Dropdown icon={CookingPot} title={t('levelRecommended')} count={recommended.length}>
-                <p className="mb-3 text-[13px] leading-snug text-soil-dark/75">{t('homemadeSub')}</p>
-                <HomemadeList items={recommended} />
-              </Dropdown>
-            )}
-            {natural.length > 0 && (
-              <Dropdown icon={Trees} title={t('levelNatural')} count={natural.length}>
-                <p className="mb-3 rounded-xl bg-[#fdf6e3] p-3 text-[13px] leading-snug text-soil-dark/85">{t('levelNaturalSub')}</p>
-                <HomemadeList items={natural} />
-              </Dropdown>
-            )}
-          </Column>
-        </div>
-
-        <div className={wide || side === 'chemical' ? '' : 'hidden'}>
-          <Column wide={wide} icon={FlaskConical} title={t('optChemical')} sub={chem.length ? t('chemicalAfterOrganic') : ''} tone="bg-[#fbf3f0] ring-[#9a2f17]/10" iconTone="bg-[#f9dcd5] text-[#9a2f17]">
-            {chem.length > 0 ? (
-              chem.map((r, i) => (
-                <Dropdown key={i} icon={FlaskConical} title={r.product ?? ''} tone="text-[#9a2f17]"
-                  note={r.use === 'seed' ? t('useSeed') : undefined}>
-                  <ChemDetails rung={r} />
-                </Dropdown>
-              ))
-            ) : advisory.chemical_none ? (
-              <div className="rounded-[18px] bg-white p-4 ring-1 ring-soil-dark/[0.05]">
-                <p className="text-[14px] font-semibold text-[#9a2f17]">{t('chemicalNoneTitle')}</p>
-                <p className="mt-1 text-[14px] leading-snug text-soil-dark/85">{advisory.chemical_none}</p>
-              </div>
-            ) : null}
-          </Column>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/** The panel width, in px, from which organic and chemical sit in two columns. */
-const WIDE = 640
-
-/** One side of the choice: its heading, then its dropdowns. */
-function Column({ icon: Icon, title, sub, tone, iconTone, wide, children }: {
-  icon: typeof Leaf; title: string; sub: string; tone: string; iconTone: string; wide: boolean; children: React.ReactNode
-}) {
-  return (
-    <section className={`rounded-[22px] p-3 ring-1 sm:p-4 ${tone}`}>
-      {/* With tabs, the tab already names the side; the line under it is what is left. */}
-      <div className="flex items-start gap-3 px-1 pb-3">
-        {wide && (
-          <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${iconTone}`}>
-            <Icon className="h-5 w-5" aria-hidden />
-          </span>
-        )}
-        <div className="min-w-0 flex-1">
-          {wide && <h3 className="text-[17px] font-semibold tracking-tight">{title}</h3>}
-          {sub && <p className="text-[13px] leading-snug text-soil-dark/75">{sub}</p>}
-        </div>
-      </div>
-      <div className="space-y-2">{children}</div>
-    </section>
-  )
-}
-
-/** A heading that opens to show what is under it: a group of options, or one
- *  chemical product. The count says how much is inside before it is opened. */
-function Dropdown({ icon: Icon, title, count, note, tone = 'text-[#3d4812]', defaultOpen = false, children }: {
-  icon: typeof Leaf; title: string; count?: number; note?: string; tone?: string; defaultOpen?: boolean
-  children: React.ReactNode
-}) {
-  const [open, setOpen] = useState(defaultOpen)
-  return (
-    <div className="overflow-hidden rounded-[18px] bg-white ring-1 ring-soil-dark/[0.06]">
-      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open}
-        className="flex min-h-[56px] w-full items-center gap-3 px-3.5 py-2.5 text-left sm:px-4">
-        <Icon className={`h-5 w-5 shrink-0 ${tone}`} aria-hidden />
-        <span className="min-w-0 flex-1">
-          <span className={`block text-[15px] font-semibold leading-snug ${tone}`}>{title}</span>
-          {note && <span className="block text-[12px] text-soil-dark/65">{note}</span>}
-        </span>
-        {count !== undefined && (
-          <span className="shrink-0 rounded-full bg-soil-dark/[0.06] px-2 py-0.5 text-[12px] font-semibold tabular-nums text-soil-dark/70">{count}</span>
-        )}
-        <ChevronDown className={`h-5 w-5 shrink-0 text-soil-dark/50 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
-      </button>
-      {open && <div className="border-t border-soil-dark/[0.06] px-3.5 pb-4 pt-3 animate-fadein sm:px-4">{children}</div>}
-    </div>
-  )
-}
-
-/** The registered organic products: dose, the farmer's field, when, and the
- *  registration it rests on. */
-function OrganicProducts({ options }: { options: OrganicOption[] }) {
-  const { t } = useFarmer()
+  const organicRows = options.length + recommended.length + natural.length
   const living = options.some((o) => o.kind === 'bio-agent')
   return (
-    <>
-      <ul className="mt-3 space-y-3">
-        {options.map((o, i) => (
-          <li key={i} className="rounded-[16px] bg-[#f8faf3] p-3.5">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <Pill tone="leaf" className="!text-[12px]">{t(USE_KEY[o.use])}</Pill>
-              <Pill tone="neutral" className="!text-[12px]">{t(KIND_KEY[o.kind] ?? 'organicBio')}</Pill>
-            </div>
-            <p className="mt-2 text-[15px] font-semibold leading-snug">{o.product}</p>
-            <p className="mt-1 text-[14px] leading-snug">{o.dose}</p>
-            {o.for_field && (
-              <p className="mt-1.5 rounded-lg bg-cream px-2 py-1.5 text-[13px]">
-                <span className="font-medium">{t('doseForField')}: </span>
-                {o.for_field.replace(/^[^:]+:\s*/, '')}
-              </p>
-            )}
-            {o.timing && <p className="mt-1.5 text-[13px] text-soil-dark/75">{o.timing}</p>}
-            {o.waiting && <p className="mt-1 text-[13px] font-medium text-soil-dark/85">{o.waiting}</p>}
-            <p className="mt-2 flex items-center gap-1.5 text-[12px] text-[#55631a]">
-              <BadgeCheck className="h-3.5 w-3.5 shrink-0" aria-hidden /> {t('organicRegistered')}
-            </p>
-          </li>
-        ))}
-      </ul>
-      {living && <p className="mt-3 text-[13px] leading-snug text-soil-dark/70">{t('organicCare')}</p>}
-    </>
+    <ol className="mt-6">
+      <Stage n={1} tone="green" title={t('stepStart')} sub={t('stepStartSub')}>
+        {nonChem.map((r, i) => <StepRow key={i} rung={r} />)}
+      </Stage>
+
+      <Stage n={2} tone="olive" title={t('stepOrganic')} sub={t('stepOrganicSub')}
+        foot={<>
+          {organicRows === 0 && <p className="text-[14px] leading-snug text-soil-dark/80">{t('organicNoProduct')}</p>}
+          {living && <Note icon={Info}>{t('organicCare')}</Note>}
+          {natural.length > 0 && <Note icon={Info} warm>{t('natNote')}</Note>}
+        </>}>
+        {options.map((o, i) => <ProductRow key={`o${i}`} o={o} />)}
+        {recommended.map((h, i) => <HomeRow key={`h${i}`} h={h} />)}
+        {natural.map((h, i) => <HomeRow key={`n${i}`} h={h} />)}
+      </Stage>
+
+      <Stage n={3} tone="rust" title={t('stepChemical')} sub={chem.length ? t('stepChemicalSub') : ''} last
+        foot={chem.length > 0
+          ? <Note icon={ShieldAlert}>{chem[0].label_rule}</Note>
+          : advisory.chemical_none
+            ? <p className="text-[14px] leading-snug text-soil-dark/85"><span className="font-semibold text-[#9a2f17]">{t('chemicalNoneTitle')}. </span>{advisory.chemical_none}</p>
+            : null}>
+        {chem.map((r, i) => <ChemRow key={i} rung={r} />)}
+      </Stage>
+    </ol>
   )
 }
 
-/** Preparations made at home: not registered products, so no label and no
- *  waiting period — the strength, when to spray, how to make it, and the
- *  source it comes from. */
-function HomemadeList({ items }: { items: HomemadeOption[] }) {
+const STAGE_TONE = {
+  green: { dot: 'bg-[#2f6a39] text-white', soft: 'bg-[#e3efd9] text-[#2f6a39]', head: 'text-[#1f3d2b]' },
+  olive: { dot: 'bg-[#55631a] text-white', soft: 'bg-[#eef3d6] text-[#55631a]', head: 'text-[#3d4812]' },
+  rust: { dot: 'bg-[#9a2f17] text-white', soft: 'bg-[#f9dcd5] text-[#9a2f17]', head: 'text-[#7a2512]' },
+} as const
+
+/** One step of the ladder: a numbered marker on the rail, its heading, its rows. */
+function Stage({ n, tone, title, sub, last = false, foot, children }: {
+  n: number; tone: keyof typeof STAGE_TONE; title: string; sub: string; last?: boolean
+  foot?: React.ReactNode; children: React.ReactNode
+}) {
+  const c = STAGE_TONE[tone]
+  const rows = Array.isArray(children) ? children.flat().filter(Boolean) : children ? [children] : []
+  return (
+    <li className="relative grid grid-cols-[36px_minmax(0,1fr)] gap-x-3 pb-7 last:pb-0 sm:grid-cols-[44px_minmax(0,1fr)] sm:gap-x-4">
+      {!last && <span aria-hidden className="absolute bottom-0 left-[17px] top-10 w-0.5 rounded bg-soil-dark/10 sm:left-[21px] sm:top-12" />}
+      <span className={`flex h-9 w-9 items-center justify-center rounded-full text-[15px] font-bold tabular-nums sm:h-11 sm:w-11 sm:text-[17px] ${c.dot}`}>{n}</span>
+      <div className="min-w-0 pt-1 sm:pt-2">
+        <h3 className={`text-[18px] font-semibold leading-tight tracking-tight sm:text-[19px] ${c.head}`}>{title}</h3>
+        {sub && <p className="mt-0.5 text-[14px] text-soil-dark/70">{sub}</p>}
+        {rows.length > 0 && (
+          <ul className="mt-3 divide-y divide-soil-dark/[0.07] overflow-hidden rounded-[18px] bg-white ring-1 ring-soil-dark/[0.07]">
+            {rows}
+          </ul>
+        )}
+        {foot && <div className="mt-2.5 space-y-2">{foot}</div>}
+      </div>
+    </li>
+  )
+}
+
+function Note({ icon: Icon, warm = false, children }: { icon: typeof Leaf; warm?: boolean; children: React.ReactNode }) {
+  return (
+    <p className={`flex items-start gap-2 text-[13px] leading-snug ${warm ? 'rounded-xl bg-[#fdf6e3] p-2.5 text-[#6b4a12]' : 'text-soil-dark/70'}`}>
+      <Icon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden /> <span>{children}</span>
+    </p>
+  )
+}
+
+/** Who stands behind an option, in a few words: CIB&RC, ICAR or a university, or natural farming. */
+function Backing({ kind, source }: { kind: 'registered' | 'recommended' | 'natural'; source?: string }) {
+  const { t } = useFarmer()
+  const look = {
+    registered: { icon: BadgeCheck, cls: 'bg-[#e3efd9] text-[#2f6a39]', label: t('badgeRegistered') },
+    recommended: { icon: GraduationCap, cls: 'bg-[#e7eefb] text-[#284f8f]', label: shortSource(source) ?? t('chipRecommended') },
+    natural: { icon: Sprout, cls: 'bg-[#fbf0d8] text-[#7a5410]', label: t('badgeNatural') },
+  }[kind]
+  const Icon = look.icon
+  return (
+    <span title={source} className={`inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${look.cls}`}>
+      <Icon className="h-3 w-3 shrink-0" aria-hidden /> <span className="truncate">{look.label}</span>
+    </span>
+  )
+}
+
+/** "PAU Ludhiana, Package of Practices…" -> "PAU Ludhiana": the institution, not the title. */
+function shortSource(source?: string): string | null {
+  if (!source) return null
+  const head = source.split(/[,;(]/)[0].trim()
+  return head.length <= 28 ? head : null
+}
+
+/** A sentence's first clause as the line to read, the rest quieter. */
+function lead(text?: string): [string, string] {
+  const s = (text ?? '').trim()
+  // A full stop, semicolon or colon first; failing that, a comma far enough in
+  // to leave a real phrase in front of it.
+  const m = s.match(/^(.{12,110}?[;:।.])\s+(.+)$/s) ?? s.match(/^(.{20,80}?,)\s+(.+)$/s)
+  return m ? [m[1].replace(/[;:,]$/, ''), m[2]] : [s, '']
+}
+
+/** The shared row: icon, what it is, the one fact, the dose on the right. */
+function Row({ icon: Icon, iconCls, title, fact, rest, dose, badge, extra }: {
+  icon: typeof Leaf; iconCls: string; title: string; fact?: string; rest?: string; dose?: string
+  badge?: React.ReactNode; extra?: React.ReactNode
+}) {
+  const short = dose && dose.length <= 30
+  return (
+    <li className="flex gap-3 px-3.5 py-3.5 sm:px-4">
+      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconCls}`}>
+        <Icon className="h-5 w-5" aria-hidden />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[15px] font-semibold leading-snug text-soil-dark [overflow-wrap:anywhere]">{title}</p>
+        {short && (
+          <span className="mt-1.5 inline-flex rounded-lg bg-cream px-2.5 py-1 text-[14px] font-semibold tabular-nums text-soil-dark ring-1 ring-soil-dark/[0.06]">{dose}</span>
+        )}
+        {dose && !short && <p className="mt-1 text-[14px] font-medium leading-snug text-soil-dark/90">{dose}</p>}
+        {fact && <p className="mt-1 text-[14px] leading-snug text-soil-dark/85">{fact}</p>}
+        {rest && <p className="mt-0.5 text-[13px] leading-snug text-soil-dark/60">{rest}</p>}
+        {badge && <div className="mt-2">{badge}</div>}
+        {extra}
+      </div>
+    </li>
+  )
+}
+
+function StepRow({ rung }: { rung: LadderRung }) {
+  const { t } = useFarmer()
+  const tier = TIER[rung.tier]
+  const [head, rest] = lead(rung.action)
+  return (
+    <Row icon={tier.icon} iconCls={tier.tone} title={head} rest={rest}
+      badge={rung.backing === 'recommended' ? <Backing kind="recommended" source={rung.source} /> : <span className="text-[12px] text-soil-dark/55">{t(tier.key)}</span>} />
+  )
+}
+
+function ProductRow({ o }: { o: OrganicOption }) {
+  const { t } = useFarmer()
+  const Icon = o.kind === 'botanical' ? Leaf : o.kind === 'pheromone' ? Radio : Microscope
+  return (
+    <Row icon={Icon} iconCls="bg-[#eef3d6] text-[#55631a]" title={o.product} dose={o.dose}
+      badge={<span className="flex flex-wrap gap-1"><Backing kind="registered" /><span className="rounded-full bg-soil-dark/[0.05] px-2 py-0.5 text-[11px] font-semibold text-soil-dark/70">{t(USE_KEY[o.use])}</span></span>}
+      fact={o.for_field?.replace(/^[^:]+:\s*/, '')}
+      rest={[o.timing, o.waiting].filter(Boolean).join(' ')} />
+  )
+}
+
+function HomeRow({ h }: { h: HomemadeOption }) {
+  const { t } = useFarmer()
+  const natural = h.backing === 'natural_farming'
+  return (
+    <Row icon={natural ? Sprout : CookingPot} iconCls={natural ? 'bg-[#fbf0d8] text-[#7a5410]' : 'bg-[#e7eefb] text-[#284f8f]'}
+      title={h.name} dose={h.dose}
+      badge={<Backing kind={natural ? 'natural' : 'recommended'} source={h.source} />}
+      rest={h.timing}
+      extra={
+        <details className="group mt-2">
+          <summary className="inline-flex min-h-[36px] cursor-pointer list-none items-center gap-1 rounded-full bg-[#f6f8ef] px-3 text-[13px] font-semibold text-[#3d4812] [&::-webkit-details-marker]:hidden">
+            {t('homemadeRecipe')}
+            <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden />
+          </summary>
+          <ol className="mt-2 list-decimal space-y-1 pl-5 text-[13px] leading-snug text-soil-dark/85">
+            {h.recipe.map((step, j) => <li key={j}>{step}</li>)}
+          </ol>
+        </details>
+      } />
+  )
+}
+
+function ChemRow({ rung }: { rung: LadderRung }) {
   const { t } = useFarmer()
   return (
-    <ul className="space-y-3">
-      {items.map((h, i) => (
-        <li key={i} className="rounded-[16px] bg-[#f8faf3] p-3.5">
-          <p className="text-[15px] font-semibold leading-snug">{h.name}</p>
-          <p className="mt-1 text-[14px] leading-snug">{h.dose}</p>
-          <p className="mt-1.5 text-[13px] text-soil-dark/75">{h.timing}</p>
-          <details className="group mt-2.5 rounded-xl bg-[#f6f8ef] px-3 py-2">
-            <summary className="flex min-h-[36px] cursor-pointer list-none items-center justify-between text-[14px] font-medium text-[#3d4812]">
-              {t('homemadeRecipe')}
-              <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden />
-            </summary>
-            <ol className="mt-1 list-decimal space-y-1 pb-1 pl-5 text-[13px] leading-snug">
-              {h.recipe.map((step, j) => <li key={j}>{step}</li>)}
-            </ol>
-          </details>
-          <p className="mt-2 text-[12px] text-soil-dark/65">{t('homemadeSource')}: {h.source}</p>
-        </li>
-      ))}
-    </ul>
+    <Row icon={FlaskConical} iconCls="bg-[#f9dcd5] text-[#9a2f17]" title={rung.product ?? ''} dose={rung.dose}
+      badge={<span className="flex flex-wrap gap-1">
+        <Backing kind="registered" />
+        {rung.use === 'seed' && <span className="rounded-full bg-soil-dark/[0.05] px-2 py-0.5 text-[11px] font-semibold text-soil-dark/70">{t('useSeed')}</span>}
+        {!rung.verified && <span className="rounded-full bg-[#fbf0d8] px-2 py-0.5 text-[11px] font-semibold text-[#7a5410]">{t('dosePending')}</span>}
+      </span>}
+      fact={rung.for_field?.replace(/^[^:]+:\s*/, '')}
+      rest={[rung.waiting, rung.timing].filter(Boolean).join(' ')} />
   )
 }
 

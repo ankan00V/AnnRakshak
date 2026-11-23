@@ -300,7 +300,7 @@
  "krishiError": "सर्वर से संपर्क नहीं हो पाया। कनेक्शन जाँचकर फिर कोशिश करें।",
  "krishiName": "कृषि",
  "krishiNew": "नई बातचीत",
- "krishiPlaceholder": "ऐप के बारे में पूछें…",
+ "krishiPlaceholder": "अपनी फसल या ऐप के बारे में पूछें…",
  "krishiSend": "भेजें",
  "krishiSub": "आपका AnnRakshak सहायक",
  "krishiThinking": "कृषि देख रहा है…",
@@ -883,5 +883,14 @@
  "optCount": "{n} उपाय",
  "optNoneRegistered": "कोई पंजीकृत नहीं",
  "optCountOne": "1 उपाय",
- "chemicalAfterOrganic": "पहले जैविक उपाय आज़माएँ। समस्या फैलती रहे तभी छिड़काव करें।"
+ "chemicalAfterOrganic": "पहले जैविक उपाय आज़माएँ। समस्या फैलती रहे तभी छिड़काव करें।",
+ "stepStart": "यहाँ से शुरू करें, खेत में",
+ "stepStartSub": "मुफ़्त। ये पहले करें।",
+ "stepOrganic": "जैविक छिड़काव और उत्पाद",
+ "stepOrganicSub": "अगर समस्या फैलती रहे।",
+ "stepChemical": "रसायन, आखिरी उपाय",
+ "stepChemicalSub": "सिर्फ़ तब, जब जैविक उपाय काम न करें।",
+ "badgeRegistered": "CIB&RC पंजीकृत",
+ "badgeNatural": "प्राकृतिक खेती",
+ "natNote": "प्राकृतिक खेती के नुस्खे सरकारी मार्गदर्शन हैं, पंजीकृत कीटनाशक नहीं। इन्हें बचाव के लिए इस्तेमाल करें, इलाज के लिए नहीं।"
 }
