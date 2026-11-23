@@ -36,14 +36,14 @@ def hello(request: Request, lang: str = "en", screen: str | None = None, db: Ses
 
 class AskIn(BaseModel):
     text: str | None = Field(default=None, max_length=300)
-    topic: str | None = Field(default=None, max_length=40)
+    topic: str | None = Field(default=None, max_length=64)
     lang: str = "en"
     screen: str | None = Field(default=None, max_length=20)
     farm_id: int | None = None
     prev_text: str | None = Field(default=None, max_length=300)
     """The farmer's previous question in this chat, and the topic that answered
     it — so a follow-up is read in context."""
-    prev_topic: str | None = Field(default=None, max_length=40)
+    prev_topic: str | None = Field(default=None, max_length=64)
 
 
 @router.post("/ask")

@@ -24,7 +24,7 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import llm, office, services
+from app import cropqa, llm, office, services
 from app.kb import KB, tr
 from app.models import Alert, Case, Confirmation, ExpertProfile, Farm, Problem, User
 
@@ -100,16 +100,21 @@ INTENTS: dict[str, dict] = {
         "says": ["how are my officers doing", "who is slow", "response time", "how fast are cases closed",
                  "officer performance", "turnaround"],
     },
+    "pest": {
+        "label": "one named pest or disease: how much of it, where, and what to advise",
+        "says": ["how many blast cases", "where is fall armyworm", "is pink bollworm rising", "whitefly in my district",
+                 "stem borer reports", "blast kitna hai"],
+    },
     "help": {
         "label": "what Darpan can answer",
         "says": ["help", "what can you do", "who are you", "darpan"],
     },
 }
 
-GREETING = "Darpan — your district, as it stands. Ask about the queue, what is building, your officers, or an advisory you sent."
+GREETING = "Darpan — your district, as it stands. Ask about the queue, what is building, a pest by name, your officers, or an advisory you sent."
 
 CANNOT = ("I only answer from this district's own records. I can tell you about "
-          "the queue, what is building this week, your officers, advisories you have "
+          "the queue, what is building this week, any pest or disease by name, your officers, advisories you have "
           "issued, the model's field accuracy, what to stock, and the rain against normal.")
 
 
@@ -158,6 +163,22 @@ def route(text: str, db: Session) -> tuple[str, dict]:
     for intent, spec in INTENTS.items():
         if any(_norm(example) == t for example in spec["says"]):
             return intent, args
+
+    # A pest or disease named in any language ("blast", "करपा", "gulabi sundi"):
+    # the officer is asking about that one, so the answer is about it.
+    from app.kb import get_kb  # noqa: PLC0415
+    kb = get_kb()
+    hits = cropqa.find(kb, text, cropqa.crop_named(text))
+    if hits:
+        top = hits[0][1]
+        best = [tid for tid, s in hits if s >= top - 1e-9]
+        crops = {kb.targets[t]["crop"] for t, _ in hits}
+        if not cropqa.crop_named(text) and len(crops) > 1 and not cropqa.distinctive(kb, best[0], text):
+            # "stem borer" is on rice and maize: ask rather than pick one.
+            args["targets"] = [t for t, _ in hits]
+            return "pest", args
+        args["target"] = best[0]
+        return "pest", args
 
     asked = _content(text)
     scores = Counter()
@@ -282,7 +303,7 @@ def answer(db: Session, kb: KB, *, text: str, demo: bool, officer: User | None) 
         "queue": _queue, "district": _district, "building": _building, "advisories": _advisories,
         "officers": _officers, "model": _model, "gaps": _gaps, "inputs": _inputs,
         "rainfall": _rainfall, "farm": _farm, "mine": _mine, "brief": _brief,
-        "trend": _trend, "performance": _performance, "help": _help,
+        "trend": _trend, "performance": _performance, "help": _help, "pest": _pest,
     }.get(intent)
     if fn is None:
         return {"intent": "unknown", "lines": [CANNOT],
@@ -630,6 +651,74 @@ def _trend(db, kb, *, demo, args, officer, text):
     if rising and rising > 25:
         lines.append("Cases are climbing faster than last week — worth a look at what is building.")
     return {"lines": lines, "go": [_link("Today", "/officer"), _link("What is building", "/officer/advisories")]}
+
+
+def _pest(db, kb, *, demo, args, officer, text):
+    """One named pest or disease: reports this week against last, what experts
+    confirmed, the risk alerts, where it is, and what to advise — organic
+    first. Every number is a count of this district's own rows."""
+    if not args.get("target"):
+        names = ", ".join(f"{tr(kb.targets[t]['names'], 'en')} ({kb.targets[t]['crop']})" for t in args.get("targets", [])[:4])
+        return {"lines": [f"That name is on more than one crop: {names}. Which crop do you mean?"],
+                "go": [_link("What is building", "/officer/advisories")]}
+    tid = args["target"]
+    t = kb.targets[tid]
+    name, crop = tr(t["names"], "en"), tr(kb.crops[t["crop"]]["names"], "en")
+    me = _me(db, officer, demo)
+    districts, how = _scope(args, me)
+    farms = {f.id: f for f in _farms(db, demo, districts) if f.crop == t["crop"]}
+    today = date.today()
+    week, fortnight = today - timedelta(days=7), today - timedelta(days=14)
+
+    reports = db.execute(select(Problem.farm_id, Problem.opened_at)
+                         .where(Problem.target == tid, Problem.farm_id.in_(list(farms) or [-1]))).all()
+    this_week = [r for r in reports if r.opened_at and r.opened_at.date() > week]
+    last_week = [r for r in reports if r.opened_at and fortnight < r.opened_at.date() <= week]
+    confirmed = db.scalar(select(func.count(Confirmation.id)).join(Problem, Problem.id == Confirmation.problem_id)
+                          .where(Confirmation.final_label == tid, Problem.farm_id.in_(list(farms) or [-1]),
+                                 Confirmation.created_at >= datetime.combine(fortnight, datetime.min.time()))) or 0
+    alerts = db.execute(select(Alert.farm_id, Alert.level)
+                        .where(Alert.target == tid, Alert.issued_on > week,
+                               Alert.farm_id.in_(list(farms) or [-1]))).all()
+    waiting = [c for c, f in _open_cases(db, demo, districts) if f.id in farms and
+               db.get(Problem, c.problem_id).target == tid]
+
+    lines = [f"{_where(districts, how)}: {name} on {crop}, across {len(farms)} {crop.lower()} "
+             f"farm{'s' if len(farms) != 1 else ''}."]
+    if not (reports or alerts or confirmed):
+        lines.append(f"No {name} reported, confirmed or alerted in the last two weeks.")
+    else:
+        n, m = len(this_week), len(last_week)
+        way = "up" if n > m else "down" if n < m else "level"
+        lines.append(f"Reported: {n} this week against {m} the week before — {way}.")
+        lines.append(f"Confirmed by an expert in the last two weeks: {confirmed}.")
+        if alerts:
+            high = sum(1 for a in alerts if a.level == "high")
+            on = len({a.farm_id for a in alerts})
+            lines.append(f"Risk alerts this week: {len(alerts)} on {on} farm{'s' if on != 1 else ''}"
+                         + (f", {high} high." if high else "."))
+        where = Counter((farms[r.farm_id].village or farms[r.farm_id].district) for r in this_week)
+        where.update((farms[a.farm_id].village or farms[a.farm_id].district) for a in alerts)
+        if where:
+            lines.append("Most of it at: " + ", ".join(f"{p} ({k})" for p, k in where.most_common(3)) + ".")
+        if waiting:
+            lines.append(f"{len(waiting)} {name} case{'s are' if len(waiting) != 1 else ' is'} waiting for an expert.")
+
+    # What to advise, from the same advisory the farmer sees: organic first.
+    adv = __import__("app.engine.advisory", fromlist=["compose"]).compose(kb, tid, "en")
+    organic = list(dict.fromkeys(o["product"] for o in adv["organic"]))[:2]
+    field = next((r["action"] for r in adv["ladder"] if r["tier"] != "chemical" and r.get("backing")),
+                 next((r["action"] for r in adv["ladder"] if r["tier"] != "chemical"), None))
+    chem = next((r["product"] for r in adv["ladder"] if r["tier"] == "chemical"), None)
+    if field:
+        lines.append(f"To advise, start with: {field}")
+    if organic:
+        lines.append("Registered organic: " + "; ".join(organic) + ".")
+    lines.append(f"Chemical, if it keeps spreading: {chem}." if chem else (adv.get("chemical_none") or ""))
+    return {"lines": [x for x in lines if x], "go": [
+        _link(f"Advise on {name}", f"/officer/advisories?target={tid}&crop={t['crop']}"),
+        _link("Open cases", "/officer/queue"),
+    ]}
 
 
 def _performance(db, kb, *, demo, args, officer, text):

@@ -1,0 +1,173 @@
+"""Krishi and Darpan answer questions about pests and diseases from the
+advisories (app.cropqa), and stay out of the way of questions about the app.
+
+Every answer here is the knowledge base's own words in a template, so the
+tests check two things: that the right pest is found from the way people
+actually ask, and that nothing reaches the farmer that the advisory does not
+say — no chemical in an organic answer, no diagnosis from a description.
+"""
+
+from __future__ import annotations
+
+from datetime import date, datetime, timedelta
+
+import pytest
+from fastapi.testclient import TestClient
+
+from app import cropqa, darpan, geo, krishi
+from app.db import Base, SessionLocal, engine
+from app.engine import advisory, labelcheck
+from app.kb import get_kb, tr
+from app.main import app
+from app.models import Alert, Farm, Problem
+
+kb = get_kb()
+
+
+def ask(text: str, lang: str = "en", farm=None, topic=None) -> dict:
+    return krishi.answer(None, kb, text=text, topic=topic, screen="home", lang=lang, farm=farm)
+
+
+@pytest.mark.parametrize("lang, text, target", [
+    ("en", "how do i control stem borer in rice organically", "rice_yellow_stem_borer"),
+    ("en", "what is rice blast", "rice_blast"),
+    ("hi", "धान में तना छेदक का जैविक उपाय", "rice_yellow_stem_borer"),
+    ("mr", "कापसावरील पांढरी माशी कशी नियंत्रित करावी", "cotton_whitefly"),
+    ("hi", "कपास में गुलाबी सुंडी", "cotton_pink_bollworm"),
+    ("hi", "dhan me tana chhedak ka ilaj", "rice_yellow_stem_borer"),
+    ("en", "fall armyworm maize what to spray", "maize_fall_armyworm"),
+    ("en", "blast", "rice_blast"),
+    ("en", "brown spot rice what to do", "rice_brown_spot"),
+])
+def test_a_named_pest_is_found_however_it_is_asked(lang, text, target):
+    out = ask(text, lang)
+    assert out["topic"].startswith(f"crop:{target}:"), (text, out["topic"])
+
+
+def test_an_organic_answer_names_no_chemical_and_shows_every_level():
+    out = ask("how do i control stem borer in rice organically")
+    adv = advisory.compose(kb, "rice_yellow_stem_borer", "en")
+    said = " ".join([out["text"], *out["steps"]])
+    for r in adv["ladder"]:
+        if r["tier"] == "chemical":
+            assert r["product"] not in said
+    assert adv["organic"][0]["product"] in said          # registered by CIB&RC
+    assert "Agniastra" in said and "not a registered pesticide" in said  # natural farming, labelled
+    assert any("Trichogramma" in s for s in out["steps"])  # the PAU step, sourced
+
+
+def test_what_to_do_puts_the_chemical_last_with_the_spray_check():
+    out = ask("what can I spray on cotton whitefly")
+    steps = out["steps"]
+    chem = next(i for i, s in enumerate(steps) if s.startswith("Chemical"))
+    assert any("Spray check" in s for s in steps[chem:])
+    assert out["text"].startswith("The chemical for Whitefly")
+
+
+def test_a_description_lists_candidates_and_never_diagnoses():
+    """Krishi cannot tell a disease from words. A description gets the problems
+    whose signs read like it, each with its signs, and a photo to decide."""
+    out = ask("my rice leaves have brown spots with grey centres")
+    assert out["topic"].endswith(":symptoms")
+    names = {tr(kb.targets[t]["names"], "en") for t in ("rice_blast", "rice_brown_spot")}
+    assert all(any(s.startswith(n) for s in out["steps"]) for n in names)
+    assert "photo" in out["steps"][-1].lower()
+    said = " ".join(out["steps"])
+    for pid, p in kb.pesticides.items():
+        assert p["name"] not in said  # no product for a problem nobody has named
+
+
+@pytest.mark.parametrize("text", ["leaf spot", "stem borer"])
+def test_a_name_on_more_than_one_crop_asks_which(text):
+    assert ask(text)["topic"] == "crop:need_crop"
+
+
+def test_the_farmers_own_crop_settles_an_ambiguous_name():
+    farm = Farm(farmer_name="x", crop="maize", sowing_date=date.today() - timedelta(days=30), district="Pune",
+                lat=18.5, lon=73.8, area_acres=2)
+    assert ask("stem borer", farm=farm)["topic"].startswith("crop:maize_stem_borer:")
+
+
+def test_a_product_question_gets_the_registers_verdict():
+    out = ask("can i use mancozeb on rice blast")
+    ing = kb.match_pesticide("mancozeb")
+    assert out["steps"] == [labelcheck.check(kb, ing, "rice", "rice_blast", "en")["message"]]
+    assert out["go"][0]["to"] == "/app/spray"
+
+
+def test_a_recipe_is_the_preparations_own_with_its_label():
+    out = ask("how to make neemastra")
+    prep = kb.homemade["neemastra"]
+    assert out["topic"] == "prep:neemastra"
+    assert prep["recipe"]["en"][0] in out["steps"]
+    assert any("not a registered pesticide" in s for s in out["steps"])
+    assert any(prep["recipe_source"] in s for s in out["steps"])
+
+
+def test_a_chip_opens_the_same_pest_another_way():
+    first = ask("what is rice blast")
+    chip = next(c for c in first["suggestions"] if c["id"].endswith(":organic"))
+    again = ask("", topic=chip["id"])
+    assert again["topic"] == "crop:rice_blast:organic" and again["steps"]
+
+
+@pytest.mark.parametrize("text, topic", [
+    ("how do I take a photo of a sick plant", "scan_photo"),
+    ("will it rain tomorrow", "weather_now"),
+    ("how does the app work", "what_is_app"),
+])
+def test_questions_about_the_app_still_get_the_apps_answers(text, topic):
+    assert ask(text)["topic"] == topic
+
+
+def test_neem_inside_a_preparation_name_is_not_a_product():
+    assert cropqa._product_in(kb, "neemastra for whitefly") is None
+    assert cropqa._product_in(kb, "can i use mancozeb") == kb.match_pesticide("mancozeb")
+
+
+# --- Darpan -------------------------------------------------------------------
+
+@pytest.fixture()
+def officer_world(monkeypatch):
+    monkeypatch.setattr(geo, "locate", lambda state, district, village=None: {"lat": 21.17, "lon": 79.65})
+    Base.metadata.drop_all(bind=engine)
+    with TestClient(app):
+        with SessionLocal() as db:
+            for i, district in enumerate(("Bhandara", "Bhandara", "Gondia")):
+                db.add(Farm(farmer_name=f"F{i}", crop="rice", sowing_date=date.today() - timedelta(days=50),
+                            district=district, village=f"V{i}", lat=21.17, lon=79.65, area_acres=2, is_demo=True))
+            db.commit()
+            farms = db.query(Farm).all()
+            now = datetime.now()
+            for f, days in ((farms[0], 1), (farms[1], 2), (farms[0], 9)):
+                db.add(Problem(farm_id=f.id, target="rice_blast", status="open", opened_at=now - timedelta(days=days)))
+            db.add(Alert(farm_id=farms[2].id, target="rice_blast", trigger="weather", level="high", reason={},
+                         tasks={"en": ["Check the leaves"]}, issued_on=date.today()))
+            db.commit()
+        yield
+
+
+def test_darpan_answers_a_named_disease_with_its_own_counts(officer_world):
+    with SessionLocal() as db:
+        out = darpan.answer(db, kb, text="blast in bhandara", demo=True, officer=None)
+    assert out["intent"] == "pest"
+    text = " ".join(out["lines"])
+    assert out["lines"][0].startswith("In Bhandara: Rice blast")
+    assert "Reported: 2 this week against 1 the week before — up." in text
+    assert "Gondia" not in text  # the alert there is outside the district asked about
+    assert any(g["to"].startswith("/officer/advisories?target=rice_blast") for g in out["go"])
+
+
+def test_darpan_says_what_to_advise_organic_first(officer_world):
+    with SessionLocal() as db:
+        out = darpan.answer(db, kb, text="करपा", demo=True, officer=None)
+    lines = out["lines"]
+    organic = next(i for i, l in enumerate(lines) if l.startswith("Registered organic"))
+    chem = next(i for i, l in enumerate(lines) if l.startswith("Chemical"))
+    assert organic < chem
+
+
+def test_darpan_asks_which_crop_for_a_name_on_two(officer_world):
+    with SessionLocal() as db:
+        out = darpan.answer(db, kb, text="stem borer", demo=True, officer=None)
+    assert out["intent"] == "pest" and "Which crop" in out["lines"][0]

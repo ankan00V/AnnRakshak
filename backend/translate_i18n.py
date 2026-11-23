@@ -115,7 +115,7 @@ KB_FILES = ["crops.json", "targets.json", "advisories.json", "cues.json", "risk_
             "agromet.json", "icar_technologies.json", "krishi.json"]
 MODULES = ["app.services", "app.notify", "app.mailer", "app.live", "app.office", "app.engine.advisory", "app.engine.risk",
            "app.engine.fieldnow", "app.engine.livescan", "app.routers.weather", "app.auth", "app.routers.auth",
-           "app.krishi", "app.live", "app.sms", "app.report"]
+           "app.krishi", "app.cropqa", "app.live", "app.sms", "app.report"]
 NOTE = ("Machine translated from the approved English (engines under 'models'); placeholders checked. "
         "Pending review by a native speaker — correct any line in place, the job never overwrites an existing entry.")
 

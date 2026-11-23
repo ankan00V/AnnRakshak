@@ -27,7 +27,7 @@ from functools import lru_cache
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import cache, llm, services, voice
+from app import cache, cropqa, llm, services, voice
 from app.i18n import local_date
 from app.config import KB_DIR
 from app.engine import agromet, agroweather
@@ -478,6 +478,24 @@ def _answer(db: Session, kb: KB, *, text: str | None, topic: str | None, screen:
     the only place a personal answer may come from."""
     idx = index()
     ranked: list[tuple[str, float]] = []
+    area = getattr(farm, "area_acres", None)
+    # A tapped follow-up about a pest ("Organic options only") or a recipe.
+    if topic and (topic.startswith("crop:") or topic.startswith("prep:")):
+        out = cropqa.from_topic(kb, topic, lang, area)
+        if out is not None:
+            return out
+        topic = None
+    # A question about a pest, a disease, a product or a home preparation is
+    # answered from the advisories (app.cropqa) — unless it is plainly a
+    # question about the app itself, which the authored topics answer.
+    if topic is None and (text or "").strip():
+        app = idx.rank(text or "", screen)
+        # "I can't tell a disease from words" and "which crops" are what a crop
+        # question used to fall to; they do not outrank a real answer to it.
+        app_score = app[0][1] if app and app[0][0] not in ("diagnose_problem", "crop_support") else 0.0
+        crop_out = cropqa.answer(kb, text or "", lang, farm, app_score=app_score)
+        if crop_out is not None:
+            return crop_out
     if topic in idx.topics:
         best, score = topic, 1.0
     elif topic == PERSONAL:
