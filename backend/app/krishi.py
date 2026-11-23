@@ -78,6 +78,14 @@ TEXT = {
                        "बाकी किसी बात के लिए किसान कॉल सेंटर 1800-180-1551 (निःशुल्क) पर फ़ोन करें।",
                  "mr": "माफ करा, मला समजले नाही. मी AnnRakshak वापरण्यात मदत करतो — यापैकी एखादा निवडा, किंवा वेगळ्या शब्दांत विचारा. "
                        "इतर कशासाठीही किसान कॉल सेंटर 1800-180-1551 (मोफत) वर फोन करा."},
+    "demo_farmer": {"en": "Namaste{name}! This is a demo account, so I don't answer questions here. Register your own field and I will answer about your crop, its weather and its pests.",
+                    "hi": "नमस्ते{name}! यह एक डेमो खाता है, इसलिए मैं यहाँ सवालों के जवाब नहीं देता। अपना खेत दर्ज करें, फिर मैं आपकी फसल, उसके मौसम और कीटों के बारे में जवाब दूँगा।",
+                    "mr": "नमस्कार{name}! हे डेमो खाते आहे, त्यामुळे मी इथे प्रश्नांची उत्तरे देत नाही. तुमचे स्वतःचे शेत नोंदवा, मग मी तुमचे पीक, त्याचे हवामान आणि किडींबद्दल उत्तर देईन."},
+    "demo_officer": {"en": "Namaste{name}! This is a demo account, so I don't answer questions here. Register as an officer to get answers about your own district.",
+                     "hi": "नमस्ते{name}! यह एक डेमो खाता है, इसलिए मैं यहाँ सवालों के जवाब नहीं देता। अपने ज़िले के जवाब पाने के लिए अधिकारी के रूप में पंजीकरण करें।",
+                     "mr": "नमस्कार{name}! हे डेमो खाते आहे, त्यामुळे मी इथे प्रश्नांची उत्तरे देत नाही. तुमच्या जिल्ह्याची उत्तरे मिळवण्यासाठी अधिकारी म्हणून नोंदणी करा."},
+    "demo_go_farmer": {"en": "Register your field", "hi": "अपना खेत दर्ज करें", "mr": "तुमचे शेत नोंदवा"},
+    "demo_go_officer": {"en": "Register as an officer", "hi": "अधिकारी के रूप में पंजीकरण करें", "mr": "अधिकारी म्हणून नोंदणी करा"},
     "need_farm": {"en": "Open one of your fields first, then I can answer that from its weather and crop.",
                   "hi": "पहले अपना कोई खेत खोलें, फिर मैं उसके मौसम और फसल से इसका जवाब दे पाऊँगा।",
                   "mr": "आधी तुमचे एखादे शेत उघडा, मग मी त्याच्या हवामान आणि पिकावरून याचे उत्तर देऊ शकेन."},
@@ -407,6 +415,23 @@ def register(text: str | None, app_lang: str) -> tuple[str, bool]:
         return "en", False
     tied = [lang for lang, n in scores.items() if n == top]
     return (app_lang if app_lang in tied else tied[0]), True
+
+
+def demo_reply(user, text: str | None, lang: str) -> dict:
+    """A demo account gets a greeting and the way to a real one, whatever it asks.
+
+    A demo is someone looking around: answering them from seeded fields would
+    pass off made-up farms as theirs, and every answer costs a model call. So
+    the one thing said is how to make it real — register a field, or register
+    as an officer — in the language they asked in."""
+    said, _ = register(text, lang)
+    officer = getattr(user, "role", "farmer") != "farmer"
+    first = (getattr(user, "name", "") or "").split()
+    name = f", {first[0]}" if first and first[0].lower() != "demo" else ""
+    key = "officer" if officer else "farmer"
+    return {"topic": "demo", "score": 1.0, "lang": said, "text": _t(f"demo_{key}", said, name=name), "steps": [],
+            "go": [{"to": "/signup/expert" if officer else "/signup/farmer", "label": _t(f"demo_go_{key}", said)}],
+            "suggestions": []}
 
 
 def answer(db: Session, kb: KB, *, text: str | None, topic: str | None, screen: str | None, lang: str,

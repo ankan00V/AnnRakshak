@@ -208,3 +208,45 @@ def test_a_final_answer_sent_as_a_fake_tool_call_is_recovered_and_no_key_is_benc
     msg = llm.chat_tools([{"role": "user", "content": "q"}], tools)
     assert json.loads(msg["content"]) == {"lines": ["ok"]}
     assert calls == [1] and llm._benched == {}
+
+
+# --- demo accounts ---------------------------------------------------------------
+
+def _client_as(monkeypatch, user):
+    from app import auth
+    from app.routers import darpan as darpan_router
+    monkeypatch.setattr(auth, "current_user", lambda request, db: user)
+    for dep in darpan_router.router.dependencies:
+        app.dependency_overrides[dep.dependency] = lambda: None
+    return TestClient(app)
+
+
+def test_a_demo_farmer_is_greeted_and_sent_to_register_whatever_they_ask(world, scripted, monkeypatch):
+    replies, sent = scripted
+    demo = User(id=999, role="farmer", name="Demo farmer", is_demo=True)
+    try:
+        with _client_as(monkeypatch, demo) as c:
+            out = c.post("/api/krishi/ask", json={"text": "how do i control stem borer", "lang": "en"}).json()
+            hi = c.post("/api/krishi/ask", json={"text": "धान में तना छेदक", "lang": "hi"}).json()
+            chip = c.post("/api/krishi/ask", json={"topic": "live_check", "lang": "en"}).json()
+            hello = c.get("/api/krishi/hello?lang=en&screen=home").json()
+    finally:
+        app.dependency_overrides.clear()
+    assert out["topic"] == "demo" and "demo account" in out["text"] and out["go"][0]["to"] == "/signup/farmer"
+    assert hi["lang"] == "hi" and "डेमो" in hi["text"]
+    assert chip["topic"] == "demo"  # a tapped question too
+    assert "demo account" in hello["text"] and hello["suggestions"] == []  # nothing to tap from the start
+    assert not sent  # no lookup, no model call for a demo
+
+
+def test_a_demo_officer_gets_a_greeting_from_darpan_not_district_numbers(world, scripted, monkeypatch):
+    demo = User(id=998, role="expert", name="Demo expert", is_demo=True)
+    try:
+        with _client_as(monkeypatch, demo) as c:
+            out = c.post("/api/darpan/ask", json={"text": "brief me"}).json()
+            hello = c.get("/api/darpan/hello").json()
+    finally:
+        app.dependency_overrides.clear()
+    assert out["intent"] == "demo" and out["go"] == [{"label": "Register as an officer", "to": "/signup/expert"}]
+    assert out["lines"][0].startswith("Namaste! This is a demo account")
+    assert hello["greeting"].startswith("Namaste! This is a demo account") and hello["suggestions"] == []

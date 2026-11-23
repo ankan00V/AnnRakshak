@@ -31,6 +31,8 @@ def _lang(lang: str) -> str:
 @router.get("/hello")
 def hello(request: Request, lang: str = "en", screen: str | None = None, db: Session = Depends(get_db)):
     user = auth.current_user(request, db)
+    if user is not None and user.is_demo:  # the register message, and no questions to tap
+        return {"text": krishi.demo_reply(user, None, _lang(lang))["text"], "suggestions": []}
     return krishi.hello(screen, _lang(lang), user.name if user else None)
 
 
@@ -52,6 +54,8 @@ def ask(body: AskIn, request: Request, db: Session = Depends(get_db), kb: KB = D
     # Sixty a minute from one address was not that farmer, it was a bill.
     limit(f"krishi:{client_ip(request)}", 15, 60)
     user = auth.current_user(request, db)
+    if user is not None and user.is_demo:
+        return krishi.demo_reply(user, body.text, _lang(body.lang))
     farm = db.get(Farm, body.farm_id) if body.farm_id is not None else None
     if farm is not None and not auth.can_open_farm(user, farm, db):
         farm = None  # not theirs: answer as if no farm is open
