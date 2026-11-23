@@ -934,7 +934,60 @@ def test_homemade_options_name_their_source_and_read_in_the_farmers_language():
     faw = advisory.compose(kb, "maize_fall_armyworm", "en", 1.0)["homemade"]
     assert any(h["prep"] == "nske_5" and "50 g" in h["dose"] and "500 g" in h["dose"] for h in faw)
     # and an advisory with none says nothing rather than something made up
-    assert advisory.compose(kb, "rice_blast", "en", 1.0)["homemade"] == []
+    assert advisory.compose(kb, "rice_bacterial_leaf_blight", "en", 1.0)["homemade"] == []
+
+
+def test_every_organic_option_says_who_stands_behind_it():
+    """Three levels, never blurred: a product CIB&RC registers for this crop and
+    pest; a step or preparation ICAR, a university or the government IPM
+    packages recommend; a preparation from the ICAR natural farming protocol."""
+    for target in kb.advisories:
+        a = advisory.compose(kb, target, "en", 1.0)
+        assert all(o["backing"] == "registered" for o in a["organic"]), target
+        assert all(h["backing"] in ("recommended", "natural_farming") for h in a["homemade"]), target
+        for h in a["homemade"]:
+            if h["backing"] == "natural_farming":
+                assert h["source"].startswith("ICAR, Generic Protocols for Natural Farming"), (target, h["prep"])
+        for r in a["ladder"]:
+            if r.get("backing"):
+                assert r["tier"] != "chemical" and r.get("source"), target
+
+
+def test_natural_farming_goes_only_where_the_protocol_points_it():
+    """The protocol names sucking pests, borers, caterpillars and fungal
+    diseases. Nothing reaches a bacterium, a virus or a soil-borne wilt."""
+    for target, adv in kb.advisories.items():
+        agent = kb.targets[target].get("agent", "")
+        nf = [h for h in adv.get("homemade", []) if kb.homemade[h["prep"]].get("backing") == "natural_farming"]
+        if "bacterium" in agent or kb.targets[target]["kind"] in ("virus", "deficiency", "disorder") \
+                or target in ("cotton_wilt", "maize_ear_rot"):
+            assert not nf, target
+    fungal = {h["prep"] for h in kb.advisories["rice_blast"]["homemade"]}
+    assert fungal == {"sonthastra", "khatti_lassi"}
+    sucking = {h["prep"] for h in kb.advisories["cotton_whitefly"]["homemade"]}
+    assert {"neemastra", "brahmastra"} <= sucking
+    # per acre, as the protocol gives it
+    agni = next(h for h in advisory.compose(kb, "rice_yellow_stem_borer", "en", 1.0)["homemade"]
+                if h["prep"] == "agniastra")
+    assert "6 to 8 litres in 200 litres" in agni["dose"]
+
+
+def test_the_registered_pink_bollworm_rope_reads_as_dispensers():
+    """PB Rope L is on the bio-insecticide list for cotton pink bollworm: 9875
+    dispensers for 25 ha, 160 an acre. It is tied on the plants, not sprayed."""
+    a = advisory.compose(kb, "cotton_pink_bollworm", "en", 2.0)
+    rope = next(o for o in a["organic"] if o["ingredient"] == "pb_rope_l")
+    assert rope["use"] == "dispenser" and "160 dispensers per acre" in rope["dose"]
+    assert "320 dispensers" in rope["for_field"] and "water" not in rope["dose"]
+    assert ("cotton", "cotton_pink_bollworm") in kb.registered_uses("pb_rope_l")
+
+
+def test_a_pau_step_replaces_the_unsourced_one_it_gives_numbers_for():
+    """One Trichogramma release per pest, the sourced one: two doses for one
+    thing is worse than none."""
+    for target in ("rice_yellow_stem_borer", "rice_white_stem_borer", "rice_leaf_folder", "maize_stem_borer"):
+        tricho = [r for r in kb.advisories[target]["ladder"] if "Trichogramma" in r.get("action", {}).get("en", "")]
+        assert len(tricho) == 1 and tricho[0]["source"].startswith("PAU Ludhiana"), target
 
 
 def test_every_pest_and_disease_gives_an_organic_route_and_a_chemical_answer():

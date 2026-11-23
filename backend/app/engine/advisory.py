@@ -41,6 +41,11 @@ PER_ACRE = {
     "hi": "प्रति एकड़ लगभग {n} {unit}, पानी में मिलाकर समान रूप से छिड़कें।",
     "mr": "एकरी सुमारे {n} {unit}, पाण्यात मिसळून सारखी फवारणी करा.",
 }
+DISPENSER = {
+    "en": "About {n} dispensers per acre, tied on the plants evenly across the whole field.",
+    "hi": "प्रति एकड़ लगभग {n} डिस्पेंसर, पूरे खेत में पौधों पर समान रूप से बाँधें।",
+    "mr": "एकरी सुमारे {n} डिस्पेन्सर, संपूर्ण शेतात झाडांवर सारखे बांधा.",
+}
 FOR_AREA_DRY = {
     "en": "For your {area} acre field: about {qty} {unit}.",
     "hi": "आपके {area} एकड़ खेत के लिए: लगभग {qty} {unit}।",
@@ -78,6 +83,7 @@ UNIT_SHORT = {
     "ml": {"en": "ml", "hi": "मिली", "mr": "मिली"},
     "kg": {"en": "kg", "hi": "किलो", "mr": "किलो"},
     "L": {"en": "litres", "hi": "लीटर", "mr": "लिटर"},
+    "dispensers": {"en": "dispensers", "hi": "डिस्पेंसर", "mr": "डिस्पेन्सर"},
 }
 SEED_TREATMENT = {
     "en": "Seed treatment: {n} {unit} per kg of seed{water}.",
@@ -122,6 +128,8 @@ def compose(kb: KB, target: str, lang: str, area_acres: float | None = None) -> 
             item["action"] = tr(rung["action"], lang)
             if rung.get("source"):
                 item["source"] = rung["source"]
+            if rung.get("backing"):
+                item["backing"] = rung["backing"]  # "recommended": ICAR, a university or the government IPM packages
         else:
             pest = kb.pesticides[rung["ingredient"]]
             item |= {
@@ -204,6 +212,7 @@ def _organic(kb: KB, o: dict, lang: str, area_acres: float | None) -> dict:
         "use": o["use"],
         "timing": tr(o.get("timing"), lang),
         "source": reg.get("source"),
+        "backing": "registered",  # every organic product rests on its CIB&RC row
     }
     if reg.get("waiting_days"):
         item["waiting"] = tr(WAIT, lang).format(days=reg["waiting_days"])
@@ -217,7 +226,10 @@ def _organic(kb: KB, o: dict, lang: str, area_acres: float | None) -> dict:
     elif o.get("per_acre"):
         a = o["per_acre"]
         unit = tr(UNIT_SHORT[a["unit"]], lang)
-        item["dose"] = tr(PER_ACRE, lang).format(n=_fmt(a["amount"]), unit=unit)
+        if o["use"] == "dispenser":
+            item["dose"] = tr(DISPENSER, lang).format(n=_fmt(a["amount"]))
+        else:
+            item["dose"] = tr(PER_ACRE, lang).format(n=_fmt(a["amount"]), unit=unit)
         if area_acres:
             qty = a["amount"] * area_acres
             shown, shown_unit = _big(qty, a["unit"])
@@ -231,11 +243,16 @@ def _organic(kb: KB, o: dict, lang: str, area_acres: float | None) -> dict:
 
 def _homemade(kb: KB, h: dict, lang: str) -> dict:
     prep = kb.homemade[h["prep"]]
-    n = h["per_litre"]["amount"]
-    if h["per_litre"]["unit"] == "g":
-        dose = tr(HOME_KERNEL, lang).format(n=_fmt(n), tank=_fmt(n * 10))
+    if h.get("dose") or prep.get("dose"):
+        # Written out where the source gives it per acre rather than per litre:
+        # the natural-farming preparations, and PAU's neem extract.
+        dose = tr(h.get("dose") or prep["dose"], lang)
     else:
-        dose = tr(HOME_OIL, lang).format(n=_fmt(n), d=_fmt(h.get("detergent_ml_per_litre", 2)), tank=_fmt(n * 10))
+        n = h["per_litre"]["amount"]
+        if h["per_litre"]["unit"] == "g":
+            dose = tr(HOME_KERNEL, lang).format(n=_fmt(n), tank=_fmt(n * 10))
+        else:
+            dose = tr(HOME_OIL, lang).format(n=_fmt(n), d=_fmt(h.get("detergent_ml_per_litre", 2)), tank=_fmt(n * 10))
     return {
         "prep": h["prep"],
         "name": tr(prep["name"], lang),
@@ -244,6 +261,9 @@ def _homemade(kb: KB, h: dict, lang: str) -> dict:
         "recipe": trl(prep["recipe"], lang),
         "source": h["source"],
         "recipe_source": prep.get("recipe_source"),
+        # "recommended" (ICAR, a university, government IPM) or "natural_farming"
+        # (the ICAR natural farming protocol): not a registered product either way.
+        "backing": prep.get("backing", "recommended"),
     }
 
 

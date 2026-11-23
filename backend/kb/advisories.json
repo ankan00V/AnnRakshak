@@ -1,5 +1,5 @@
 {
- "_note": "One advisory per target. Ladder order is cultural -> biological -> chemical and the loader refuses any other order. Chemical rungs name an ingredient from pesticides.json. Every chemical rung is checked against the CIB&RC Major Uses of Pesticides lists (data/verify_doses.py): 'registration' records the row it rests on — crop, pest, formulation per hectare, water per hectare, waiting period — and a rung whose product is not registered for that crop and pest is not here. Doses are per litre of water at the registered water volume; the printed label stays the authority on dose. 'organic' lists the bio-pesticides and neem products registered for that crop and pest in the CIB&RC Major Uses lists for bio-insecticides and bio-fungicides (data/organic_options.py), each with the registration it rests on; a target with none registered has no 'organic' list.. Every chemical rung is checked against the CIB&RC Major Uses of Pesticides lists (data/verify_doses.py): 'registration' records the row it rests on — crop, pest, formulation per hectare, water per hectare, waiting period — and a rung whose product is not registered for that crop and pest is not here. Doses are per litre of water at the registered water volume; the printed label stays the authority on dose.",
+ "_note": "One advisory per target. Ladder order is cultural -> biological -> chemical and the loader refuses any other order. Chemical rungs name an ingredient from pesticides.json. Every chemical rung is checked against the CIB&RC Major Uses of Pesticides lists (data/verify_doses.py): 'registration' records the row it rests on — crop, pest, formulation per hectare, water per hectare, waiting period — and a rung whose product is not registered for that crop and pest is not here. Doses are per litre of water at the registered water volume; the printed label stays the authority on dose. 'organic' lists the bio-pesticides and neem products registered for that crop and pest in the CIB&RC Major Uses lists for bio-insecticides and bio-fungicides (data/organic_options.py), each with the registration it rests on; a target with none registered has no 'organic' list.",
  "rice_blast": {
   "what_to_check": {
    "en": "Check the upper leaves of 10 plants along a diagonal, and the node just below the panicle.",
@@ -151,6 +151,26 @@
      "waiting_days": null
     }
    }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   }
   ]
  },
  "rice_brown_spot": {
@@ -269,6 +289,26 @@
      "water_l_per_ha": null,
      "waiting_days": null
     }
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -534,6 +574,26 @@
      "waiting_days": null
     }
    }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   }
   ]
  },
  "rice_false_smut": {
@@ -581,7 +641,8 @@
      "mr": "पुढील हंगामात बियाणे 52 °C गरम पाण्यात 10 मिनिटे भिजवा, किंवा प्रति किलो बियाण्यास 10 ग्रॅम स्युडोमोनास फ्लुरोसन्स लावा."
     },
     "source": "IRRI Rice Knowledge Bank, False smut; NCIPM & DPPQS, Integrated Pest Management Package for Rice (seed treatment for seed-borne disease)",
-    "added_by": "organic_practices"
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "chemical",
@@ -620,6 +681,26 @@
     "title": "False smut fact sheet",
     "publisher": "IRRI Rice Knowledge Bank",
     "url": "http://www.knowledgebank.irri.org"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -661,7 +742,8 @@
      "mr": "राष्ट्रीय IPM पॅकेजमधील सहनशील वाण: विक्रमार्य, निधी, अमूल्य, दिनेश, लक्ष्मी आणि नलिनी. 3 आठवड्यांपेक्षा जुनी रोपे लावा, शेजाऱ्यांसोबत एकाच वेळी."
     },
     "source": "NCIPM & DPPQS, Integrated Pest Management Package for Rice",
-    "added_by": "organic_practices"
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "biological",
@@ -671,7 +753,8 @@
      "mr": "टुंग्रो पसरवणाऱ्या हिरव्या तुडतुड्याला खाणारे कोळी, मिरिड ढेकूण आणि इतर भक्षक वाचवा: हंगामाच्या सुरुवातीला सर्वव्यापी फवारण्या करू नका."
     },
     "source": "NCIPM & DPPQS, Integrated Pest Management Package for Rice",
-    "added_by": "organic_practices"
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "chemical",
@@ -730,18 +813,35 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Avoid excess nitrogen; drag a rope across the crop to shake the larvae out of the folds.",
-     "hi": "ज़्यादा नाइट्रोजन से बचें; पत्तियों से इल्ली गिराने के लिए फसल पर रस्सी फिराएँ।",
-     "mr": "जास्त नत्र टाळा; गुंडाळीतून अळ्या पाडण्यासाठी पिकावरून दोरी फिरवा."
-    }
+     "en": "Do not over-fertilise with nitrogen: heavily fertilised plots draw the moths to lay their eggs.",
+     "hi": "नाइट्रोजन खाद ज़्यादा न डालें: ज़्यादा खाद वाले खेत पतंगों को अंडे देने के लिए खींचते हैं।",
+     "mr": "नत्र खत जास्त देऊ नका: जास्त खत दिलेली शेते पतंगांना अंडी घालण्यासाठी आकर्षित करतात."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Rice",
+    "added_by": "organic_practices",
+    "backing": "recommended"
+   },
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Before flowering, with water standing in the field, pass a 20–30 metre coir or jute rope across the top of the crop, forwards and then back, to shake the larvae out of the folds.",
+     "hi": "फूल आने से पहले, खेत में पानी भरा रहते हुए, 20–30 मीटर लंबी नारियल या जूट की रस्सी फसल के ऊपर से आगे और फिर पीछे खींचें, ताकि मुड़ी पत्तियों से सूंडियाँ गिर जाएँ।",
+     "mr": "फुलोऱ्यापूर्वी, शेतात पाणी साचलेले असताना, 20–30 मीटर लांब काथ्याचा किंवा तागाचा दोर पिकाच्या वरून पुढे आणि मग मागे ओढा, म्हणजे गुंडाळलेल्या पानांतून अळ्या खाली पडतील."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026",
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "biological",
     "action": {
-     "en": "Release the egg parasitoid Trichogramma chilonis (cards at 50,000 per hectare), weekly for 4–6 weeks.",
-     "hi": "अंड परजीवी ट्राइकोग्रामा किलोनिस (50,000 प्रति हेक्टेयर कार्ड) हर हफ्ते 4–6 हफ्ते छोड़ें।",
-     "mr": "अंडी परोपजीवी ट्रायकोग्रामा चिलोनिस (हेक्टरी 50,000 कार्ड) दर आठवड्याला 4–6 आठवडे सोडा."
-    }
+     "en": "From 30 days after transplanting, staple Trichogramma egg cards: two cards each of T. japonicum and T. chilonis per acre, 5 to 6 times, a week apart. Cut each card into 20 strips and staple them under the leaves at 40 spots across the acre, in the evening.",
+     "hi": "रोपाई के 30 दिन बाद से ट्राइकोग्रामा अंडा कार्ड लगाएँ: प्रति एकड़ टी. जैपोनिकम और टी. चिलोनिस के दो-दो कार्ड, एक-एक हफ्ते के अंतर पर 5 से 6 बार। हर कार्ड को 20 पट्टियों में काटें और शाम को एकड़ भर में 40 जगह पत्तियों के नीचे स्टेपल करें।",
+     "mr": "पुनर्लागवडीनंतर 30 दिवसांपासून ट्रायकोग्रामा अंडी कार्ड लावा: एकरी टी. जॅपोनिकम आणि टी. चिलोनिसचे प्रत्येकी दोन कार्ड, आठवड्याच्या अंतराने 5 ते 6 वेळा. प्रत्येक कार्डाच्या 20 पट्ट्या कापा आणि संध्याकाळी एकरभर 40 ठिकाणी पानांच्या खाली स्टेपल करा."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026 (organic farming chapter)",
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "chemical",
@@ -843,6 +943,26 @@
      "waiting_days": 5
     }
    }
+  ],
+  "homemade": [
+   {
+    "prep": "agniastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "neemastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   }
   ]
  },
  "rice_yellow_stem_borer": {
@@ -878,10 +998,13 @@
    {
     "tier": "biological",
     "action": {
-     "en": "Release Trichogramma japonicum at 50,000 per hectare when moths are seen in traps.",
-     "hi": "ट्रैप में पतंगे दिखें तो ट्राइकोग्रामा जैपोनिकम 50,000 प्रति हेक्टेयर छोड़ें।",
-     "mr": "सापळ्यात पतंग दिसताच ट्रायकोग्रामा जॅपोनिकम हेक्टरी 50,000 सोडा."
-    }
+     "en": "From 30 days after transplanting, staple Trichogramma egg cards: two cards each of T. japonicum and T. chilonis per acre, 5 to 6 times, a week apart. Cut each card into 20 strips and staple them under the leaves at 40 spots across the acre, in the evening.",
+     "hi": "रोपाई के 30 दिन बाद से ट्राइकोग्रामा अंडा कार्ड लगाएँ: प्रति एकड़ टी. जैपोनिकम और टी. चिलोनिस के दो-दो कार्ड, एक-एक हफ्ते के अंतर पर 5 से 6 बार। हर कार्ड को 20 पट्टियों में काटें और शाम को एकड़ भर में 40 जगह पत्तियों के नीचे स्टेपल करें।",
+     "mr": "पुनर्लागवडीनंतर 30 दिवसांपासून ट्रायकोग्रामा अंडी कार्ड लावा: एकरी टी. जॅपोनिकम आणि टी. चिलोनिसचे प्रत्येकी दोन कार्ड, आठवड्याच्या अंतराने 5 ते 6 वेळा. प्रत्येक कार्डाच्या 20 पट्ट्या कापा आणि संध्याकाळी एकरभर 40 ठिकाणी पानांच्या खाली स्टेपल करा."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026 (organic farming chapter)",
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "chemical",
@@ -963,6 +1086,26 @@
      "waiting_days": 5
     }
    }
+  ],
+  "homemade": [
+   {
+    "prep": "agniastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "dashparni_ark",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   }
   ]
  },
  "rice_brown_planthopper": {
@@ -991,6 +1134,17 @@
      "hi": "खेत का पानी 3–4 दिन निकालें और हर 2 मीटर पर गलियारे बनाएँ ताकि रोशनी नीचे पहुँचे।",
      "mr": "शेतातील पाणी 3–4 दिवस काढा व दर 2 मीटरवर पट्टे मोकळे करा म्हणजे उजेड तळापर्यंत पोहोचेल."
     }
+   },
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "From a month after transplanting, tilt a few plants every week and tap their base 2 or 3 times. Act when 5 or more hoppers per hill fall onto the water.",
+     "hi": "रोपाई के एक महीने बाद से, हर हफ्ते कुछ पौधों को थोड़ा झुकाकर उनके निचले हिस्से पर 2-3 बार थपथपाएँ। जब प्रति झुंड 5 या ज़्यादा फुदके पानी पर गिरें, तब उपाय करें।",
+     "mr": "पुनर्लागवडीनंतर एका महिन्यापासून, दर आठवड्याला काही चुडे थोडे झुकवून त्यांच्या बुडख्यावर 2-3 वेळा टॅप करा. प्रति चूड 5 किंवा जास्त तुडतुडे पाण्यावर पडल्यास उपाय करा."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026",
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "biological",
@@ -1129,6 +1283,24 @@
      "mr": "मोजणी प्रति चूड सुमारे 10 तुडतुड्यांपेक्षा कमी असेपर्यंत; चुडांच्या बुडख्यावर फवारा."
     },
     "source": "DPPQS advisory on brown planthopper in rice"
+   },
+   {
+    "prep": "neemastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "brahmastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -1162,7 +1334,8 @@
      "mr": "राष्ट्रीय IPM पॅकेजमधील प्रतिकारक वाण: PEMH 5, विवेक 21, विवेक 23, विवेक 25 आणि प्रताप कांचन 2; कर्नाटक व आंध्र प्रदेशासाठी नित्यश्री."
     },
     "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize",
-    "added_by": "organic_practices"
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "biological",
@@ -1236,6 +1409,26 @@
     "publisher": "CIMMYT",
     "url": "https://maizedoctor.org"
    }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   }
   ]
  },
  "maize_maydis_leaf_blight": {
@@ -1268,7 +1461,8 @@
      "mr": "राष्ट्रीय IPM पॅकेजमधील प्रतिकारक वाण: HM 10, PAU 352, मालवीय हायब्रिड मका 2, PEMH 1, PEMH 5, HQPM 1, HQPM 4, HQPM 5, HQPM 7, शक्तिमान 3, शक्तिमान 4 आणि HSC 1."
     },
     "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize",
-    "added_by": "organic_practices"
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "chemical",
@@ -1308,6 +1502,26 @@
     "publisher": "ICAR-Indian Institute of Maize Research",
     "url": "https://iimr.icar.gov.in"
    }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   }
   ]
  },
  "maize_common_rust": {
@@ -1340,7 +1554,8 @@
      "mr": "राष्ट्रीय IPM पॅकेजमधील प्रतिकारक संकरित वाण: बुलंद, शीतल, HHM 1, HHM 2, HQPM 1 आणि नित्यश्री."
     },
     "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize",
-    "added_by": "organic_practices"
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "chemical",
@@ -1380,6 +1595,26 @@
     "publisher": "CIMMYT",
     "url": "https://maizedoctor.org"
    }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   }
   ]
  },
  "maize_banded_leaf_sheath_blight": {
@@ -1412,7 +1647,8 @@
      "mr": "राष्ट्रीय IPM पॅकेजमधील प्रतिकारक वाण: प्रताप कांचन 2, प्रताप मका 3, प्रताप मका 5, शक्तिमान 1 आणि शक्तिमान 3."
     },
     "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize",
-    "added_by": "organic_practices"
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "biological",
@@ -1430,7 +1666,8 @@
      "mr": "पुढील हंगामात प्रति किलो बियाण्यास 20 ग्रॅम ट्रायकोडर्मा हर्जियानम 2% WP लावा."
     },
     "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize",
-    "added_by": "organic_practices"
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "chemical",
@@ -1473,6 +1710,26 @@
     "publisher": "ICAR-Indian Institute of Maize Research",
     "url": "https://iimr.icar.gov.in"
    }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   }
   ]
  },
  "maize_downy_mildew": {
@@ -1505,7 +1762,8 @@
      "mr": "पाऊस सुरू होण्यापूर्वी पेरणी करा, आणि मका ज्वारीच्या शेजारी किंवा ज्वारीनंतर पेरू नका. राष्ट्रीय IPM पॅकेजमधील प्रतिकारक वाण: PEMH 5, बायो 9636, DMH 1, COH(M) 4, COH(M) 5 आणि नित्यश्री."
     },
     "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize",
-    "added_by": "organic_practices"
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "chemical",
@@ -1581,6 +1839,17 @@
      "hi": "पतंगों के आगमन पर नज़र के लिए फेरोमोन ट्रैप (5 प्रति एकड़) लगाएँ।",
      "mr": "पतंगांच्या आगमनावर लक्ष ठेवण्यासाठी कामगंध सापळे (एकरी 5) लावा."
     }
+   },
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Sow at the recommended time, and do not sow maize at different times in neighbouring fields: it lets the pest move from field to field. Look for the egg masses, covered in hairs and easy to see on the leaves, and destroy them.",
+     "hi": "सिफारिश किए गए समय पर बोएँ, और पास के खेतों में अलग-अलग समय पर मक्का न बोएँ: इससे कीट एक खेत से दूसरे में जाता है। पत्तियों पर बालों से ढके, आसानी से दिखने वाले अंडों के गुच्छे ढूँढकर नष्ट करें।",
+     "mr": "शिफारस केलेल्या वेळी पेरा, आणि शेजारच्या शेतांत वेगवेगळ्या वेळी मका पेरू नका: त्यामुळे कीड एका शेतातून दुसऱ्यात जाते. पानांवर केसांनी झाकलेले, सहज दिसणारे अंड्यांचे पुंजके शोधून नष्ट करा."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026",
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "biological",
@@ -1664,6 +1933,24 @@
      "mr": "लहान अळ्या पानांवर खरवडून खिडकीसारख्या खुणा करत असताना, रोपावस्थेपासून सुरुवातीच्या पोंगा अवस्थेपर्यंत पोंग्यात फवारा."
     },
     "source": "ICAR-IIMR, Identification and management of fall armyworm"
+   },
+   {
+    "prep": "neemastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "dashparni_ark",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -1690,12 +1977,26 @@
     }
    },
    {
+    "tier": "cultural",
+    "action": {
+     "en": "After harvest, plough the field and destroy the stubble, stalks and cobs where the borer larvae spend the winter. While hoeing, pull out and destroy badly bored plants.",
+     "hi": "कटाई के बाद खेत जोतें और ठूंठ, डंठल और भुट्टे नष्ट करें, जिनमें तना छेदक की सूंडियाँ सर्दी बिताती हैं। निराई-गुड़ाई के समय बुरी तरह छेदे गए पौधे उखाड़कर नष्ट करें।",
+     "mr": "काढणीनंतर शेत नांगरा आणि खोडकिडीच्या अळ्या हिवाळा घालवतात ते खुंट, धाटे आणि कणसे नष्ट करा. खुरपणी करताना जास्त पोखरलेली झाडे उपटून नष्ट करा."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026",
+    "added_by": "organic_practices",
+    "backing": "recommended"
+   },
+   {
     "tier": "biological",
     "action": {
-     "en": "Release Trichogramma chilonis cards (about 1 lakh per hectare) from 10 days after sowing.",
-     "hi": "बुवाई के 10 दिन बाद से ट्राइकोग्रामा किलोनिस कार्ड (लगभग 1 लाख प्रति हेक्टेयर) छोड़ें।",
-     "mr": "पेरणीनंतर 10 दिवसांपासून ट्रायकोग्रामा चिलोनिस कार्ड (हेक्टरी सुमारे 1 लाख) सोडा."
-    }
+     "en": "Staple Trichogramma chilonis egg cards twice: 40,000 parasitised eggs per acre on the 10-day-old crop, and again 7 days later. Cut the cards into 40 strips and staple them under the central whorl leaves in the evening. Not on rainy days.",
+     "hi": "ट्राइकोग्रामा चिलोनिस अंडा कार्ड दो बार लगाएँ: 10 दिन की फसल पर प्रति एकड़ 40,000 परजीवित अंडे, और फिर 7 दिन बाद। कार्डों को 40 पट्टियों में काटें और शाम को बीच की पोंगली की पत्तियों के नीचे स्टेपल करें। बारिश वाले दिन नहीं।",
+     "mr": "ट्रायकोग्रामा चिलोनिस अंडी कार्ड दोनदा लावा: 10 दिवसांच्या पिकावर एकरी 40,000 परजीवीग्रस्त अंडी, आणि पुन्हा 7 दिवसांनी. कार्डांच्या 40 पट्ट्या कापा आणि संध्याकाळी मधल्या पोंग्याच्या पानांखाली स्टेपल करा. पावसाच्या दिवशी नाही."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026",
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "chemical",
@@ -1735,6 +2036,26 @@
     "publisher": "ICAR-Indian Institute of Maize Research",
     "url": "https://iimr.icar.gov.in"
    }
+  ],
+  "homemade": [
+   {
+    "prep": "agniastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "dashparni_ark",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   }
   ]
  },
  "cotton_pink_bollworm": {
@@ -1767,10 +2088,13 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Install pheromone traps at 5 per hectare from 45 days after sowing to watch moth numbers.",
-     "hi": "पतंगों की संख्या पर नज़र रखने के लिए बुवाई के 45 दिन बाद से प्रति हेक्टेयर 5 फेरोमोन ट्रैप लगाएँ।",
-     "mr": "पतंगांची संख्या पाहण्यासाठी पेरणीनंतर 45 दिवसांपासून हेक्टरी 5 कामगंध सापळे लावा."
-    }
+     "en": "From the start of flowering, watch moth numbers with a Sticka or Delta trap baited with gossyplure: one trap per hectare, 15 cm above the crop, lure changed every 15 days.",
+     "hi": "फूल आने की शुरुआत से, गॉसिप्ल्योर वाले स्टिका या डेल्टा ट्रैप से पतंगों की संख्या देखें: प्रति हेक्टेयर एक ट्रैप, फसल से 15 सेमी ऊपर, हर 15 दिन में ल्योर बदलें।",
+     "mr": "फुलोऱ्याच्या सुरुवातीपासून, गॉसिप्लूर असलेल्या स्टिका किंवा डेल्टा सापळ्याने पतंगांची संख्या पाहा: हेक्टरी एक सापळा, पिकाच्या 15 सेमी वर, दर 15 दिवसांनी ल्युअर बदला."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026",
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "biological",
@@ -1860,6 +2184,38 @@
      "water_l_per_ha": "500-1000",
      "waiting_days": 5
     }
+   },
+   {
+    "ingredient": "pb_rope_l",
+    "use": "dispenser",
+    "per_acre": {
+     "amount": 160,
+     "unit": "dispensers"
+    },
+    "timing": {
+     "en": "The register gives it for a block of 25 hectares. It confuses the male moths so they cannot find mates, so it works when a whole area of fields uses it, not one small plot.",
+     "hi": "रजिस्टर इसे 25 हेक्टेयर के एक ब्लॉक के लिए देता है। यह नर पतंगों को भ्रमित करता है ताकि वे मादा तक न पहुँचें, इसलिए यह तभी काम करता है जब पूरे इलाके के खेत इसे लगाएँ, किसी एक छोटे खेत में नहीं।",
+     "mr": "नोंदणी ते 25 हेक्टरच्या एका पट्ट्यासाठी देते. ते नर पतंगांना गोंधळात टाकते म्हणजे ते मादीपर्यंत पोहोचत नाहीत, म्हणून संपूर्ण परिसरातील शेतांनी ते लावल्यावरच ते काम करते, एखाद्या लहान शेतात नाही."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Pink bollworm (Pectinophora gossypiella)",
+     "formulation_per_ha": "9875 dispensers for 25 ha (395 per ha)",
+     "water_l_per_ha": null,
+     "waiting_days": null
+    }
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "dashparni_ark",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -1884,6 +2240,17 @@
      "hi": "फँसाऊ फसल के रूप में खेत की मेड़ पर गेंदा या मक्का लगाएँ; पक्षियों के बैठने के लिए ठिकाने लगाएँ (प्रति एकड़ 10)।",
      "mr": "सापळा पीक म्हणून बांधावर झेंडू किंवा मका लावा; पक्ष्यांसाठी बसण्याचे थांबे लावा (एकरी 10)."
     }
+   },
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "From the start of flowering, watch moth numbers with Sleeve or Moth-catch pheromone traps holding at least 2 mg of pheromone: two traps per hectare, 15 cm above the crop, lure changed every 15 days.",
+     "hi": "फूल आने की शुरुआत से, कम से कम 2 मिग्रा फेरोमोन वाले स्लीव या मॉथ-कैच ट्रैप से पतंगों की संख्या देखें: प्रति हेक्टेयर दो ट्रैप, फसल से 15 सेमी ऊपर, हर 15 दिन में ल्योर बदलें।",
+     "mr": "फुलोऱ्याच्या सुरुवातीपासून, किमान 2 मिग्रॅ फेरोमोन असलेल्या स्लीव्ह किंवा मॉथ-कॅच सापळ्यांनी पतंगांची संख्या पाहा: हेक्टरी दोन सापळे, पिकाच्या 15 सेमी वर, दर 15 दिवसांनी ल्युअर बदला."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026",
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "biological",
@@ -2013,6 +2380,17 @@
      "water_l_per_ha": "500-1000",
      "waiting_days": 5
     }
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "dashparni_ark",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -2161,6 +2539,24 @@
      "mr": "पानांच्या खाली किडे दिसताच फवारा, पानांच्या खालच्या बाजूला नीट."
     },
     "source": "APEDA Farmer Connect: IPM with recommended pesticides (Government of India)"
+   },
+   {
+    "prep": "neemastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "brahmastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -2263,6 +2659,24 @@
      "mr": "पानांच्या खाली किडे दिसताच फवारा, पानांच्या खालच्या बाजूला नीट."
     },
     "source": "APEDA Farmer Connect: IPM with recommended pesticides (Government of India)"
+   },
+   {
+    "prep": "neemastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "brahmastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -2373,7 +2787,8 @@
      "mr": "शेताभोवती धैंचा सापळा पीक म्हणून लावा: भुंगे सोयाबीनपासून दूर त्यावर जमतात."
     },
     "source": "NCIPM & DPPQS, Integrated Pest Management Package for Soybean",
-    "added_by": "organic_practices"
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "chemical",
@@ -2428,6 +2843,17 @@
     "title": "Soybean: Package of practices",
     "publisher": "ICAR-Indian Institute of Soybean Research, Indore",
     "url": "https://iisrindore.icar.gov.in"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "dashparni_ark",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -2530,6 +2956,24 @@
      "mr": "अळ्या लहान असतानाच फवारा, पाने खालून खाल्लेली पहिल्यांदा दिसताच."
     },
     "source": "NCIPM & DPPQS, Integrated Pest Management Package for Soybean"
+   },
+   {
+    "prep": "neemastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "dashparni_ark",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -2624,6 +3068,24 @@
      "mr": "तीन फवारण्या: पेरणीनंतर 30, 45 आणि 60 दिवसांनी."
     },
     "source": "NCIPM & DPPQS, Integrated Pest Management Package for Soybean"
+   },
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -2674,6 +3136,26 @@
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
    }
+  ],
+  "homemade": [
+   {
+    "prep": "neemastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "dashparni_ark",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   }
   ]
  },
  "rice_white_stem_borer": {
@@ -2709,10 +3191,13 @@
    {
     "tier": "biological",
     "action": {
-     "en": "Release Trichogramma japonicum at 50,000 per hectare when moths are seen in traps.",
-     "hi": "ट्रैप में पतंगे दिखें तो ट्राइकोग्रामा जैपोनिकम 50,000 प्रति हेक्टेयर छोड़ें।",
-     "mr": "सापळ्यात पतंग दिसताच ट्रायकोग्रामा जॅपोनिकम हेक्टरी 50,000 सोडा."
-    }
+     "en": "From 30 days after transplanting, staple Trichogramma egg cards: two cards each of T. japonicum and T. chilonis per acre, 5 to 6 times, a week apart. Cut each card into 20 strips and staple them under the leaves at 40 spots across the acre, in the evening.",
+     "hi": "रोपाई के 30 दिन बाद से ट्राइकोग्रामा अंडा कार्ड लगाएँ: प्रति एकड़ टी. जैपोनिकम और टी. चिलोनिस के दो-दो कार्ड, एक-एक हफ्ते के अंतर पर 5 से 6 बार। हर कार्ड को 20 पट्टियों में काटें और शाम को एकड़ भर में 40 जगह पत्तियों के नीचे स्टेपल करें।",
+     "mr": "पुनर्लागवडीनंतर 30 दिवसांपासून ट्रायकोग्रामा अंडी कार्ड लावा: एकरी टी. जॅपोनिकम आणि टी. चिलोनिसचे प्रत्येकी दोन कार्ड, आठवड्याच्या अंतराने 5 ते 6 वेळा. प्रत्येक कार्डाच्या 20 पट्ट्या कापा आणि संध्याकाळी एकरभर 40 ठिकाणी पानांच्या खाली स्टेपल करा."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026 (organic farming chapter)",
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "chemical",
@@ -2794,6 +3279,26 @@
      "waiting_days": 5
     }
    }
+  ],
+  "homemade": [
+   {
+    "prep": "agniastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "dashparni_ark",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   }
   ]
  },
  "maize_curvularia_leaf_spot": {
@@ -2826,7 +3331,8 @@
      "mr": "पेरणीपूर्वी 10 ते 15 दिवसांच्या अंतराने दोन-तीन वेळा खोल नांगरट करा, म्हणजे जुन्या पिकाचे अवशेष व तण गाडले जातील; प्रमाणित बियाणे पेरा आणि हलके, पोचट किंवा तुटलेले बी काढून टाका."
     },
     "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize (cultural practices for diseases)",
-    "added_by": "organic_practices"
+    "added_by": "organic_practices",
+    "backing": "recommended"
    }
   ],
   "expert_trigger": {
@@ -2844,6 +3350,26 @@
     "title": "AESA-based IPM Package: Maize",
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -2914,6 +3440,26 @@
     "title": "AESA-based IPM Package: Maize",
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "neemastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "brahmastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -3326,6 +3872,26 @@
     "publisher": "TNAU Agritech Portal",
     "url": "https://agritech.tnau.ac.in"
    }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   }
   ]
  },
  "cotton_aphid": {
@@ -3437,6 +4003,24 @@
      "mr": "पानांच्या खाली किडे दिसताच फवारा, पानांच्या खालच्या बाजूला नीट."
     },
     "source": "APEDA Farmer Connect: IPM with recommended pesticides (Government of India)"
+   },
+   {
+    "prep": "neemastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "brahmastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -3508,6 +4092,26 @@
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
    }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   }
   ]
  },
  "soybean_septoria_brown_spot": {
@@ -3556,6 +4160,26 @@
     "title": "AESA-based IPM Package: Soybean",
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -3611,6 +4235,26 @@
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
    }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   }
   ]
  },
  "maize_ear_rot": {
@@ -3648,7 +4292,8 @@
      "mr": "फुलोऱ्यापासून दाणे भरेपर्यंत पिकाला पाण्याचा ताण पडू देऊ नका, आणि कमी पालाशसोबत जास्त नत्र देऊ नका."
     },
     "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize (cultural practices for diseases)",
-    "added_by": "organic_practices"
+    "added_by": "organic_practices",
+    "backing": "recommended"
    }
   ],
   "expert_trigger": {
@@ -3695,6 +4340,17 @@
      "hi": "अंडों वाली पत्तियों के सिरे काटकर मिट्टी में दबाएँ और मेड़ों की घास साफ़ रखें। पास-पास रोपाई नुकसान सहने में मदद करती है।",
      "mr": "अंडी असलेली पानांची टोके कापून मातीत गाडा आणि बांध गवतमुक्त ठेवा. दाट लागवड नुकसान सहन करण्यास मदत करते."
     }
+   },
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "If the attack starts in the nursery, clip off and destroy the leaf tips of the affected seedlings before transplanting.",
+     "hi": "अगर हमला नर्सरी में शुरू हो, तो रोपाई से पहले प्रभावित पौध की पत्तियों के सिरे काटकर नष्ट करें।",
+     "mr": "प्रादुर्भाव रोपवाटिकेतच सुरू झाल्यास, पुनर्लागवडीपूर्वी बाधित रोपांच्या पानांची टोके कापून नष्ट करा."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026",
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "biological",
@@ -3979,6 +4635,26 @@
     "publisher": "Crop Protection Network (US land-grant universities)",
     "url": "https://cropprotectionnetwork.org/encyclopedia/target-spot-of-soybean"
    }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   }
   ]
  },
  "soybean_cercospora_leaf_blight": {
@@ -4048,6 +4724,26 @@
     "title": "Cercospora leaf blight and purple seed stain of soybean",
     "publisher": "Crop Protection Network (US land-grant universities)",
     "url": "https://cropprotectionnetwork.org/encyclopedia/cercospora-leaf-blight-of-soybean"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },

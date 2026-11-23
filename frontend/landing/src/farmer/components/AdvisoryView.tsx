@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Ban, BadgeCheck, BookOpen, ChevronDown, CookingPot, FlaskConical, Leaf, ListChecks, Phone, PhoneCall, ShieldAlert, Sprout } from 'lucide-react'
+import { Ban, BadgeCheck, BookOpen, ChevronDown, CookingPot, FlaskConical, Leaf, ListChecks, Phone, PhoneCall, ShieldAlert, Sprout, Trees } from 'lucide-react'
 import type { Advisory, HomemadeOption, IcarTech, LadderRung, OrganicOption } from '../../api/types'
 import { ListenButton, Pill } from '../../ui/kit'
 import { useFarmer } from '../FarmerContext'
@@ -13,9 +13,16 @@ const TIER = {
 }
 
 /** The advisory in the order the product promises: what NOT to do first and
- *  loudest, then everything organic — field steps, natural control, registered
- *  organic products and neem made at home — and the chemical last, collapsed
- *  until the farmer asks, or a plain statement that none is registered. */
+ *  loudest, then everything organic, and the chemical last, collapsed until the
+ *  farmer asks, or a plain statement that none is registered.
+ *
+ *  The organic part is four groups, each headed by who stands behind it:
+ *    1. field steps (an ICAR or university step carries a small mark),
+ *    2. products registered by CIB&RC for this crop and problem,
+ *    3. preparations made at home that ICAR, a university or government IPM
+ *       guidance recommends,
+ *    4. preparations from the ICAR natural farming protocol, which are not
+ *       registered pesticides and have no tested dose — said in the heading. */
 export default function AdvisoryView({ advisory }: { advisory: Advisory }) {
   const { t, lang } = useFarmer()
   const [showChem, setShowChem] = useState(false)
@@ -32,9 +39,8 @@ export default function AdvisoryView({ advisory }: { advisory: Advisory }) {
     ...(advisory.organic?.length
       ? [t('organicTitle') + ': ' + advisory.organic.map((o) => `${o.product}. ${o.dose}`).join(' ')]
       : []),
-    ...(advisory.homemade?.length
-      ? [t('homemadeTitle') + ': ' + advisory.homemade.map((h) => `${h.name}. ${h.dose} ${h.timing}`).join(' ')]
-      : []),
+    ...byBacking(advisory.homemade ?? []).flatMap(([key, items]) =>
+      items.length ? [t(key) + ': ' + items.map((h) => `${h.name}. ${h.dose} ${h.timing}`).join(' ')] : []),
     ...(advisory.chemical_none ? [advisory.chemical_none] : []),
     advisory.what_to_check,
   ].join(' ')
@@ -151,6 +157,14 @@ export default function AdvisoryView({ advisory }: { advisory: Advisory }) {
   )
 }
 
+/** Home preparations in two groups, recommended first: [heading key, items]. */
+function byBacking(items: HomemadeOption[]): ['levelRecommended' | 'levelNatural', HomemadeOption[]][] {
+  return [
+    ['levelRecommended', items.filter((h) => h.backing !== 'natural_farming')],
+    ['levelNatural', items.filter((h) => h.backing === 'natural_farming')],
+  ]
+}
+
 function Rung({ rung, n }: { rung: LadderRung; n: number }) {
   const { t } = useFarmer()
   const tier = TIER[rung.tier]
@@ -161,8 +175,13 @@ function Rung({ rung, n }: { rung: LadderRung; n: number }) {
         <Icon className="h-5 w-5" aria-hidden />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[13px] font-semibold text-soil-dark/70">
-          {n}. {t(tier.key)}
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-semibold text-soil-dark/70">
+          <span>{n}. {t(tier.key)}</span>
+          {rung.backing === 'recommended' && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#e3efd9] px-2 py-0.5 text-[11px] font-semibold text-[#2f6a39]">
+              <BadgeCheck className="h-3 w-3" aria-hidden /> {t('chipRecommended')}
+            </span>
+          )}
         </p>
         {rung.tier !== 'chemical' ? (
           <>
@@ -194,13 +213,36 @@ function Rung({ rung, n }: { rung: LadderRung; n: number }) {
   )
 }
 
-const USE_KEY = { spray: 'useSpray', seed: 'useSeed', root_dip: 'useRootDip' } as const
+const USE_KEY = { spray: 'useSpray', seed: 'useSeed', root_dip: 'useRootDip', dispenser: 'useDispenser' } as const
+const KIND_KEY = { 'bio-agent': 'organicBio', botanical: 'organicBotanical', pheromone: 'organicPheromone' } as const
 
-/** The organic products India registers for this problem, between the field
- *  steps and the chemical — or a plain statement that there are none. */
+/** One group of the organic options: who stands behind it, said first. */
+function Group({ icon: Icon, title, sub, children }: {
+  icon: typeof Leaf; title: string; sub: string; children: React.ReactNode
+}) {
+  return (
+    <section className="mt-5 border-t border-[#55631a]/15 pt-4 first:mt-0 first:border-t-0 first:pt-0">
+      <div className="flex items-start gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e2eac0] text-[#55631a]">
+          <Icon className="h-5 w-5" aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h4 className="text-[16px] font-semibold tracking-tight text-[#3d4812]">{title}</h4>
+          <p className="text-[13px] leading-snug text-soil-dark/75">{sub}</p>
+        </div>
+      </div>
+      <div className="mt-3">{children}</div>
+    </section>
+  )
+}
+
+/** Everything organic, in four groups by who stands behind it. A group with
+ *  nothing in it is left out, except registered products: when India
+ *  registers none, that is said, because it is worth knowing. */
 function Organic({ rungs, options, homemade }: { rungs: LadderRung[]; options: OrganicOption[]; homemade: HomemadeOption[] }) {
   const { t } = useFarmer()
   const living = options.some((o) => o.kind === 'bio-agent')
+  const [recommended, natural] = byBacking(homemade).map(([, items]) => items)
   return (
     <div className="mt-5 rounded-[22px] bg-[#f3f6e4] p-4 ring-1 ring-[#55631a]/10 lg:p-5">
       <div className="flex items-start gap-3">
@@ -212,84 +254,88 @@ function Organic({ rungs, options, homemade }: { rungs: LadderRung[]; options: O
           <p className="text-[14px] leading-snug text-soil-dark/75">{t('organicStart')}</p>
         </div>
       </div>
-      <ol className="mt-4 space-y-4 rounded-[18px] bg-white p-4 ring-1 ring-soil-dark/[0.05]">
-        {rungs.map((r, i) => (
-          <Rung key={i} rung={r} n={i + 1} />
-        ))}
-      </ol>
-      <h4 className="mt-5 text-[15px] font-semibold text-[#3d4812]">{t('organicProducts')}</h4>
-      {options.length > 0 ? (
-        <>
-          <p className="text-[13px] leading-snug text-soil-dark/75">{t('organicSub')}</p>
-          <ul className="mt-3 space-y-3">
-            {options.map((o, i) => (
-              <li key={i} className="rounded-[18px] bg-white p-4 ring-1 ring-soil-dark/[0.05]">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <Pill tone="leaf" className="!text-[12px]">{t(USE_KEY[o.use])}</Pill>
-                  <Pill tone="neutral" className="!text-[12px]">{t(o.kind === 'botanical' ? 'organicBotanical' : 'organicBio')}</Pill>
-                </div>
-                <p className="mt-2 text-[15px] font-semibold leading-snug">{o.product}</p>
-                <p className="mt-1 text-[14px] leading-snug">{o.dose}</p>
-                {o.for_field && (
-                  <p className="mt-1.5 rounded-lg bg-cream px-2 py-1.5 text-[13px]">
-                    <span className="font-medium">{t('doseForField')}: </span>
-                    {o.for_field.replace(/^[^:]+:\s*/, '')}
-                  </p>
-                )}
-                {o.timing && <p className="mt-1.5 text-[13px] text-soil-dark/75">{o.timing}</p>}
-                {o.waiting && <p className="mt-1 text-[13px] font-medium text-soil-dark/85">{o.waiting}</p>}
-                <p className="mt-2 flex items-center gap-1.5 text-[12px] text-[#55631a]">
-                  <BadgeCheck className="h-3.5 w-3.5 shrink-0" aria-hidden /> {t('organicRegistered')}
-                </p>
-              </li>
+
+      <div className="mt-4">
+        <Group icon={Sprout} title={t('organicSteps')} sub={t('organicStepsSub')}>
+          <ol className="space-y-4 rounded-[18px] bg-white p-3 ring-1 ring-soil-dark/[0.05] sm:p-4">
+            {rungs.map((r, i) => (
+              <Rung key={i} rung={r} n={i + 1} />
             ))}
-          </ul>
-          {living && <p className="mt-3 text-[13px] leading-snug text-soil-dark/70">{t('organicCare')}</p>}
-        </>
-      ) : (
-        <p className="mt-1 text-[13px] leading-snug text-soil-dark/75">{t('organicNoProduct')}</p>
-      )}
-      {homemade.length > 0 && <Homemade items={homemade} />}
+          </ol>
+        </Group>
+
+        <Group icon={BadgeCheck} title={t('organicProducts')} sub={options.length ? t('organicSub') : t('organicNoProduct')}>
+          {options.length > 0 && (
+            <>
+              <ul className="space-y-3">
+                {options.map((o, i) => (
+                  <li key={i} className="rounded-[18px] bg-white p-4 ring-1 ring-soil-dark/[0.05]">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Pill tone="leaf" className="!text-[12px]">{t(USE_KEY[o.use])}</Pill>
+                      <Pill tone="neutral" className="!text-[12px]">{t(KIND_KEY[o.kind] ?? 'organicBio')}</Pill>
+                    </div>
+                    <p className="mt-2 text-[15px] font-semibold leading-snug">{o.product}</p>
+                    <p className="mt-1 text-[14px] leading-snug">{o.dose}</p>
+                    {o.for_field && (
+                      <p className="mt-1.5 rounded-lg bg-cream px-2 py-1.5 text-[13px]">
+                        <span className="font-medium">{t('doseForField')}: </span>
+                        {o.for_field.replace(/^[^:]+:\s*/, '')}
+                      </p>
+                    )}
+                    {o.timing && <p className="mt-1.5 text-[13px] text-soil-dark/75">{o.timing}</p>}
+                    {o.waiting && <p className="mt-1 text-[13px] font-medium text-soil-dark/85">{o.waiting}</p>}
+                    <p className="mt-2 flex items-center gap-1.5 text-[12px] text-[#55631a]">
+                      <BadgeCheck className="h-3.5 w-3.5 shrink-0" aria-hidden /> {t('organicRegistered')}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+              {living && <p className="mt-3 text-[13px] leading-snug text-soil-dark/70">{t('organicCare')}</p>}
+            </>
+          )}
+        </Group>
+
+        {recommended.length > 0 && (
+          <Group icon={CookingPot} title={t('levelRecommended')} sub={t('homemadeSub')}>
+            <HomemadeList items={recommended} />
+          </Group>
+        )}
+
+        {natural.length > 0 && (
+          <Group icon={Trees} title={t('levelNatural')} sub={t('levelNaturalSub')}>
+            <HomemadeList items={natural} />
+          </Group>
+        )}
+      </div>
     </div>
   )
 }
 
-/** Neem preparations the farmer makes at home. Not registered products, so
- *  no label and no waiting period: the strength, when to spray, how to make
- *  it, and the government source that recommends it for this problem. */
-function Homemade({ items }: { items: HomemadeOption[] }) {
+/** Preparations made at home: not registered products, so no label and no
+ *  waiting period — the strength, when to spray, how to make it, and the
+ *  source it comes from. */
+function HomemadeList({ items }: { items: HomemadeOption[] }) {
   const { t } = useFarmer()
   return (
-    <div className="mt-5 border-t border-[#55631a]/15 pt-4">
-      <div className="flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e2eac0] text-[#55631a]">
-          <CookingPot className="h-5 w-5" aria-hidden />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h4 className="text-[16px] font-semibold tracking-tight text-[#3d4812]">{t('homemadeTitle')}</h4>
-          <p className="text-[13px] leading-snug text-soil-dark/75">{t('homemadeSub')}</p>
-        </div>
-      </div>
-      <ul className="mt-3 space-y-3">
-        {items.map((h, i) => (
-          <li key={i} className="rounded-[18px] bg-white p-4 ring-1 ring-soil-dark/[0.05]">
-            <p className="text-[15px] font-semibold leading-snug">{h.name}</p>
-            <p className="mt-1 text-[14px] leading-snug">{h.dose}</p>
-            <p className="mt-1.5 text-[13px] text-soil-dark/75">{h.timing}</p>
-            <details className="group mt-2.5 rounded-xl bg-[#f6f8ef] px-3 py-2">
-              <summary className="flex min-h-[36px] cursor-pointer list-none items-center justify-between text-[14px] font-medium text-[#3d4812]">
-                {t('homemadeRecipe')}
-                <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden />
-              </summary>
-              <ol className="mt-1 list-decimal space-y-1 pb-1 pl-5 text-[13px] leading-snug">
-                {h.recipe.map((step, j) => <li key={j}>{step}</li>)}
-              </ol>
-            </details>
-            <p className="mt-2 text-[12px] text-soil-dark/65">{t('homemadeSource')}: {h.source}</p>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <ul className="space-y-3">
+      {items.map((h, i) => (
+        <li key={i} className="rounded-[18px] bg-white p-4 ring-1 ring-soil-dark/[0.05]">
+          <p className="text-[15px] font-semibold leading-snug">{h.name}</p>
+          <p className="mt-1 text-[14px] leading-snug">{h.dose}</p>
+          <p className="mt-1.5 text-[13px] text-soil-dark/75">{h.timing}</p>
+          <details className="group mt-2.5 rounded-xl bg-[#f6f8ef] px-3 py-2">
+            <summary className="flex min-h-[36px] cursor-pointer list-none items-center justify-between text-[14px] font-medium text-[#3d4812]">
+              {t('homemadeRecipe')}
+              <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden />
+            </summary>
+            <ol className="mt-1 list-decimal space-y-1 pb-1 pl-5 text-[13px] leading-snug">
+              {h.recipe.map((step, j) => <li key={j}>{step}</li>)}
+            </ol>
+          </details>
+          <p className="mt-2 text-[12px] text-soil-dark/65">{t('homemadeSource')}: {h.source}</p>
+        </li>
+      ))}
+    </ul>
   )
 }
 

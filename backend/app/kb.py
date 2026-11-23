@@ -283,6 +283,8 @@ def validate(kb: KB) -> list[str]:
         if order and order[0] == TIER_ORDER["chemical"]:
             errors.append(f"advisory {tid}: ladder leads with a chemical")
         for r in ladder:
+            if r.get("backing") not in (None, "recommended"):
+                errors.append(f"advisory {tid}: a ladder step has an unknown backing")
             if r.get("tier") == "chemical":
                 ing = r.get("ingredient")
                 if ing not in kb.pesticides:
@@ -299,7 +301,7 @@ def validate(kb: KB) -> list[str]:
                 errors.append(f"advisory {tid}: organic option {ing} is not an organic product")
             if not (o.get("registration") or {}).get("source", "").startswith("CIB&RC"):
                 errors.append(f"advisory {tid}: organic option {ing} has no registration")
-            if o.get("use") not in ("spray", "seed", "root_dip"):
+            if o.get("use") not in ("spray", "seed", "root_dip", "dispenser"):
                 errors.append(f"advisory {tid}: organic option {ing} has an unknown use")
             if not (o.get("dose_per_litre") or o.get("per_acre") or o.get("per_kg_seed")):
                 errors.append(f"advisory {tid}: organic option {ing} has no dose")
@@ -307,8 +309,11 @@ def validate(kb: KB) -> list[str]:
             prep = h.get("prep")
             if prep not in kb.homemade:
                 errors.append(f"advisory {tid}: homemade option {prep} is not a known preparation")
-            if not (h.get("per_litre") or {}).get("amount"):
+            known = kb.homemade.get(prep) or {}
+            if not ((h.get("per_litre") or {}).get("amount") or h.get("dose") or known.get("dose")):
                 errors.append(f"advisory {tid}: homemade option {prep} has no strength")
+            if known.get("backing", "recommended") not in ("recommended", "natural_farming"):
+                errors.append(f"advisory {tid}: homemade option {prep} has an unknown backing")
             if not h.get("source"):
                 errors.append(f"advisory {tid}: homemade option {prep} has no source")
             if any(not (h.get("timing") or {}).get(lang) for lang in ("en", "hi", "mr")):

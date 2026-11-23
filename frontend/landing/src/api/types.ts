@@ -88,6 +88,9 @@ export interface LadderRung {
   use?: 'spray' | 'seed'
   /** A field step or natural control: where the advice comes from. */
   source?: string
+  /** Set when ICAR, an agricultural university or the government IPM packages
+   *  recommend this step. */
+  backing?: 'recommended'
 }
 
 /** A registered bio-pesticide or neem product for this problem, offered
@@ -95,17 +98,20 @@ export interface LadderRung {
 export interface OrganicOption {
   ingredient: string
   product: string
-  kind: 'bio-agent' | 'botanical'
-  use: 'spray' | 'seed' | 'root_dip'
+  kind: 'bio-agent' | 'botanical' | 'pheromone'
+  use: 'spray' | 'seed' | 'root_dip' | 'dispenser'
   dose: string
   timing?: string
   waiting?: string
   for_field?: string
   quantity?: { amount: number; unit: string; water_l: number | null }
   source?: string
+  backing?: 'registered'
 }
 
-/** A neem preparation made at home, where a government IPM source names it. */
+/** A preparation made at home. Either recommended by ICAR, an agricultural
+ *  university or government IPM guidance, or from the ICAR natural farming
+ *  protocol; never a registered product. */
 export interface HomemadeOption {
   prep: string
   name: string
@@ -114,6 +120,7 @@ export interface HomemadeOption {
   recipe: string[]
   source: string
   recipe_source?: string | null
+  backing: 'recommended' | 'natural_farming'
 }
 
 export interface Citation {

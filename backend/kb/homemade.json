@@ -28,7 +28,8 @@
     "ते त्याच दिवशी वापरा, आणि दुपारी 3:30 नंतर फवारा."
    ]
   },
-  "recipe_source": "TNAU Agritech, Neem seed kernel extract (Vikaspedia)"
+  "recipe_source": "TNAU Agritech, Neem seed kernel extract (Vikaspedia)",
+  "backing": "recommended"
  },
  "neem_oil": {
   "name": {
@@ -53,6 +54,240 @@
     "ते त्याच दिवशी वापरा."
    ]
   },
-  "recipe_source": "DPPQS advisory on brown planthopper in rice"
+  "recipe_source": "DPPQS advisory on brown planthopper in rice",
+  "backing": "recommended"
+ },
+ "pau_neem_extract": {
+  "name": {
+   "en": "PAU homemade neem extract",
+   "hi": "पीएयू घरेलू नीम अर्क",
+   "mr": "पीएयू घरगुती कडुनिंब अर्क"
+  },
+  "recipe": {
+   "en": [
+    "Take 4 kg of the tips of neem shoots: leaves, green twigs and fruits.",
+    "Boil them in 10 litres of water for 30 minutes.",
+    "Filter through a muslin cloth and use the liquid at the dose given."
+   ],
+   "hi": [
+    "नीम की टहनियों के 4 किलो सिरे लें: पत्तियाँ, हरी टहनियाँ और फल।",
+    "इन्हें 10 लीटर पानी में 30 मिनट उबालें।",
+    "मलमल के कपड़े से छान लें और बताई गई मात्रा में इस्तेमाल करें।"
+   ],
+   "mr": [
+    "कडुनिंबाच्या फांद्यांची 4 किलो टोके घ्या: पाने, हिरव्या फांद्या आणि फळे.",
+    "ती 10 लिटर पाण्यात 30 मिनिटे उकळा.",
+    "मलमलच्या कापडाने गाळून घ्या आणि दिलेल्या प्रमाणात वापरा."
+   ]
+  },
+  "recipe_source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026 (cotton chapter)",
+  "backing": "recommended"
+ },
+ "agniastra": {
+  "name": {
+   "en": "Agniastra",
+   "hi": "अग्निअस्त्र",
+   "mr": "अग्निअस्त्र"
+  },
+  "recipe": {
+   "en": [
+    "In a pot, take 20 litres of desi cow urine.",
+    "Add 500 g of crushed tobacco, 500 g of green chilli, 250 g of garlic and 5 kg of crushed neem leaves. Stir well.",
+    "Boil it, let it cool, and leave it to ferment for 48 hours.",
+    "Filter through a cloth. Use it within 3 months.",
+    "Tobacco is poisonous: wear gloves, keep it away from children and animals, and wash your hands after."
+   ],
+   "hi": [
+    "एक बर्तन में 20 लीटर देसी गाय का मूत्र लें।",
+    "इसमें 500 ग्राम कुचला हुआ तंबाकू, 500 ग्राम हरी मिर्च, 250 ग्राम लहसुन और 5 किलो कुटी हुई नीम की पत्तियाँ डालें। अच्छी तरह हिलाएँ।",
+    "इसे उबालें, ठंडा होने दें, और 48 घंटे किण्वन के लिए रख दें।",
+    "कपड़े से छान लें। 3 महीने के अंदर इस्तेमाल करें।",
+    "तंबाकू ज़हरीला है: दस्ताने पहनें, बच्चों और पशुओं से दूर रखें, और बाद में हाथ धो लें।"
+   ],
+   "mr": [
+    "एका भांड्यात 20 लिटर देशी गाईचे गोमूत्र घ्या.",
+    "त्यात 500 ग्रॅम ठेचलेली तंबाखू, 500 ग्रॅम हिरवी मिरची, 250 ग्रॅम लसूण आणि 5 किलो ठेचलेली कडुनिंबाची पाने घाला. चांगले ढवळा.",
+    "ते उकळा, थंड होऊ द्या, आणि 48 तास आंबवण्यासाठी ठेवा.",
+    "कापडाने गाळून घ्या. 3 महिन्यांच्या आत वापरा.",
+    "तंबाखू विषारी आहे: हातमोजे घाला, मुले आणि जनावरांपासून दूर ठेवा, आणि नंतर हात धुवा."
+   ]
+  },
+  "dose": {
+   "en": "6 to 8 litres in 200 litres of water, for one acre.",
+   "hi": "एक एकड़ के लिए 200 लीटर पानी में 6 से 8 लीटर।",
+   "mr": "एका एकरासाठी 200 लिटर पाण्यात 6 ते 8 लिटर."
+  },
+  "recipe_source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)",
+  "backing": "natural_farming"
+ },
+ "brahmastra": {
+  "name": {
+   "en": "Brahmastra",
+   "hi": "ब्रह्मास्त्र",
+   "mr": "ब्रह्मास्त्र"
+  },
+  "recipe": {
+   "en": [
+    "Crush 2 kg each of neem, karanj, custard apple (sitaphal), castor and datura leaves into a paste.",
+    "Add the paste to 10 litres of desi cow urine and boil it until it froths.",
+    "Filter it, then leave it in the shade for 48 hours to ferment, stirring twice a day.",
+    "Use it within one month.",
+    "Datura is poisonous: wear gloves, keep it away from children and animals, and wash your hands after."
+   ],
+   "hi": [
+    "नीम, करंज, सीताफल, अरंडी और धतूरे की 2-2 किलो पत्तियाँ कूटकर चटनी बना लें।",
+    "इस चटनी को 10 लीटर देसी गाय के मूत्र में डालें और झाग आने तक उबालें।",
+    "छान लें, फिर दिन में दो बार हिलाते हुए 48 घंटे छाया में किण्वन के लिए रखें।",
+    "एक महीने के अंदर इस्तेमाल करें।",
+    "धतूरा ज़हरीला है: दस्ताने पहनें, बच्चों और पशुओं से दूर रखें, और बाद में हाथ धो लें।"
+   ],
+   "mr": [
+    "कडुनिंब, करंज, सीताफळ, एरंड आणि धोत्र्याची प्रत्येकी 2 किलो पाने ठेचून चटणी करा.",
+    "ही चटणी 10 लिटर देशी गाईच्या गोमूत्रात घाला आणि फेस येईपर्यंत उकळा.",
+    "गाळून घ्या, मग दिवसातून दोनदा ढवळत 48 तास सावलीत आंबवण्यासाठी ठेवा.",
+    "एका महिन्याच्या आत वापरा.",
+    "धोतरा विषारी आहे: हातमोजे घाला, मुले आणि जनावरांपासून दूर ठेवा, आणि नंतर हात धुवा."
+   ]
+  },
+  "dose": {
+   "en": "6 to 8 litres in 200 litres of water, for one acre.",
+   "hi": "एक एकड़ के लिए 200 लीटर पानी में 6 से 8 लीटर।",
+   "mr": "एका एकरासाठी 200 लिटर पाण्यात 6 ते 8 लिटर."
+  },
+  "recipe_source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)",
+  "backing": "natural_farming"
+ },
+ "neemastra": {
+  "name": {
+   "en": "Neemastra",
+   "hi": "नीमास्त्र",
+   "mr": "निमास्त्र"
+  },
+  "recipe": {
+   "en": [
+    "Crush 5 kg of neem leaves into a paste.",
+    "In 100 litres of water, mix the paste with 5 litres of desi cow urine and 1 kg of fresh cow dung.",
+    "Leave it to ferment for 2 to 4 days, stirring twice a day.",
+    "Filter through a cloth."
+   ],
+   "hi": [
+    "5 किलो नीम की पत्तियाँ कूटकर चटनी बना लें।",
+    "100 लीटर पानी में यह चटनी, 5 लीटर देसी गाय का मूत्र और 1 किलो ताज़ा गोबर मिलाएँ।",
+    "दिन में दो बार हिलाते हुए 2 से 4 दिन किण्वन के लिए रखें।",
+    "कपड़े से छान लें।"
+   ],
+   "mr": [
+    "5 किलो कडुनिंबाची पाने ठेचून चटणी करा.",
+    "100 लिटर पाण्यात ही चटणी, 5 लिटर देशी गाईचे गोमूत्र आणि 1 किलो ताजे शेण मिसळा.",
+    "दिवसातून दोनदा ढवळत 2 ते 4 दिवस आंबवण्यासाठी ठेवा.",
+    "कापडाने गाळून घ्या."
+   ]
+  },
+  "dose": {
+   "en": "The whole 100 litres is enough for one acre: spray it as it is, without adding water.",
+   "hi": "पूरा 100 लीटर एक एकड़ के लिए काफ़ी है: इसे बिना और पानी मिलाए वैसे ही छिड़कें।",
+   "mr": "संपूर्ण 100 लिटर एका एकरासाठी पुरेसे आहे: त्यात आणखी पाणी न मिसळता तसेच फवारा."
+  },
+  "recipe_source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)",
+  "backing": "natural_farming"
+ },
+ "dashparni_ark": {
+  "name": {
+   "en": "Dashparni ark (ten-leaf extract)",
+   "hi": "दशपर्णी अर्क",
+   "mr": "दशपर्णी अर्क"
+  },
+  "recipe": {
+   "en": [
+    "In 200 litres of water, mix 20 litres of desi cow urine and 2 kg of desi cow dung. Leave it for 2 hours.",
+    "Mix in 500 g of turmeric, 500 g of ginger paste and 10 g of asafoetida (hing). Keep it in the shade for 24 hours.",
+    "Stir, then mix in 200 g of dry ginger powder, 1 kg of tobacco powder, 1 kg of hot green chilli paste and 1 kg of desi garlic paste. Leave it for 24 hours.",
+    "Crush 2 kg each of the leaves of ten plants, such as neem, karanj, castor, custard apple, bael, marigold, tulsi, datura, mango and aak, and press them into the mixture.",
+    "Cover it with a gunny bag and leave it for 30 to 40 days, stirring for 2 to 3 minutes every morning and evening. Then filter.",
+    "Tobacco, datura and aak are poisonous: wear gloves, keep them away from children and animals, and wash your hands after."
+   ],
+   "hi": [
+    "200 लीटर पानी में 20 लीटर देसी गाय का मूत्र और 2 किलो देसी गोबर मिलाएँ। 2 घंटे रखें।",
+    "इसमें 500 ग्राम हल्दी, 500 ग्राम अदरक की चटनी और 10 ग्राम हींग मिलाएँ। 24 घंटे छाया में रखें।",
+    "हिलाएँ, फिर 200 ग्राम सोंठ पाउडर, 1 किलो तंबाकू पाउडर, 1 किलो तीखी हरी मिर्च की चटनी और 1 किलो देसी लहसुन की चटनी मिलाएँ। 24 घंटे रखें।",
+    "दस पौधों की 2-2 किलो पत्तियाँ, जैसे नीम, करंज, अरंडी, सीताफल, बेल, गेंदा, तुलसी, धतूरा, आम और आक, कूटकर इस मिश्रण में दबा दें।",
+    "बोरी से ढककर 30 से 40 दिन रखें, हर सुबह-शाम 2-3 मिनट हिलाते रहें। फिर छान लें।",
+    "तंबाकू, धतूरा और आक ज़हरीले हैं: दस्ताने पहनें, बच्चों और पशुओं से दूर रखें, और बाद में हाथ धो लें।"
+   ],
+   "mr": [
+    "200 लिटर पाण्यात 20 लिटर देशी गाईचे गोमूत्र आणि 2 किलो देशी शेण मिसळा. 2 तास ठेवा.",
+    "त्यात 500 ग्रॅम हळद, 500 ग्रॅम आल्याची चटणी आणि 10 ग्रॅम हिंग मिसळा. 24 तास सावलीत ठेवा.",
+    "ढवळा, मग 200 ग्रॅम सुंठ पूड, 1 किलो तंबाखू पूड, 1 किलो तिखट हिरव्या मिरचीची चटणी आणि 1 किलो देशी लसणाची चटणी मिसळा. 24 तास ठेवा.",
+    "दहा वनस्पतींची प्रत्येकी 2 किलो पाने, जसे कडुनिंब, करंज, एरंड, सीताफळ, बेल, झेंडू, तुळस, धोतरा, आंबा आणि रुई, ठेचून या मिश्रणात दाबून घाला.",
+    "पोत्याने झाकून 30 ते 40 दिवस ठेवा, रोज सकाळ-संध्याकाळ 2-3 मिनिटे ढवळत राहा. मग गाळून घ्या.",
+    "तंबाखू, धोतरा आणि रुई विषारी आहेत: हातमोजे घाला, मुले आणि जनावरांपासून दूर ठेवा, आणि नंतर हात धुवा."
+   ]
+  },
+  "dose": {
+   "en": "6 to 8 litres in 200 litres of water, for one acre.",
+   "hi": "एक एकड़ के लिए 200 लीटर पानी में 6 से 8 लीटर।",
+   "mr": "एका एकरासाठी 200 लिटर पाण्यात 6 ते 8 लिटर."
+  },
+  "recipe_source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)",
+  "backing": "natural_farming"
+ },
+ "sonthastra": {
+  "name": {
+   "en": "Sonthastra (dry ginger and milk)",
+   "hi": "सोंठास्त्र (सोंठ और दूध)",
+   "mr": "सुंठास्त्र (सुंठ आणि दूध)"
+  },
+  "recipe": {
+   "en": [
+    "Grind 200 g of dry ginger (sonth) to a powder. Boil it in 2 litres of water until 1 litre is left, then let it cool.",
+    "Boil 5 litres of desi cow's milk once and let it cool. Take off the cream.",
+    "Strain the ginger water and the milk through a cloth."
+   ],
+   "hi": [
+    "200 ग्राम सोंठ पीसकर पाउडर बना लें। इसे 2 लीटर पानी में तब तक उबालें जब तक 1 लीटर न बचे, फिर ठंडा होने दें।",
+    "5 लीटर देसी गाय का दूध एक बार उबालकर ठंडा करें। मलाई निकाल लें।",
+    "सोंठ का पानी और दूध कपड़े से छान लें।"
+   ],
+   "mr": [
+    "200 ग्रॅम सुंठ दळून पूड करा. ती 2 लिटर पाण्यात 1 लिटर उरेपर्यंत उकळा, मग थंड होऊ द्या.",
+    "5 लिटर देशी गाईचे दूध एकदा उकळून थंड करा. साय काढून घ्या.",
+    "सुंठेचे पाणी आणि दूध कापडाने गाळून घ्या."
+   ]
+  },
+  "dose": {
+   "en": "Mix it all into 200 litres of water and spray one acre.",
+   "hi": "यह सब 200 लीटर पानी में मिलाकर एक एकड़ में छिड़कें।",
+   "mr": "हे सर्व 200 लिटर पाण्यात मिसळून एक एकर फवारा."
+  },
+  "recipe_source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)",
+  "backing": "natural_farming"
+ },
+ "khatti_lassi": {
+  "name": {
+   "en": "Sour buttermilk spray (khatti lassi)",
+   "hi": "खट्टी लस्सी (छाछ) का छिड़काव",
+   "mr": "आंबट ताकाची फवारणी"
+  },
+  "recipe": {
+   "en": [
+    "Take 5 litres of sour buttermilk, 3 to 5 days old.",
+    "Keep a small piece of copper dipped in it for those 3 to 5 days."
+   ],
+   "hi": [
+    "5 लीटर खट्टी छाछ लें, 3 से 5 दिन पुरानी।",
+    "इन 3 से 5 दिनों में इसमें तांबे का एक छोटा टुकड़ा डुबोकर रखें।"
+   ],
+   "mr": [
+    "5 लिटर आंबट ताक घ्या, 3 ते 5 दिवस जुने.",
+    "त्या 3 ते 5 दिवसांत त्यात तांब्याचा एक छोटा तुकडा बुडवून ठेवा."
+   ]
+  },
+  "dose": {
+   "en": "Mix the 5 litres of buttermilk into 100 litres of water, stir in 50 g of turmeric powder, and spray one acre.",
+   "hi": "5 लीटर छाछ को 100 लीटर पानी में मिलाएँ, 50 ग्राम हल्दी पाउडर घोलें, और एक एकड़ में छिड़कें।",
+   "mr": "5 लिटर ताक 100 लिटर पाण्यात मिसळा, 50 ग्रॅम हळद पूड विरघळवा, आणि एक एकर फवारा."
+  },
+  "recipe_source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)",
+  "backing": "natural_farming"
  }
 }

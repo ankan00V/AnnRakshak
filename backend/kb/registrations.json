@@ -971,6 +971,17 @@
     "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
     "line": 272
    }
+  ],
+  "pb_rope_l": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_pink_bollworm"
+    ],
+    "register_says": "Cotton: Pink bollworm (Pectinophora gossypiella)",
+    "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+    "line": 510
+   }
   ]
  }
 }

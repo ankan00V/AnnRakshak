@@ -17,6 +17,22 @@ that problem, and each step carries its source.
       beetle, conservation of natural enemies.
   IRRI Rice Knowledge Bank, False smut: alternate wetting and drying, moderate
       nitrogen, field sanitation, hot-water seed treatment at 52 °C for 10 min.
+  PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026 (raw copy
+      in data/raw/organic/pp_kharif.pdf): Trichogramma cards for rice stem
+      borers and leaf folder (organic farming chapter) and for maize borer, the
+      rope for leaf folder, tapping the plants to count planthoppers, clipping
+      hispa-infested seedling tips, borer-stubble destruction in maize, timely
+      and even sowing against fall armyworm, and the pheromone traps for pink
+      and American bollworm.
+
+Each step says who stands behind it (`backing`): "recommended" when the source
+is ICAR, an agricultural university or the government IPM packages ICAR's NCIPM
+writes with DPPQS. IRRI is none of these, so its steps carry no level.
+
+Where a PAU step gives numbers for something a hand-written step already said
+without a source (a Trichogramma release, a pheromone trap), the hand-written
+step is taken out (SUPERSEDED) so the farmer does not read two doses for one
+thing.
 
 Re-runnable: the steps it added before are taken out and written again.
 
@@ -35,6 +51,26 @@ RICE = "NCIPM & DPPQS, Integrated Pest Management Package for Rice"
 MAIZE = "NCIPM & DPPQS, Integrated Pest Management Package for Maize"
 SOY = "NCIPM & DPPQS, Integrated Pest Management Package for Soybean"
 IRRI = "IRRI Rice Knowledge Bank, False smut"
+PAU = "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026"
+PAU_ORGANIC = f"{PAU} (organic farming chapter)"
+
+TRICHO_RICE = {
+    "en": "From 30 days after transplanting, staple Trichogramma egg cards: two cards each of T. japonicum and T. chilonis per acre, 5 to 6 times, a week apart. Cut each card into 20 strips and staple them under the leaves at 40 spots across the acre, in the evening.",
+    "hi": "रोपाई के 30 दिन बाद से ट्राइकोग्रामा अंडा कार्ड लगाएँ: प्रति एकड़ टी. जैपोनिकम और टी. चिलोनिस के दो-दो कार्ड, एक-एक हफ्ते के अंतर पर 5 से 6 बार। हर कार्ड को 20 पट्टियों में काटें और शाम को एकड़ भर में 40 जगह पत्तियों के नीचे स्टेपल करें।",
+    "mr": "पुनर्लागवडीनंतर 30 दिवसांपासून ट्रायकोग्रामा अंडी कार्ड लावा: एकरी टी. जॅपोनिकम आणि टी. चिलोनिसचे प्रत्येकी दोन कार्ड, आठवड्याच्या अंतराने 5 ते 6 वेळा. प्रत्येक कार्डाच्या 20 पट्ट्या कापा आणि संध्याकाळी एकरभर 40 ठिकाणी पानांच्या खाली स्टेपल करा.",
+}
+
+# Hand-written steps a sourced step below replaces, by their English text.
+SUPERSEDED = {
+    "rice_yellow_stem_borer": ["Release Trichogramma japonicum at 50,000 per hectare when moths are seen in traps."],
+    "rice_white_stem_borer": ["Release Trichogramma japonicum at 50,000 per hectare when moths are seen in traps."],
+    "rice_leaf_folder": [
+        "Release the egg parasitoid Trichogramma chilonis (cards at 50,000 per hectare), weekly for 4–6 weeks.",
+        "Avoid excess nitrogen; drag a rope across the crop to shake the larvae out of the folds.",
+    ],
+    "maize_stem_borer": ["Release Trichogramma chilonis cards (about 1 lakh per hectare) from 10 days after sowing."],
+    "cotton_pink_bollworm": ["Install pheromone traps at 5 per hectare from 45 days after sowing to watch moth numbers."],
+}
 
 STEPS: dict[str, list[tuple[str, dict, str]]] = {
     "rice_false_smut": [
@@ -115,6 +151,68 @@ STEPS: dict[str, list[tuple[str, dict, str]]] = {
             "mr": "फुलोऱ्यापासून दाणे भरेपर्यंत पिकाला पाण्याचा ताण पडू देऊ नका, आणि कमी पालाशसोबत जास्त नत्र देऊ नका.",
         }, f"{MAIZE} (cultural practices for diseases)"),
     ],
+    "rice_yellow_stem_borer": [("biological", TRICHO_RICE, PAU_ORGANIC)],
+    "rice_white_stem_borer": [("biological", TRICHO_RICE, PAU_ORGANIC)],
+    "rice_leaf_folder": [
+        ("cultural", {
+            "en": "Do not over-fertilise with nitrogen: heavily fertilised plots draw the moths to lay their eggs.",
+            "hi": "नाइट्रोजन खाद ज़्यादा न डालें: ज़्यादा खाद वाले खेत पतंगों को अंडे देने के लिए खींचते हैं।",
+            "mr": "नत्र खत जास्त देऊ नका: जास्त खत दिलेली शेते पतंगांना अंडी घालण्यासाठी आकर्षित करतात.",
+        }, RICE),
+        ("cultural", {
+            "en": "Before flowering, with water standing in the field, pass a 20–30 metre coir or jute rope across the top of the crop, forwards and then back, to shake the larvae out of the folds.",
+            "hi": "फूल आने से पहले, खेत में पानी भरा रहते हुए, 20–30 मीटर लंबी नारियल या जूट की रस्सी फसल के ऊपर से आगे और फिर पीछे खींचें, ताकि मुड़ी पत्तियों से सूंडियाँ गिर जाएँ।",
+            "mr": "फुलोऱ्यापूर्वी, शेतात पाणी साचलेले असताना, 20–30 मीटर लांब काथ्याचा किंवा तागाचा दोर पिकाच्या वरून पुढे आणि मग मागे ओढा, म्हणजे गुंडाळलेल्या पानांतून अळ्या खाली पडतील.",
+        }, PAU),
+        ("biological", TRICHO_RICE, PAU_ORGANIC),
+    ],
+    "rice_brown_planthopper": [
+        ("cultural", {
+            "en": "From a month after transplanting, tilt a few plants every week and tap their base 2 or 3 times. Act when 5 or more hoppers per hill fall onto the water.",
+            "hi": "रोपाई के एक महीने बाद से, हर हफ्ते कुछ पौधों को थोड़ा झुकाकर उनके निचले हिस्से पर 2-3 बार थपथपाएँ। जब प्रति झुंड 5 या ज़्यादा फुदके पानी पर गिरें, तब उपाय करें।",
+            "mr": "पुनर्लागवडीनंतर एका महिन्यापासून, दर आठवड्याला काही चुडे थोडे झुकवून त्यांच्या बुडख्यावर 2-3 वेळा टॅप करा. प्रति चूड 5 किंवा जास्त तुडतुडे पाण्यावर पडल्यास उपाय करा.",
+        }, PAU),
+    ],
+    "rice_hispa": [
+        ("cultural", {
+            "en": "If the attack starts in the nursery, clip off and destroy the leaf tips of the affected seedlings before transplanting.",
+            "hi": "अगर हमला नर्सरी में शुरू हो, तो रोपाई से पहले प्रभावित पौध की पत्तियों के सिरे काटकर नष्ट करें।",
+            "mr": "प्रादुर्भाव रोपवाटिकेतच सुरू झाल्यास, पुनर्लागवडीपूर्वी बाधित रोपांच्या पानांची टोके कापून नष्ट करा.",
+        }, PAU),
+    ],
+    "maize_stem_borer": [
+        ("cultural", {
+            "en": "After harvest, plough the field and destroy the stubble, stalks and cobs where the borer larvae spend the winter. While hoeing, pull out and destroy badly bored plants.",
+            "hi": "कटाई के बाद खेत जोतें और ठूंठ, डंठल और भुट्टे नष्ट करें, जिनमें तना छेदक की सूंडियाँ सर्दी बिताती हैं। निराई-गुड़ाई के समय बुरी तरह छेदे गए पौधे उखाड़कर नष्ट करें।",
+            "mr": "काढणीनंतर शेत नांगरा आणि खोडकिडीच्या अळ्या हिवाळा घालवतात ते खुंट, धाटे आणि कणसे नष्ट करा. खुरपणी करताना जास्त पोखरलेली झाडे उपटून नष्ट करा.",
+        }, PAU),
+        ("biological", {
+            "en": "Staple Trichogramma chilonis egg cards twice: 40,000 parasitised eggs per acre on the 10-day-old crop, and again 7 days later. Cut the cards into 40 strips and staple them under the central whorl leaves in the evening. Not on rainy days.",
+            "hi": "ट्राइकोग्रामा चिलोनिस अंडा कार्ड दो बार लगाएँ: 10 दिन की फसल पर प्रति एकड़ 40,000 परजीवित अंडे, और फिर 7 दिन बाद। कार्डों को 40 पट्टियों में काटें और शाम को बीच की पोंगली की पत्तियों के नीचे स्टेपल करें। बारिश वाले दिन नहीं।",
+            "mr": "ट्रायकोग्रामा चिलोनिस अंडी कार्ड दोनदा लावा: 10 दिवसांच्या पिकावर एकरी 40,000 परजीवीग्रस्त अंडी, आणि पुन्हा 7 दिवसांनी. कार्डांच्या 40 पट्ट्या कापा आणि संध्याकाळी मधल्या पोंग्याच्या पानांखाली स्टेपल करा. पावसाच्या दिवशी नाही.",
+        }, PAU),
+    ],
+    "maize_fall_armyworm": [
+        ("cultural", {
+            "en": "Sow at the recommended time, and do not sow maize at different times in neighbouring fields: it lets the pest move from field to field. Look for the egg masses, covered in hairs and easy to see on the leaves, and destroy them.",
+            "hi": "सिफारिश किए गए समय पर बोएँ, और पास के खेतों में अलग-अलग समय पर मक्का न बोएँ: इससे कीट एक खेत से दूसरे में जाता है। पत्तियों पर बालों से ढके, आसानी से दिखने वाले अंडों के गुच्छे ढूँढकर नष्ट करें।",
+            "mr": "शिफारस केलेल्या वेळी पेरा, आणि शेजारच्या शेतांत वेगवेगळ्या वेळी मका पेरू नका: त्यामुळे कीड एका शेतातून दुसऱ्यात जाते. पानांवर केसांनी झाकलेले, सहज दिसणारे अंड्यांचे पुंजके शोधून नष्ट करा.",
+        }, PAU),
+    ],
+    "cotton_pink_bollworm": [
+        ("cultural", {
+            "en": "From the start of flowering, watch moth numbers with a Sticka or Delta trap baited with gossyplure: one trap per hectare, 15 cm above the crop, lure changed every 15 days.",
+            "hi": "फूल आने की शुरुआत से, गॉसिप्ल्योर वाले स्टिका या डेल्टा ट्रैप से पतंगों की संख्या देखें: प्रति हेक्टेयर एक ट्रैप, फसल से 15 सेमी ऊपर, हर 15 दिन में ल्योर बदलें।",
+            "mr": "फुलोऱ्याच्या सुरुवातीपासून, गॉसिप्लूर असलेल्या स्टिका किंवा डेल्टा सापळ्याने पतंगांची संख्या पाहा: हेक्टरी एक सापळा, पिकाच्या 15 सेमी वर, दर 15 दिवसांनी ल्युअर बदला.",
+        }, PAU),
+    ],
+    "cotton_american_bollworm": [
+        ("cultural", {
+            "en": "From the start of flowering, watch moth numbers with Sleeve or Moth-catch pheromone traps holding at least 2 mg of pheromone: two traps per hectare, 15 cm above the crop, lure changed every 15 days.",
+            "hi": "फूल आने की शुरुआत से, कम से कम 2 मिग्रा फेरोमोन वाले स्लीव या मॉथ-कैच ट्रैप से पतंगों की संख्या देखें: प्रति हेक्टेयर दो ट्रैप, फसल से 15 सेमी ऊपर, हर 15 दिन में ल्योर बदलें।",
+            "mr": "फुलोऱ्याच्या सुरुवातीपासून, किमान 2 मिग्रॅ फेरोमोन असलेल्या स्लीव्ह किंवा मॉथ-कॅच सापळ्यांनी पतंगांची संख्या पाहा: हेक्टरी दोन सापळे, पिकाच्या 15 सेमी वर, दर 15 दिवसांनी ल्युअर बदला.",
+        }, PAU),
+    ],
     "soybean_girdle_beetle": [
         ("cultural", {
             "en": "Grow dhaincha as a trap crop around the field: the beetles gather on it, away from the soybean.",
@@ -125,17 +223,27 @@ STEPS: dict[str, list[tuple[str, dict, str]]] = {
 }
 
 
+def backing(source: str) -> str | None:
+    """Recommended when ICAR, an agricultural university or the ICAR-NCIPM and
+    DPPQS packages stand behind it; IRRI alone is none of those."""
+    return "recommended" if any(k in source for k in ("NCIPM", "ICAR", "PAU", "TNAU", "DPPQS")) else None
+
+
 def main() -> None:
     adv = json.loads((KB / "advisories.json").read_text())
     added = 0
     for tid, entry in adv.items():
         if tid.startswith("_"):
             continue
-        entry["ladder"] = [r for r in entry["ladder"] if r.get("added_by") != TAG]
+        gone = set(SUPERSEDED.get(tid, []))
+        entry["ladder"] = [r for r in entry["ladder"] if r.get("added_by") != TAG
+                           and (r.get("action") or {}).get("en") not in gone]
     for tid, steps in STEPS.items():
         ladder = adv[tid]["ladder"]
         for tier, action, source in steps:
             rung = {"tier": tier, "action": action, "source": source, "added_by": TAG}
+            if backing(source):
+                rung["backing"] = backing(source)
             # keep the ladder in order: after the last rung of the same or an earlier tier
             rank = {"cultural": 0, "biological": 1, "chemical": 2}
             at = max((i + 1 for i, r in enumerate(ladder) if rank[r["tier"]] <= rank[tier]), default=0)

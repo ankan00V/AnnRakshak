@@ -69,6 +69,11 @@ PRODUCTS = {
     "pseudomonas_1_5wp": {"name": "Pseudomonas fluorescens 1.5% WP", "class": "fungicide",
                           "organic": True, "kind": "bio-agent",
                           "aliases": ["pseudomonas fluorescens 1.5", "pseudomonas 1.5% wp"]},
+    # A sex pheromone, not a spray: rope dispensers tied on the plants release
+    # gossyplure, and the male moths cannot find the females (mating disruption).
+    "pb_rope_l": {"name": "PB Rope L (gossyplure pheromone dispensers)", "class": "insecticide",
+                  "organic": True, "kind": "pheromone",
+                  "aliases": ["pb rope", "pb rope l", "pb-rope", "gossyplure", "पीबी रोप", "गॉसिप्ल्योर"]},
 }
 
 
@@ -89,6 +94,11 @@ def per_acre(ing, amount, unit, timing, registration):
 
 def seed(ing, amount, unit, timing, registration):
     return {"ingredient": ing, "use": "seed", "per_kg_seed": {"amount": amount, "unit": unit},
+            "timing": timing, "registration": registration}
+
+
+def dispenser(ing, per_acre_count, timing, registration):
+    return {"ingredient": ing, "use": "dispenser", "per_acre": {"amount": per_acre_count, "unit": "dispensers"},
             "timing": timing, "registration": registration}
 
 
@@ -117,6 +127,9 @@ NEEM = {"en": "Spray early, when the pest first appears; neem stops feeding and 
 NEEM_PBW = {"en": "Spray from first flowering, before the larvae enter the bolls; it cannot reach larvae already inside.",
             "hi": "पहले फूल आने से छिड़कें, इल्ली के टिंडे में घुसने से पहले; अंदर घुसी इल्ली तक यह नहीं पहुँचता।",
             "mr": "पहिल्या फुलोऱ्यापासून, अळी बोंडात शिरण्यापूर्वी फवारा; आत शिरलेल्या अळीपर्यंत ते पोहोचत नाही."}
+PB_ROPE = {"en": "The register gives it for a block of 25 hectares. It confuses the male moths so they cannot find mates, so it works when a whole area of fields uses it, not one small plot.",
+           "hi": "रजिस्टर इसे 25 हेक्टेयर के एक ब्लॉक के लिए देता है। यह नर पतंगों को भ्रमित करता है ताकि वे मादा तक न पहुँचें, इसलिए यह तभी काम करता है जब पूरे इलाके के खेत इसे लगाएँ, किसी एक छोटे खेत में नहीं।",
+           "mr": "नोंदणी ते 25 हेक्टरच्या एका पट्ट्यासाठी देते. ते नर पतंगांना गोंधळात टाकते म्हणजे ते मादीपर्यंत पोहोचत नाहीत, म्हणून संपूर्ण परिसरातील शेतांनी ते लावल्यावरच ते काम करते, एखाद्या लहान शेतात नाही."}
 NPV = {"en": "Spray in the evening when the caterpillars are small; the virus works on young larvae.",
        "hi": "इल्लियाँ छोटी हों तब शाम को छिड़कें; विषाणु छोटी इल्लियों पर असर करता है।",
        "mr": "अळ्या लहान असताना संध्याकाळी फवारा; विषाणू लहान अळ्यांवर परिणाम करतो."}
@@ -200,6 +213,13 @@ O = {
     ],
     "cotton_pink_bollworm": [
         spray("azadirachtin_0_15ec", 5, "ml", 200, NEEM_PBW, AZA_COTTON),
+        # The bio-insecticide list, "PB Rope L": more than 140 mg gossyplure per
+        # dispenser, 9875 dispensers for a recommended area of 25 ha — 395 per
+        # hectare, 160 per acre. The area is the point: mating disruption is
+        # for a block of fields, not one plot.
+        dispenser("pb_rope_l", 160, PB_ROPE,
+                  reg("BI", "Cotton", "Pink bollworm (Pectinophora gossypiella)",
+                      "9875 dispensers for 25 ha (395 per ha)", None)),
     ],
     "cotton_whitefly": [
         spray("lecanicillium_1_15wp", 5, "g", 200, FUNGUS, VL_COTTON),

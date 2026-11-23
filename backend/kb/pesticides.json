@@ -54,5 +54,6 @@
   "sedaxane_fludioxonil_thiamethoxam_fs": {"name": "Sedaxane 2.5% + Fludioxonil 2.5% + Thiamethoxam 26.25% FS", "class": "fungicide", "aliases": ["sedaxane fludioxonil thiamethoxam", "sedaxane + fludioxonil + thiamethoxam"]},
   "carboxin_75wp": {"name": "Carboxin 75% WP", "class": "fungicide", "aliases": ["carboxin", "कार्बोक्सिन", "कार्बॉक्सिन"]},
   "mefentrifluconazole_pyraclostrobin_sc": {"name": "Mefentrifluconazole 200 g/l + Pyraclostrobin 200 g/l SC", "class": "fungicide", "aliases": ["mefentrifluconazole pyraclostrobin", "mefentrifluconazole + pyraclostrobin"]},
-  "ipconazole_metalaxyl_me": {"name": "Ipconazole 2.35% + Metalaxyl 1.88% ME", "class": "fungicide", "aliases": ["ipconazole metalaxyl", "ipconazole + metalaxyl"]}
+  "ipconazole_metalaxyl_me": {"name": "Ipconazole 2.35% + Metalaxyl 1.88% ME", "class": "fungicide", "aliases": ["ipconazole metalaxyl", "ipconazole + metalaxyl"]},
+  "pb_rope_l": {"name": "PB Rope L (gossyplure pheromone dispensers)", "class": "insecticide", "organic": true, "kind": "pheromone", "aliases": ["pb rope", "pb rope l", "pb-rope", "gossyplure", "पीबी रोप", "गॉसिप्ल्योर"]}
 }
