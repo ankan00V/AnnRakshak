@@ -8,7 +8,7 @@ used for training only (data/DATASETS.md §5). So a photo is shown from:
 
   ICAR-IASRI crop disease and pest images   ICAR Data Use Licence
   ASDID (soybean, Zenodo 7304859)           CC0
-  Mendeley Data sets checked CC BY 4.0      credited on the landing page
+  Mendeley Data sets checked CC BY 4.0      source kept with each photo
 
 and never from Paddy Doctor, the Hugging Face sets, the farmer-confirmed photos
 or the local photographs. A field photo is preferred to a plain backdrop, and
@@ -26,7 +26,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PROCESSED = ROOT / "data" / "processed"
 OUT = ROOT / "backend" / "kb" / "reference_photos.json"
-CREDITS_TS = ROOT / "frontend" / "landing" / "src" / "lib" / "photoCredits.ts"
 
 ICAR = {"name": "ICAR-IASRI, Crop Disease and Pest Image Data (data.gov.in)", "licence": "ICAR Data Use License",
         "url": "https://www.data.gov.in/catalog/crop-disease-and-pest-image-data"}
@@ -79,17 +78,9 @@ def main() -> None:
             credit = credits.get(r.get("source", "*")) or credits["*"]
             picked[t] = {"path": str(Path(r["path"]).relative_to("data/processed")), **credit}
     out = {"_note": ("One photograph per problem for the field-check picture, only from sets whose licence lets the "
-                     "app show it (data/reference_photos.py). CC BY sets are credited on the landing page."),
+                     "app show it (data/reference_photos.py). Each photo keeps its set, licence and link here."),
            "photos": dict(sorted(picked.items()))}
     OUT.write_text(json.dumps(out, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-    credits = sorted({(p["name"], p["licence"], p["url"]) for p in picked.values()})
-    CREDITS_TS.write_text(
-        "// Written by data/reference_photos.py: every set a field-check photo comes from.\n"
-        "// CC BY 4.0 asks for credit; the landing page footer gives it here.\n"
-        "export const PHOTO_CREDITS: { name: string; licence: string; url: string }[] = [\n"
-        + "".join(f"  {{ name: {json.dumps(n, ensure_ascii=False)}, licence: {json.dumps(l)}, url: {json.dumps(u)} }},\n"
-                  for n, l, u in credits)
-        + "]\n", encoding="utf-8")
     print(f"{len(picked)} of {len(targets)} problems have a photo; none for:",
           sorted(set(targets) - set(picked)))
 

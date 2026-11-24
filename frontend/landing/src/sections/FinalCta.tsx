@@ -7,7 +7,6 @@ import { useAuth } from '../auth/AuthContext'
 import { homeOf } from '../auth/helpers'
 import { useFarmer } from '../farmer/FarmerContext'
 import { LANGS } from '../lib/i18n'
-import { PHOTO_CREDITS } from '../lib/photoCredits'
 
 const LANGUAGES = LANGS.filter((l) => l.ready).length
 
@@ -114,18 +113,6 @@ export default function FinalCta() {
             </a>
           </div>
         </footer>
-        {/* CC BY 4.0 asks for credit wherever its photographs are shown; the
-            field checks show one per problem (kb/reference_photos.json). */}
-        <p className="pb-6 text-center text-[12px] leading-relaxed text-cream/55 text-pretty">
-          {t('landPhotoCredits')}:{' '}
-          {PHOTO_CREDITS.map((c, i) => (
-            <span key={c.url}>
-              {i > 0 && ' · '}
-              <a href={c.url} target="_blank" rel="noreferrer" className="underline decoration-cream/30 underline-offset-2 hover:text-cream">{c.name}</a>
-              {' '}({c.licence})
-            </span>
-          ))}
-        </p>
       </div>
     </section>
   )
