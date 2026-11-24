@@ -1,7 +1,11 @@
-"""Farm emails: an alert right away when a warning fires, and a daily summary of
-the farm — weather now and ahead, soil pH and moisture, water balance, the
-spray window, and the pests and diseases the weather is setting up for this
-crop at this stage. Written in the farmer's language from the farm profile.
+"""Farm emails: an alert right away when a warning fires, a short morning
+summary, the sign-in code, and the note that alerts are on. Written in the
+farmer's language from the farm profile.
+
+Each is read on a phone, often in a hurry: the summary is a traffic light —
+one row each for water, spraying and pests (and the weather when it warns),
+a coloured dot and a verdict before any explanation — then three days of
+weather. Everything else is one tap away in the app.
 
 Delivery backends (config.EMAIL_BACKEND):
   smtp    any SMTP relay — Gmail (app password), Brevo, Amazon SES, Zoho ...
@@ -19,6 +23,7 @@ import uuid
 from datetime import datetime
 from email.message import EmailMessage
 from email.utils import formatdate, make_msgid
+from pathlib import Path
 
 from app.kb import tr
 from app.config import (
@@ -33,96 +38,87 @@ from app.config import (
 )
 
 OUTBOX = DATA_DIR / "outbox"
-LEAF, OCHRE, EMBER, CREAM, SOIL = "#1f3d2b", "#c8862d", "#b0472a", "#f7f3ec", "#2b1d12"
-SEV_COLOR = {"warning": EMBER, "advice": OCHRE, "info": LEAF}
-LEVEL_COLOR = {"high": EMBER, "medium": OCHRE, "low": "#6b6b6b"}
+EMBLEM = Path(__file__).parent / "assets" / "emblem-192.png"
+EMBLEM_CID = "emblem@annrakshak"
+"""The emblem travels inside the email (an inline image), so it shows before
+the app has a public address and in clients that block remote images."""
+
+LEAF, CREAM, PAPER, INK, MUTED, LINE = "#1d4a2c", "#f6f1e7", "#ffffff", "#21180f", "#6b5e50", "#efe8dc"
+RED, AMBER, GREEN, GREY = "#c2412d", "#d08a1e", "#2f7d4a", "#9a9187"
+LEVEL_COLOR = {"high": RED, "medium": AMBER, "low": GREY}
+TINT = {RED: ("#fbeeeb", "#efc9c1"), AMBER: ("#fcf4e6", "#ecd3a5")}
+"""Background and border for a warning card (8-digit hex is not safe in mail clients)."""
+SANS = "-apple-system,'Segoe UI',Roboto,'Noto Sans','Noto Sans Devanagari',Arial,sans-serif"
+SERIF = "Georgia,'Noto Serif','Noto Serif Devanagari',serif"
 
 T = {
-    "hello": {"en": "Namaste {name},", "hi": "नमस्ते {name},", "mr": "नमस्कार {name},"},
-    "digest_subject": {"en": "Your {crop} farm today — {date}", "hi": "आज आपका {crop} खेत — {date}",
-                       "mr": "आज तुमचे {crop} शेत — {date}"},
-    "digest_intro": {
-        "en": "Here is today's check for your {crop} in {district}: sown {sowing}, now {stage} (day {das}).",
-        "hi": "{district} में आपकी {crop} की आज की जाँच: बुआई {sowing}, अभी {stage} (दिन {das})।",
-        "mr": "{district} मधील तुमच्या {crop} ची आजची तपासणी: पेरणी {sowing}, सध्या {stage} (दिवस {das}).",
-    },
-    "alert_intro": {
-        "en": "A weather warning for your {crop} farm in {district}:",
-        "hi": "{district} में आपके {crop} खेत के लिए मौसम चेतावनी:",
-        "mr": "{district} मधील तुमच्या {crop} शेतासाठी हवामान इशारा:",
-    },
-    "now": {"en": "Right now", "hi": "अभी", "mr": "आत्ता"},
-    "next3": {"en": "Next 3 days", "hi": "अगले 3 दिन", "mr": "पुढील 3 दिवस"},
-    "soil": {"en": "Soil", "hi": "मिट्टी", "mr": "माती"},
+    "motto": {"en": "Protector of the Harvest", "hi": "फ़सल का रक्षक", "mr": "पिकांचा रक्षक"},
+    # the summary
+    "digest_subject": {"en": "Your {crop} today: {top}", "hi": "आज आपकी फसल ({crop}): {top}",
+                       "mr": "आज तुमचे पीक {crop}: {top}"},
+    "all_ok": {"en": "all calm", "hi": "सब ठीक", "mr": "सर्व ठीक"},
+    "greet": {"en": "{name}, your {crop}", "hi": "{name} जी, आपकी फसल: {crop}", "mr": "{name}, तुमचे पीक {crop}"},
+    "where": {"en": "Day {das} · {stage} · {district}", "hi": "दिन {das} · {stage} · {district}",
+              "mr": "दिवस {das} · {stage} · {district}"},
     "water": {"en": "Water", "hi": "पानी", "mr": "पाणी"},
-    "spray": {"en": "Spraying", "hi": "छिड़काव", "mr": "फवारणी"},
-    "todo": {"en": "What to do", "hi": "क्या करें", "mr": "काय करावे"},
-    "risks": {"en": "Pests and diseases the weather favours", "hi": "मौसम के कारण बढ़ सकने वाले कीट व रोग",
-              "mr": "हवामानामुळे वाढू शकणारे कीड व रोग"},
-    "prevent": {"en": "Prevent it", "hi": "बचाव", "mr": "प्रतिबंध"},
-    "avoid": {"en": "Don't", "hi": "न करें", "mr": "करू नका"},
-    "all_calm": {"en": "No weather warnings for your farm today.", "hi": "आज आपके खेत के लिए कोई मौसम चेतावनी नहीं।",
-                 "mr": "आज तुमच्या शेतासाठी हवामानाचा कोणताही इशारा नाही."},
-    "temp": {"en": "Temperature", "hi": "तापमान", "mr": "तापमान"},
-    "feels": {"en": "feels like", "hi": "महसूस", "mr": "जाणवते"},
-    "rh": {"en": "Humidity", "hi": "नमी", "mr": "आर्द्रता"},
-    "wind": {"en": "Wind", "hi": "हवा", "mr": "वारा"},
-    "gust": {"en": "gusts", "hi": "झोंके", "mr": "झोत"},
-    "rain_chance": {"en": "Rain chance (3 h)", "hi": "बारिश की संभावना (3 घं)", "mr": "पावसाची शक्यता (3 तास)"},
-    "uv": {"en": "UV index", "hi": "UV सूचकांक", "mr": "UV निर्देशांक"},
-    "ph": {"en": "pH", "hi": "pH (सामू)", "mr": "सामू (pH)"},
-    "how_measured": {"en": "measured by your sensor", "hi": "आपके सेंसर से मापा", "mr": "तुमच्या सेन्सरने मोजलेले"},
-    "how_card": {"en": "from your Soil Health Card", "hi": "आपके मृदा स्वास्थ्य कार्ड से", "mr": "तुमच्या मृदा आरोग्य पत्रिकेतून"},
-    "how_estimated": {"en": "estimated from the soil map", "hi": "मिट्टी के नक्शे से अनुमान", "mr": "मातीच्या नकाशावरून अंदाज"},
-    "moisture": {"en": "Moisture (modelled, 9–27 cm)", "hi": "नमी (मॉडल अनुमान, 9–27 सेमी)", "mr": "ओलावा (मॉडेल अंदाज, 9–27 सेंमी)"},
-    "wb": {
-        "en": "Crop used ≈ {etc} mm this week; effective rain ≈ {rain} mm; shortfall ≈ {deficit} mm.",
-        "hi": "इस हफ़्ते फसल ने ≈ {etc} मिमी पानी लिया; उपयोगी बारिश ≈ {rain} मिमी; कमी ≈ {deficit} मिमी।",
-        "mr": "या आठवड्यात पिकाने ≈ {etc} मिमी पाणी वापरले; उपयोगी पाऊस ≈ {rain} मिमी; तूट ≈ {deficit} मिमी.",
-    },
-    "wb_irrigate": {"en": "Irrigate if the soil is dry 5 cm down.", "hi": "5 सेमी नीचे मिट्टी सूखी हो तो सिंचाई करें।",
-                    "mr": "5 सेंमी खाली माती कोरडी असल्यास पाणी द्या."},
-    "wb_hold_rain": {"en": "Useful rain is forecast — hold irrigation.", "hi": "काम की बारिश का अनुमान है — सिंचाई रोकें।",
-                     "mr": "उपयोगी पावसाचा अंदाज आहे — पाणी देणे थांबवा."},
-    "wb_ok": {"en": "No irrigation needed now.", "hi": "अभी सिंचाई की ज़रूरत नहीं।", "mr": "सध्या पाणी देण्याची गरज नाही."},
-    "wb_stop_stage": {"en": "The crop is maturing — irrigation is normally stopped now.",
-                      "hi": "फसल पक रही है — अब आम तौर पर सिंचाई बंद की जाती है।",
-                      "mr": "पीक पक्व होत आहे — आता साधारणपणे पाणी देणे थांबवले जाते."},
-    "spray_best": {"en": "Best time to spray: {when}", "hi": "छिड़काव का अच्छा समय: {when}", "mr": "फवारणीची योग्य वेळ: {when}"},
-    "spray_none": {"en": "No good spraying window in the next 48 hours.", "hi": "अगले 48 घंटे छिड़काव का अच्छा समय नहीं।",
-                   "mr": "पुढील 48 तास फवारणीसाठी योग्य वेळ नाही."},
-    "open_app": {"en": "Open AnnRakshak", "hi": "AnnRakshak खोलें", "mr": "AnnRakshak उघडा"},
-    "why_this": {
-        "en": "Based on your farm profile ({crop}, {district}) and live weather from {source}. Advice comes from the AnnRakshak knowledge base (IMD, FAO, ICAR sources); for any product dose, the printed label decides.",
-        "hi": "आपके खेत की जानकारी ({crop}, {district}) और {source} के ताज़ा मौसम पर आधारित। सलाह AnnRakshak ज्ञान-आधार (IMD, FAO, ICAR स्रोत) से है; किसी भी दवा की मात्रा के लिए लेबल ही मान्य है।",
-        "mr": "तुमच्या शेताची माहिती ({crop}, {district}) आणि {source} च्या ताज्या हवामानावर आधारित. सल्ला AnnRakshak ज्ञानभांडारातून (IMD, FAO, ICAR स्रोत); कोणत्याही औषधाच्या मात्रेसाठी लेबलच ग्राह्य.",
-    },
+    "spray": {"en": "Spray", "hi": "छिड़काव", "mr": "फवारणी"},
+    "pests": {"en": "Pests", "hi": "कीट-रोग", "mr": "कीड-रोग"},
+    "weather": {"en": "Weather", "hi": "मौसम", "mr": "हवामान"},
+    "w_irrigate": {"en": "Irrigate today", "hi": "आज सिंचाई करें", "mr": "आज पाणी द्या"},
+    "w_irrigate_why": {"en": "{deficit} mm short this week, no useful rain ahead",
+                       "hi": "इस हफ़्ते {deficit} मिमी पानी कम, आगे काम की बारिश नहीं",
+                       "mr": "या आठवड्यात {deficit} मिमी पाणी कमी, पुढे उपयोगी पाऊस नाही"},
+    "w_hold_rain": {"en": "Hold irrigation", "hi": "सिंचाई रोकें", "mr": "पाणी देणे थांबवा"},
+    "w_hold_rain_why": {"en": "Useful rain is on the way", "hi": "काम की बारिश आने वाली है",
+                        "mr": "उपयोगी पाऊस येणार आहे"},
+    "w_ok": {"en": "No water needed", "hi": "अभी पानी की ज़रूरत नहीं", "mr": "सध्या पाण्याची गरज नाही"},
+    "w_ok_why": {"en": "The soil has enough for now", "hi": "मिट्टी में अभी पर्याप्त पानी है",
+                 "mr": "मातीत सध्या पुरेसे पाणी आहे"},
+    "w_stop_stage": {"en": "Stop irrigating", "hi": "सिंचाई बंद करें", "mr": "पाणी देणे बंद करा"},
+    "w_stop_stage_why": {"en": "The crop is ripening", "hi": "फसल पक रही है", "mr": "पीक पिकत आहे"},
+    "s_best": {"en": "Spray {when}", "hi": "{when} छिड़काव करें", "mr": "{when} फवारणी करा"},
+    "s_best_why": {"en": "Dry and calm then", "hi": "तब मौसम सूखा और शांत रहेगा", "mr": "तेव्हा हवामान कोरडे व शांत असेल"},
+    "s_none": {"en": "Don't spray yet", "hi": "अभी छिड़काव न करें", "mr": "आत्ता फवारणी करू नका"},
+    "s_none_why": {"en": "No dry, calm spell in the next 48 hours", "hi": "अगले 48 घंटे में सूखा, शांत समय नहीं",
+                   "mr": "पुढील 48 तासांत कोरडी, शांत वेळ नाही"},
+    "p_none": {"en": "Nothing favoured now", "hi": "अभी किसी का ख़तरा नहीं", "mr": "सध्या कशाचाही धोका नाही"},
+    "p_none_why": {"en": "The weather is not setting up a pest or disease", "hi": "मौसम किसी कीट या रोग के अनुकूल नहीं",
+                   "mr": "हवामान कोणत्याही कीड किंवा रोगाला पोषक नाही"},
+    "p_also": {"en": "Also watch: {names}", "hi": "इन पर भी नज़र रखें: {names}", "mr": "यांच्यावरही लक्ष ठेवा: {names}"},
+    "now_line": {"en": "Now {temp}° · humidity {rh}% · wind {wind} km/h",
+                 "hi": "अभी {temp}° · नमी {rh}% · हवा {wind} किमी/घं",
+                 "mr": "आत्ता {temp}° · आर्द्रता {rh}% · वारा {wind} किमी/तास"},
+    "soil_line": {"en": "Soil pH {ph}, {band}", "hi": "मिट्टी: pH (सामू) {ph}, {band}",
+                  "mr": "माती: सामू (pH) {ph}, {band}"},
+    "moisture": {"en": "moisture {pct}%", "hi": "नमी {pct}%", "mr": "ओलावा {pct}%"},
+    "open_field": {"en": "Open my field", "hi": "मेरा खेत खोलें", "mr": "माझे शेत उघडा"},
+    "sources": {"en": "Live weather from {source}. Advice from ICAR and IMD. For any product, its label decides.",
+                "hi": "ताज़ा मौसम {source} से। सलाह ICAR और IMD से। किसी भी दवा के लिए उसका लेबल ही मान्य है।",
+                "mr": "ताजे हवामान {source} कडून. सल्ला ICAR आणि IMD कडून. कोणत्याही औषधासाठी त्याचे लेबलच ग्राह्य."},
     "unsubscribe": {"en": "Stop these emails", "hi": "ये ईमेल बंद करें", "mr": "हे ईमेल बंद करा"},
+    # a warning, right away
+    "alert_greet": {"en": "{name}, a warning for your {crop}", "hi": "{name} जी, {crop} के लिए चेतावनी",
+                    "mr": "{name}, तुमच्या {crop} पिकासाठी इशारा"},
+    "do_now": {"en": "Do now", "hi": "अभी करें", "mr": "आत्ता करा"},
+    # alerts are on
     "test_subject": {"en": "AnnRakshak: email alerts are on for {crop}", "hi": "AnnRakshak: {crop} के लिए ईमेल अलर्ट चालू",
                      "mr": "AnnRakshak: {crop} साठी ईमेल सूचना सुरू"},
-    "test_body": {
-        "en": "You will get weather warnings for your farm right away, and a short summary every morning at 6.",
-        "hi": "आपके खेत के लिए मौसम चेतावनी तुरंत मिलेगी, और हर सुबह 6 बजे छोटा सारांश।",
-        "mr": "तुमच्या शेतासाठी हवामान इशारे लगेच मिळतील, आणि दररोज सकाळी 6 वाजता छोटा सारांश.",
-    },
+    "test_title": {"en": "Email alerts are on", "hi": "ईमेल अलर्ट चालू हैं", "mr": "ईमेल सूचना सुरू आहेत"},
+    "test_warn": {"en": "Warnings: the moment they come", "hi": "चेतावनी: आते ही तुरंत", "mr": "इशारे: येताच लगेच"},
+    "test_daily": {"en": "Summary: every morning at 6", "hi": "सारांश: हर सुबह 6 बजे", "mr": "सारांश: दररोज सकाळी 6 वाजता"},
+    # the one-time code
     "otp_subject": {"en": "{code} is your AnnRakshak code", "hi": "{code} आपका AnnRakshak कोड है",
                     "mr": "{code} हा तुमचा AnnRakshak कोड आहे"},
-    "otp_signup": {"en": "Use this code to finish creating your AnnRakshak account.",
-                   "hi": "अपना AnnRakshak खाता बनाने के लिए यह कोड डालें।",
-                   "mr": "तुमचे AnnRakshak खाते तयार करण्यासाठी हा कोड टाका."},
-    "otp_email": {"en": "Use this code to confirm this email address for your AnnRakshak account.",
-                  "hi": "अपने AnnRakshak खाते के लिए यह ईमेल पता पक्का करने के लिए यह कोड डालें।",
-                  "mr": "तुमच्या AnnRakshak खात्यासाठी हा ईमेल पत्ता निश्चित करण्यासाठी हा कोड टाका."},
-    "otp_login": {"en": "Use this code to sign in to AnnRakshak.", "hi": "AnnRakshak में साइन इन करने के लिए यह कोड डालें।",
-                  "mr": "AnnRakshak मध्ये साइन इन करण्यासाठी हा कोड टाका."},
-    "otp_expiry": {"en": "It works for {mins} minutes, once.", "hi": "यह {mins} मिनट तक, एक बार चलेगा।",
-                   "mr": "तो {mins} मिनिटे, एकदाच चालेल."},
-    "otp_warn": {"en": "Never share this code. AnnRakshak staff, KVK experts and officers will never ask for it. "
-                       "If you did not ask for it, ignore this email.",
-                 "hi": "यह कोड किसी को न बताएँ। AnnRakshak, KVK विशेषज्ञ या अधिकारी इसे कभी नहीं माँगेंगे। "
-                       "अगर आपने यह नहीं माँगा, तो इस ईमेल को अनदेखा करें।",
-                 "mr": "हा कोड कोणालाही सांगू नका. AnnRakshak, KVK तज्ज्ञ किंवा अधिकारी तो कधीही मागणार नाहीत. "
-                       "तुम्ही तो मागितला नसेल तर हा ईमेल दुर्लक्षित करा."},
+    "otp_login": {"en": "Your sign-in code", "hi": "आपका साइन-इन कोड", "mr": "तुमचा साइन-इन कोड"},
+    "otp_signup": {"en": "Your sign-up code", "hi": "आपका साइन-अप कोड", "mr": "तुमचा साइन-अप कोड"},
+    "otp_email": {"en": "Confirm your email", "hi": "अपना ईमेल पक्का करें", "mr": "तुमचा ईमेल निश्चित करा"},
+    "otp_valid": {"en": "Works for {mins} minutes, once", "hi": "{mins} मिनट तक, एक बार चलेगा",
+                  "mr": "{mins} मिनिटे, एकदाच चालेल"},
+    "otp_never": {"en": "Don't share it. Nobody from AnnRakshak or KVK will ever ask for it.",
+                  "hi": "किसी को न बताएँ। AnnRakshak या KVK से कोई इसे कभी नहीं माँगेगा।",
+                  "mr": "कोणालाही सांगू नका. AnnRakshak किंवा KVK कडून कोणीही तो कधीही मागणार नाही."},
+    "otp_ignore": {"en": "Didn't ask for it? Ignore this email.", "hi": "आपने नहीं माँगा? इस ईमेल को अनदेखा करें।",
+                   "mr": "तुम्ही मागितला नाही? हा ईमेल दुर्लक्षित करा."},
 }
 
 
@@ -135,67 +131,103 @@ def _e(s) -> str:
     return html.escape(str(s)) if s is not None else ""
 
 
+def _n(x, digits: int = 0) -> str:
+    """28.3 -> '28'; 0.04 -> '0'; 12.5 mm -> '12.5'."""
+    if x is None:
+        return "—"
+    v = round(float(x), digits)
+    return f"{v:.{digits}f}".rstrip("0").rstrip(".") if digits else str(int(v))
+
+
+def _first(name: str | None) -> str:
+    return (name or "").split()[0] if (name or "").strip() else ""
+
+
 # --------------------------------------------------------------------------
-# HTML building blocks (inline styles: most mail clients strip <style>)
+# Building blocks (tables and inline styles: most mail clients strip <style>)
 # --------------------------------------------------------------------------
 
-def _shell(title: str, body: str, footer: str, preheader: str) -> str:
-    return f"""<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
-<title>{_e(title)}</title></head>
-<body style="margin:0;padding:0;background:{CREAM};font-family:'Noto Sans Devanagari',Inter,Arial,sans-serif;color:{SOIL}">
-<span style="display:none;max-height:0;overflow:hidden;opacity:0">{_e(preheader)}</span>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{CREAM}"><tr><td align="center" style="padding:16px">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e6dfd3">
-<tr><td style="background:{LEAF};color:{CREAM};padding:16px 20px;font-size:18px;font-weight:600">
-<span style="display:inline-block;width:28px;height:28px;border-radius:14px;background:rgba(255,255,255,.12);color:{OCHRE};text-align:center;line-height:28px;margin-right:8px">अ</span>AnnRakshak</td></tr>
-<tr><td style="padding:20px">{body}</td></tr>
-<tr><td style="padding:14px 20px;background:#faf7f1;font-size:11px;line-height:1.5;color:#6b5b4b">{footer}</td></tr>
+def _shell(title: str, body: str, footer: str, preheader: str, lang: str) -> str:
+    return f"""<!doctype html><html lang="{lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<meta name="color-scheme" content="light"><title>{_e(title)}</title></head>
+<body style="margin:0;padding:0;background:{CREAM};font-family:{SANS};color:{INK};-webkit-text-size-adjust:100%">
+<span style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">{_e(preheader)}</span>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{CREAM}"><tr><td align="center" style="padding:20px 12px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:{PAPER};border-radius:20px;overflow:hidden;border:1px solid #e6dccb">
+<tr><td style="background:{LEAF};padding:18px 22px">
+<table role="presentation" cellpadding="0" cellspacing="0"><tr>
+<td style="padding-right:12px"><img src="cid:{EMBLEM_CID}" width="44" height="44" alt="" style="display:block;border-radius:22px;background:#ffffff"></td>
+<td><div style="font-size:19px;font-weight:700;color:{CREAM};letter-spacing:-.01em">AnnRakshak</div>
+<div style="font-size:12px;color:#cfd9cf;margin-top:1px">{_e(t("motto", lang))}</div></td>
+</tr></table></td></tr>
+{body}
+<tr><td style="padding:16px 22px 20px;font-size:11px;line-height:1.55;color:#8a7d6e;border-top:1px solid {LINE}">{footer}</td></tr>
 </table></td></tr></table></body></html>"""
 
 
-def _h(text: str) -> str:
-    return f'<p style="margin:18px 0 8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8a7a6a;font-weight:600">{_e(text)}</p>'
+def _title(big: str, small: str | None = None) -> str:
+    return (f'<tr><td style="padding:22px 22px 6px"><div style="font-family:{SERIF};font-size:24px;line-height:1.2;'
+            f'color:{INK}">{_e(big)}</div>'
+            + (f'<div style="font-size:13px;color:{MUTED};margin-top:4px">{_e(small)}</div>' if small else "")
+            + '</td></tr>')
 
 
-def _card(title: str, text: str, do: list[str], color: str, extra: str = "") -> str:
-    items = "".join(f'<li style="margin:2px 0">{_e(x)}</li>' for x in do)
-    return (f'<div style="border-left:4px solid {color};background:#fbf8f3;border-radius:10px;padding:12px 14px;margin:8px 0">'
-            f'<p style="margin:0;font-weight:600;font-size:15px;color:{color}">{_e(title)}</p>'
-            f'<p style="margin:6px 0 0;font-size:14px;line-height:1.45">{_e(text)}</p>'
-            + (f'<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.45">{items}</ul>' if do else "")
-            + extra + '</div>')
+def _row(color: str, label: str, verdict: str, why: str, lang: str, last: bool = False) -> str:
+    # Spacing out letters breaks the joined letters of Indian scripts.
+    spaced = "letter-spacing:.09em;text-transform:uppercase;" if lang == "en" else ""
+    rule = "" if last else f"border-bottom:1px solid {LINE};"
+    return (f'<tr><td width="34" valign="top" style="padding:16px 0 0 22px">'
+            f'<div style="width:14px;height:14px;border-radius:7px;background:{color}"></div></td>'
+            f'<td style="padding:13px 22px 13px 4px;{rule}">'
+            f'<div style="font-size:11px;font-weight:700;color:#8a7d6e;{spaced}">{_e(label)}</div>'
+            f'<div style="font-size:17px;font-weight:700;color:{INK};margin-top:2px;line-height:1.3">{_e(verdict)}</div>'
+            + "".join(f'<div style="font-size:13px;color:{MUTED if i == 0 else "#8a7d6e"};margin-top:{3 if i == 0 else 6}px;'
+                      f'line-height:1.45">{_e(x)}</div>' for i, x in enumerate(why.split("\n")) if x)
+            + '</td></tr>')
+
+
+def _rows(rows: list[tuple[str, str, str, str]], lang: str) -> str:
+    inner = "".join(_row(*r, lang=lang, last=i == len(rows) - 1) for i, r in enumerate(rows))
+    return (f'<tr><td style="padding:10px 12px 4px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+            f'style="background:#fbf8f2;border:1px solid {LINE};border-radius:16px">{inner}</table></td></tr>')
+
+
+def _sky(day: dict) -> str:
+    rain, prob = float(day.get("rain") or 0), float(day.get("prob") or 0)
+    if rain >= 5 or prob >= 60:
+        return "🌧"
+    if rain >= 1 or prob >= 30:
+        return "🌦"
+    return "☀️"
+
+
+def _days(days: list[dict]) -> str:
+    cells = "".join(
+        f'<td width="33%" style="padding:0 4px"><div style="background:{CREAM};border-radius:14px;padding:10px 6px;text-align:center">'
+        f'<div style="font-size:12px;color:{MUTED}">{_e(d["label"][:1].upper() + d["label"][1:])}</div>'
+        f'<div style="font-size:22px;line-height:1.3;margin:2px 0">{_sky(d)}</div>'
+        f'<div style="font-size:15px;font-weight:700;color:{INK}">{_n(d.get("tmax"))}°'
+        f'<span style="font-weight:400;color:{MUTED}"> / {_n(d.get("tmin"))}°</span></div>'
+        f'<div style="font-size:12px;color:#2f6c8f;margin-top:2px">{_n(d.get("rain"), 1)} mm</div></div></td>'
+        for d in days[:3])
+    return (f'<tr><td style="padding:14px 18px 2px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">'
+            f'<tr>{cells}</tr></table></td></tr>')
+
+
+def _small(lines: list[str]) -> str:
+    return (f'<tr><td style="padding:10px 22px 0;font-size:12px;line-height:1.6;color:{MUTED};text-align:center">'
+            + "<br>".join(_e(x) for x in lines if x) + '</td></tr>')
 
 
 def _button(url: str, label: str) -> str:
-    return (f'<p style="margin:20px 0 4px"><a href="{_e(url)}" style="display:inline-block;background:{LEAF};color:{CREAM};'
-            f'text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;font-size:14px">{_e(label)}</a></p>')
-
-
-def _now_table(cur: dict, lang: str) -> str:
-    cells = [
-        (t("temp", lang), f"{cur.get('temp')}°C" + (f" · {t('feels', lang)} {cur.get('feels')}°C" if cur.get("feels") is not None else "")),
-        (t("rh", lang), f"{cur.get('rh')}%"),
-        (t("wind", lang), f"{cur.get('wind')} km/h" + (f" · {t('gust', lang)} {cur.get('gust')}" if cur.get("gust") is not None else "")),
-        (t("rain_chance", lang), f"{cur.get('prob_3h')}%" if cur.get("prob_3h") is not None else "—"),
-        (t("uv", lang), str(cur.get("uv")) if cur.get("uv") is not None else "—"),
-    ]
-    rows = "".join(f'<tr><td style="padding:4px 0;color:#8a7a6a;font-size:13px">{_e(k)}</td>'
-                   f'<td style="padding:4px 0;text-align:right;font-size:14px;font-weight:600">{_e(v)}</td></tr>' for k, v in cells)
-    return f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">{rows}</table>'
-
-
-def _days_table(days: list[dict]) -> str:
-    rows = "".join(
-        f'<tr><td style="padding:4px 0;font-size:13px">{_e(d["label"])}</td>'
-        f'<td style="padding:4px 0;font-size:13px;text-align:center">{_e(d.get("tmin"))}–{_e(d.get("tmax"))}°C</td>'
-        f'<td style="padding:4px 0;font-size:13px;text-align:right;color:#1d5e8a">{_e(d.get("rain"))} mm · {_e(d.get("prob"))}%</td></tr>'
-        for d in days)
-    return f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">{rows}</table>'
+    return (f'<tr><td align="center" style="padding:20px 22px 22px"><a href="{_e(url)}" style="display:inline-block;'
+            f'background:{LEAF};color:{CREAM};text-decoration:none;padding:13px 26px;border-radius:999px;font-weight:700;'
+            f'font-size:15px">{_e(label)} &rarr;</a></td></tr>')
 
 
 def _footer(d: dict, lang: str) -> str:
-    return (_e(t("why_this", lang, crop=d["farm"]["crop_name"], district=d["farm"]["district"], source=d["source"]))
-            + f'<br><a href="{_e(d["unsubscribe_url"])}" style="color:#6b5b4b">{_e(t("unsubscribe", lang))}</a>')
+    return (_e(t("sources", lang, source=d["source"]))
+            + f'<br><a href="{_e(d["unsubscribe_url"])}" style="color:#8a7d6e">{_e(t("unsubscribe", lang))}</a>')
 
 
 def _plain(parts: list[str]) -> str:
@@ -203,115 +235,147 @@ def _plain(parts: list[str]) -> str:
 
 
 # --------------------------------------------------------------------------
-# The two emails
+# The summary: a traffic light
 # --------------------------------------------------------------------------
 
-def digest(d: dict, lang: str) -> tuple[str, str, str]:
-    """(subject, text, html) for the daily summary. `d` from notify.digest_data()."""
-    f, w = d["farm"], d["weather"]
-    warn = [a for a in w["advisories"] if a["severity"] == "warning"]
-    subject = ("⚠ " if warn else "") + t("digest_subject", lang, crop=f["crop_name"], date=d["date_label"])
-    intro = t("digest_intro", lang, crop=f["crop_name"], district=f["district"], sowing=f["sowing"],
-              stage=f["stage_name"], das=f["das"])
-    body = [f'<p style="margin:0 0 6px;font-size:15px">{_e(t("hello", lang, name=f["name"]))}</p>',
-            f'<p style="margin:0;font-size:14px;line-height:1.5">{_e(intro)}</p>']
-    text = [t("hello", lang, name=f["name"]), intro, ""]
+WEATHER_RULES = ("thunderstorm", "heavy_rain", "strong_wind", "frost", "heat_crop", "cold", "fog", "heat_people",
+                 "fungal_weather", "greenness_drop")
 
-    advs = [a for a in w["advisories"] if a["rule"] != "spray_window"]
-    body.append(_h(t("todo", lang)))
-    text.append(f"== {t('todo', lang)} ==")
-    if advs:
-        for a in advs[:5]:
-            body.append(_card(a["title"], a["text"], a["do"][:3], SEV_COLOR[a["severity"]]))
-            text += [f"* {a['title']}", f"  {a['text']}"] + [f"  - {x}" for x in a["do"][:3]]
+
+def lights(d: dict, lang: str) -> list[tuple[str, str, str, str]]:
+    """(colour, label, verdict, why) for each row, most urgent weather first."""
+    w = d["weather"]
+    rows: list[tuple[str, str, str, str]] = []
+    weather = [a for a in w["advisories"] if a["rule"] in WEATHER_RULES]
+    if weather:
+        a = weather[0]
+        rows.append((RED if a["severity"] == "warning" else AMBER, t("weather", lang), a["title"],
+                     (a.get("do") or [a.get("text", "")])[0]))
+
+    wb = w.get("water") or {}
+    if wb.get("available"):
+        v = wb["verdict"]
+        color = {"irrigate": RED, "hold_rain": GREEN, "ok": GREEN, "stop_stage": GREY}.get(v, GREY)
+        why = t(f"w_{v}_why", lang, deficit=_n(wb.get("deficit"))) if v in ("irrigate", "hold_rain", "ok", "stop_stage") else ""
+        rows.append((color, t("water", lang), t(f"w_{v}", lang), why))
+
+    rain_after = next((a for a in w["advisories"] if a["rule"] == "rain_after_spray"), None)
+    if rain_after:
+        rows.append((RED, t("spray", lang), rain_after["title"], (rain_after.get("do") or [rain_after["text"]])[0]))
+    elif d.get("spray_label"):
+        rows.append((GREEN, t("spray", lang), t("s_best", lang, when=d["spray_label"]), t("s_best_why", lang)))
     else:
-        body.append(f'<p style="margin:0;font-size:14px;color:{LEAF}">✓ {_e(t("all_calm", lang))}</p>')
-        text.append(t("all_calm", lang))
+        rows.append((AMBER, t("spray", lang), t("s_none", lang), t("s_none_why", lang)))
+
+    risks = d.get("risks") or []
+    if risks:
+        r = risks[0]
+        prev = r.get("prevention") or {}
+        why = (prev.get("avoid") or prev.get("do") or [""])[0]
+        rows.append((LEVEL_COLOR.get(r["level"], AMBER), t("pests", lang), f'{r["name"]} · {r["level_label"]}', why))
+        if len(risks) > 1:
+            rows[-1] = rows[-1][:3] + (why + ("\n" if why else "") + t("p_also", lang, names=", ".join(x["name"] for x in risks[1:])),)
+    else:
+        rows.append((GREEN, t("pests", lang), t("p_none", lang), t("p_none_why", lang)))
+    return rows
+
+
+def digest(d: dict, lang: str) -> tuple[str, str, str]:
+    """(subject, text, html) for the morning summary. `d` from notify.digest_data()."""
+    f, w = d["farm"], d["weather"]
+    rows = lights(d, lang)
+    urgent = [r for r in rows if r[0] in (RED, AMBER)]
+    top = urgent[0][2] if urgent else t("all_ok", lang)
+    subject = ("⚠ " if any(r[0] == RED for r in rows) else "") + t("digest_subject", lang, crop=f["crop_name"], top=top)
+    name = _first(f["name"])
+    greet = t("greet", lang, name=name, crop=f["crop_name"]) if name else f["crop_name"]
+    where = t("where", lang, das=f["das"], stage=f["stage_name"], district=f["district"])
 
     cur = w["current"]
-    body += [_h(t("now", lang)), _now_table(cur, lang), _h(t("next3", lang)), _days_table(d["days3"])]
-    text += ["", f"== {t('now', lang)} ==",
-             f"{t('temp', lang)}: {cur.get('temp')}°C ({t('feels', lang)} {cur.get('feels')}°C) · {t('rh', lang)} {cur.get('rh')}%"
-             f" · {t('wind', lang)} {cur.get('wind')} km/h · {t('rain_chance', lang)} {cur.get('prob_3h')}% · UV {cur.get('uv')}",
-             f"== {t('next3', lang)} =="] + [f"{x['label']}: {x.get('tmin')}–{x.get('tmax')}°C, {x.get('rain')} mm ({x.get('prob')}%)" for x in d["days3"]]
-
-    soil_bits = []
+    now_line = t("now_line", lang, temp=_n(cur.get("temp")), rh=_n(cur.get("rh")), wind=_n(cur.get("wind")))
+    soil = []
     if d.get("ph"):
-        ph = d["ph"]
-        soil_bits.append(f"{t('ph', lang)} {ph['value']} — {ph['band']} ({t('how_' + ph['how'], lang)})")
+        soil.append(t("soil_line", lang, ph=d["ph"]["value"], band=d["ph"]["band"]))
     if d.get("moisture_pct") is not None:
-        soil_bits.append(f"{t('moisture', lang)}: {d['moisture_pct']}%")
-    if soil_bits:
-        body += [_h(t("soil", lang))] + [f'<p style="margin:2px 0;font-size:14px">{_e(x)}</p>' for x in soil_bits]
-        text += ["", f"== {t('soil', lang)} =="] + soil_bits
+        soil.append(t("moisture", lang, pct=_n(d["moisture_pct"])))
+    soil_line = " · ".join(soil)
 
-    wb = w["water"]
-    if wb.get("available"):
-        line = t("wb", lang, etc=wb["etc_week"], rain=wb["eff_rain_week"], deficit=wb["deficit"])
-        verdict = t("wb_" + wb["verdict"], lang)
-        body += [_h(t("water", lang)), f'<p style="margin:2px 0;font-size:14px">{_e(line)}</p>',
-                 f'<p style="margin:2px 0;font-size:14px;font-weight:600">{_e(verdict)}</p>']
-        text += ["", f"== {t('water', lang)} ==", line, verdict]
+    body = (_title(greet, where) + _rows(rows, lang)
+            + _days(d["days3"]) + _small([now_line, soil_line]) + _button(d["app_url"], t("open_field", lang)))
+    text = [greet, where, ""]
+    for _, label, verdict, why in rows:
+        text += [f"{label}: {verdict}"] + [f"  {x}" for x in why.split("\n") if x]
+    text += ["", "  ".join(f"{x['label']} {_n(x.get('tmax'))}°/{_n(x.get('tmin'))}° {_n(x.get('rain'), 1)} mm"
+                           for x in d["days3"][:3]), now_line, soil_line, "",
+             f"{t('open_field', lang)}: {d['app_url']}", "", f"{t('unsubscribe', lang)}: {d['unsubscribe_url']}"]
+    preheader = " · ".join(r[2] for r in rows)
+    return subject, _plain(text), _shell(subject, body, _footer(d, lang), preheader, lang)
 
-    spray_line = t("spray_best", lang, when=d["spray_label"]) if d.get("spray_label") else t("spray_none", lang)
-    body += [_h(t("spray", lang)), f'<p style="margin:2px 0;font-size:14px">{_e(spray_line)}</p>']
-    text += ["", f"== {t('spray', lang)} ==", spray_line]
 
-    if d["risks"]:
-        body.append(_h(t("risks", lang)))
-        text += ["", f"== {t('risks', lang)} =="]
-        for r in d["risks"]:
-            prev = r["prevention"]
-            extra = ""
-            if prev.get("avoid"):
-                extra += f'<p style="margin:8px 0 0;font-size:13px;color:{EMBER}">✕ {_e(prev["avoid"][0])}</p>'
-            body.append(_card(f'{r["name"]} · {r["level_label"]}', r["reason"], prev.get("do", []),
-                              LEVEL_COLOR.get(r["level"], OCHRE), extra))
-            text += [f"* {r['name']} ({r['level_label']}): {r['reason']}"] + [f"  - {x}" for x in prev.get("do", [])]
-            if prev.get("avoid"):
-                text.append(f"  x {prev['avoid'][0]}")
-
-    body.append(_button(d["app_url"], t("open_app", lang)))
-    text += ["", f"{t('open_app', lang)}: {d['app_url']}", "", t("unsubscribe", lang) + ": " + d["unsubscribe_url"]]
-    preheader = warn[0]["title"] if warn else t("all_calm", lang)
-    return subject, _plain(text), _shell(subject, "".join(body), _footer(d, lang), preheader)
-
+# --------------------------------------------------------------------------
+# A warning, the moment it fires
+# --------------------------------------------------------------------------
 
 def alert(d: dict, advs: list[dict], lang: str) -> tuple[str, str, str]:
     """(subject, text, html) for warnings that fired just now."""
     f = d["farm"]
     subject = "⚠ " + advs[0]["title"] + (f" (+{len(advs) - 1})" if len(advs) > 1 else "")
-    intro = t("alert_intro", lang, crop=f["crop_name"], district=f["district"])
-    body = [f'<p style="margin:0 0 6px;font-size:15px">{_e(t("hello", lang, name=f["name"]))}</p>',
-            f'<p style="margin:0;font-size:14px">{_e(intro)}</p>']
-    text = [t("hello", lang, name=f["name"]), intro, ""]
+    name = _first(f["name"])
+    greet = t("alert_greet", lang, name=name, crop=f["crop_name"]) if name else f["crop_name"]
+    cards, text = [], [greet, ""]
     for a in advs:
-        body.append(_card(a["title"], a["text"], a["do"], SEV_COLOR[a["severity"]]))
-        text += [f"* {a['title']}", f"  {a['text']}"] + [f"  - {x}" for x in a["do"]]
+        color = RED if a["severity"] == "warning" else AMBER
+        do = "".join(f'<tr><td valign="top" style="padding:3px 8px 3px 0;color:{color};font-weight:700">&rarr;</td>'
+                     f'<td style="padding:3px 0;font-size:14px;line-height:1.45;color:{INK}">{_e(x)}</td></tr>'
+                     for x in a["do"][:3])
+        cards.append(
+            f'<tr><td style="padding:10px 12px 0"><div style="background:{TINT[color][0]};border:1px solid {TINT[color][1]};'
+            f'border-radius:16px;padding:16px 18px">'
+            f'<div style="font-size:18px;font-weight:700;color:{color};line-height:1.3">{_e(a["title"])}</div>'
+            f'<div style="font-size:14px;color:{INK};margin-top:6px;line-height:1.5">{_e(a["text"])}</div>'
+            + (f'<div style="font-size:11px;font-weight:700;color:#8a7d6e;margin-top:12px">{_e(t("do_now", lang))}</div>'
+               f'<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:4px">{do}</table>' if do else "")
+            + '</div></td></tr>')
+        text += [a["title"], a["text"]] + [f"-> {x}" for x in a["do"][:3]] + [""]
     cur = d["weather"]["current"]
-    body += [_h(t("now", lang)), _now_table(cur, lang), _button(d["app_url"], t("open_app", lang))]
-    text += ["", f"{t('open_app', lang)}: {d['app_url']}", "", t("unsubscribe", lang) + ": " + d["unsubscribe_url"]]
-    return subject, _plain(text), _shell(subject, "".join(body), _footer(d, lang), advs[0]["text"])
+    now_line = t("now_line", lang, temp=_n(cur.get("temp")), rh=_n(cur.get("rh")), wind=_n(cur.get("wind")))
+    body = _title(greet) + "".join(cards) + _small([now_line]) + _button(d["app_url"], t("open_field", lang))
+    text += [now_line, "", f"{t('open_field', lang)}: {d['app_url']}", "", f"{t('unsubscribe', lang)}: {d['unsubscribe_url']}"]
+    return subject, _plain(text), _shell(subject, body, _footer(d, lang), advs[0]["text"], lang)
+
+
+# --------------------------------------------------------------------------
+# Alerts are on; the one-time code
+# --------------------------------------------------------------------------
+
+def _ticks(lines: list[str]) -> str:
+    rows = "".join(f'<tr><td style="padding:5px 10px 5px 0;color:{GREEN};font-weight:700">&#10003;</td>'
+                   f'<td style="padding:5px 0;font-size:15px;color:{INK}">{_e(x)}</td></tr>' for x in lines)
+    return f'<tr><td style="padding:8px 22px 0"><table role="presentation" cellpadding="0" cellspacing="0">{rows}</table></td></tr>'
 
 
 def test_message(d: dict, lang: str) -> tuple[str, str, str]:
     f = d["farm"]
     subject = t("test_subject", lang, crop=f["crop_name"])
-    msg = t("test_body", lang)
-    body = (f'<p style="margin:0 0 6px;font-size:15px">{_e(t("hello", lang, name=f["name"]))}</p>'
-            f'<p style="margin:0;font-size:14px">{_e(msg)}</p>' + _button(d["app_url"], t("open_app", lang)))
-    return subject, _plain([t("hello", lang, name=f["name"]), msg, "", d["app_url"]]), _shell(subject, body, _footer(d, lang), msg)
+    title, lines = t("test_title", lang), [t("test_warn", lang), t("test_daily", lang)]
+    body = _title(title, f'{f["crop_name"]} · {f["district"]}') + _ticks(lines) + _button(d["app_url"], t("open_field", lang))
+    text = [title, *lines, "", d["app_url"], "", f"{t('unsubscribe', lang)}: {d['unsubscribe_url']}"]
+    return subject, _plain(text), _shell(subject, body, _footer(d, lang), " · ".join(lines), lang)
 
 
 def otp_message(code: str, purpose: str, mins: int, lang: str) -> tuple[str, str, str]:
-    """The one-time code email (sign-up or sign-in)."""
+    """The one-time code email (sign-up, sign-in, or confirming an address)."""
     subject = t("otp_subject", lang, code=code)
-    lead, expiry, warn = t(f"otp_{purpose}", lang), t("otp_expiry", lang, mins=mins), t("otp_warn", lang)
-    body = (f'<p style="margin:0 0 14px;font-size:15px">{_e(lead)}</p>'
-            f'<p style="margin:0 0 14px;font-size:32px;letter-spacing:10px;font-weight:700;color:{LEAF};'
-            f'font-family:Menlo,Consolas,monospace">{_e(code)}</p>'
-            f'<p style="margin:0;font-size:13px;color:#6b5b4b">{_e(expiry)}</p>')
-    return subject, _plain([lead, "", code, "", expiry, "", warn]), _shell(subject, body, _e(warn), lead)
+    title, valid, never = t(f"otp_{purpose}", lang), t("otp_valid", lang, mins=mins), t("otp_never", lang)
+    body = (_title(title)
+            + f'<tr><td style="padding:12px 22px 0"><div style="background:{CREAM};border:1px solid #e6dccb;border-radius:16px;'
+              f'padding:18px 10px;text-align:center;font-family:Menlo,Consolas,\'Courier New\',monospace;font-size:34px;'
+              f'font-weight:700;letter-spacing:10px;color:{LEAF}">{_e(code)}</div></td></tr>'
+            + f'<tr><td style="padding:10px 22px 0;font-size:13px;color:{MUTED};text-align:center">{_e(valid)}</td></tr>'
+            + f'<tr><td style="padding:16px 22px 22px"><div style="font-size:13px;line-height:1.5;color:{INK};'
+              f'background:#fbf3e6;border-radius:12px;padding:10px 14px">&#128274;&nbsp; {_e(never)}</div></td></tr>')
+    text = [title, "", code, "", valid, "", never, t("otp_ignore", lang)]
+    return subject, _plain(text), _shell(subject, body, _e(t("otp_ignore", lang)), f"{code} · {valid}", lang)
 
 
 # --------------------------------------------------------------------------
@@ -338,6 +402,9 @@ def send(to: str, subject: str, text: str, html_body: str, *, unsubscribe_url: s
         msg["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
     msg.set_content(text)
     msg.add_alternative(html_body, subtype="html")
+    if f"cid:{EMBLEM_CID}" in html_body and EMBLEM.exists():
+        msg.get_payload()[1].add_related(EMBLEM.read_bytes(), maintype="image", subtype="png", cid=f"<{EMBLEM_CID}>",
+                                         filename="annrakshak.png", disposition="inline")
     try:
         if EMAIL_BACKEND == "smtp" and SMTP_HOST:
             if SMTP_SECURITY == "ssl":
