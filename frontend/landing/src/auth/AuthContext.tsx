@@ -21,10 +21,25 @@ interface AuthState {
 
 const Ctx = createContext<AuthState | null>(null)
 const ME_KEY = 'ar.me' // the last known account, so a phone with no signal still opens the app
+/** Set in the tab a demo was started in. sessionStorage belongs to one tab and
+ *  goes when it closes — unlike the demo's cookie, which a browser keeps until
+ *  it quits (closing the window on a Mac does not), and hands back on restore. */
+const DEMO_TAB = 'ar.demo-tab'
+
+function demoTab(on?: boolean): boolean {
+  try {
+    if (on === true) sessionStorage.setItem(DEMO_TAB, '1')
+    if (on === false) sessionStorage.removeItem(DEMO_TAB)
+    return sessionStorage.getItem(DEMO_TAB) === '1'
+  } catch {
+    return false
+  }
+}
 
 function remember(me: Me | null) {
   try {
-    if (me) localStorage.setItem(ME_KEY, JSON.stringify(me))
+    // A demo is never remembered: it is somebody looking around, not an account.
+    if (me && !me.is_demo) localStorage.setItem(ME_KEY, JSON.stringify(me))
     else localStorage.removeItem(ME_KEY)
   } catch {
     /* private mode */
@@ -34,7 +49,8 @@ function remember(me: Me | null) {
 function recalled(): Me | null {
   try {
     const raw = localStorage.getItem(ME_KEY)
-    return raw ? (JSON.parse(raw) as Me) : null
+    const me = raw ? (JSON.parse(raw) as Me) : null
+    return me && !me.is_demo ? me : null
   } catch {
     return null
   }
@@ -58,6 +74,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     api.me()
       .then((m) => {
         if (epoch.current !== asked) return
+        if (m.is_demo && !demoTab()) {
+          // A demo session from a tab that has since closed, which the browser
+          // kept the cookie of. A demo never outlives its tab: end it here and
+          // start from the front page, as if it had been logged out.
+          setMe(null)
+          remember(null)
+          clearCache()
+          setSignedOut(true)
+          void api.logout().catch(() => undefined)
+          return
+        }
         setMe(m)
         remember(m)
       })
@@ -96,6 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false)
     clearCache()
     remember(m)
+    demoTab(m.is_demo)
     try {
       // The farmer app reads these when it opens: their language, and their field
       // when they have exactly one (several: they pick).
@@ -118,6 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false)
     clearCache()
     remember(null)
+    demoTab(false)
     try {
       localStorage.removeItem('ar.farm')
     } catch {
