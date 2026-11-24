@@ -19,13 +19,15 @@ export default function Alerts() {
   const readOnly = useReadOnlyFarm() !== null
   const home = useAsync(() => api.home(farmId!, lang), [farmId, lang], ['home', farmId!, lang].join(':'))
   const alerts = useAsync(() => api.alerts(farmId!, lang), [farmId, lang], ['alerts', farmId!, lang].join(':'))
+  // Checks answered here leave the list at once; the reload confirms it behind them.
+  const [answered, setAnswered] = useState<number[]>([])
 
   if ((alerts.loading && !alerts.data) || (home.loading && !home.data)) return <AlertsSkeleton />
   // The checks this phone kept are what a farmer with no signal came here for,
   // so the error only takes the screen when there is nothing kept to take it from.
   if (alerts.error && !alerts.data) return <ErrorBox offlineLabel={t('offline')} error={alerts.error} onRetry={alerts.reload} retryLabel={t('retry')} />
   const crop = home.data?.farm.crop ?? ''
-  const open = alerts.data!.filter((a) => a.outcome === null || a.outcome === 'snoozed')
+  const open = alerts.data!.filter((a) => (a.outcome === null || a.outcome === 'snoozed') && !answered.includes(a.id))
   const done = alerts.data!.filter((a) => a.outcome === 'nothing_found' || a.outcome === 'found')
 
   return (
@@ -42,7 +44,10 @@ export default function Alerts() {
             ) : (
               // On a phone the cards take the panel's padding back, so the text is not three boxes deep.
               <div className="-mx-3 mt-4 space-y-3 sm:mx-0">
-                {open.map((a) => <AlertCard key={a.id} alert={a} onDone={alerts.reload} />)}
+                {open.map((a) => <AlertCard key={a.id} alert={a} onDone={(o) => {
+                  if (o !== 'snoozed') setAnswered((x) => [...x, a.id])
+                  alerts.reload()
+                }} />)}
               </div>
             )}
           </section>

@@ -1188,6 +1188,7 @@
   "Your traps caught {rate} moths per trap per night for {n} nights in a row — above the action level of {etl}.": "మీ ఉచ్చులు వరుసగా {n} రాత్రులు, {etl} చర్య స్థాయికి పైన, రాత్రికి ఒక ఉచ్చుకు {rate} మాత్స్ను పట్టుకున్నాయి.",
   "Your {crop} farm today — {date}": "ఈ రోజు మీ {crop} వ్యవసాయ క్షేత్రం, {date}",
   "Your {crop} is at the {stage} stage, day {das}.": "మీ {crop} అనేది {stage} దశలో, రోజు {das} న ఉంది.",
+  "Your {crop} today: {top}": "ఈరోజు మీ {crop}: {top}",
   "a pesticide": "ఒక పురుగుమందు",
   "alkaline": "క్షారము",
   "all calm": "అంతా ప్రశాంతంగా",
@@ -1364,8 +1365,7 @@
   "{officer} has asked for this field to be checked for {name}.": "{officer} ఈ పొలాన్ని {name} కోసం తనిఖీ చేయమని కోరింది.",
   "{officer} of the district agriculture office reports {name} building in {district}. Check your field.": "{officer} జిల్లా వ్యవసాయ కార్యాలయం {name} భవనాన్ని {district} లో నివేదిస్తుంది. మీ క్షేత్రాన్ని తనిఖీ చేయండి.",
   "{reason}. Spray that drifts away or washes off is money that never reaches the pest.": "{reason}. దూరంగా కొట్టుకుపోయే లేదా కడిగివేయబడే స్ప్రే అనేది పురుగుకు చేరని డబ్బు.",
-  "{why} Very hot days also dry the soil fast.": "{why} చాలా వేడిగా ఉండే రోజులు కూడా మట్టిని వేగంగా ఎండబెడతాయి.",
-  "Your {crop} today: {top}": "ఈరోజు మీ {crop}: {top}"
+  "{why} Very hot days also dry the soil fast.": "{why} చాలా వేడిగా ఉండే రోజులు కూడా మట్టిని వేగంగా ఎండబెడతాయి."
  },
  "reviewed": [
   "Demo field",

@@ -4,7 +4,7 @@ import {
   Clock, CloudRain, Droplet, Droplets, FlaskConical, Leaf, Loader2, MapPin, ShieldCheck, Sparkles, Video, Wheat, Wind,
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
-import { api } from '../../api/client'
+import { api, ApiError } from '../../api/client'
 import ReportSheet from '../components/ReportSheet'
 import type { AlertView, CropInfo, Farm, Lang, ProblemView, WeatherView } from '../../api/types'
 import { useAsync } from '../../lib/hooks'
@@ -29,6 +29,9 @@ export default function Home() {
   const crops = useAsync(() => api.crops(lang), [lang], ['crops', lang].join(':'))
   // The same request, and the same cache entry, as the weather screen's.
   const weather = useAsync(() => api.weather(farmId!, lang), [farmId, lang], ['weather', farmId!, lang].join(':'))
+  // Questions answered on this screen. They leave at once; the reload that
+  // confirms it runs behind them, and is not something to make a farmer watch.
+  const [answered, setAnswered] = useState<number[]>([])
 
   if (home.loading && !home.data) return <HomeSkeleton />
   // Only with nothing at all to show does the error become the screen. Where
@@ -42,7 +45,7 @@ export default function Home() {
   const crop = crops.data?.find((c) => c.id === d.farm.crop)
   const openAlerts = d.alerts.filter((a) => a.outcome === null || a.outcome === 'snoozed')
   const waiting = d.problems.filter((p) => p.case?.status === 'open').length
-  const due = d.followups_due
+  const due = d.followups_due.filter((f) => !answered.includes(f.id))
 
   // The field's own lifecycle: close the season when the crop comes off, and
   // start the next one here rather than registering the plot again.
@@ -104,7 +107,8 @@ export default function Home() {
           {due.length > 0 && (
             <section className="space-y-3">
               {due.slice(0, 2).map((f) => (
-                <FollowUp key={f.id} id={f.id} name={f.name} dueOn={f.due_on} onDone={home.reload} />
+                <FollowUp key={f.id} id={f.id} name={f.name} dueOn={f.due_on}
+                  onDone={() => { setAnswered((a) => [...a, f.id]); home.reload() }} />
               ))}
             </section>
           )}
@@ -460,13 +464,15 @@ function RecentProblems({ problems }: { problems: ProblemView[] }) {
   )
 }
 
-function FollowUp({ id, name, dueOn, onDone, row = false }: {
+export function FollowUp({ id, name, dueOn, onDone, row = false }: {
   id: number; name: string | null; dueOn: string; onDone: () => void; row?: boolean
 }) {
   const { t, lang } = useFarmer()
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
+  // Sent to an officer: said in ember. Every other saved answer is good news.
+  const [escalated, setEscalated] = useState(false)
   // Answering on a shared demo field edits what the next visitor walks into,
   // so the server refuses it; the buttons would only be able to fail.
   const readOnly = useReadOnlyFarm() !== null
@@ -479,12 +485,21 @@ function FollowUp({ id, name, dueOn, onDone, row = false }: {
     setFailed(false)
     setMsg(null)
     try {
-      const out = await api.followup(id, r, lang, evidence)
+      let out: { message?: string; next_followup?: { due_on: string } } = {}
+      try {
+        out = await api.followup(id, r, lang, evidence)
+      } catch (e) {
+        // Already answered: an earlier tap got through and only its reply was
+        // lost. The answer is saved — saying "did not save" here is what made
+        // farmers think it never had.
+        if (!(e instanceof ApiError && e.status === 409)) throw e
+      }
       setReporting(false)
-      if (out.message) {
-        setMsg(out.message)
-        setTimeout(onDone, 2500)
-      } else onDone()
+      // Said at once, in the card, then the card goes. Waiting for the whole
+      // home screen to reload before anything changed read as nothing saved.
+      setEscalated(Boolean(out.message))
+      setMsg(out.message ?? (r === 'improved' ? t('followupSavedBetter') : t('followupSavedSame')))
+      setTimeout(onDone, out.message ? 2500 : 1200)
     } catch {
       // "It got worse" carries a photo and the farmer's own words to a district
       // officer. Losing it without a word is the worst of the three to lose.
@@ -517,7 +532,7 @@ function FollowUp({ id, name, dueOn, onDone, row = false }: {
           <span className="ml-2 font-normal text-soil-dark/75">{when}</span>
         </p>
         {done ? (
-          <p role="status" className="text-sm text-ember">{msg}</p>
+          <p role="status" className={`text-sm ${escalated ? 'text-ember' : 'text-leaf-deep'}`}>{msg}</p>
         ) : readOnly ? (
           <p className="text-[13px] text-soil-dark/75 shrink-0">{t('demoReadOnlyShort')}</p>
         ) : (
@@ -549,7 +564,7 @@ function FollowUp({ id, name, dueOn, onDone, row = false }: {
       </div>
       {name && <p className="text-[13px] text-soil-dark/75 mt-0.5">{name}</p>}
       {done ? (
-        <p role="status" className="mt-2 text-sm text-ember">{msg}</p>
+        <p role="status" className={`mt-2 text-sm font-medium ${escalated ? 'text-ember' : 'text-leaf-deep'}`}>{msg}</p>
       ) : readOnly ? (
         <p className="mt-2 text-[13px] text-soil-dark/75">{t('demoReadOnlyShort')}</p>
       ) : (

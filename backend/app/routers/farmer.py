@@ -7,6 +7,7 @@ import re
 from datetime import date
 from typing import Literal
 
+from fastapi.concurrency import run_in_threadpool
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -456,14 +457,21 @@ async def followup(
     give: a photograph where they can take one, and their own words either
     way. Without them the office opened a case with an empty frame and a line
     of generated text, which is not something anyone can act on."""
-    fu = db.get(FollowUp, followup_id)
-    if fu is None:
-        raise HTTPException(404, "follow-up not found")
-    _may_write(db, db.get(Problem, fu.problem_id).farm if fu.problem_id else None, request)
-    if fu.response is not None:
-        raise HTTPException(409, "follow-up already answered")
     data = await _read_capped(image) if image is not None else None
-    return services.respond_followup(db, kb, fu, response, lang, image_bytes=data, note=note)
+
+    def answer() -> dict:
+        fu = db.get(FollowUp, followup_id)
+        if fu is None:
+            raise HTTPException(404, "follow-up not found")
+        _may_write(db, db.get(Problem, fu.problem_id).farm if fu.problem_id else None, request)
+        if fu.response is not None:
+            raise HTTPException(409, "follow-up already answered")
+        return services.respond_followup(db, kb, fu, response, lang, image_bytes=data, note=note)
+
+    # The database work off the event loop: run here, every other request on
+    # the server waited behind one farmer's answer (the photo of a "worse" one
+    # included), which is how a tap came to take seconds.
+    return await run_in_threadpool(answer)
 
 
 @router.get("/farms/{farm_id}/alerts")
@@ -497,12 +505,16 @@ async def alert_outcome(
     "I found it" on an inspection-tier pest goes straight to an officer, so it
     takes the farmer's photograph and their words with it rather than arriving
     as an empty case."""
-    alert = db.get(Alert, alert_id)
-    if alert is None:
-        raise HTTPException(404, "alert not found")
-    _may_write(db, db.get(Farm, alert.farm_id), request)
     data = await _read_capped(image) if image is not None else None
-    return services.record_alert_outcome(db, kb, alert, outcome, lang, image_bytes=data, note=note)
+
+    def record() -> dict:
+        alert = db.get(Alert, alert_id)
+        if alert is None:
+            raise HTTPException(404, "alert not found")
+        _may_write(db, db.get(Farm, alert.farm_id), request)
+        return services.record_alert_outcome(db, kb, alert, outcome, lang, image_bytes=data, note=note)
+
+    return await run_in_threadpool(record)   # off the event loop, as the follow-up above
 
 
 class HarvestIn(BaseModel):

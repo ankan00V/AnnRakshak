@@ -37,6 +37,7 @@
   "Alerts by SMS are on again. Send STOP to turn them off.": "আবার চালু হয়েছে এস. এম. এস-এর সতর্কতা। এগুলি বন্ধ করার জন্য স্টপ পাঠান।",
   "Alerts we sent you": "আমরা আপনাকে সতর্কবার্তা পাঠিয়েছি",
   "All the plants I saw look healthy.": "আমি যত গাছপালা দেখেছি, সবকটিই সুস্থ দেখাচ্ছে।",
+  "Also watch: {names}": "আরও দেখুনঃ {names}",
   "Alternaria leaf spot": "অল্টারনারিয়া পাতার দাগ রোগ",
   "Alternate wetting and drying instead of keeping the field flooded, keep nitrogen moderate, and after harvest clear the infected panicles and stubble from the field.": "জমি প্লাবিত রাখার পরিবর্তে বিকল্পভাবে ভিজে এবং শুকিয়ে নিন, নাইট্রোজেন মাঝারি রাখুন এবং ফসল কাটার পরে সংক্রামিত শীষ এবং ক্ষেত থেকে খড় পরিষ্কার করুন।",
   "Alternative if spots keep spreading after mancozeb.": "মানকোজেবের পরে যদি দাগ ছড়িয়ে পড়তে থাকে তবে বিকল্প।",
@@ -580,6 +581,7 @@
   "Level": "স্তর",
   "Light wind (about {wind} km/h), no rain expected for at least 4 hours after, and not too hot.": "হালকা বাতাস (ঘণ্টায় প্রায় {wind} কিমি), অন্তত 4 ঘন্টা পরে বৃষ্টির কোনও সম্ভাবনা নেই এবং খুব গরমও নয়।",
   "Lightning can strike open fields. Stay off the field while it thunders, keep away from lone trees and wire fences, and shelter your animals.": "খোলা মাঠে বজ্রপাত হতে পারে। বজ্রপাতের সময় মাঠ থেকে দূরে থাকুন, একা গাছ এবং তারের বেড়া থেকে দূরে থাকুন এবং আপনার পশুদের আশ্রয় দিন।",
+  "Live weather from {source}. Advice from ICAR and IMD. For any product, its label decides.": "{source} থেকে লাইভ আবহাওয়া। আইসিএআর এবং আইএমডি থেকে পরামর্শ। যে কোনও পণ্যের জন্য, তার লেবেল নির্ধারণ করে।",
   "Long cigar-shaped grey-green to tan lesions, 3 to 15 cm, starting on the lower leaves.": "নীচের দিকের পাতা থেকে শুরু করে 3 থেকে 15 সেন্টিমিটার লম্বা, চুরুটের মতো ধূসর-সবুজ থেকে ট্যান রঙের ক্ষত।",
   "Long, narrow, rectangular grey-tan spots that stop at the leaf veins, starting on the lower leaves.": "লম্বা, সংকীর্ণ, আয়তক্ষেত্রাকার ধূসর-ট্যান দাগ যা নিচের পাতা থেকে শুরু করে পাতার শিরায় থামে।",
   "Look across the field for patches of short, yellow-orange plants.": "মাঠের ওপারে ছোট, হলুদ-কমলা রঙের উদ্ভিদের প্যাচগুলির জন্য তাকান।",
@@ -932,6 +934,7 @@
   "Strong sun and heat {day}: UV {uv}, {tmax}°C": "তীব্র রোদ এবং তাপ {day}: অতিবেগুনী {uv}, {tmax}°C",
   "Subject": "বিষয়",
   "Sumangala: medium-staple cotton variety with resistance to sucking pests. Yield potential 25-30 q/ha.": "সুমঙ্গলা: রস শোষক পোকা প্রতিরোধ সহ মাঝারি-প্রধান তুলো জাত। ফলন সম্ভাব্যতা 25-30/হেক্টর।",
+  "Summary: every morning at 6": "সারাংশঃ প্রতিদিন সকাল 6টায়",
   "Sun": "রবি",
   "Suraj: long-staple cotton variety with sucking-pest tolerance, grown in South and Central zone states (Maharashtra is Central zone). Yield potential 25 q/ha.": "সুরজ: চোষক-কীট সহনশীলতা সহ দীর্ঘ-স্ট্যাপল তুলোর জাত, দক্ষিণ এবং মধ্য অঞ্চলের রাজ্যগুলিতে (মহারাষ্ট্র মধ্য অঞ্চল) জন্মে। ফলন সম্ভাবনা 25 কিউ/হেক্টর।",
   "Sweep a cloth over the plants and count green leafhoppers.": "গাছের উপর একটি কাপড় ঝাড় দিন এবং সবুজ লিফহপার গণনা করুন।",
@@ -1363,10 +1366,7 @@
   "{officer} has asked for this field to be checked for {name}.": "{officer} এই জমিটি {name}-এর জন্য পরীক্ষা করতে বলেছে।",
   "{officer} of the district agriculture office reports {name} building in {district}. Check your field.": "জেলা কৃষি অফিসের {officer} রিপোর্ট {name} বিল্ডিং {district}। আপনার ক্ষেত্র পরীক্ষা করুন।",
   "{reason}. Spray that drifts away or washes off is money that never reaches the pest.": "{reason} যে স্প্রে দূরে সরে যায় বা ধুয়ে যায় তা এমন টাকা যা কখনই কীটপতঙ্গের কাছে পৌঁছায় না।",
-  "{why} Very hot days also dry the soil fast.": "{why} খুব গরম দিনগুলি মাটি দ্রুত শুষ্ক করে দেয়।",
-  "Also watch: {names}": "আরও দেখুনঃ {names}",
-  "Live weather from {source}. Advice from ICAR and IMD. For any product, its label decides.": "{source} থেকে লাইভ আবহাওয়া। আইসিএআর এবং আইএমডি থেকে পরামর্শ। যে কোনও পণ্যের জন্য, তার লেবেল নির্ধারণ করে।",
-  "Summary: every morning at 6": "সারাংশঃ প্রতিদিন সকাল 6টায়"
+  "{why} Very hot days also dry the soil fast.": "{why} খুব গরম দিনগুলি মাটি দ্রুত শুষ্ক করে দেয়।"
  },
  "reviewed": [
   "Demo field",

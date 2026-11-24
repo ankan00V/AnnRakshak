@@ -278,6 +278,7 @@
   "Dead heart: the central shoot dries and pulls out easily. At heading, white empty panicles.": "સુકાયેલી ડૂંખ (ડેડ હાર્ટ): વચલી ડૂંખ સુકાઈ જાય છે અને ખેંચતાં સહેલાઈથી નીકળી આવે છે. કંટી નીકળવાના સમયે દાણા વગરની સફેદ કંટીઓ.",
   "Destroy infected residue, rotate crops and use tolerant hybrids.": "ચેપગ્રસ્ત અવશેષોનો નાશ કરો, પાકને ફેરવો અને સહિષ્ણુ સંકરનો ઉપયોગ કરો.",
   "Destroy infected residue, rotate with a non-cereal crop and keep balanced nitrogen and potash.": "ચેપગ્રસ્ત અવશેષોનો નાશ કરો, અનાજના પાક સાથે ફેરવો અને નાઇટ્રોજન અને પોટાશને સંતુલિત રાખો.",
+  "Didn't ask for it? Ignore this email.": "તમે માંગ્યો નથી? આ ઈમેલને અવગણો.",
   "Direct the spray at the lower stem and sheaths.": "સ્પ્રેને નીચલા દાંડી અને આવરણ પર નિર્દેશિત કરો.",
   "Direct the spray at the lower stems where the patches are.": "સ્પ્રેને નીચલા દાંડા પર નિર્દેશિત કરો જ્યાં પેચો છે.",
   "District": "જિલ્લો",
@@ -1366,8 +1367,7 @@
   "{officer} has asked for this field to be checked for {name}.": "{officer} એ આ ખેતરને {name} માટે તપાસવા માટે કહ્યું છે.",
   "{officer} of the district agriculture office reports {name} building in {district}. Check your field.": "જિલ્લા કૃષિ કચેરીના {officer} અહેવાલો {name} {district} માં મકાન. તમારા ક્ષેત્રની તપાસ કરો.",
   "{reason}. Spray that drifts away or washes off is money that never reaches the pest.": "{reason} સ્પ્રે કે જે દૂર જાય છે અથવા ધોવાઇ જાય છે તે પૈસા છે જે ક્યારેય જંતુ સુધી પહોંચતા નથી.",
-  "{why} Very hot days also dry the soil fast.": "{why} ખૂબ જ ગરમ દિવસો પણ જમીનને ઝડપથી સૂકવી દે છે.",
-  "Didn't ask for it? Ignore this email.": "તમે માંગ્યો નથી? આ ઈમેલને અવગણો."
+  "{why} Very hot days also dry the soil fast.": "{why} ખૂબ જ ગરમ દિવસો પણ જમીનને ઝડપથી સૂકવી દે છે."
  },
  "reviewed": [
   "Demo field",

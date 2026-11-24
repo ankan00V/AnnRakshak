@@ -545,6 +545,7 @@
   "Irrigate if the soil is dry 5 cm down.": "ಮಣ್ಣು 5 ಸೆ.ಮೀ. ಕೆಳಗೆ ಒಣಗಿದ್ದರೆ ನೀರಾವರಿ ಮಾಡಿ.",
   "Irrigate in the early morning or evening to lose less to evaporation": "ಆವಿಯಾಗುವಿಕೆಯಿಂದ ಕಡಿಮೆ ನಷ್ಟವಾಗಲು ಮುಂಜಾನೆ ಅಥವಾ ಸಂಜೆ ನೀರಾವರಿ ಮಾಡಿ",
   "Irrigate lightly in the evening — moist soil holds heat": "ಸಂಜೆ ಲಘುವಾಗಿ ನೀರಾವರಿ ಮಾಡಿ, ತೇವಾಂಶವುಳ್ಳ ಮಣ್ಣು ಶಾಖವನ್ನು ಹಿಡಿದಿಟ್ಟುಕೊಳ್ಳುತ್ತದೆ",
+  "Irrigate today": "ಇಂದು ನೀರು ಹಾಯಿಸಿ",
   "Is the colour on the top leaves that catch the most sun, purple-bronze over the whole leaf — rather than on the older lower leaves, yellow only along the edges?": "ಬಣ್ಣ ಹೆಚ್ಚು ಬಿಸಿಲು ಬೀಳುವ ಮೇಲಿನ ಎಲೆಗಳ ಮೇಲೆ, ಇಡೀ ಎಲೆ ನೇರಳೆ-ಕಂಚು ಬಣ್ಣದಲ್ಲಿದೆಯೇ — ಹಳೆಯ ಕೆಳಗಿನ ಎಲೆಗಳ ಅಂಚಿನಲ್ಲಿ ಮಾತ್ರ ಹಳದಿಯಾಗಿ ಅಲ್ಲವೇ?",
   "Is the damage worst along one edge of the field — the side facing a field sprayed recently — and better as you walk inward, with no thickened veins on the underside of the leaf?": "ಹಾನಿ ಹೊಲದ ಒಂದು ಅಂಚಿನಲ್ಲಿ — ಇತ್ತೀಚೆಗೆ ಔಷಧಿ ಸಿಂಪಡಿಸಿದ ಪಕ್ಕದ ಹೊಲದ ಕಡೆ — ಹೆಚ್ಚಾಗಿದ್ದು, ಒಳಗೆ ಹೋದಂತೆ ಕಡಿಮೆಯಾಗುತ್ತದೆಯೇ, ಎಲೆಯ ಕೆಳಭಾಗದಲ್ಲಿ ನರಗಳು ದಪ್ಪವಾಗದೆ?",
   "Issued by AnnRakshak": "AnnRakshak ನಿಂದ ಪ್ರಕಟಿಸಲಾಗಿದೆ",
@@ -746,6 +747,7 @@
   "Part the plants in the densest area and check stem sheaths just above the water for grey-green patches.": "ಅತ್ಯಂತ ದಟ್ಟವಾದ ಪ್ರದೇಶದಲ್ಲಿರುವ ಸಸ್ಯಗಳನ್ನು ಬೇರ್ಪಡಿಸಿ ಮತ್ತು ನೀರಿನ ಮೇಲಿರುವ ಕಾಂಡದ ಕವಚಗಳನ್ನು ಬೂದು-ಹಸಿರು ತೇಪೆಗಳಿಗಾಗಿ ಪರಿಶೀಲಿಸಿ.",
   "Peel back the husk of 10 cobs and look for mould at the tip or around insect holes.": "10 ಕೋಬ್ಗಳ ಸಿಪ್ಪೆಯನ್ನು ಹಿಂತೆಗೆದುಕೊಳ್ಳಿ ಮತ್ತು ತುದಿಯಲ್ಲಿ ಅಥವಾ ಕೀಟಗಳ ರಂಧ್ರಗಳ ಸುತ್ತಲೂ ಅಚ್ಚು ಹುಡುಕಿ.",
   "Peel back the husk on 10 cobs and look for mould at the tip.": "10 ಕೋಬ್ಗಳ ಮೇಲೆ ಸಿಪ್ಪೆಯನ್ನು ಹಿಂತೆಗೆದುಕೊಳ್ಳಿ ಮತ್ತು ತುದಿಯಲ್ಲಿ ಅಚ್ಚುಗಾಗಿ ನೋಡಿ.",
+  "Pests": "ಕೀಟ-ರೋಗ",
   "Pests and diseases the weather favours": "ಹವಾಮಾನಕ್ಕೆ ಅನುಕೂಲಕರವಾದ ಕೀಟಗಳು ಮತ್ತು ರೋಗಗಳು",
   "Photo diagnosis for this crop isn't available yet. Your photo goes to an expert; your alerts tell you what to check.": "ಈ ಬೆಳೆಯ ಫೋಟೋ ರೋಗನಿರ್ಣಯ ಇನ್ನೂ ಲಭ್ಯವಿಲ್ಲ. ನಿಮ್ಮ ಫೋಟೋ ತಜ್ಞರಿಗೆ ಹೋಗುತ್ತದೆ; ನಿಮ್ಮ ಎಚ್ಚರಿಕೆಗಳು ನೀವು ಏನು ಪರಿಶೀಲಿಸಬೇಕೆಂದು ನಿಮಗೆ ತಿಳಿಸುತ್ತವೆ.",
   "Photo sent for checking": "ಪರಿಶೀಲನೆಗಾಗಿ ಫೋಟೋ ಕಳುಹಿಸಲಾಗಿದೆ",
@@ -969,6 +971,7 @@
   "The code has expired. Ask for a new code.": "ಕೋಡ್ ಅವಧಿ ಮುಗಿದಿದೆ. ಹೊಸ ಕೋಡ್ಗಾಗಿ ಕೇಳಿ.",
   "The coloured patch shows which part of your photo the AI used to decide. If it sits on the spots or damage, the answer is based on the right thing. If it sits on soil or background, take a closer photo of the leaf.": "ಬಣ್ಣದ ಪ್ಯಾಚ್ ನಿಮ್ಮ ಫೋಟೋದ ಯಾವ ಭಾಗವನ್ನು AI ನಿರ್ಧರಿಸುತ್ತಿತ್ತು ಎಂಬುದನ್ನು ತೋರಿಸುತ್ತದೆ. ಅದು ತಾಣಗಳ ಮೇಲೆ ಕುಳಿತರೆ ಅಥವಾ ಹಾನಿಗೊಳಗಾಗಿದ್ದರೆ, ಉತ್ತರವು ಸರಿಯಾದ ವಿಷಯವನ್ನು ಆಧರಿಸಿದೆ. ಅದು ಮಣ್ಣಿನ ಮೇಲೆ ಅಥವಾ ಹಿನ್ನೆಲೆಯ ಮೇಲೆ ಕುಳಿತರೆ, ಎಲೆಯ ಹತ್ತಿರದ ಫೋಟೋವನ್ನು ತೆಗೆದುಕೊಳ್ಳಿ.",
   "The crop is maturing — irrigation is normally stopped now.": "ಬೆಳೆ ಬೆಳೆಯುತ್ತಿದೆ, ಸಾಮಾನ್ಯವಾಗಿ ಈಗ ನೀರಾವರಿಯನ್ನು ನಿಲ್ಲಿಸಲಾಗುತ್ತದೆ.",
+  "The crop is ripening": "ಬೆಳೆ ಹಣ್ಣಾಗುತ್ತಿದೆ",
   "The district office adds a district to an officer's patch: {items}. You can drop one here.": "ಜಿಲ್ಲಾ ಕಚೇರಿಯು ಅಧಿಕಾರಿಯ ಪ್ಯಾಚ್ಗೆ ಜಿಲ್ಲೆಯನ್ನು ಸೇರಿಸುತ್ತದೆ: {items}. ನೀವು ಒಂದನ್ನು ಇಲ್ಲಿ ಬಿಡಬಹುದು.",
   "The district office has not verified your account yet, so no case can be opened.": "ಜಿಲ್ಲಾ ಕಚೇರಿಯು ನಿಮ್ಮ ಖಾತೆಯನ್ನು ಇನ್ನೂ ಪರಿಶೀಲಿಸಿಲ್ಲ, ಆದ್ದರಿಂದ ಯಾವುದೇ ಪ್ರಕರಣವನ್ನು ತೆರೆಯಲು ಸಾಧ್ಯವಿಲ್ಲ.",
   "The forecast shows these conditions continuing.": "ಮುನ್ಸೂಚನೆಯು ಈ ಪರಿಸ್ಥಿತಿಗಳು ಮುಂದುವರಿಯುವುದನ್ನು ತೋರಿಸುತ್ತದೆ.",
@@ -1365,10 +1368,7 @@
   "{officer} has asked for this field to be checked for {name}.": "{officer} ಈ ಹೊಲವನ್ನು {name} ಎಂದು ಪರಿಶೀಲಿಸಲು ಕೇಳಿದೆ.",
   "{officer} of the district agriculture office reports {name} building in {district}. Check your field.": "{officer} ಜಿಲ್ಲಾ ಕೃಷಿ ಕಚೇರಿಯ ವರದಿಗಳು {name} ಕಟ್ಟಡವು {district} ನಲ್ಲಿದೆ. ನಿಮ್ಮ ಕ್ಷೇತ್ರವನ್ನು ಪರಿಶೀಲಿಸಿ.",
   "{reason}. Spray that drifts away or washes off is money that never reaches the pest.": "{reason}. ಹಾರಿಹೋಗುವ ಅಥವಾ ತೊಳೆದು ಹೋಗುವ ಸಿಂಪಡಣೆಯು ಕೀಟವನ್ನು ತಲುಪದ ಹಣ.",
-  "{why} Very hot days also dry the soil fast.": "{why} ತುಂಬಾ ಬಿಸಿಲಿನ ದಿನಗಳು ಮಣ್ಣನ್ನು ಬೇಗನೆ ಒಣಗಿಸುತ್ತವೆ.",
-  "Pests": "ಕೀಟ-ರೋಗ",
-  "Irrigate today": "ಇಂದು ನೀರು ಹಾಯಿಸಿ",
-  "The crop is ripening": "ಬೆಳೆ ಹಣ್ಣಾಗುತ್ತಿದೆ"
+  "{why} Very hot days also dry the soil fast.": "{why} ತುಂಬಾ ಬಿಸಿಲಿನ ದಿನಗಳು ಮಣ್ಣನ್ನು ಬೇಗನೆ ಒಣಗಿಸುತ್ತವೆ."
  },
  "reviewed": [
   "Demo field",

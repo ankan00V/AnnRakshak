@@ -20,7 +20,9 @@ const TRIGGER_ICON: Record<string, typeof CloudRain> = {
 
 /** An alert is a task, not a notification: it stays until the farmer records
  *  what they found. There is no dismiss button on purpose. */
-export default function AlertCard({ alert, onDone }: { alert: AlertView; onDone: () => void }) {
+export default function AlertCard({ alert, onDone }: {
+  alert: AlertView; onDone: (outcome: 'nothing_found' | 'found' | 'snoozed') => void
+}) {
   // A shared demo field is everybody's, so answering its warning would edit
   // what the next visitor walks into — the server refuses it. Offering the
   // buttons anyway would be a control that can only fail.
@@ -53,9 +55,10 @@ export default function AlertCard({ alert, onDone }: { alert: AlertView; onDone:
         navigate('/app/scan')
         return
       }
-      if (r.message) setNote(r.message)
-      else onDone()
-      if (r.message) setTimeout(onDone, 2500)
+      // Said at once, in the card, then the card goes — rather than the
+      // buttons sitting there until the whole list has reloaded.
+      setNote(r.message ?? (outcome === 'snoozed' ? t('alertSnoozed') : t('alertSaved')))
+      setTimeout(() => onDone(outcome), r.message ? 2500 : 1200)
     } catch {
       // Walking the field and reporting what was there is the farmer's half of
       // this. Dropping it silently closes the card as though it was recorded.

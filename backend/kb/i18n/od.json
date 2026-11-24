@@ -921,6 +921,7 @@
   "Strong sun and heat {day}: UV {uv}, {tmax}°C": "ପ୍ରବଳ ସୂର୍ଯ୍ଯ଼ ଏବଂ ଉତ୍ତାପ {day}: UV {uv}, {tmax} °C",
   "Subject": "ବିଷୟ",
   "Sumangala: medium-staple cotton variety with resistance to sucking pests. Yield potential 25-30 q/ha.": "ସୁମଙ୍ଗଲାଃ ଚୋଷା କୀଟ ପ୍ରତି ପ୍ରତିରୋଧ ସହିତ ମଧ୍ଯ଼ମ-ପ୍ରଧାନ କପା ପ୍ରକାର | ଉତ୍ପାଦନ କ୍ଷମତା 25-30 q/ହେକ୍ଟର |",
+  "Summary: every morning at 6": "ସାରାଂଶ: ପ୍ରତିଦିନ ସକାଳ 6ଟାରେ",
   "Sun": "ସୂର୍ଯ୍ଯ଼",
   "Suraj: long-staple cotton variety with sucking-pest tolerance, grown in South and Central zone states (Maharashtra is Central zone). Yield potential 25 q/ha.": "ସୁରଜ-ଦକ୍ଷିଣ ଏବଂ କେନ୍ଦ୍ରୀଯ଼ ଜୋନ୍ ରାଜ୍ଯ଼ (ମହାରାଷ୍ଟ୍ର ହେଉଛି କେନ୍ଦ୍ରୀଯ଼ ଜୋନ୍) ରେ ଚାଷ କରାଯାଉଥିବା ଦୀର୍ଘ-ପ୍ରମୁଖ କପା କିସମ, ଯାହା ଶୁଷ-କୀଟ ସହନଶୀଳତା ସହିତ, ହେକ୍ଟର ପିଛା 25 କି. ମି. ଉତ୍ପାଦନ କ୍ଷମତା ରହିଛି।",
   "Sweep a cloth over the plants and count green leafhoppers.": "ଗଛ ଉପରେ ଏକ କପଡ଼ା ସଫା କରନ୍ତୁ ଏବଂ ସବୁଜ ପତ୍ରପତ୍ରିକା ଗଣନା କରନ୍ତୁ।",
@@ -1349,7 +1350,6 @@
   "{officer} has asked for this field to be checked for {name}.": "{officer} ଏହି କ୍ଷେତ୍ରକୁ {name} ପାଇଁ ଯାଞ୍ଚ କରିବାକୁ କହିଛି।",
   "{officer} of the district agriculture office reports {name} building in {district}. Check your field.": "ଜିଲ୍ଲା କୃଷି କାର୍ଯ୍ୟାଳୟର {officer} {district} ରେ {name} ବିଲ୍ଡିଂ ରିପୋର୍ଟ କରେ | ନିଜ କ୍ଷେତ୍ରକୁ ଯାଞ୍ଚ କରନ୍ତୁ।",
   "{reason}. Spray that drifts away or washes off is money that never reaches the pest.": "{reason}. ଯେଉଁ ସ୍ପ୍ରେ ଦୂରକୁ ଚାଲିଯାଏ କିମ୍ବା ଧୁଅିଯାଏ ତାହା ହେଉଛି ସେହି ଟଙ୍କା ଯାହା କଦାପି କୀଟ ପର୍ଯ୍ଯ଼ନ୍ତ ପହଞ୍ଚିନଥାଏ।",
-  "{why} Very hot days also dry the soil fast.": "{why} ଅତି ଗରମ ଦିନଗୁଡ଼ିକରେ ମଧ୍ଯ଼ ମାଟି ଶୀଘ୍ର ଶୁଖିଯାଏ।",
-  "Summary: every morning at 6": "ସାରାଂଶ: ପ୍ରତିଦିନ ସକାଳ 6ଟାରେ"
+  "{why} Very hot days also dry the soil fast.": "{why} ଅତି ଗରମ ଦିନଗୁଡ଼ିକରେ ମଧ୍ଯ଼ ମାଟି ଶୀଘ୍ର ଶୁଖିଯାଏ।"
  }
 }
