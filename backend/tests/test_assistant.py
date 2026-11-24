@@ -235,8 +235,28 @@ def test_a_demo_farmer_is_greeted_and_sent_to_register_whatever_they_ask(world, 
     assert out["topic"] == "demo" and "demo account" in out["text"] and out["go"][0]["to"] == "/signup/farmer"
     assert hi["lang"] == "hi" and "डेमो" in hi["text"]
     assert chip["topic"] == "demo"  # a tapped question too
-    assert "demo account" in hello["text"] and hello["suggestions"] == []  # nothing to tap from the start
+    assert "demo account" in hello["text"]
+    assert [c["id"] for c in hello["suggestions"]] == ["signup_role", "account"]  # how to register, how to leave
     assert not sent  # no lookup, no model call for a demo
+
+
+def test_a_demo_account_still_gets_help_signing_up(world, scripted, monkeypatch):
+    """The register message sends them to sign up; Krishi must help there, and
+    with the account questions anywhere."""
+    demo = User(id=997, role="farmer", name="Demo farmer", is_demo=True)
+    try:
+        with _client_as(monkeypatch, demo) as c:
+            on_signup = c.post("/api/krishi/ask", json={"text": "i didn't get the code", "lang": "en",
+                                                       "screen": "signup"}).json()
+            hello = c.get("/api/krishi/hello?lang=en&screen=signup").json()
+            which = c.post("/api/krishi/ask", json={"text": "should i sign up as farmer or expert", "lang": "en",
+                                                   "screen": "home"}).json()
+            chip = c.post("/api/krishi/ask", json={"topic": "account", "lang": "en", "screen": "home"}).json()
+    finally:
+        app.dependency_overrides.clear()
+    assert on_signup["topic"] == "no_code"
+    assert "demo account" not in hello["text"] and hello["suggestions"]
+    assert which["topic"] == "signup_role" and chip["topic"] == "account"
 
 
 def test_a_demo_officer_gets_a_greeting_from_darpan_not_district_numbers(world, scripted, monkeypatch):

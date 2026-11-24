@@ -40,7 +40,7 @@ from functools import lru_cache
 from app import llm
 from app.engine import advisory as advisory_engine
 from app.engine import labelcheck
-from app.i18n import LANGS
+from app.i18n import TEXT_LANGS as LANGS
 from app.kb import KB, tr, trl
 
 # The crops, as farmers name them.
@@ -105,16 +105,16 @@ rust mildew wilt borer bollworm hopper fly beetle mite deficiency disorder
 
 # What the farmer wants to know.
 CUES = {
-    "identify": ["what is", "what's", "identify", "recognise", "recognize", "symptom", "symptoms", "look like",
+    "identify": ["what is", "identify", "recognise", "recognize", "symptom", "symptoms", "look like",
                  "kya hai", "kya hota", "kaisa dikhta", "pehchan", "pahchan", "lakshan", "kay aahe", "olakh",
                  "क्या है", "क्या होता", "पहचान", "लक्षण", "काय आहे", "ओळख", "कसा दिसतो", "कशी दिसते"],
-    "organic": ["organic", "organically", "natural", "naturally", "without chemical", "without chemicals",
+    "organic": ["organic", "organically", "natural", "naturally", "biological", "biologically", "without chemical", "without chemicals",
                 "jaivik", "jaivic", "sendriya", "neem", "desi", "gharelu", "home made", "homemade", "bio",
                 "जैविक", "प्राकृतिक", "सेंद्रिय", "नैसर्गिक", "देसी", "घरेलू", "नीम", "कडुनिंब", "निंबोळी"],
     "chemical": ["chemical", "pesticide", "insecticide", "fungicide", "spray", "dawai", "dawa", "dava", "aushadh",
                  "kitnashak", "rasayan", "favarni", "which medicine",
                  "रासायनिक", "रसायन", "कीटनाशक", "दवा", "दवाई", "दवाई", "फवारणी", "औषध", "कीटकनाशक", "छिड़काव"],
-    "recipe": ["how to make", "how do i make", "recipe", "prepare", "kaise banaye", "kaise banate", "banane ki vidhi",
+    "recipe": ["how to make", "how do i make", "how can i make", "recipe", "prepare", "kaise banaye", "kaise banate", "banane ki vidhi",
                "kase banvayche", "kashi banvaychi", "कैसे बनाएँ", "कैसे बनाए", "बनाने की विधि", "कसे बनवायचे",
                "कशी बनवायची", "तयार कसे"],
 }
@@ -279,6 +279,25 @@ def _register(kb: KB) -> int:
     return id(kb)
 
 
+def _same_word(q: str, w: str) -> bool:
+    """The question's word is the name's word: the same, or the name's word
+    with an ending ("बोंडअळीचा"). In the southern and eastern scripts endings
+    replace the last letters as well as add to them ("தண்டு" / "தண்டுத்",
+    "துளைப்பதை" / "துளைப்பான்"), so there a long shared start is enough."""
+    if q == w or (len(w) >= 4 and q.startswith(w)):
+        return True
+    if q.isascii() or w.isascii() or "\u0900" <= q[0] <= "\u097f":
+        # English, and Hindi and Marathi, whose names are authored with their
+        # endings ("धब्बे" is a description, not the name "धब्बा").
+        return False
+    n = 0
+    for a, b in zip(q, w):
+        if a != b:
+            break
+        n += 1
+    return n >= 4 and n >= 0.7 * min(len(q), len(w))
+
+
 def _name_score(alias: str, q_words: list[str], q_padded: str) -> float:
     if f" {alias} " in q_padded:
         return 1.0
@@ -286,8 +305,8 @@ def _name_score(alias: str, q_words: list[str], q_padded: str) -> float:
     if len(words) < 2:
         # A one-word name has to be there whole, or as the start of an
         # inflected word ("बोंडअळीचा"): a share of one word is nothing.
-        return 1.0 if len(alias) >= 4 and any(w.startswith(alias) for w in q_words) else 0.0
-    hit = [w for w in words if any(q == w or (len(w) >= 4 and q.startswith(w)) for q in q_words)]
+        return 1.0 if len(alias) >= 4 and any(_same_word(w, alias) for w in q_words) else 0.0
+    hit = [w for w in words if any(_same_word(q, w) for q in q_words)]
     # Common words alone name nothing ("leaf" is in a dozen names); two of a
     # name's words together ("stem borer") are a name.
     if not hit or (len(hit) < 2 and all(w in GENERIC for w in hit)):
@@ -320,7 +339,11 @@ def without_name(kb: KB, tid: str, text: str) -> str:
 def find(kb: KB, text: str, crop: str | None = None) -> list[tuple[str, float]]:
     """Targets the question names, best first. `crop` keeps only that crop's."""
     q = _norm(text)
-    q_words, q_padded = q.split(), f" {q} "
+    q_words = q.split()
+    # "white fly" is "whitefly", "stem borer" is "stemborer": each pair of
+    # English words is also tried as one.
+    q_words += [a + b for a, b in zip(q_words, q_words[1:]) if a.isascii() and b.isascii()]
+    q_padded = f" {' '.join(q_words)} "
     scores: list[tuple[str, float]] = []
     for tid, names in _aliases(_register(kb)).items():
         if crop and kb.targets[tid]["crop"] != crop:

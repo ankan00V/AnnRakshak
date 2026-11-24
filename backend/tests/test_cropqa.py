@@ -218,3 +218,51 @@ def test_krishi_gives_the_field_amount_when_a_field_is_open():
     assert "6.3 ml per litre of water. For your 3 acre field: about 3.8 litres in 600 litres of water." in reg
     recipe = ask("how to make agniastra", farm=farm)
     assert any("For your 3 acre field: 18–24 litres in 600 litres of water" in s for s in recipe["steps"])
+
+
+# --- every language Krishi claims ----------------------------------------------
+
+def test_odia_is_read_as_odia():
+    assert krishi.register("ଧାନରେ କାଣ୍ଡ ଛେଦକ", "en") == ("od", False)
+
+
+def test_a_pest_named_in_its_own_language_is_found_through_the_word_endings():
+    """"தண்டு துளைப்பதை" is how a Tamil question says the name the memory has
+    as "மஞ்சள் தண்டுத் துளைப்பான்": the endings change the last letters."""
+    assert cropqa._same_word("தண்டு", "தண்டுத்") and cropqa._same_word("துளைப்பதை", "துளைப்பான்")
+    assert not cropqa._same_word("white", "whitefly")
+    hits = cropqa.find(kb, "நெல்லில் மஞ்சள் தண்டு துளைப்பதை எப்படி கட்டுப்படுத்துவது")
+    assert hits and hits[0][0] == "rice_yellow_stem_borer"
+
+
+def test_a_split_english_name_is_still_the_name():
+    assert cropqa.find(kb, "white fly on cotton")[0][0] == "cotton_whitefly"
+
+
+@pytest.mark.parametrize("lang, text, english", [
+    ("bn", "ধানের মাজরা পোকা জৈব উপায়ে কীভাবে দমন করব?", "How can rice stem borer be controlled biologically?"),
+    ("od", "ଚାଉଳରେ ଥିବା କାଣ୍ଡ ଛେଦକକୁ ଜୈବିକ ଉପାୟରେ ମୁଁ କିପରି ନିୟନ୍ତ୍ରଣ କରିପାରିବି?",
+     "How can I control stem borer in rice organically?"),
+    ("pa", "ਨਰਮੇ ਵਿੱਚ ਚਿੱਟੀ ਮੱਖੀ, ਮੈਨੂੰ ਕੀ ਛਿੜਕਾਅ ਕਰਨਾ ਚਾਹੀਦਾ ਹੈ?", "White fly in cotton, what should I spray?"),
+])
+def test_a_question_in_another_language_is_answered_in_it(monkeypatch, lang, text, english):
+    """Names and cues are written in English, Hindi and Marathi; a question in
+    any other language is also read in English, and answered in its own."""
+    from app import cache
+    monkeypatch.setattr(cache, "get_json", lambda key: None)
+    monkeypatch.setattr(cache, "set_json", lambda *a, **k: None)
+    monkeypatch.setattr(krishi.voice, "translate", lambda t, s, d: english)
+    out = ask(text, lang)
+    assert out["topic"].startswith("crop:") and out["lang"] == lang
+    said = " ".join([out["text"], *out["steps"]])
+    letters = [c for c in said if c.isalpha()]
+    assert sum(not c.isascii() for c in letters) / len(letters) > 0.6  # in the farmer's script, not English
+
+
+@pytest.mark.parametrize("lang", ["bn", "ta", "te", "kn", "ml", "gu", "pa", "od"])
+def test_a_dose_unit_reads_in_order_in_every_language(lang):
+    """"3 g per litre of water" is put together as the number and then this
+    fragment: the fragment must name the unit, in the language's letters."""
+    for unit in ("g", "ml"):
+        frag = tr(advisory.UNIT_WORDS[unit], lang)
+        assert frag != advisory.UNIT_WORDS[unit]["en"] and not any(c.isascii() and c.isalpha() for c in frag)

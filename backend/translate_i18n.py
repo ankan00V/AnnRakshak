@@ -42,7 +42,7 @@ from datetime import date
 from pathlib import Path
 
 from app.config import KB_DIR, SARVAM_TRANSLATE_MODEL
-from app.i18n import (BRAND, glossary_name, join_endings, runaway, MACHINE, MEMORY_DIR, NUM, UNIT_BOUND, kept_order, protect, restore, tidy,
+from app.i18n import (BRAND, glossary_name, join_endings, runaway, MACHINE, TEXT_LANGS, MEMORY_DIR, NUM, UNIT_BOUND, kept_order, protect, restore, tidy,
                       translate_many)
 
 INDICTRANS2 = "ai4bharat/indictrans2-en-indic-dist-200M"
@@ -111,7 +111,7 @@ class IndicTrans2:
 ROOT = Path(__file__).resolve().parents[1]
 UI_SOURCE = ROOT / "frontend" / "landing" / "src" / "lib" / "i18n.ts"
 UI_OUT = ROOT / "frontend" / "landing" / "src" / "locales"
-KB_FILES = ["crops.json", "targets.json", "advisories.json", "cues.json", "risk_rules.json",
+KB_FILES = ["crops.json", "targets.json", "advisories.json", "homemade.json", "cues.json", "risk_rules.json",
             "agromet.json", "icar_technologies.json", "krishi.json"]
 MODULES = ["app.services", "app.notify", "app.mailer", "app.live", "app.office", "app.engine.advisory", "app.engine.risk",
            "app.engine.fieldnow", "app.engine.livescan", "app.routers.weather", "app.auth", "app.routers.auth",
@@ -206,9 +206,10 @@ def main() -> None:
                          "'sarvam' is the old name for it); indictrans2: AI4Bharat model run locally")
     args = ap.parse_args()
     langs = [x for x in args.lang.split(",") if x]
-    bad = [x for x in langs if x not in MACHINE]
+    written = tuple(x for x in TEXT_LANGS if x not in ("en", "hi", "mr"))  # Odia too: Krishi answers in it
+    bad = [x for x in langs if x not in written]
     if bad:
-        sys.exit(f"not a machine-translated language: {bad} (choose from {MACHINE})")
+        sys.exit(f"not a machine-translated language: {bad} (choose from {written})")
 
     engine = IndicTrans2() if args.engine == "indictrans2" and not args.count else None
     kb_src = backend_strings()

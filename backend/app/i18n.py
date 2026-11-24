@@ -29,6 +29,10 @@ from app.config import KB_DIR
 LANGS = ("en", "hi", "mr", "bn", "ta", "te", "kn", "ml", "gu", "pa")
 AUTHORED = ("en", "hi", "mr")
 MACHINE = tuple(x for x in LANGS if x not in AUTHORED)
+TEXT_LANGS = (*LANGS, "od")
+"""The eleven languages Krishi reads and answers in writing. Odia is among
+them: Bhashini translates Odia text; only its speech is off, so an Odia answer
+is shown and not read aloud."""
 NATIVE_NAMES = {
     "en": "English", "hi": "हिन्दी", "mr": "मराठी", "bn": "বাংলা", "ta": "தமிழ்", "te": "తెలుగు",
     "kn": "ಕನ್ನಡ", "ml": "മലയാളം", "gu": "ગુજરાતી", "pa": "ਪੰਜਾਬੀ", "od": "ଓଡ଼ିଆ",
