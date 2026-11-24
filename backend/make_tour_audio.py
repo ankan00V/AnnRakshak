@@ -36,7 +36,7 @@ import httpx
 import translate_i18n as T
 from app.config import SARVAM_LANG
 
-STEPS = ["welcome", "farm", "weather", "live", "scan", "checks", "spray", "alerts", "krishi", "lang", "done"]
+STEPS = ["welcome", "farm", "scan", "live", "weather", "checks", "spray", "alerts", "krishi", "lang", "done"]
 """Must match frontend/landing/src/farmer/tour/steps.ts."""
 HELP = ["helpCrop", "helpArea", "helpSowing", "dateBasisWhy", "helpIrrigation", "helpSoilPh"]
 """The sign-up fields a farmer is asked to fill in before the app has said a

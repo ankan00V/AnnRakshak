@@ -148,43 +148,45 @@ photo goes to an expert instead of back to the farmer. Measured on the 44
 out-of-scope photos in the familiarity check: 32 of them fall below it."""
 
 TARGET_GATE = {
-    "maize_ear_rot": 0.80,
-    "maize_gray_leaf_spot": 0.95,
-    "maize_turcicum_leaf_blight": 0.90,
-    "rice_bacterial_leaf_streak": 0.95,
-    "rice_bacterial_panicle_blight": 0.95,
+    "cotton_alternaria_leaf_spot": 0.95,
+    "maize_ear_rot": 0.95,
+    "maize_maydis_leaf_blight": 0.85,
+    "maize_turcicum_leaf_blight": 0.95,
+    "rice_bacterial_leaf_streak": 0.85,
+    "rice_bacterial_panicle_blight": 0.85,
     "rice_blast": 0.95,
-    "rice_brown_spot": 0.85,
     "rice_downy_mildew": 0.95,
     "rice_hispa": 0.95,
-    "rice_leaf_folder": 0.95,
     "rice_sheath_blight": 0.95,
     "rice_tungro": 0.95,
     "soybean_frogeye_leaf_spot": 0.75,
+    "soybean_rust": 0.75,
     "soybean_septoria_brown_spot": 0.95,
+    "soybean_tobacco_caterpillar": 0.80,
     "soybean_yellow_mosaic": 0.95,
 }
 """Classes the model names less reliably than the rest must clear a higher
 bar before the app advises them — in the photo gate and for a 'strong' view
-in the live walk. Measured by ml/tune_gate.py on held-out images (2026-10-17),
+in the live walk. Measured by ml/tune_gate.py on held-out images (2026-11-18),
 choosing the lowest bar reaching 0.95 precision, or, where no bar
 reaches it, the bar that does best — those are marked (best) and want more
 field photographs rather than more arithmetic:
-maize ear rot 0.943 -> 0.971 at 0.80 (recall 1.000);
-maize gray leaf spot 0.918 -> 0.949 at 0.95 (recall 0.860) (best);
-maize turcicum leaf blight 0.947 -> 0.980 at 0.90 (recall 0.706);
-rice bacterial leaf streak 0.913 -> 0.976 at 0.95 (recall 0.953);
-rice bacterial panicle blight 0.758 -> 0.852 at 0.95 (recall 0.979) (best);
-rice blast 0.807 -> 0.975 at 0.95 (recall 0.561);
-rice brown spot 0.931 -> 0.960 at 0.85 (recall 0.535);
-rice downy mildew 0.692 -> 0.863 at 0.95 (recall 0.818) (best);
-rice hispa 0.844 -> 0.981 at 0.95 (recall 0.681);
-rice leaf folder 0.897 -> 0.960 at 0.95 (recall 0.828);
-rice sheath blight 0.817 -> 0.913 at 0.95 (recall 0.560) (best);
-rice tungro 0.872 -> 0.958 at 0.95 (recall 0.700);
-soybean frogeye leaf spot 0.940 -> 0.952 at 0.75 (recall 0.881);
-soybean septoria brown spot 0.604 -> 0.875 at 0.95 (recall 0.457) (best);
-soybean yellow mosaic 0.861 -> 0.923 at 0.95 (recall 0.585) (best).
+cotton alternaria leaf spot 0.833 -> 0.875 at 0.95 (recall 0.875) (best);
+maize ear rot 0.947 -> 0.973 at 0.95 (recall 1.000);
+maize maydis leaf blight 0.917 -> 0.955 at 0.85 (recall 0.913);
+maize turcicum leaf blight 0.908 -> 0.945 at 0.95 (recall 0.776) (best);
+rice bacterial leaf streak 0.932 -> 0.976 at 0.85 (recall 0.976);
+rice bacterial panicle blight 0.810 -> 0.887 at 0.85 (recall 1.000) (best);
+rice blast 0.836 -> 0.937 at 0.95 (recall 0.667) (best);
+rice downy mildew 0.747 -> 0.919 at 0.95 (recall 0.740) (best);
+rice hispa 0.905 -> 0.969 at 0.95 (recall 0.841);
+rice sheath blight 0.827 -> 0.859 at 0.95 (recall 0.824) (best);
+rice tungro 0.917 -> 0.963 at 0.95 (recall 0.799);
+soybean frogeye leaf spot 0.946 -> 0.950 at 0.75 (recall 0.925);
+soybean rust 0.944 -> 0.957 at 0.75 (recall 0.820);
+soybean septoria brown spot 0.673 -> 0.900 at 0.95 (recall 0.587) (best);
+soybean tobacco caterpillar 0.942 -> 0.952 at 0.80 (recall 0.845);
+soybean yellow mosaic 0.884 -> 0.963 at 0.95 (recall 0.631).
 Between GATE and this bar the gate asks the look-alike question or sends the
 photo to an expert. Drop an entry once expert confirmations show the class
 holds up on farmers' field photos."""
@@ -193,6 +195,25 @@ assert all(v >= GATE for v in TARGET_GATE.values())
 
 def gate_for(target: str) -> float:
     return TARGET_GATE.get(target, GATE)
+
+
+CONFIRM_LOOKALIKE: dict[str, str] = {
+    "rice_blast": "rice_brown_spot",
+    "rice_sheath_blight": "rice_bacterial_leaf_blight",
+}
+"""Classes that stay below the target precision at every bar, and whose
+mistakes are mostly one look-alike that a field question separates. When the
+model names one of these above its bar, the farmer is asked that question
+before the advice (LOOKALIKE_CONFIRM); the answer settles it the way it does
+for two close guesses. Measured by ml/tune_gate.py on held-out images (2026-11-18):
+rice blast: 22 of 349 advised were wrong, 13 of them rice brown spot;
+rice sheath blight: 10 of 71 advised were wrong, 5 of them rice bacterial leaf blight."""
+
+
+def lookalike_for(target: str) -> str | None:
+    """The class this one is most often wrongly advised in place of, when no bar
+    makes it reliable and a field question tells the two apart."""
+    return CONFIRM_LOOKALIKE.get(target)
 
 
 # --- Learning from field confirmations -------------------------------------

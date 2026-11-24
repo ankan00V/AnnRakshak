@@ -10,6 +10,7 @@ import { Bone, Card, Loading } from '../ui/kit'
 import { useAuth } from './AuthContext'
 import { emailOk, phoneOk, showPhone, smsCodes } from './helpers'
 import { Actions, Chips, CodePanel, Field, FormCard, Input, Primary, Secondary, Steps } from './parts'
+import { usePublishDraft } from './progress'
 import Turnstile from './Turnstile'
 import WherePicker, { type Where } from './WherePicker'
 
@@ -173,6 +174,20 @@ export default function SignupFarmer() {
 
   const titles = [t('authFarmerStep1'), t('authFarmerStep2'), t('authFarmerStep3'), t('authFarmerStep4')]
   const selectedCrop = crops.data?.find((c) => c.id === f.crop)
+
+  // The profile the phone beside the form shows, as it stands. The field
+  // being filled in joins the list once the farmer reaches it.
+  usePublishDraft({
+    role: 'farmer', name: f.name.trim(), phone: f.phone,
+    place: [where.village, where.district, where.state].filter(Boolean).join(' · '),
+    fields: [...fields, ...(step >= 2 ? [current()] : [])].map((x) => ({
+      crop: x.crop,
+      cropName: crops.data?.find((c) => c.id === x.crop)?.name ?? x.crop,
+      area: Number.isFinite(x.area_acres) ? String(x.area_acres) : '',
+      sowing: x.sowing_date,
+      irrigation: t(`irr_${x.irrigation}`),
+    })),
+  })
 
   return (
     <div ref={form}>

@@ -80,8 +80,49 @@ export interface LadderRung {
   timing?: string
   verified?: boolean
   label_rule?: string
+  /** The registered waiting period before harvest, as a sentence. */
+  waiting?: string
   for_field?: string
   quantity?: { amount: number; unit: string; water_l: number }
+  /** A chemical rung: a spray, or a treatment of next season's seed. */
+  use?: 'spray' | 'seed'
+  /** A field step or natural control: where the advice comes from. */
+  source?: string
+  /** Set when ICAR, an agricultural university or the government IPM packages
+   *  recommend this step. */
+  backing?: 'recommended'
+}
+
+/** A registered bio-pesticide or neem product for this problem, offered
+ *  before any chemical. Every one rests on a CIB&RC registration. */
+export interface OrganicOption {
+  ingredient: string
+  product: string
+  kind: 'bio-agent' | 'botanical' | 'pheromone'
+  use: 'spray' | 'seed' | 'root_dip' | 'dispenser'
+  dose: string
+  timing?: string
+  waiting?: string
+  for_field?: string
+  quantity?: { amount: number; unit: string; water_l: number | null }
+  source?: string
+  backing?: 'registered'
+}
+
+/** A preparation made at home. Either recommended by ICAR, an agricultural
+ *  university or government IPM guidance, or from the ICAR natural farming
+ *  protocol; never a registered product. */
+export interface HomemadeOption {
+  prep: string
+  name: string
+  dose: string
+  timing: string
+  recipe: string[]
+  source: string
+  recipe_source?: string | null
+  backing: 'recommended' | 'natural_farming'
+  /** The amount for the farmer's own field, where the source gives one per acre. */
+  for_field?: string | null
 }
 
 export interface Citation {
@@ -125,6 +166,13 @@ export interface Advisory {
   what_to_check: string
   what_to_avoid: string[]
   ladder: LadderRung[]
+  /** Registered organic products; empty when none is registered for this problem. */
+  organic?: OrganicOption[]
+  homemade?: HomemadeOption[]
+  /** pest, disease, virus — or deficiency/disorder, which no pesticide treats. */
+  kind?: string
+  /** Set when no pesticide is registered for this pest or disease on this crop. */
+  chemical_none?: string | null
   expert_trigger: string
   citations: Citation[]
   icar_options: IcarTech[]
@@ -372,6 +420,9 @@ export interface Heatmap {
   cols: number
   method: string
   class: string
+  /** On a photo the model found unfamiliar: the part to photograph up close,
+   *  as [x0, y0, x1, y1] fractions of the square frame. */
+  closer_region?: number[]
 }
 
 export interface Gate {
@@ -460,6 +511,7 @@ export interface ProblemView {
   image_url: string | null
   gate_outcome: GateOutcome | null
   gate_reason: string | null
+  closer_region?: number[] | null
   confidence: number | null
   is_stub: boolean | null
   advisory_source: string | null
@@ -894,13 +946,31 @@ export interface PesticideBaseline {
   available: boolean
   state: string
   source: string
+  /** The source of the years before DPPQS's own, when the two are joined. */
+  earlier_source?: string | null
   unit_note: string
+  fetched?: string | null
   chemical: [string, number][]
   bio: [string, number][]
   india_chemical: [string, number][]
   latest_share_pct: number | null
   rank: number | null
   states_ranked: number
+  /** The state's estimated demand, in tonnes of formulation: never compared
+   *  with use, which states report partly in technical grade. */
+  demand?: {
+    chemical: [string, number][]
+    bio: [string, number][]
+    projected: { year: string; chemical?: number; bio?: number } | null
+    unit: string
+    note: string
+  } | null
+  /** What is sprayed across India, by kind and by ingredient. */
+  sprayed?: {
+    groups: { id: string; name: string; series: [string, number][]; change_pct: number | null }[]
+    top: { name: string; group: string; series: [string, number][] }[]
+    note: string
+  } | null
 }
 
 export interface KccPanel {

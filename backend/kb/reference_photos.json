@@ -1,0 +1,203 @@
+{
+ "_note": "One photograph per problem for the field-check picture, only from sets whose licence lets the app show it (data/reference_photos.py). Each photo keeps its set, licence and link here.",
+ "photos": {
+  "cotton_alternaria_leaf_spot": {
+   "path": "cotton_640/cotton_alternaria_leaf_spot/t9hgvk2h9p_00001_alternaria_(104).jpg",
+   "name": "Cotton Leaf Image Dataset for Disease Classification (Mendeley Data t9hgvk2h9p)",
+   "licence": "CC BY 4.0",
+   "url": "https://data.mendeley.com/datasets/t9hgvk2h9p"
+  },
+  "cotton_aphid": {
+   "path": "mendeley2_640/cotton_aphid/01457_5wp23rgtpy.jpg",
+   "name": "Cotton Aphid Images (Mendeley Data 5wp23rgtpy)",
+   "licence": "CC BY 4.0",
+   "url": "https://data.mendeley.com/datasets/5wp23rgtpy"
+  },
+  "cotton_bacterial_blight": {
+   "path": "cotton_640/cotton_bacterial_blight/74jsdxtmx2_00252_20241029_132819.jpg",
+   "name": "Cotton Leaf Disease Dataset with Severity Levels (Mendeley Data 74jsdxtmx2)",
+   "licence": "CC BY 4.0",
+   "url": "https://data.mendeley.com/datasets/74jsdxtmx2"
+  },
+  "cotton_herbicide_damage": {
+   "path": "cotton_640/cotton_herbicide_damage/b3jy2p6k8w_00002_HGD00002.jpg",
+   "name": "SAR-CLD-2024 cotton leaf disease dataset (Mendeley Data b3jy2p6k8w)",
+   "licence": "CC BY 4.0",
+   "url": "https://data.mendeley.com/datasets/b3jy2p6k8w"
+  },
+  "cotton_jassid": {
+   "path": "cotton_640/cotton_jassid/b3jy2p6k8w_00001_LHJ00001.jpg",
+   "name": "SAR-CLD-2024 cotton leaf disease dataset (Mendeley Data b3jy2p6k8w)",
+   "licence": "CC BY 4.0",
+   "url": "https://data.mendeley.com/datasets/b3jy2p6k8w"
+  },
+  "cotton_leaf_curl": {
+   "path": "cotton_640/cotton_leaf_curl/74jsdxtmx2_00425_20241029_133531.jpg",
+   "name": "Cotton Leaf Disease Dataset with Severity Levels (Mendeley Data 74jsdxtmx2)",
+   "licence": "CC BY 4.0",
+   "url": "https://data.mendeley.com/datasets/74jsdxtmx2"
+  },
+  "cotton_leaf_reddening": {
+   "path": "cotton_640/cotton_leaf_reddening/b3jy2p6k8w_00001_LR00001.jpg",
+   "name": "SAR-CLD-2024 cotton leaf disease dataset (Mendeley Data b3jy2p6k8w)",
+   "licence": "CC BY 4.0",
+   "url": "https://data.mendeley.com/datasets/b3jy2p6k8w"
+  },
+  "maize_aphid": {
+   "path": "icar_640/maize_aphid/Maize_Aphid 189.jpg",
+   "name": "ICAR-IASRI, Crop Disease and Pest Image Data (data.gov.in)",
+   "licence": "ICAR Data Use License",
+   "url": "https://www.data.gov.in/catalog/crop-disease-and-pest-image-data"
+  },
+  "maize_common_rust": {
+   "path": "mendeley2_640/maize_common_rust/01690_sb4wwjs8bz.jpg",
+   "name": "Multi-format maize leaf image dataset (Mendeley Data sb4wwjs8bz)",
+   "licence": "CC BY 4.0",
+   "url": "https://data.mendeley.com/datasets/sb4wwjs8bz"
+  },
+  "maize_curvularia_leaf_spot": {
+   "path": "icar_640/maize_curvularia_leaf_spot/03e0f6a3-58ed-4181-881c-1bb572775405.jpg",
+   "name": "ICAR-IASRI, Crop Disease and Pest Image Data (data.gov.in)",
+   "licence": "ICAR Data Use License",
+   "url": "https://www.data.gov.in/catalog/crop-disease-and-pest-image-data"
+  },
+  "maize_downy_mildew": {
+   "path": "icar_640/maize_downy_mildew/032f6bbd-318e-42fa-b78f-912d9f92989e.jpg",
+   "name": "ICAR-IASRI, Crop Disease and Pest Image Data (data.gov.in)",
+   "licence": "ICAR Data Use License",
+   "url": "https://www.data.gov.in/catalog/crop-disease-and-pest-image-data"
+  },
+  "maize_fall_armyworm": {
+   "path": "icar_640/maize_fall_armyworm/Fall_Army_Worm147.jpg",
+   "name": "ICAR-IASRI, Crop Disease and Pest Image Data (data.gov.in)",
+   "licence": "ICAR Data Use License",
+   "url": "https://www.data.gov.in/catalog/crop-disease-and-pest-image-data"
+  },
+  "maize_gray_leaf_spot": {
+   "path": "mendeley2_640/maize_gray_leaf_spot/00660_3myfctrgk3.jpg",
+   "name": "MLD maize leaf disease dataset (Mendeley Data 3myfctrgk3)",
+   "licence": "CC BY 4.0",
+   "url": "https://data.mendeley.com/datasets/3myfctrgk3"
+  },
+  "maize_maydis_leaf_blight": {
+   "path": "icar_640/maize_maydis_leaf_blight/01ab80b5-a414-45de-98a6-21cf505ba257.jpg",
+   "name": "ICAR-IASRI, Crop Disease and Pest Image Data (data.gov.in)",
+   "licence": "ICAR Data Use License",
+   "url": "https://www.data.gov.in/catalog/crop-disease-and-pest-image-data"
+  },
+  "maize_turcicum_leaf_blight": {
+   "path": "icar_640/maize_turcicum_leaf_blight/03a0eecf-439e-4229-856d-85611b9c31e2.jpg",
+   "name": "ICAR-IASRI, Crop Disease and Pest Image Data (data.gov.in)",
+   "licence": "ICAR Data Use License",
+   "url": "https://www.data.gov.in/catalog/crop-disease-and-pest-image-data"
+  },
+  "rice_bacterial_leaf_blight": {
+   "path": "icar_640/rice_bacterial_leaf_blight/01_Bacterial_leaf_blight_003.jpg",
+   "name": "ICAR-IASRI, Crop Disease and Pest Image Data (data.gov.in)",
+   "licence": "ICAR Data Use License",
+   "url": "https://www.data.gov.in/catalog/crop-disease-and-pest-image-data"
+  },
+  "rice_blast": {
+   "path": "ricebd_640/rice_leaf_blast/00001_Leaf_blast (1).jpg",
+   "name": "Rice Leaf Bacterial and Fungal Disease Dataset (Mendeley Data hx6f852hw4)",
+   "licence": "CC BY 4.0",
+   "url": "https://data.mendeley.com/datasets/hx6f852hw4"
+  },
+  "rice_brown_spot": {
+   "path": "icar_640/rice_brown_spot/02_Brown_spot_002.jpg",
+   "name": "ICAR-IASRI, Crop Disease and Pest Image Data (data.gov.in)",
+   "licence": "ICAR Data Use License",
+   "url": "https://www.data.gov.in/catalog/crop-disease-and-pest-image-data"
+  },
+  "rice_false_smut": {
+   "path": "icar_640/rice_false_smut/02be86a2-a953-4725-9206-caebe03a162e.jpg",
+   "name": "ICAR-IASRI, Crop Disease and Pest Image Data (data.gov.in)",
+   "licence": "ICAR Data Use License",
+   "url": "https://www.data.gov.in/catalog/crop-disease-and-pest-image-data"
+  },
+  "rice_hispa": {
+   "path": "ricebd_640/rice_hispa/00001_Rice_Hispa (1).jpg",
+   "name": "Rice Leaf Bacterial and Fungal Disease Dataset (Mendeley Data hx6f852hw4)",
+   "licence": "CC BY 4.0",
+   "url": "https://data.mendeley.com/datasets/hx6f852hw4"
+  },
+  "rice_leaf_folder": {
+   "path": "icar_640/rice_leaf_folder/04b8c1dc-14b1-4112-9f40-e3ca38c017d2.jpg",
+   "name": "ICAR-IASRI, Crop Disease and Pest Image Data (data.gov.in)",
+   "licence": "ICAR Data Use License",
+   "url": "https://www.data.gov.in/catalog/crop-disease-and-pest-image-data"
+  },
+  "rice_sheath_blight": {
+   "path": "icar_640/rice_sheath_blight/024bfa1e-6e9a-48a2-87ba-006bdc354c66.jpg",
+   "name": "ICAR-IASRI, Crop Disease and Pest Image Data (data.gov.in)",
+   "licence": "ICAR Data Use License",
+   "url": "https://www.data.gov.in/catalog/crop-disease-and-pest-image-data"
+  },
+  "rice_skipper": {
+   "path": "icar_640/rice_skipper/08d3c364-438c-49a6-96d2-281f4c02bbcd.jpg",
+   "name": "ICAR-IASRI, Crop Disease and Pest Image Data (data.gov.in)",
+   "licence": "ICAR Data Use License",
+   "url": "https://www.data.gov.in/catalog/crop-disease-and-pest-image-data"
+  },
+  "rice_tungro": {
+   "path": "dhan_640/rice_tungro/00001_rtf_0.jpg",
+   "name": "Dhan-Shomadhan rice leaf disease dataset (Mendeley Data znsxdctwtt)",
+   "licence": "CC BY 4.0",
+   "url": "https://data.mendeley.com/datasets/znsxdctwtt"
+  },
+  "rice_white_stem_borer": {
+   "path": "icar_640/rice_white_stem_borer/04d270a8-16d0-4046-8675-8c4e01e6bc94.jpg",
+   "name": "ICAR-IASRI, Crop Disease and Pest Image Data (data.gov.in)",
+   "licence": "ICAR Data Use License",
+   "url": "https://www.data.gov.in/catalog/crop-disease-and-pest-image-data"
+  },
+  "rice_yellow_stem_borer": {
+   "path": "icar_640/rice_yellow_stem_borer/008cb9d4-b3aa-4eb2-a99e-c1eb2866ee03.jpg",
+   "name": "ICAR-IASRI, Crop Disease and Pest Image Data (data.gov.in)",
+   "licence": "ICAR Data Use License",
+   "url": "https://www.data.gov.in/catalog/crop-disease-and-pest-image-data"
+  },
+  "soybean_bacterial_blight": {
+   "path": "asdid_640/soybean_bacterial_blight/00001_bacterial_blight_1.jpg",
+   "name": "Wadkar et al., ASDID soybean field images (Zenodo 7304859)",
+   "licence": "CC0",
+   "url": "https://zenodo.org/records/7304859"
+  },
+  "soybean_cercospora_leaf_blight": {
+   "path": "asdid_640/soybean_cercospora_leaf_blight/00001_cercospora_leaf_blight_1.jpg",
+   "name": "Wadkar et al., ASDID soybean field images (Zenodo 7304859)",
+   "licence": "CC0",
+   "url": "https://zenodo.org/records/7304859"
+  },
+  "soybean_downy_mildew": {
+   "path": "asdid_640/soybean_downy_mildew/00002_downey_mildew_100.jpg",
+   "name": "Wadkar et al., ASDID soybean field images (Zenodo 7304859)",
+   "licence": "CC0",
+   "url": "https://zenodo.org/records/7304859"
+  },
+  "soybean_frogeye_leaf_spot": {
+   "path": "asdid_640/soybean_frogeye_leaf_spot/00277_frogeye_1250.jpg",
+   "name": "Wadkar et al., ASDID soybean field images (Zenodo 7304859)",
+   "licence": "CC0",
+   "url": "https://zenodo.org/records/7304859"
+  },
+  "soybean_potassium_deficiency": {
+   "path": "asdid_640/soybean_potassium_deficiency/00001_potassium_deficiency_1.jpg",
+   "name": "Wadkar et al., ASDID soybean field images (Zenodo 7304859)",
+   "licence": "CC0",
+   "url": "https://zenodo.org/records/7304859"
+  },
+  "soybean_rust": {
+   "path": "asdid_640/soybean_rust/00001_soybean_rust_1.jpg",
+   "name": "Wadkar et al., ASDID soybean field images (Zenodo 7304859)",
+   "licence": "CC0",
+   "url": "https://zenodo.org/records/7304859"
+  },
+  "soybean_target_spot": {
+   "path": "asdid_640/soybean_target_spot/00004_target_spot_1000.jpg",
+   "name": "Wadkar et al., ASDID soybean field images (Zenodo 7304859)",
+   "licence": "CC0",
+   "url": "https://zenodo.org/records/7304859"
+  }
+ }
+}

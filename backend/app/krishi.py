@@ -27,7 +27,7 @@ from functools import lru_cache
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import cache, llm, services, voice
+from app import assistant, cache, cropqa, llm, services, voice
 from app.i18n import local_date
 from app.config import KB_DIR
 from app.engine import agromet, agroweather
@@ -78,6 +78,14 @@ TEXT = {
                        "बाकी किसी बात के लिए किसान कॉल सेंटर 1800-180-1551 (निःशुल्क) पर फ़ोन करें।",
                  "mr": "माफ करा, मला समजले नाही. मी AnnRakshak वापरण्यात मदत करतो — यापैकी एखादा निवडा, किंवा वेगळ्या शब्दांत विचारा. "
                        "इतर कशासाठीही किसान कॉल सेंटर 1800-180-1551 (मोफत) वर फोन करा."},
+    "demo_farmer": {"en": "Namaste{name}! This is a demo account, so I don't answer questions here. Register your own field and I will answer about your crop, its weather and its pests.",
+                    "hi": "नमस्ते{name}! यह एक डेमो खाता है, इसलिए मैं यहाँ सवालों के जवाब नहीं देता। अपना खेत दर्ज करें, फिर मैं आपकी फसल, उसके मौसम और कीटों के बारे में जवाब दूँगा।",
+                    "mr": "नमस्कार{name}! हे डेमो खाते आहे, त्यामुळे मी इथे प्रश्नांची उत्तरे देत नाही. तुमचे स्वतःचे शेत नोंदवा, मग मी तुमचे पीक, त्याचे हवामान आणि किडींबद्दल उत्तर देईन."},
+    "demo_officer": {"en": "Namaste{name}! This is a demo account, so I don't answer questions here. Register as an officer to get answers about your own district.",
+                     "hi": "नमस्ते{name}! यह एक डेमो खाता है, इसलिए मैं यहाँ सवालों के जवाब नहीं देता। अपने ज़िले के जवाब पाने के लिए अधिकारी के रूप में पंजीकरण करें।",
+                     "mr": "नमस्कार{name}! हे डेमो खाते आहे, त्यामुळे मी इथे प्रश्नांची उत्तरे देत नाही. तुमच्या जिल्ह्याची उत्तरे मिळवण्यासाठी अधिकारी म्हणून नोंदणी करा."},
+    "demo_go_farmer": {"en": "Register your field", "hi": "अपना खेत दर्ज करें", "mr": "तुमचे शेत नोंदवा"},
+    "demo_go_officer": {"en": "Register as an officer", "hi": "अधिकारी के रूप में पंजीकरण करें", "mr": "अधिकारी म्हणून नोंदणी करा"},
     "need_farm": {"en": "Open one of your fields first, then I can answer that from its weather and crop.",
                   "hi": "पहले अपना कोई खेत खोलें, फिर मैं उसके मौसम और फसल से इसका जवाब दे पाऊँगा।",
                   "mr": "आधी तुमचे एखादे शेत उघडा, मग मी त्याच्या हवामान आणि पिकावरून याचे उत्तर देऊ शकेन."},
@@ -277,13 +285,13 @@ def features(text: str) -> Counter:
 
 
 class Index:
-    def __init__(self, topics: list[dict]):
+    def __init__(self, topics: list[dict], langs: tuple[str, ...] = LANGS):
         self.topics = {t["id"]: t for t in topics}
         docs: dict[str, Counter] = {}
         self.keys: dict[str, set[str]] = {}
         for t in topics:
             text = []
-            for lang in LANGS:  # machine languages come from the translation memory
+            for lang in langs:  # machine languages come from the translation memory
                 text += trl(t["ask"], lang) if lang not in AUTHORED_LANGS else t["ask"].get(lang, [])
             text += t.get("keys", [])
             docs[t["id"]] = features(" . ".join(text))
@@ -325,6 +333,18 @@ def index() -> Index:
     return Index(data["topics"])
 
 
+@lru_cache(maxsize=1)
+def _odia_index() -> Index:
+    """Odia questions are matched against Odia and English only. Odia is in no
+    app menu (Bhashini cannot speak it), so its phrasings stay out of the shared
+    index, where every language added dilutes the others."""
+    return Index(load()["topics"], ("en", "od"))
+
+
+def index_for(lang: str) -> Index:
+    return _odia_index() if lang == "od" else index()
+
+
 # --------------------------------------------------------------------------
 # Answers
 # --------------------------------------------------------------------------
@@ -354,7 +374,7 @@ def hello(screen: str | None, lang: str, name: str | None) -> dict:
 
 SCRIPTS = [  # Unicode block -> language
     ((0x0980, 0x09FF), "bn"), ((0x0A00, 0x0A7F), "pa"), ((0x0A80, 0x0AFF), "gu"), ((0x0B80, 0x0BFF), "ta"),
-    ((0x0C00, 0x0C7F), "te"), ((0x0C80, 0x0CFF), "kn"), ((0x0D00, 0x0D7F), "ml"), ((0x0900, 0x097F), "deva"),
+    ((0x0B00, 0x0B7F), "od"), ((0x0C00, 0x0C7F), "te"), ((0x0C80, 0x0CFF), "kn"), ((0x0D00, 0x0D7F), "ml"), ((0x0900, 0x097F), "deva"),
 ]
 
 ROMAN = {  # everyday words farmers type in English letters, per language
@@ -409,6 +429,52 @@ def register(text: str | None, app_lang: str) -> tuple[str, bool]:
     return (app_lang if app_lang in tied else tied[0]), True
 
 
+def demo_reply(user, text: str | None, lang: str) -> dict:
+    """A demo account gets a greeting and the way to a real one, whatever it asks.
+
+    A demo is someone looking around: answering them from seeded fields would
+    pass off made-up farms as theirs, and every answer costs a model call. So
+    the one thing said is how to make it real — register a field, or register
+    as an officer — in the language they asked in."""
+    said, _ = register(text, lang)
+    officer = getattr(user, "role", "farmer") != "farmer"
+    first = (getattr(user, "name", "") or "").split()
+    name = f", {first[0]}" if first and first[0].lower() != "demo" else ""
+    key = "officer" if officer else "farmer"
+    return {"topic": "demo", "score": 1.0, "lang": said, "text": _t(f"demo_{key}", said, name=name), "steps": [],
+            "go": [{"to": "/signup/expert" if officer else "/signup/farmer", "label": _t(f"demo_go_{key}", said)}],
+            "suggestions": demo_chips(said)}
+
+
+ACCOUNT_SCREENS = ("login", "signup")
+DEMO_CHIPS = ("signup_role", "account")
+
+
+def _account_topics() -> set[str]:
+    """What Krishi answers about getting in: the topics of the sign-in and
+    sign-up screens, and logging out."""
+    return {tid for tid, t in index().topics.items() if set(t.get("screens", [])) & set(ACCOUNT_SCREENS)} | {"account"}
+
+
+def demo_chips(lang: str) -> list[dict]:
+    """A demo account's questions to tap: how to register, and how to log out of the demo."""
+    return [_chip(index().topics[tid], lang) for tid in DEMO_CHIPS if tid in index().topics]
+
+
+def demo_allows(text: str | None, topic: str | None, screen: str | None) -> bool:
+    """Whether a demo account's question is answered after all. Krishi helps
+    anyone sign in or sign up: on those screens it answers as for a visitor,
+    and anywhere else a question about the account (which one to make, the
+    code, logging out) is answered too. The rest gets the register message."""
+    if screen in ACCOUNT_SCREENS:
+        return True
+    account = _account_topics()
+    if topic:
+        return topic in account
+    ranked = index().rank(text or "", None)  # the account topics belong to other screens
+    return bool(ranked) and ranked[0][0] in account and ranked[0][1] >= MATCH_MIN
+
+
 def answer(db: Session, kb: KB, *, text: str | None, topic: str | None, screen: str | None, lang: str,
            farm: Farm | None, user=None, farms: list[Farm] | None = None,
            prev_text: str | None = None, prev_topic: str | None = None) -> dict:
@@ -422,6 +488,15 @@ def answer(db: Session, kb: KB, *, text: str | None, topic: str | None, screen: 
                  (f" and was answered with topic {prev_topic}" if prev_topic else "")
     out = _answer(db, kb, text=text, topic=topic, screen=screen, lang=said, farm=farm, user=user, farms=farms,
                   before=before)
+    # The assistant takes the questions the fixed answers cannot: one with two
+    # parts, one nothing matched, one matched only loosely. It looks things up
+    # in the same functions and is checked against them (app.assistant); when
+    # it cannot answer, the fixed answer above stands.
+    if (text or "").strip() and topic is None and _wants_assistant(text or "", out) and llm.enabled():
+        helped = assistant.krishi(db, kb, question=(f"{before}. Now: " if before else "") + (text or ""),
+                                  lang=said, user=user, farms=farms or [], farm=farm)
+        if helped is not None:
+            out = {**helped, "suggestions": out.get("suggestions", [])}
     out["lang"] = said
     if roman and said != "en":
         native = [out.get("text") or "", *(out.get("steps") or [])]
@@ -433,6 +508,28 @@ def answer(db: Session, kb: KB, *, text: str | None, topic: str | None, screen: 
             out["go"] = [{"to": g["to"], "label": _english_label(g["to"], out.get("topic")) or g["label"]}
                          for g in out.get("go") or []]
     return out
+
+
+OUT_OF_SCOPE = ("price", "mandi", "bhav", "bhaav", "rate", "loan", "scheme", "yojana", "subsidy", "insurance",
+                "भाव", "मंडी", "बाजार", "कर्ज", "योजना", "अनुदान", "विमा", "बीमा")
+
+
+def _wants_assistant(text: str, out: dict) -> bool:
+    topic, score = out.get("topic"), out.get("score") or 0.0
+    words = f" {normalise(text)} "
+    if topic is None or assistant.compound(text) or any(f" {w}" in words for w in OUT_OF_SCOPE):
+        return True
+    if isinstance(topic, str) and topic.startswith(("crop:", "prep:")):
+        return False  # a pest, a product or a recipe: answered from the advisories already
+    t = index().topics.get(topic)
+    if t is None or topic in ("greeting", "thanks"):
+        return False
+    # "Which crops are supported" catches any question with a crop word in it;
+    # it has to be a strong match to stand. A live answer matched weakly is
+    # better looked up. An authored help topic the matcher or router chose stands.
+    if topic in ("crop_support", "diagnose_problem"):
+        return score < 0.40
+    return bool(t.get("live")) and score < CONFIDENT
 
 
 def _restyle_keeping_names(kb: KB, question: str, lines: list[str], lang: str) -> list[str] | None:
@@ -476,8 +573,31 @@ def _answer(db: Session, kb: KB, *, text: str | None, topic: str | None, screen:
             farm: Farm | None, user=None, farms: list[Farm] | None = None, before: str | None = None) -> dict:
     """`user` and `farms` are the signed-in farmer and their own fields, and are
     the only place a personal answer may come from."""
-    idx = index()
+    idx = index_for(lang)
     ranked: list[tuple[str, float]] = []
+    area = getattr(farm, "area_acres", None)
+    # A tapped follow-up about a pest ("Organic options only") or a recipe.
+    if topic and (topic.startswith("crop:") or topic.startswith("prep:")):
+        out = cropqa.from_topic(kb, topic, lang, area)
+        if out is not None:
+            return out
+        topic = None
+    # A question about a pest, a disease, a product or a home preparation is
+    # answered from the advisories (app.cropqa) — unless it is plainly a
+    # question about the app itself, which the authored topics answer.
+    if topic is None and (text or "").strip():
+        app = idx.rank(text or "", screen)
+        # "I can't tell a disease from words" and "which crops" are what a crop
+        # question used to fall to; they do not outrank a real answer to it.
+        app_score = app[0][1] if app and app[0][0] not in ("diagnose_problem", "crop_support") else 0.0
+        # Pest names, crops and "organic" are written in English, Hindi and
+        # Marathi only; a question in another language is also read in English.
+        said = text or ""
+        if lang not in AUTHORED_LANGS and not said.isascii():
+            said = f"{said} {_english(said, lang) or ''}".strip()
+        crop_out = cropqa.answer(kb, said, lang, farm, app_score=app_score)
+        if crop_out is not None:
+            return crop_out
     if topic in idx.topics:
         best, score = topic, 1.0
     elif topic == PERSONAL:
@@ -791,16 +911,26 @@ def _personal(db: Session, kb: KB, user, farms: list[Farm], question: str, lang:
             "suggestions": suggestions(screen, lang)}
 
 
-def _fused_rank(idx: Index, text: str, lang: str, screen: str | None) -> list[tuple[str, float]]:
-    """Topics scored on the farmer's own words plus their English translation."""
+def _english(text: str, lang: str) -> str | None:
+    """The question in English (Bhashini), kept a week: how a question in a
+    machine-translated language is matched against names authored in English,
+    Hindi and Marathi. None when no translation came back."""
     key = f"krishi:en:{lang}:{' '.join(text.lower().split())[:200]}"
     en = cache.get_json(key)
     if en is None:
         try:
             en = voice.translate(text, lang, "en") or ""
-        except Exception:  # noqa: BLE001 — no translation: the native score stands
-            return []
+        except Exception:  # noqa: BLE001 — no translation: the farmer's own words stand
+            return None
         cache.set_json(key, en, 7 * 24 * 3600)
+    return en or None
+
+
+def _fused_rank(idx: Index, text: str, lang: str, screen: str | None) -> list[tuple[str, float]]:
+    """Topics scored on the farmer's own words plus their English translation."""
+    en = _english(text, lang)
+    if en is None:
+        return []
     total: Counter = Counter()
     for tid, sc in idx.rank(text, screen) + idx.rank(en, screen):
         total[tid] += sc

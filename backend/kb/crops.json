@@ -89,7 +89,11 @@
     "season_ends_das": 160,
     "gdd_base": 10.0,
     "gdd_to_harvest": 2200,
-    "gdd_cap": 35.0
+    "gdd_cap": 35.0,
+    "seed_kg_per_acre": {
+      "amount": 8,
+      "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026 (transplanted rice)"
+    }
   },
   "maize": {
     "names": {
@@ -175,7 +179,11 @@
           "mr": "पक्वता"
         }
       }
-    ]
+    ],
+    "seed_kg_per_acre": {
+      "amount": 10,
+      "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026"
+    }
   },
   "cotton": {
     "names": {
@@ -347,6 +355,13 @@
           "mr": "पक्वता"
         }
       }
-    ]
+    ],
+    "seed_kg_per_acre": {
+      "amount": [
+        25,
+        30
+      ],
+      "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026"
+    }
   }
 }

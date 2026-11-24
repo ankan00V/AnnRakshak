@@ -13,13 +13,13 @@ import Turnstile from './Turnstile'
 export function RoleSwitch({ role, onChange }: { role: Role; onChange: (r: Role) => void }) {
   const { t } = useFarmer()
   return (
-    <div role="tablist" className="grid grid-cols-2 rounded-full bg-white lg:bg-cream/60 border border-soil-dark/10 p-1">
+    <div role="tablist" className="grid grid-cols-2 rounded-full bg-[#f6f1e6] p-1">
       {(['farmer', 'expert'] as const).map((r) => {
         const Icon = r === 'farmer' ? Sprout : UserCheck
         return (
           <button key={r} role="tab" aria-selected={role === r} onClick={() => onChange(r)}
             className={`min-h-[44px] rounded-full text-[14px] font-semibold flex items-center justify-center gap-1.5 transition-colors ${
-              role === r ? 'bg-leaf-deep text-cream' : 'text-soil-dark/75 active:bg-soil-dark/5'}`}>
+              role === r ? 'bg-[#1d4a2c] text-cream shadow-sm' : 'text-soil-dark/75 hover:text-soil-dark active:bg-soil-dark/5'}`}>
             <Icon className="w-4 h-4" aria-hidden />
             {t(r === 'farmer' ? 'authFarmer' : 'authExpert')}
           </button>
@@ -68,13 +68,7 @@ export default function Login() {
   }
 
   return (
-    <div className="lg:max-w-md lg:mx-auto space-y-6">
-      {/* The side panel carries the welcome on a laptop. */}
-      <div className="lg:hidden">
-        <h1 className="font-instrument-serif text-[34px] leading-tight">{t('authLoginTitle')}</h1>
-        <p className="mt-1 text-[15px] text-soil-dark/75">{t('authLoginSub')}</p>
-      </div>
-
+    <div className="space-y-6">
       <FormCard>
         <RoleSwitch role={role} onChange={setRole} />
 
@@ -89,7 +83,7 @@ export default function Login() {
           </form>
         ) : (
           <div className="mt-5 space-y-3">
-            <div className="flex items-center justify-between gap-2 rounded-xl bg-white lg:bg-cream/50 border border-soil-dark/10 pl-3 pr-1 py-0.5 text-[15px]">
+            <div className="flex items-center justify-between gap-2 rounded-xl bg-[#fbf8f1] border border-soil-dark/10 pl-3 pr-1 py-0.5 text-[15px]">
               <span className="min-w-0 truncate">{identifier}</span>
               {/* A thumb-sized target: a mistyped number is fixed here. */}
               <button type="button" className="inline-flex min-h-[44px] shrink-0 items-center px-3 text-leaf-deep font-medium" onClick={() => setReady(false)}>{t('authChange')}</button>
@@ -106,7 +100,7 @@ export default function Login() {
           </div>
         )}
 
-        <p className="mt-6 lg:mt-7 lg:pt-5 lg:border-t lg:border-soil-dark/10 text-center text-sm text-soil-dark/75">
+        <p className="mt-6 border-t border-soil-dark/10 pt-5 text-center text-sm text-soil-dark/75">
           {t('authNoAccount')}{' '}
           <Link to={`/signup/${role}`} className="inline-flex min-h-[44px] items-center text-leaf-deep font-semibold underline underline-offset-2">
             {t('authCreateAccount')}
@@ -115,12 +109,12 @@ export default function Login() {
       </FormCard>
 
       {options.data?.demo_login && (
-        <div className="rounded-2xl border border-dashed border-ochre/50 bg-ochre/5 p-4 space-y-3">
-          <p className="text-[13px] font-medium text-[#8a5a17]">{t('authTryDemo')}</p>
+        <div className="rounded-[22px] bg-[#fbf3df] p-4 ring-1 ring-[#e8b450]/40 space-y-3 lg:p-5">
+          <p className="text-[13px] font-semibold text-[#8a5a17]">{t('authTryDemo')}</p>
           <div className="grid grid-cols-2 gap-2">
             {(['farmer', 'expert'] as const).map((r) => (
               <button key={r} onClick={() => void demo(r)} disabled={demoBusy !== null}
-                className="min-h-[44px] rounded-full bg-white border border-ochre/40 text-[13px] font-semibold hover:bg-ochre/10 disabled:opacity-60">
+                className="min-h-[44px] rounded-full bg-white text-[13px] font-semibold text-[#1f3a26] ring-1 ring-[#e8b450]/50 transition hover:bg-[#fff8e8] disabled:opacity-60">
                 {demoBusy === r ? '…' : t(r === 'farmer' ? 'authDemoFarmer' : 'authDemoExpert')}
               </button>
             ))}

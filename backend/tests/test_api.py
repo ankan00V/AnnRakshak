@@ -1365,18 +1365,24 @@ def test_an_oversized_upload_is_refused_without_being_held(client, monkeypatch):
 
 
 def test_a_field_check_can_show_a_real_photo_of_the_problem(client):
-    """A farmer told to look for white stem borer should see one, not only its
-    name. Only a known problem's own folder can be reached by this route."""
+    """A farmer told to look for rice hispa should see one, not only its name:
+    the photo kb/reference_photos.json names, from a set whose licence allows
+    it. Nothing outside data/processed can be reached by this route."""
     from pathlib import Path
 
     from app.config import BACKEND_DIR
 
-    have = (Path(BACKEND_DIR).parent / "data" / "processed" / "icar_640" / "rice_white_stem_borer").is_dir()
-    r = client.get("/api/kb/photo/rice_white_stem_borer", follow_redirects=False)
+    from app.kb import get_kb
+
+    ref = get_kb().reference_photos.get("rice_hispa")
+    have = ref and (Path(BACKEND_DIR).parent / "data" / "processed" / ref["path"]).is_file()
+    r = client.get("/api/kb/photo/rice_hispa", follow_redirects=False)
     if have:
-        assert r.status_code == 302 and r.headers["location"].startswith("/samples/rice_white_stem_borer/")
+        assert r.status_code == 200 and r.headers["content-type"] == "image/jpeg" and len(r.content) > 1000
     else:
         assert r.status_code == 404
+    # Cotton wilt has no leaf photo that shows it: the screen draws its icon.
+    assert client.get("/api/kb/photo/cotton_wilt").status_code == 404
     for bad in ["..%2F..%2Fetc", "rice_blast/../../x", "not_a_target", "RICE_BLAST", "a" * 80]:
         assert client.get(f"/api/kb/photo/{bad}", follow_redirects=False).status_code == 404, bad
 
@@ -1407,3 +1413,64 @@ def test_a_photo_sent_twice_from_the_outbox_is_diagnosed_once(client):
     bad = client.post("/api/farms/1/diagnose", files={"image": ("x.jpg", _leaf_jpeg(), "image/jpeg")},
                       data={"lang": "en", "client_ref": "../../etc"})
     assert bad.status_code == 422
+
+
+def test_the_pesticide_baseline_runs_to_the_latest_dppqs_year(client):
+    """MoSPI's series stops at 2023-24; the DPPQS Statistical Database carries
+    it on. The officer sees one series, the years the two share agree, demand
+    stays apart from use, and the partial 2025-26 pesticide-wise year is left
+    out of the trends."""
+    client.post("/api/auth/demo", json={"role": "expert"})
+    p = client.get("/api/officials/pesticides", params={"state": "Maharashtra"}).json()
+    assert p["available"] and p["state"] == "Maharashtra"
+    years = [y for y, _ in p["chemical"]]
+    assert years == sorted(years) and len(years) == len(set(years)), "one series, no repeated year"
+    assert years[0] <= "2016-17" and years[-1] >= "2025-26", "MoSPI's early years joined to DPPQS's latest"
+    assert dict(map(tuple, p["chemical"]))["2023-24"] == 8719, "the shared year disagrees between sources"
+    assert p["rank"] and p["states_ranked"] > 20 and 0 < p["latest_share_pct"] < 100
+    d = p["demand"]
+    assert d["projected"]["year"] == "2026-27" and d["projected"]["chemical"] > 0
+    assert "formulation" in d["unit"], "demand must say it is counted in formulation"
+    s = p["sprayed"]
+    assert {g["id"] for g in s["groups"]} >= {"i", "f", "h"}
+    assert all(y != "2025-26" for g in s["groups"] for y, _ in g["series"]), "a partial year in a trend"
+    assert len(s["top"]) == 6 and all(t["group"] != "Bio-pesticides" for t in s["top"])
+
+
+def test_the_farmer_picks_the_problem_a_spray_is_checked_against(client):
+    """Not only the last photo: any problem of this field's crop can be picked,
+    and the verdict follows the pick. One of another crop is refused, and
+    "none" checks the product against the crop alone."""
+    crop = client.get("/api/farms/1/home?lang=en").json()["farm"]["crop"]
+    assert crop == "rice", "this test needs the rice demo field"
+    ask = {"farm_id": 1, "product": "tricyclazole", "lang": "en"}
+    blast = client.post("/api/labelcheck", json=ask | {"target": "rice_blast"}).json()
+    assert blast["target"] == "rice_blast" and blast["tone"] == "ok"
+    borer = client.post("/api/labelcheck", json=ask | {"target": "rice_yellow_stem_borer"}).json()
+    assert borer["target"] == "rice_yellow_stem_borer" and borer["tone"] == "stop"  # a fungicide on an insect
+    assert client.post("/api/labelcheck", json=ask | {"target": "maize_common_rust"}).status_code == 422
+    assert client.post("/api/labelcheck", json=ask | {"target": "rice_nothing_like_it"}).status_code == 422
+    assert client.post("/api/labelcheck", json=ask | {"target": "none"}).json()["target"] is None
+
+
+def test_startup_waits_for_a_database_that_is_not_reachable_yet(monkeypatch):
+    """At login the network comes up after the server: the database host did
+    not resolve, startup failed, and the app hung on every screen."""
+    import asyncio
+
+    from sqlalchemy.exc import OperationalError
+
+    from app import main
+
+    calls = []
+
+    def flaky():
+        calls.append(1)
+        if len(calls) < 3:
+            raise OperationalError("connect", {}, Exception("failed to resolve host"))
+
+    monkeypatch.setattr(main, "init_db", flaky)
+    real_sleep = asyncio.sleep
+    monkeypatch.setattr(main.asyncio, "sleep", lambda s: real_sleep(0))
+    asyncio.run(main._init_db_when_reachable())
+    assert len(calls) == 3

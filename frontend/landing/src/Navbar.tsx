@@ -10,22 +10,23 @@ import { useFarmer } from './farmer/FarmerContext'
 const EASE = 'ease-[cubic-bezier(0.76,0,0.24,1)]'
 
 const NAV_ITEMS = [
-  { label: 'How It Works', id: 'how-it-works' },
-  { label: 'Features', id: 'features' },
-  { label: 'Impact', id: 'impact' },
-  { label: 'For Officials', id: 'for-officials' },
+  { label: 'landNavHow', id: 'how-it-works' },
+  { label: 'landNavFeatures', id: 'features' },
+  { label: 'landNavImpact', id: 'impact' },
+  { label: 'landNavOfficials', id: 'for-officials' },
 ]
 
-const MENU_ITEMS = [...NAV_ITEMS, { label: 'Contact', id: 'contact' }]
+const MENU_ITEMS = [...NAV_ITEMS, { label: 'landNavContact', id: 'contact' }]
 
 function Hamburger({ open, onClick }: { open: boolean; onClick: () => void }) {
+  const { t } = useFarmer()
   const line = `block h-[2px] rounded-full bg-white transition-all duration-500 ${EASE}`
   return (
     <button
       onClick={onClick}
-      aria-label="Open menu"
+      aria-label={t('landOpenMenu')}
       aria-expanded={open}
-      className="flex flex-col gap-[5px] p-2 -m-2 md:hidden"
+      className="flex flex-col gap-[5px] p-2 -m-2 xl:hidden"
     >
       <span className={`${line} w-6 ${open ? 'translate-y-[7px] rotate-45' : ''}`} />
       <span className={`${line} ${open ? 'w-6 opacity-0' : 'w-4'}`} />
@@ -49,45 +50,39 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="flex items-center justify-between px-6 md:px-12 lg:px-16 py-5 md:py-6">
-        <div className="flex items-center gap-8 lg:gap-12">
-          <span className="flex items-center gap-2.5 text-white font-semibold text-lg tracking-tight font-sans">
-            <BrandMark size={36} />
-            AnnRakshak
+      <nav className="flex w-full items-center justify-between px-6 py-5 md:px-10 md:py-6 lg:px-[2.6vw] lg:py-[clamp(14px,1.2vw,24px)]">
+        <div className="flex items-center gap-8 xl:gap-[3vw]">
+          <span className="flex items-center gap-2.5 text-white">
+            <span className="rounded-full bg-white p-[3px] shadow-sm"><BrandMark size={38} /></span>
+            <span className="leading-tight">
+              <span className="block text-[18px] font-semibold tracking-tight">AnnRakshak</span>
+              <span className="block text-[11px] text-white/75">{t('landTagline')}</span>
+            </span>
           </span>
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden items-center gap-8 xl:flex 2xl:gap-10">
             {NAV_ITEMS.map(({ label, id }) => (
-              <button
-                key={id}
-                onClick={() => smoothScrollTo(id)}
-                className="text-white/80 hover:text-white text-sm font-light transition-colors duration-200"
-              >
-                {label}
+              <button key={id} onClick={() => smoothScrollTo(id)}
+                className="whitespace-nowrap text-[14px] font-medium text-white/85 transition-colors [text-shadow:0_1px_10px_rgba(0,0,0,0.55)] hover:text-white">
+                {t(label)}
               </button>
             ))}
           </div>
         </div>
-        <div className="flex items-center gap-6">
-          <button
-            onClick={() => smoothScrollTo('contact')}
-            className="hidden md:block text-white/80 hover:text-white text-sm font-light transition-colors duration-200"
-          >
+        <div className="flex items-center gap-5 xl:gap-6">
+          <button onClick={() => smoothScrollTo('contact')}
+            className="hidden text-[14px] font-medium text-white/85 transition-colors [text-shadow:0_1px_10px_rgba(0,0,0,0.55)] hover:text-white xl:block">
             Contact
           </button>
-          <span className="text-white [&_button]:bg-white/15 [&_button]:hover:bg-white/25">
+          <span className="text-white [&_button]:border [&_button]:border-white/20 [&_button]:bg-white/10 [&_button]:hover:bg-white/20 xl:[&_button]:min-h-[38px] xl:[&_button]:px-3">
             <LanguagePicker onPick={setLang} />
           </span>
-          <Link
-            to={account.to}
-            className="hidden md:block text-white/80 hover:text-white text-sm font-light transition-colors duration-200"
-          >
+          <Link to={account.to}
+            className="hidden whitespace-nowrap text-[14px] font-medium text-white/85 transition-colors [text-shadow:0_1px_10px_rgba(0,0,0,0.55)] hover:text-white md:block">
             {account.label}
           </Link>
           {!me && (
-            <Link
-              to="/signup"
-              className="hidden md:inline-block bg-white text-black rounded-full px-5 py-2 text-sm font-medium"
-            >
+            <Link to="/signup"
+              className="hidden min-h-[44px] items-center whitespace-nowrap rounded-full bg-[#fbf6ea] px-5 text-[14px] font-semibold text-[#173a22] shadow-sm transition hover:bg-white md:inline-flex xl:min-h-[40px]">
               {t('authCreateAccount')}
             </Link>
           )}
@@ -96,7 +91,7 @@ export default function Navbar() {
       </nav>
 
       <div
-        className={`fixed inset-0 z-50 md:hidden transition-opacity duration-700 ${EASE} ${
+        className={`fixed inset-0 z-50 xl:hidden transition-opacity duration-700 ${EASE} ${
           open ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       >
@@ -114,7 +109,7 @@ export default function Navbar() {
             </span>
             <button
               onClick={() => setOpen(false)}
-              aria-label="Close menu"
+              aria-label={t('landCloseMenu')}
               className="flex flex-col gap-[5px] p-2 -m-2"
             >
               <span
@@ -136,7 +131,7 @@ export default function Navbar() {
                   open ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
                 }`}
               >
-                {label}
+                {t(label)}
               </button>
             ))}
           </nav>

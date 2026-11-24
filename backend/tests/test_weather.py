@@ -346,10 +346,15 @@ def test_warning_email_right_away_and_one_summary_a_day(world):
         # 'warnings' mode: the fungal advice is not emailed on its own, only the storm
         assert logs[0].subject.startswith("⚠") and "वादळी" in logs[0].subject
     msgs = [email.message_from_bytes(f.read_bytes(), policy=email.policy.default) for f in mailer.OUTBOX.glob("*.eml")]
-    digest = next(m for m in msgs if "आज तुमचे भात शेत" in m["Subject"])
+    digest = next(m for m in msgs if "आज तुमचे पीक भात" in m["Subject"])
     assert digest["List-Unsubscribe"] and "Sunita" in digest.get_body(("plain",)).get_content()
     body = digest.get_body(("plain",)).get_content()
-    assert "सामू (pH) 7.4" in body and "हवामान" in body  # pH and the weather rules, in Marathi
+    assert "सामू (pH) 7.4" in body and "हवामान:" in body  # pH and the weather's own row, in Marathi
+    # The emblem travels inside the email, and the summary is short enough to read at a glance.
+    html_part = digest.get_body(("html",))
+    assert "cid:emblem@annrakshak" in html_part.get_content()
+    assert any(p.get_content_type() == "image/png" for p in digest.walk())
+    assert len(body.split()) < 160
 
 
 def test_unsubscribe_link_turns_emails_off(world):

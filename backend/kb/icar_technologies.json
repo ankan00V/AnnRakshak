@@ -92,7 +92,9 @@
       "institute": "nbair", "type": "monitoring", "audience": "official",
       "crops": ["maize"], "targets": ["maize_fall_armyworm"],
       "summary": {
-        "en": "Slow-release pheromone dispenser for fall armyworm traps; releases lure more evenly and lasts longer in the field than rubber septa. Available for licensing, not yet a shop product."
+        "en": "Slow-release pheromone dispenser for fall armyworm traps; releases lure more evenly and lasts longer in the field than rubber septa. Available for licensing, not yet a shop product.",
+        "hi": "फॉल आर्मीवर्म ट्रैप के लिए धीरे-धीरे गंध छोड़ने वाला फेरोमोन डिस्पेंसर; यह रबर सेप्टा से ज़्यादा समान रूप से गंध छोड़ता है और खेत में ज़्यादा दिन चलता है। लाइसेंस के लिए उपलब्ध, अभी दुकानों में नहीं मिलता।",
+        "mr": "लष्करी अळीच्या सापळ्यांसाठी हळूहळू गंध सोडणारा कामगंध डिस्पेन्सर; रबरी सेप्टापेक्षा अधिक समान गंध सोडतो आणि शेतात जास्त दिवस टिकतो. परवान्यासाठी उपलब्ध, अद्याप दुकानात मिळत नाही."
       }
     },
     {
@@ -278,7 +280,9 @@
       "institute": "iirr", "type": "app", "audience": "official",
       "crops": ["rice"], "targets": [],
       "summary": {
-        "en": "ICAR-IIRR rule-based expert system for diagnosing rice pests and diseases, with a database of newly emerging problems; a second opinion for extension staff."
+        "en": "ICAR-IIRR rule-based expert system for diagnosing rice pests and diseases, with a database of newly emerging problems; a second opinion for extension staff.",
+        "hi": "धान के कीटों और रोगों की पहचान के लिए ICAR-IIRR की नियम-आधारित विशेषज्ञ प्रणाली, नई उभरती समस्याओं के डेटाबेस के साथ; विस्तार कर्मचारियों के लिए दूसरी राय।",
+        "mr": "भात पिकावरील किडी व रोगांच्या निदानासाठी ICAR-IIRR ची नियमाधारित तज्ज्ञ प्रणाली, नव्याने उद्भवणाऱ्या समस्यांच्या डेटाबेससह; विस्तार कर्मचाऱ्यांसाठी दुसरे मत."
       }
     },
     {
@@ -298,7 +302,9 @@
       "institute": "crida", "type": "reference", "audience": "official",
       "crops": ["cotton"], "targets": [],
       "summary": {
-        "en": "AICRPAM crop-weather calendar, Parbhani cotton: weekly weather normals, crop stages, the weather in high-yield years, and the weather that favours major pests and diseases. Use it to cross-check risk-rule thresholds for Marathwada."
+        "en": "AICRPAM crop-weather calendar, Parbhani cotton: weekly weather normals, crop stages, the weather in high-yield years, and the weather that favours major pests and diseases. Use it to cross-check risk-rule thresholds for Marathwada.",
+        "hi": "AICRPAM फसल-मौसम कैलेंडर, परभणी कपास: साप्ताहिक सामान्य मौसम, फसल की अवस्थाएँ, अधिक उपज वाले वर्षों का मौसम, और प्रमुख कीटों व रोगों के अनुकूल मौसम। मराठवाड़ा के लिए जोखिम-नियमों की सीमाएँ जाँचने में इसका उपयोग करें।",
+        "mr": "AICRPAM पीक-हवामान दिनदर्शिका, परभणी कापूस: साप्ताहिक सरासरी हवामान, पिकाच्या अवस्था, जास्त उत्पादनाच्या वर्षांतील हवामान, आणि प्रमुख किडी व रोगांना अनुकूल हवामान. मराठवाड्यासाठी धोका-नियमांच्या मर्यादा तपासण्यासाठी याचा वापर करा."
       }
     },
     {
@@ -307,7 +313,9 @@
       "institute": "crida", "type": "reference", "audience": "official",
       "crops": ["soybean"], "targets": [],
       "summary": {
-        "en": "AICRPAM crop-weather calendar, Akola soybean: weekly weather normals, crop stages and pest/disease-favourable weather for Vidarbha."
+        "en": "AICRPAM crop-weather calendar, Akola soybean: weekly weather normals, crop stages and pest/disease-favourable weather for Vidarbha.",
+        "hi": "AICRPAM फसल-मौसम कैलेंडर, अकोला सोयाबीन: विदर्भ के लिए साप्ताहिक सामान्य मौसम, फसल की अवस्थाएँ और कीट/रोग के अनुकूल मौसम।",
+        "mr": "AICRPAM पीक-हवामान दिनदर्शिका, अकोला सोयाबीन: विदर्भासाठी साप्ताहिक सरासरी हवामान, पिकाच्या अवस्था आणि कीड/रोगांना अनुकूल हवामान."
       }
     },
     {
@@ -316,7 +324,9 @@
       "institute": "crida", "type": "reference", "audience": "official",
       "crops": ["rice"], "targets": [],
       "summary": {
-        "en": "AICRPAM crop-weather calendar, Dapoli rice: weekly weather normals, crop stages and pest/disease-favourable weather for the Konkan."
+        "en": "AICRPAM crop-weather calendar, Dapoli rice: weekly weather normals, crop stages and pest/disease-favourable weather for the Konkan.",
+        "hi": "AICRPAM फसल-मौसम कैलेंडर, दापोली धान: कोंकण के लिए साप्ताहिक सामान्य मौसम, फसल की अवस्थाएँ और कीट/रोग के अनुकूल मौसम।",
+        "mr": "AICRPAM पीक-हवामान दिनदर्शिका, दापोली भात: कोकणासाठी साप्ताहिक सरासरी हवामान, पिकाच्या अवस्था आणि कीड/रोगांना अनुकूल हवामान."
       }
     },
     {
@@ -325,7 +335,9 @@
       "institute": "crida", "type": "reference", "audience": "official",
       "crops": ["rice"], "targets": [],
       "summary": {
-        "en": "AICRPAM crop-weather calendar, Solapur rice: weekly weather normals, crop stages and pest/disease-favourable weather for south-western Maharashtra."
+        "en": "AICRPAM crop-weather calendar, Solapur rice: weekly weather normals, crop stages and pest/disease-favourable weather for south-western Maharashtra.",
+        "hi": "AICRPAM फसल-मौसम कैलेंडर, सोलापुर धान: दक्षिण-पश्चिम महाराष्ट्र के लिए साप्ताहिक सामान्य मौसम, फसल की अवस्थाएँ और कीट/रोग के अनुकूल मौसम।",
+        "mr": "AICRPAM पीक-हवामान दिनदर्शिका, सोलापूर भात: दक्षिण-पश्चिम महाराष्ट्रासाठी साप्ताहिक सरासरी हवामान, पिकाच्या अवस्था आणि कीड/रोगांना अनुकूल हवामान."
       }
     }
   ]

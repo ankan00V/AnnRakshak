@@ -255,6 +255,9 @@ class _OnTheLine:
     reading: bool = False
     #: Asked to hand over to a reconnection, rather than ended by anything else.
     taken: bool = False
+    #: When this connection was accepted (wall clock, so containers can compare).
+    #: Only an earlier connection's line is ever taken over: see _take_over.
+    opened: float = 0.0
 
 
 _on_the_line: dict[str, _OnTheLine] = {}
@@ -264,11 +267,22 @@ _on_the_line: dict[str, _OnTheLine] = {}
 TAKEOVER_SECONDS = 35.0
 
 
-async def _take_over(token: str, farm_id: int, user_id: int | None) -> None:
+async def _take_over(token: str, farm_id: int, user_id: int | None, opened: float | None = None) -> None:
     """If this token's call is still attached to an open connection, have that
-    connection hand it over, and wait until it has."""
+    connection hand it over, and wait until it has.
+
+    `opened` is when the asking connection was accepted. A line opened after
+    it is left alone: two reconnections can carry the same token (the first
+    dropped before it could hand the phone a new one), and each checks the
+    field in the database before it reads the token. On a slow database the
+    one that dropped got through after the one that followed had already
+    picked the walk up — and took it off that live connection, which closed in
+    the farmer's hand. The phone has moved on; the older one has nothing to
+    take."""
     line = _on_the_line.get(token)
     if line is None or line.farm_id != farm_id or line.user_id != user_id:
+        return
+    if opened is not None and line.opened > opened:
         return
     deadline = time.monotonic() + TAKEOVER_SECONDS
     while not line.gone.is_set() and time.monotonic() < deadline:
@@ -611,7 +625,8 @@ async def _pick_up(token: str, farm_id: int, user_id: int | None, kb: KB) -> _Pa
     return await _take_shared(token, farm_id, user_id, kb)
 
 
-async def _from_elsewhere(token: str, farm_id: int, user_id: int | None, kb: KB) -> _Parked | None:
+async def _from_elsewhere(token: str, farm_id: int, user_id: int | None, kb: KB,
+                          opened: float | None = None) -> _Parked | None:
     """Ask every container to let go of this call, and wait for it to arrive.
 
     The cross-container half of _take_over. A phone that moved networks left
@@ -625,7 +640,8 @@ async def _from_elsewhere(token: str, farm_id: int, user_id: int | None, kb: KB)
         r = await _redis()
         if r is None:
             return None
-        await run_in_threadpool(r.publish, RELEASE, json.dumps({"token": token, "farm": farm_id, "user": user_id}))
+        await run_in_threadpool(r.publish, RELEASE, json.dumps({"token": token, "farm": farm_id, "user": user_id,
+                                                                "opened": opened}))
         began, acked = time.monotonic(), False
         while True:
             got = await run_in_threadpool(_take, r, token, farm_id, user_id, kb)
@@ -646,14 +662,15 @@ async def _from_elsewhere(token: str, farm_id: int, user_id: int | None, kb: KB)
         return None
 
 
-async def _on_release(token: str, farm_id: int, user_id: int | None) -> None:
+async def _on_release(token: str, farm_id: int, user_id: int | None, opened: float | None = None) -> None:
     """Another container's reconnection wants this call. If it is here — on a
     line, or held in memory because Redis was down when it dropped — hand it
     over through Redis. The token alone is not enough, as everywhere else: it
     must be the same field and the same person."""
     line = _on_the_line.get(token)
-    if line is not None and (line.farm_id != farm_id or line.user_id != user_id):
-        line = None
+    if line is not None and (line.farm_id != farm_id or line.user_id != user_id
+                             or (opened is not None and line.opened > opened)):
+        line = None     # not theirs, or a newer reconnection already has it
     held = _held_here(token)
     if held is not None and (held.farm_id != farm_id or held.user_id != user_id):
         held = None
@@ -669,7 +686,7 @@ async def _on_release(token: str, farm_id: int, user_id: int | None) -> None:
         return
     try:
         if line is not None:
-            await _take_over(token, farm_id, user_id)   # parks it, and starts its move
+            await _take_over(token, farm_id, user_id, opened)   # parks it, and starts its move
         pending = _moving.get(token)
         if pending is None and (held := _held_here(token)) is not None \
                 and held.farm_id == farm_id and held.user_id == user_id:
@@ -707,11 +724,12 @@ async def _listen() -> None:
                         m = json.loads(msg["data"])
                         token, farm_id = str(m["token"]), int(m["farm"])
                         user_id = None if m.get("user") is None else int(m["user"])
+                        opened = None if m.get("opened") is None else float(m["opened"])
                     except (ValueError, KeyError, TypeError):
                         continue
                     # Its own task: a hand-over waits for a save to finish, and
                     # the next release must not wait behind it.
-                    _spawn(_on_release(token, farm_id, user_id))
+                    _spawn(_on_release(token, farm_id, user_id, opened))
         except asyncio.CancelledError:
             raise
         except Exception as e:  # noqa: BLE001
@@ -793,6 +811,9 @@ def live_summary(farm_id: int, scan_id: int, lang: str = "en", db: Session = Dep
 @router.websocket("/live/{farm_id}")
 async def live_ws(ws: WebSocket, farm_id: int):
     await ws.accept()
+    # Before anything that waits: the order connections arrive in is what
+    # decides which of two reconnections with the same token gets the walk.
+    opened = time.time()
     kb = get_kb()
     _listen_lazily()
 
@@ -848,18 +869,18 @@ async def live_ws(ws: WebSocket, farm_id: int):
     # lands in the handler below with none of this assigned.
     sess, ctx, lang, resume_token, settled = None, {}, farm_lang, "", True
     presented, heard, began = "", False, time.monotonic()
-    line = _OnTheLine(asyncio.current_task(), farm_id, user_id, asyncio.Event())
+    line = _OnTheLine(asyncio.current_task(), farm_id, user_id, asyncio.Event(), opened=opened)
 
     with _one_more_call(user_id):
         try:
 
             if opening == "resume":
                 token = str(start.get("token") or "")
-                await _take_over(token, farm_id, user_id)
+                await _take_over(token, farm_id, user_id, opened)
                 picked = await _pick_up(token, farm_id, user_id, kb)
                 if picked is None:
                     # Still on a line, but on another container's.
-                    picked = await _from_elsewhere(token, farm_id, user_id, kb)
+                    picked = await _from_elsewhere(token, farm_id, user_id, kb, opened)
                 if picked is None:
                     # Too long ago, a container that is gone, or not theirs.
                     # Nothing is wrong with the connection: the client starts

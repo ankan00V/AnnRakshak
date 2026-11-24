@@ -76,6 +76,13 @@ class KB:
     institutes: dict[str, dict] = field(default_factory=dict)
     technologies: list[dict] = field(default_factory=list)
     agromet: dict = field(default_factory=dict)
+    homemade: dict = field(default_factory=dict)
+    registrations: dict = field(default_factory=dict)
+    reference_photos: dict = field(default_factory=dict)
+    """target -> {path under data/processed, name, licence, url}: the picture
+    beside a field check, from licensed sets only (kb/reference_photos.json)."""
+    """ingredient -> [{crop, targets, register_says, source, line}]: where the
+    CIB&RC major-uses lists register each product (kb/registrations.json)."""
     _cue_index: dict[frozenset, dict] = field(default_factory=dict)
 
     # --- lookups ---------------------------------------------------------
@@ -162,11 +169,22 @@ class KB:
             return None
         if q in self.pesticides:
             return q
+        # The most specific name wins. "Copper hydroxide 53.8% DF" contains
+        # "copper hydroxide", an alias of the 77% WP; the first match was the
+        # wrong product, registered for different uses, so the spray check
+        # refused a use the label allows. A name found inside the query is
+        # ranked by its length; a query found inside a name keeps file order.
+        best, best_len = None, -1
         for pid, p in self.pesticides.items():
             names = [p["name"].lower(), *[a.lower() for a in p.get("aliases", [])]]
-            if any(q == n or q in n or n in q for n in names):
+            if q in names:
                 return pid
-        return None
+            within = [len(n) for n in names if n in q]
+            if within and max(within) > best_len:
+                best, best_len = pid, max(within)
+            elif best is None and any(q in n for n in names):
+                best, best_len = pid, 0
+        return best
 
     def technologies_for(
         self, *, target: str | None = None, crop: str | None = None, audience: str | None = None
@@ -204,13 +222,26 @@ class KB:
         return view
 
     def registered_uses(self, ingredient: str) -> list[tuple[str, str]]:
-        """(crop, target) pairs where our advisories use this ingredient."""
+        """(crop, target) pairs this product is registered for: every entry of
+        the CIB&RC register (kb/registrations.json), and every place our own
+        advice uses it. Our advice alone named two or three products a problem,
+        so carbendazim on rice blast — on the register at 250-500 g/ha — was
+        told "Do not spray this"."""
         out = []
         for tid, adv in self.advisories.items():
-            for rung in adv["ladder"]:
-                if rung.get("ingredient") == ingredient:
+            for rung in [*adv["ladder"], *adv.get("organic", [])]:
+                if rung.get("ingredient") == ingredient and (self.targets[tid]["crop"], tid) not in out:
                     out.append((self.targets[tid]["crop"], tid))
+        for reg in self.registrations.get(ingredient, []):
+            for tid in reg["targets"]:
+                if (reg["crop"], tid) not in out:
+                    out.append((reg["crop"], tid))
         return out
+
+    def registered_crops(self, ingredient: str) -> set[str]:
+        """Crops the register lists this product on at all, for any pest."""
+        return {c for c, _ in self.registered_uses(ingredient)} | \
+            {r["crop"] for r in self.registrations.get(ingredient, [])}
 
 
 def _load(name: str, kb_dir: Path):
@@ -252,14 +283,41 @@ def validate(kb: KB) -> list[str]:
         if order and order[0] == TIER_ORDER["chemical"]:
             errors.append(f"advisory {tid}: ladder leads with a chemical")
         for r in ladder:
+            if r.get("backing") not in (None, "recommended"):
+                errors.append(f"advisory {tid}: a ladder step has an unknown backing")
             if r.get("tier") == "chemical":
                 ing = r.get("ingredient")
                 if ing not in kb.pesticides:
                     errors.append(f"advisory {tid}: unknown ingredient {ing}")
                 elif kb.pesticides[ing]["class"] == "herbicide":
                     errors.append(f"advisory {tid}: herbicide {ing} on a pest/disease ladder")
-                if r.get("dose_per_litre") is None and not r.get("dose_basis"):
+                if r.get("dose_per_litre") is None and not r.get("dose_basis") and not r.get("per_kg_seed"):
                     errors.append(f"advisory {tid}: chemical rung {ing} has no dose")
+                if r.get("use", "spray") not in ("spray", "seed"):
+                    errors.append(f"advisory {tid}: chemical rung {ing} has an unknown use")
+        for o in adv.get("organic", []):
+            ing = o.get("ingredient")
+            if not kb.pesticides.get(ing, {}).get("organic"):
+                errors.append(f"advisory {tid}: organic option {ing} is not an organic product")
+            if not (o.get("registration") or {}).get("source", "").startswith("CIB&RC"):
+                errors.append(f"advisory {tid}: organic option {ing} has no registration")
+            if o.get("use") not in ("spray", "seed", "root_dip", "dispenser"):
+                errors.append(f"advisory {tid}: organic option {ing} has an unknown use")
+            if not (o.get("dose_per_litre") or o.get("per_acre") or o.get("per_kg_seed")):
+                errors.append(f"advisory {tid}: organic option {ing} has no dose")
+        for h in adv.get("homemade", []):
+            prep = h.get("prep")
+            if prep not in kb.homemade:
+                errors.append(f"advisory {tid}: homemade option {prep} is not a known preparation")
+            known = kb.homemade.get(prep) or {}
+            if not ((h.get("per_litre") or {}).get("amount") or h.get("dose") or known.get("dose")):
+                errors.append(f"advisory {tid}: homemade option {prep} has no strength")
+            if known.get("backing", "recommended") not in ("recommended", "natural_farming"):
+                errors.append(f"advisory {tid}: homemade option {prep} has an unknown backing")
+            if not h.get("source"):
+                errors.append(f"advisory {tid}: homemade option {prep} has no source")
+            if any(not (h.get("timing") or {}).get(lang) for lang in ("en", "hi", "mr")):
+                errors.append(f"advisory {tid}: homemade option {prep} timing is not in en, hi and mr")
         if not adv.get("citations"):
             errors.append(f"advisory {tid}: no citation")
         if not adv.get("what_to_avoid"):
@@ -331,6 +389,17 @@ def validate(kb: KB) -> list[str]:
                         errors.append(f"technology {tid}: {key} missing {lang}")
 
     errors += validate_agromet(kb)
+    for ing, regs in kb.registrations.items():
+        if ing not in kb.pesticides:
+            errors.append(f"registrations: {ing} is not in pesticides.json")
+        for reg in regs:
+            if reg.get("crop") not in crops:
+                errors.append(f"registrations: {ing} names unknown crop {reg.get('crop')}")
+            if not reg.get("source") or not reg.get("register_says"):
+                errors.append(f"registrations: {ing} on {reg.get('crop')} has no source or register wording")
+            for tid in reg.get("targets", []):
+                if tid not in kb.targets or kb.targets[tid]["crop"] != reg.get("crop"):
+                    errors.append(f"registrations: {ing} lists {tid}, not a {reg.get('crop')} target")
     return errors
 
 
@@ -411,6 +480,12 @@ def load_kb(kb_dir: Path = KB_DIR) -> KB:
         kb.institutes, kb.technologies = tech["institutes"], tech["technologies"]
     if (kb_dir / "agromet.json").exists():
         kb.agromet = _load("agromet.json", kb_dir)
+    if (kb_dir / "homemade.json").exists():
+        kb.homemade = _load("homemade.json", kb_dir)
+    if (kb_dir / "registrations.json").exists():
+        kb.registrations = _load("registrations.json", kb_dir)["products"]
+    if (kb_dir / "reference_photos.json").exists():
+        kb.reference_photos = _load("reference_photos.json", kb_dir)["photos"]
     errors = validate(kb)
     if errors:
         raise KBError("knowledge base refused:\n  " + "\n  ".join(errors))

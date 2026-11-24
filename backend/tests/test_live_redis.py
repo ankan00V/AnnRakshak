@@ -410,11 +410,11 @@ def test_a_line_still_open_on_another_container_is_let_go_over_redis(client, red
     real = R._take_over
     looked = []
 
-    async def blind_on_b(token, farm_id, user_id):
+    async def blind_on_b(token, farm_id, user_id, opened=None):
         if not looked:            # B's own look: A's line is not in B's process
             looked.append(token)
             return
-        await real(token, farm_id, user_id)   # A, answering the release
+        await real(token, farm_id, user_id, opened)   # A, answering the release
 
     with client.websocket_connect("/api/live/1") as old:
         old.send_json({"type": "start", "lang": "en", "mode": "video"})
@@ -430,7 +430,8 @@ def test_a_line_still_open_on_another_container_is_let_go_over_redis(client, red
             assert new.receive_json()["guide"]["kept"] == 5
     assert looked == [token]
     sent = [json.loads(m) for ch, m in redis.published if ch == R.RELEASE]
-    assert sent == [{"token": token, "farm": 1, "user": None}]
+    assert [{k: v for k, v in m.items() if k != "opened"} for m in sent] == [{"token": token, "farm": 1, "user": None}]
+    assert isinstance(sent[0]["opened"], float)  # when B's reconnection arrived: only an older line is let go
 
 
 def test_a_token_nobody_holds_is_refused_quickly_even_with_redis(client, redis):
@@ -586,11 +587,11 @@ def test_a_save_under_way_on_another_container_is_let_finish_and_its_answer_hand
 
     real_take_over, looked = R._take_over, []
 
-    async def blind_on_b(token, farm_id, user_id):
+    async def blind_on_b(token, farm_id, user_id, opened=None):
         if not looked:            # B's own look: A's line is not in B's process
             looked.append(token)
             return
-        await real_take_over(token, farm_id, user_id)   # A, answering the release
+        await real_take_over(token, farm_id, user_id, opened)   # A, answering the release
 
     real_finish, saving, go, handed_while_saving = live.finish, threading.Event(), threading.Event(), []
 
@@ -707,11 +708,11 @@ def test_a_frame_being_read_when_another_container_takes_over_is_not_lost(client
     finish, so B carries on from a walk that is whole."""
     real_take_over, looked = R._take_over, []
 
-    async def blind_on_b(token, farm_id, user_id):
+    async def blind_on_b(token, farm_id, user_id, opened=None):
         if not looked:
             looked.append(token)
             return
-        await real_take_over(token, farm_id, user_id)
+        await real_take_over(token, farm_id, user_id, opened)
 
     real_classify, reading, go = live.classify, threading.Event(), threading.Event()
 

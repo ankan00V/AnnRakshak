@@ -186,6 +186,9 @@ class OtpChallenge(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime)
     expires_at: Mapped[datetime] = mapped_column(DateTime)
     consumed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    # Hash of the token in the httponly cookie of the device that asked for this
+    # code: only that device is handed the challenge again (auth.pending_otp).
+    holder_hash: Mapped[str | None] = mapped_column(String(64))
 
 
 class UserSession(Base):

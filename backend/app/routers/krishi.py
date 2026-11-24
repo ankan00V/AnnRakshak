@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from app import auth, krishi
 from app.db import get_db
-from app.i18n import LANGS
+from app.i18n import TEXT_LANGS
 from app.kb import KB, get_kb
 from app.limits import client_ip, limit
 from app.models import Farm
@@ -25,25 +25,30 @@ router = APIRouter(prefix="/api/krishi", tags=["krishi"])
 
 
 def _lang(lang: str) -> str:
-    return lang if lang in LANGS else "en"
+    return lang if lang in TEXT_LANGS else "en"
 
 
 @router.get("/hello")
 def hello(request: Request, lang: str = "en", screen: str | None = None, db: Session = Depends(get_db)):
     user = auth.current_user(request, db)
+    if user is not None and user.is_demo and screen not in krishi.ACCOUNT_SCREENS:
+        # The register message, and the two questions a demo account has: how
+        # to register, and how to log out of the demo.
+        out = krishi.demo_reply(user, None, _lang(lang))
+        return {"text": out["text"], "suggestions": out["suggestions"]}
     return krishi.hello(screen, _lang(lang), user.name if user else None)
 
 
 class AskIn(BaseModel):
     text: str | None = Field(default=None, max_length=300)
-    topic: str | None = Field(default=None, max_length=40)
+    topic: str | None = Field(default=None, max_length=64)
     lang: str = "en"
     screen: str | None = Field(default=None, max_length=20)
     farm_id: int | None = None
     prev_text: str | None = Field(default=None, max_length=300)
     """The farmer's previous question in this chat, and the topic that answered
     it — so a follow-up is read in context."""
-    prev_topic: str | None = Field(default=None, max_length=40)
+    prev_topic: str | None = Field(default=None, max_length=64)
 
 
 @router.post("/ask")
@@ -52,6 +57,12 @@ def ask(body: AskIn, request: Request, db: Session = Depends(get_db), kb: KB = D
     # Sixty a minute from one address was not that farmer, it was a bill.
     limit(f"krishi:{client_ip(request)}", 15, 60)
     user = auth.current_user(request, db)
+    if user is not None and user.is_demo:
+        if not krishi.demo_allows(body.text, body.topic, body.screen):
+            return krishi.demo_reply(user, body.text, _lang(body.lang))
+        # Signing in and signing up: answered as for a visitor, with no field.
+        return krishi.answer(db, kb, text=body.text, topic=body.topic, screen=body.screen, lang=_lang(body.lang),
+                             farm=None, user=None, farms=[], prev_text=body.prev_text, prev_topic=body.prev_topic)
     farm = db.get(Farm, body.farm_id) if body.farm_id is not None else None
     if farm is not None and not auth.can_open_farm(user, farm, db):
         farm = None  # not theirs: answer as if no farm is open

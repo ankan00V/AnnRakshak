@@ -8,6 +8,7 @@ import type { CaseBrief, DiagnoseResult, Farm, TargetView } from '../../api/type
 import { useAsync } from '../../lib/hooks'
 import { ConfidenceMeter, ErrorBox, GradCamOverlay, ListenButton } from '../../ui/kit'
 import AdvisoryView from '../components/AdvisoryView'
+import CloserLook from '../components/CloserLook'
 import { useFarmer } from '../FarmerContext'
 import { bcp47 } from '../../lib/i18n'
 import { FIELD, LABEL, PANEL, PRIMARY, SECONDARY } from '../tokens'
@@ -67,6 +68,11 @@ function ResultView({ r }: { r: DiagnoseResult }) {
   }
 
   const advise = outcome === 'advise'
+  // Unfamiliar as a whole, but one part looks like the photos the model knows:
+  // marked, with a prompt to photograph it. Only while it is still waiting on
+  // the expert; once they have answered, the answer is what matters.
+  const closer = outcome === 'escalate' && r.gate.reason === 'UNFAMILIAR_PHOTO' && r.case?.status !== 'resolved'
+    ? r.heatmap?.closer_region : undefined
   return (
     <div className="space-y-5">
       <button onClick={() => navigate('/app')} className="inline-flex min-h-[44px] items-center gap-1.5 text-[15px] font-medium text-leaf-deep">
@@ -84,6 +90,16 @@ function ResultView({ r }: { r: DiagnoseResult }) {
             <div className="relative aspect-square overflow-hidden rounded-[22px] bg-leaf-deep">
               {r.image_url && <img src={r.image_url} alt="" className="h-full w-full object-cover" />}
               {r.heatmap && outcome !== 'retake' && <GradCamOverlay heatmap={r.heatmap} />}
+              {closer && (
+                <span
+                  aria-hidden
+                  className="absolute rounded-xl border-[3px] border-dashed border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.25)]"
+                  style={{
+                    left: `${closer[0] * 100}%`, top: `${closer[1] * 100}%`,
+                    width: `${(closer[2] - closer[0]) * 100}%`, height: `${(closer[3] - closer[1]) * 100}%`,
+                  }}
+                />
+              )}
               {r.heatmap && outcome !== 'retake' && (
                 <span className="absolute bottom-3 left-3 rounded-full bg-black/60 px-3 py-1 text-[12px] text-white">
                   {t('aiLookedHere')}
@@ -136,6 +152,8 @@ function ResultView({ r }: { r: DiagnoseResult }) {
           {outcome === 'clarify' && r.clarify && <DoubtDoctor r={r} />}
 
           {outcome === 'escalate' && r.gate.reason === 'CROP_MISMATCH' && top && (top.confidence ?? 0) >= 0.6 && <CropMismatch r={r} top={top} />}
+
+          {closer && <CloserLook imageUrl={r.image_url} region={closer} />}
 
           {outcome === 'escalate' && <Escalated message={r.message} kase={r.case} alternatives={r.gate.alternatives} />}
 

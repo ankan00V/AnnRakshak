@@ -257,10 +257,12 @@ export const api = {
       json(body),
     ),
 
-  labelCheck: (farmId: number, product: string, lang: Lang, problemId?: number) =>
-    req<LabelVerdict>('/api/labelcheck', json({ farm_id: farmId, product, lang, problem_id: problemId })),
-  labelNote: (farmId: number, product: string, lang: Lang, problemId?: number) =>
-    req<{ suggestion: string | null }>('/api/labelcheck/note', json({ farm_id: farmId, product, lang, problem_id: problemId })),
+  /** `target`: the problem the farmer picked, or 'none' for the crop alone;
+   *  left out, the server uses the field's latest diagnosis. */
+  labelCheck: (farmId: number, product: string, lang: Lang, target?: string) =>
+    req<LabelVerdict>('/api/labelcheck', json({ farm_id: farmId, product, lang, target })),
+  labelNote: (farmId: number, product: string, lang: Lang, target?: string) =>
+    req<{ suggestion: string | null }>('/api/labelcheck/note', json({ farm_id: farmId, product, lang, target })),
 
   cases: (query: CaseQuery = {}) => {
     const p = new URLSearchParams()

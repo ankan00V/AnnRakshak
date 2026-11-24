@@ -118,3 +118,32 @@ describe('logging out', () => {
     expect(screen.getByTestId('where')).toHaveTextContent('next=%2Fapp%2Fscan')
   })
 })
+
+describe('a demo account', () => {
+  const DEMO: Me = { ...FARMER, id: 99, name: 'Demo farmer', is_demo: true }
+
+  beforeEach(() => {
+    localStorage.clear()
+    sessionStorage.clear()
+  })
+
+  it('ends when the tab it was started in is gone, though the browser kept its cookie', async () => {
+    // Closing a tab (or a window, on a Mac) keeps a session cookie; the demo
+    // must not come back signed in in a new tab or a restored browser.
+    me.mockResolvedValue(DEMO)
+    logout.mockResolvedValue(undefined)
+    app('/app')
+    expect(await screen.findByText('Front page')).toBeInTheDocument()
+    expect(logout).toHaveBeenCalledOnce()
+    expect(localStorage.getItem('ar.me')).toBeNull()
+  })
+
+  it('stays for as long as its own tab is open, and is never remembered', async () => {
+    sessionStorage.setItem('ar.demo-tab', '1')
+    me.mockResolvedValue(DEMO)
+    app('/app')
+    expect(await screen.findByText('Your fields')).toBeInTheDocument()
+    expect(logout).not.toHaveBeenCalled()
+    expect(localStorage.getItem('ar.me')).toBeNull()
+  })
+})

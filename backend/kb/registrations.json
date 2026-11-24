@@ -1,0 +1,987 @@
+{
+ "_note": "Where each product in pesticides.json is registered on rice, maize, cotton and soybean, read by hand from the CIB&RC major-uses lists in data/raw/cibrc/ (as on 30.09.2026); `line` is where the product's block starts in that file. The spray check gives no objection only when the register lists the product for the crop and a pest naming the target (or our own advice uses it there). Rules applied when reading: a register entry's own words decide the target — 'stem borer' on rice covers yellow and white stem borer, a bare 'bollworm(s)' is the American bollworm and pink bollworm counts only where named, and a bare 'leaf spot' or 'leaf blight' is not taken to cover a disease it does not name (as in DATASETS.md §3b); rows that belong to a neighbouring product in the PDF are not counted; a seed-treatment-only row is not counted as a spray use when the same product has spray rows on that crop (carbendazim on sheath blight). Products absent here are not on the register for these crops: copper oxychloride 50% WP, metalaxyl 8% + mancozeb 64% WP and the two herbicides.",
+ "products": {
+  "tricyclazole_75wp": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_blast"
+    ],
+    "register_says": "Paddy (Rice): Blast",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 1876
+   }
+  ],
+  "isoprothiolane_40ec": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_blast"
+    ],
+    "register_says": "Rice (Paddy): Blast",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 626
+   }
+  ],
+  "mancozeb_75wp": [
+   {
+    "crop": "maize",
+    "targets": [
+     "maize_downy_mildew"
+    ],
+    "register_says": "Maize: Leaf blight, Downy mildew",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 782
+   },
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_blast"
+    ],
+    "register_says": "Paddy (Rice): Blast",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 782
+   }
+  ],
+  "propiconazole_25ec": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_sheath_blight"
+    ],
+    "register_says": "Rice (Paddy): Sheath blight (Rhizoctonia solani)",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 1070
+   },
+   {
+    "crop": "soybean",
+    "targets": [
+     "soybean_rust"
+    ],
+    "register_says": "Soya bean: Rust (Phakopsora pachyrhizi)",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 1070
+   },
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_alternaria_leaf_spot"
+    ],
+    "register_says": "Cotton: Alternaria leaf spot",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 1070
+   }
+  ],
+  "hexaconazole_5ec": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_blast",
+     "rice_sheath_blight"
+    ],
+    "register_says": "Rice (Paddy): Blast, Sheath blight",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 566
+   },
+   {
+    "crop": "soybean",
+    "targets": [
+     "soybean_rust"
+    ],
+    "register_says": "Soybean: Rust",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 566
+   }
+  ],
+  "validamycin_3l": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_sheath_blight"
+    ],
+    "register_says": "Rice (Paddy): Sheath blight",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 1885
+   }
+  ],
+  "copper_hydroxide_77wp": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_false_smut"
+    ],
+    "register_says": "Rice (Paddy): False smut",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 352
+   }
+  ],
+  "copper_hydroxide_53_8df": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_false_smut",
+     "rice_bacterial_leaf_blight"
+    ],
+    "register_says": "Rice (Paddy): False smut, Bacterial leaf blight",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 327
+   }
+  ],
+  "carbendazim_50wp": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_blast"
+    ],
+    "register_says": "Paddy (Rice): Blast (spray; sheath blight only as a seed treatment)",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 186
+   },
+   {
+    "crop": "cotton",
+    "targets": [],
+    "register_says": "Cotton: Leafspot",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 186
+   }
+  ],
+  "flutriafol_23sc": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_sheath_blight",
+     "rice_brown_spot"
+    ],
+    "register_says": "Rice: Sheath blight & brown spot",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 551
+   }
+  ],
+  "mancozeb_hexaconazole_wg": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_blast",
+     "rice_sheath_blight",
+     "rice_brown_spot"
+    ],
+    "register_says": "Rice: Blast, Sheath blight, Brown spot, Grain discoloration",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 3284
+   }
+  ],
+  "kresoxim_methyl_44_3sc": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_blast",
+     "rice_sheath_blight"
+    ],
+    "register_says": "Paddy (Rice): Blast, Sheath blight",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 695
+   },
+   {
+    "crop": "soybean",
+    "targets": [
+     "soybean_rust"
+    ],
+    "register_says": "Soybean: Rust",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 695
+   },
+   {
+    "crop": "cotton",
+    "targets": [],
+    "register_says": "Cotton: Leaf spot, Grey mildew",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 695
+   },
+   {
+    "crop": "maize",
+    "targets": [
+     "maize_turcicum_leaf_blight",
+     "maize_common_rust"
+    ],
+    "register_says": "Maize: Turcicum leaf blight, Rust",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 695
+   }
+  ],
+  "pyraclostrobin_20wg": [
+   {
+    "crop": "soybean",
+    "targets": [
+     "soybean_frogeye_leaf_spot"
+    ],
+    "register_says": "Soybean: Frog eye leaf spot (Cercospora) & Alternaria leaf spot",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 1164
+   },
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_alternaria_leaf_spot"
+    ],
+    "register_says": "Cotton: Alternaria leaf blight",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 1164
+   },
+   {
+    "crop": "maize",
+    "targets": [
+     "maize_turcicum_leaf_blight"
+    ],
+    "register_says": "Corn: Turcicum leaf blight",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 1164
+   }
+  ],
+  "azoxystrobin_mancozeb_wg": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_sheath_blight",
+     "rice_brown_spot",
+     "rice_blast"
+    ],
+    "register_says": "Paddy: Sheath blight, Dirty panicle, Brown spot and Blast",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 2168
+   },
+   {
+    "crop": "soybean",
+    "targets": [
+     "soybean_cercospora_leaf_blight"
+    ],
+    "register_says": "Soybean: Cercospora leaf spot, Myrothecium leaf spot and Alternaria",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 2168
+   }
+  ],
+  "mefentrifluconazole_pyraclostrobin_sc": [
+   {
+    "crop": "maize",
+    "targets": [
+     "maize_turcicum_leaf_blight",
+     "maize_maydis_leaf_blight"
+    ],
+    "register_says": "Corn: Northern leaf blight, Southern leaf blight",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 3331
+   },
+   {
+    "crop": "soybean",
+    "targets": [
+     "soybean_frogeye_leaf_spot",
+     "soybean_target_spot"
+    ],
+    "register_says": "Soybean: Frog eye leaf spot and Target leaf spot",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 3331
+   }
+  ],
+  "ipconazole_metalaxyl_me": [
+   {
+    "crop": "maize",
+    "targets": [
+     "maize_maydis_leaf_blight",
+     "maize_banded_leaf_sheath_blight",
+     "maize_downy_mildew"
+    ],
+    "register_says": "Maize (seed treatment): Maydis leaf blight, Fusarium stalk rot, Banded leaf & sheath blight, Downy mildew",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 3073
+   },
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_wilt"
+    ],
+    "register_says": "Cotton (seed treatment): Root rot, Fusarium wilt & Charcoal rot",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 3073
+   }
+  ],
+  "sedaxane_fludioxonil_thiamethoxam_fs": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_wilt",
+     "cotton_aphid",
+     "cotton_jassid",
+     "cotton_whitefly"
+    ],
+    "register_says": "Cotton (seed treatment): Fungal wilt, Root rot; Aphid, Jassids, Whitefly",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 3883
+   }
+  ],
+  "carboxin_75wp": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_bacterial_blight"
+    ],
+    "register_says": "Cotton (seed treatment): Angular leaf spot",
+    "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+    "line": 237
+   }
+  ],
+  "chlorantraniliprole_18_5sc": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_yellow_stem_borer",
+     "rice_white_stem_borer",
+     "rice_leaf_folder"
+    ],
+    "register_says": "Rice: Stem borer, Leaf folder",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 518
+   },
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_american_bollworm"
+    ],
+    "register_says": "Cotton: American bollworm, Spotted bollworm",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 518
+   },
+   {
+    "crop": "soybean",
+    "targets": [
+     "soybean_girdle_beetle",
+     "soybean_tobacco_caterpillar"
+    ],
+    "register_says": "Soybean: Green semilooper, Stem fly, Girdle beetle and Tobacco caterpillar",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 518
+   },
+   {
+    "crop": "maize",
+    "targets": [
+     "maize_stem_borer",
+     "maize_fall_armyworm"
+    ],
+    "register_says": "Maize: Spotted stem borer, Pink stem borer, Fall armyworm",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 518
+   }
+  ],
+  "chlorantraniliprole_0_4gr": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_yellow_stem_borer",
+     "rice_leaf_folder"
+    ],
+    "register_says": "Rice (Paddy): Yellow stem borer, Leaf folder",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 562
+   },
+   {
+    "crop": "maize",
+    "targets": [
+     "maize_fall_armyworm",
+     "maize_stem_borer"
+    ],
+    "register_says": "Maize: Fall armyworm, stem borer, pink stem borer",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 562
+   }
+  ],
+  "emamectin_benzoate_5sg": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_american_bollworm"
+    ],
+    "register_says": "Cotton: Boll worms",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 1244
+   }
+  ],
+  "spinetoram_11_7sc": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_pink_bollworm"
+    ],
+    "register_says": "Cotton: Thrips, Tobacco caterpillar, Spotted bollworm, Pink bollworm",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 2378
+   },
+   {
+    "crop": "soybean",
+    "targets": [
+     "soybean_tobacco_caterpillar"
+    ],
+    "register_says": "Soybean: Tobacco caterpillar",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 2378
+   },
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_yellow_stem_borer",
+     "rice_leaf_folder"
+    ],
+    "register_says": "Rice: Yellow stem borer, Leaf folder",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 2378
+   },
+   {
+    "crop": "maize",
+    "targets": [
+     "maize_fall_armyworm"
+    ],
+    "register_says": "Maize: Fall armyworm",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 2378
+   }
+  ],
+  "pymetrozine_50wg": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_brown_planthopper"
+    ],
+    "register_says": "Paddy (Rice): Brown plant hopper",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 2215
+   }
+  ],
+  "buprofezin_25sc": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_whitefly",
+     "cotton_aphid",
+     "cotton_jassid"
+    ],
+    "register_says": "Cotton: Whitefly, Aphids, Jassids, Thrips",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 409
+   },
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_brown_planthopper"
+    ],
+    "register_says": "Rice: Brown plant hopper, Green leaf hopper, White backed plant hopper",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 409
+   }
+  ],
+  "buprofezin_70df": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_jassid",
+     "cotton_whitefly"
+    ],
+    "register_says": "Cotton: Jassids, Whitefly",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 423
+   },
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_brown_planthopper"
+    ],
+    "register_says": "Rice: Brown plant hopper",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 423
+   }
+  ],
+  "imidacloprid_17_8sl": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_aphid",
+     "cotton_whitefly",
+     "cotton_jassid"
+    ],
+    "register_says": "Cotton: Aphid, Whitefly, Jassid, Thrips",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 1811
+   },
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_brown_planthopper"
+    ],
+    "register_says": "Paddy (Rice): Brown plant hopper, White backed plant hopper, Green leaf hopper",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 1811
+   }
+  ],
+  "thiamethoxam_25wg": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_yellow_stem_borer",
+     "rice_white_stem_borer",
+     "rice_leaf_folder",
+     "rice_brown_planthopper"
+    ],
+    "register_says": "Rice (Paddy): Stem borer, Gall midge, Leaf folder, White backed plant hopper, Brown planthopper, Green leaf hopper, Thrips",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 2690
+   },
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_jassid",
+     "cotton_aphid",
+     "cotton_whitefly"
+    ],
+    "register_says": "Cotton: Jassid, Aphid, Thrips, Whitefly",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 2690
+   }
+  ],
+  "flonicamid_50wg": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_brown_planthopper"
+    ],
+    "register_says": "Rice: Brown plant hopper, White backed plant hopper, Green leaf hopper",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 1547
+   },
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_aphid",
+     "cotton_jassid",
+     "cotton_whitefly"
+    ],
+    "register_says": "Cotton: Aphids, Jassids, Thrips & Whiteflies",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 1547
+   },
+   {
+    "crop": "soybean",
+    "targets": [],
+    "register_says": "Soybean: Aphids, Jassids, White fly",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 1547
+   }
+  ],
+  "pyriproxyfen_10ec": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_whitefly"
+    ],
+    "register_says": "Cotton: Whitefly",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 2226
+   }
+  ],
+  "pyriproxyfen_bifenthrin_ec": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_whitefly"
+    ],
+    "register_says": "Cotton: Whitefly",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 4393
+   },
+   {
+    "crop": "soybean",
+    "targets": [],
+    "register_says": "Soybean: Whitefly",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 4393
+   }
+  ],
+  "diafenthiuron_50wp": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_whitefly",
+     "cotton_aphid",
+     "cotton_jassid"
+    ],
+    "register_says": "Cotton: Whiteflies, Aphids, Thrips, Jassids",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 1158
+   }
+  ],
+  "profenofos_50ec": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_american_bollworm",
+     "cotton_jassid",
+     "cotton_aphid",
+     "cotton_whitefly"
+    ],
+    "register_says": "Cotton: Bollworm; Jassids, Aphids, Thrips, Whiteflies",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 2193
+   },
+   {
+    "crop": "soybean",
+    "targets": [
+     "soybean_tobacco_caterpillar",
+     "soybean_girdle_beetle"
+    ],
+    "register_says": "Soybean: Semi looper & Girdle beetle",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 2193
+   }
+  ],
+  "thiodicarb_75wp": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_american_bollworm"
+    ],
+    "register_says": "Cotton: Bollworms",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 2578
+   }
+  ],
+  "indoxacarb_14_5sc": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_american_bollworm"
+    ],
+    "register_says": "Cotton: Bollworm",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 1851
+   },
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_yellow_stem_borer",
+     "rice_leaf_folder"
+    ],
+    "register_says": "Rice: Yellow stem borer, Leaf folder",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 1851
+   },
+   {
+    "crop": "soybean",
+    "targets": [
+     "soybean_tobacco_caterpillar"
+    ],
+    "register_says": "Soybean: Tobacco caterpillar (Spodoptera litura)",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 1851
+   }
+  ],
+  "thiacloprid_21_7sc": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_aphid",
+     "cotton_jassid",
+     "cotton_whitefly"
+    ],
+    "register_says": "Cotton: Aphid, Thrips, Jassid; Whitefly",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 2552
+   },
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_yellow_stem_borer",
+     "rice_white_stem_borer"
+    ],
+    "register_says": "Paddy (Rice): Stem borer",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 2552
+   },
+   {
+    "crop": "soybean",
+    "targets": [
+     "soybean_girdle_beetle"
+    ],
+    "register_says": "Soybean: Girdle beetle",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 2552
+   }
+  ],
+  "chlorpyrifos_20ec": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_hispa",
+     "rice_leaf_folder",
+     "rice_yellow_stem_borer",
+     "rice_white_stem_borer"
+    ],
+    "register_says": "Paddy (Rice): Hispa, Leaf folder, Gall midge, Stem borer, Whorl maggot",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 726
+   }
+  ],
+  "acephate_75sp": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_jassid",
+     "cotton_american_bollworm"
+    ],
+    "register_says": "Cotton: Jassids, Bollworms",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 65
+   },
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_yellow_stem_borer",
+     "rice_leaf_folder",
+     "rice_brown_planthopper"
+    ],
+    "register_says": "Rice (Paddy): Yellow stem borer, Leaf folder, Plant hoppers, Green leafhopper",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 65
+   }
+  ],
+  "cypermethrin_10ec": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_american_bollworm",
+     "cotton_pink_bollworm"
+    ],
+    "register_says": "Cotton: Spotted bollworm, American bollworm, Pink bollworm",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 1008
+   }
+  ],
+  "thiamethoxam_lambda_zc": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_jassid",
+     "cotton_aphid",
+     "cotton_american_bollworm"
+    ],
+    "register_says": "Cotton: Jassids, Aphids, Thrips, Bollworms",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 4519
+   },
+   {
+    "crop": "maize",
+    "targets": [
+     "maize_aphid",
+     "maize_stem_borer"
+    ],
+    "register_says": "Maize: Aphid, Shoot fly, Stem borer",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 4519
+   },
+   {
+    "crop": "soybean",
+    "targets": [
+     "soybean_tobacco_caterpillar",
+     "soybean_girdle_beetle"
+    ],
+    "register_says": "Soybean: Stem fly, Semilooper, Girdle beetle",
+    "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+    "line": 4519
+   }
+  ],
+  "azadirachtin_0_15ec": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_whitefly",
+     "cotton_american_bollworm"
+    ],
+    "register_says": "Cotton: White fly, Bollworms",
+    "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+    "line": 42
+   },
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_yellow_stem_borer",
+     "rice_white_stem_borer",
+     "rice_brown_planthopper",
+     "rice_leaf_folder"
+    ],
+    "register_says": "Rice (Paddy): Thrips, Stem borer, Brown plant hopper, Leaf folder",
+    "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+    "line": 42
+   }
+  ],
+  "azadirachtin_5": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_brown_planthopper",
+     "rice_leaf_folder",
+     "rice_yellow_stem_borer",
+     "rice_white_stem_borer"
+    ],
+    "register_says": "Rice (Paddy): Brown plant hopper, Leaf folder, Stem borer",
+    "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+    "line": 105
+   },
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_whitefly",
+     "cotton_jassid",
+     "cotton_american_bollworm",
+     "cotton_aphid"
+    ],
+    "register_says": "Cotton: Whitefly, Leaf hoppers, Helicoverpa armigera, Aphids",
+    "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+    "line": 105
+   }
+  ],
+  "bt_kurstaki_wp": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_american_bollworm"
+    ],
+    "register_says": "Cotton: American bollworm, Spotted bollworm",
+    "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+    "line": 184
+   }
+  ],
+  "beauveria_1_15wp": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_american_bollworm"
+    ],
+    "register_says": "Cotton: Bollworm",
+    "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+    "line": 291
+   },
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_leaf_folder"
+    ],
+    "register_says": "Rice (Paddy): Leaf folder",
+    "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+    "line": 295
+   }
+  ],
+  "beauveria_1_5as": [
+   {
+    "crop": "maize",
+    "targets": [
+     "maize_fall_armyworm"
+    ],
+    "register_says": "Maize: Fall army worm (Spodoptera frugiperda)",
+    "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+    "line": 366
+   }
+  ],
+  "metarhizium_1_15wp": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_brown_planthopper"
+    ],
+    "register_says": "Rice: Brown plant hopper (Nilaparvata lugens)",
+    "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+    "line": 410
+   }
+  ],
+  "lecanicillium_1_15wp": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_whitefly"
+    ],
+    "register_says": "Cotton: White flies",
+    "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+    "line": 593
+   }
+  ],
+  "hanpv_0_43as": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_american_bollworm"
+    ],
+    "register_says": "Cotton: Helicoverpa armigera",
+    "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+    "line": 618
+   }
+  ],
+  "trichoderma_viride_1wp": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_sheath_blight"
+    ],
+    "register_says": "Paddy: Sheath blight (Rhizoctonia solani)",
+    "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
+    "line": 592
+   }
+  ],
+  "bacillus_subtilis_2as": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_bacterial_leaf_blight"
+    ],
+    "register_says": "Paddy: Bacterial leaf blight (seedling root dip)",
+    "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
+    "line": 146
+   }
+  ],
+  "pseudomonas_0_5wp": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_blast"
+    ],
+    "register_says": "Rice: Leaf and neck blast (seed treatment)",
+    "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
+    "line": 203
+   },
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_bacterial_blight"
+    ],
+    "register_says": "Cotton: Bacterial leaf blight (seed treatment)",
+    "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
+    "line": 203
+   }
+  ],
+  "pseudomonas_1_5wp": [
+   {
+    "crop": "rice",
+    "targets": [
+     "rice_bacterial_leaf_blight",
+     "rice_blast"
+    ],
+    "register_says": "Paddy: Bacterial leaf blight, Blast (seed treatment)",
+    "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
+    "line": 272
+   }
+  ],
+  "pb_rope_l": [
+   {
+    "crop": "cotton",
+    "targets": [
+     "cotton_pink_bollworm"
+    ],
+    "register_says": "Cotton: Pink bollworm (Pectinophora gossypiella)",
+    "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+    "line": 510
+   }
+  ]
+ }
+}

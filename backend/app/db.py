@@ -87,6 +87,7 @@ ADDED_COLUMNS = {
                        "reporting_designation": "VARCHAR(60)", "reporting_contact": "VARCHAR(120)",
                        "declared_at": "DATETIME"},
     "sensor_reading": {"season_no": "INTEGER DEFAULT 1", "soil_ph": "FLOAT", "soil_moisture_pct": "FLOAT"},
+    "otp_challenge": {"holder_hash": "VARCHAR(64)"},
 }
 
 

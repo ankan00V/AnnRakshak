@@ -6,7 +6,7 @@ import { useAsync } from '../../lib/hooks'
 import { Card, ErrorBox, Pill } from '../../ui/kit'
 import {
   AccuracyPanel, CardHead, GatePanel, KccPanel, labelName, ModelPanel, PageHead, Panel, PanelBone,
-  PesticidePanel, shortDate,
+  PesticidePanel, SprayedPanel, shortDate,
 } from '../panels'
 
 /** How the system is doing, and — the part that decides what gets built next —
@@ -61,6 +61,7 @@ export default function ModelGaps() {
           <div className="grid gap-5 lg:grid-cols-2 lg:items-stretch">
             {kcc.data?.available && <KccPanel k={kcc.data} />}
             {spray.data?.available && <PesticidePanel p={spray.data} />}
+            {spray.data?.sprayed && <SprayedPanel p={spray.data} />}
           </div>
         </>
       )}

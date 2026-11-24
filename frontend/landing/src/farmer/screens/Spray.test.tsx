@@ -16,6 +16,8 @@ const logSpray = vi.fn()
 // demonstration data, and it is the whole difference between a verdict that
 // is about somebody's crop and one that is about nobody's.
 let farmRows: Partial<Farm>[] = [{ id: 7, read_only: false }]
+// The field's home screen: its crop, and the problems diagnosed on it.
+let homeData: unknown = { problems: [] }
 vi.mock('../../api/client', async (orig) => {
   const real = await orig<typeof import('../../api/client')>()
   return {
@@ -25,7 +27,12 @@ vi.mock('../../api/client', async (orig) => {
       // Only the parts this screen reads; the rest of these shapes is not
       // what the spray check is about.
       farms: async () => farmRows as Farm[],
-      home: async () => ({ problems: [] }) as unknown as Home,
+      home: async () => homeData as unknown as Home,
+      targets: async () => [
+        { id: 'rice_blast', crop: 'rice', kind: 'disease', tier: 'diagnosable', name: 'Rice blast', signature: '' },
+        { id: 'rice_false_smut', crop: 'rice', kind: 'disease', tier: 'diagnosable', name: 'False smut', signature: '' },
+        { id: 'rice_healthy', crop: 'rice', kind: 'healthy', tier: 'diagnosable', name: 'Healthy rice', signature: '' },
+      ],
       weather: async () => ({
         spray: { now: null, windows: [], reasons_text: null },
       }) as unknown as WeatherView,
@@ -151,5 +158,32 @@ describe('the spray check on the demonstration field', () => {
 
     expect(await screen.findByText('No objection found in our records.')).toBeInTheDocument()
     expect(screen.queryByText(/demonstration field/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('what the product is checked against', () => {
+  beforeEach(() => {
+    farmRows = [{ id: 7, read_only: false }]
+    homeData = {
+      farm: { crop: 'rice' },
+      problems: [{ id: 3, target: 'rice_false_smut', name: 'False smut', status: 'open', image_url: null }],
+    }
+  })
+  afterEach(() => { homeData = { problems: [] } })
+
+  it('starts on the latest diagnosis, and checks against another problem when the farmer picks it', async () => {
+    labelCheck.mockResolvedValue(verdict({}))
+    screenUnderTest()
+    const pick = await screen.findByRole('combobox')
+    expect(await screen.findByRole('option', { name: /False smut \(latest diagnosis\)/ })).toBeInTheDocument()
+    expect((pick as HTMLSelectElement).value).toBe('rice_false_smut')
+    expect(screen.queryByRole('option', { name: /Healthy rice/ })).toBeNull()  // a healthy plant is not a problem to spray for
+    await check()
+    expect(labelCheck).toHaveBeenLastCalledWith(7, 'Mancozeb', 'en', 'rice_false_smut')
+    // another problem: the product on screen is checked again against it
+    await userEvent.selectOptions(pick, 'rice_blast')
+    expect(labelCheck).toHaveBeenLastCalledWith(7, 'Mancozeb', 'en', 'rice_blast')
+    await userEvent.selectOptions(pick, 'none')
+    expect(labelCheck).toHaveBeenLastCalledWith(7, 'Mancozeb', 'en', 'none')
   })
 })

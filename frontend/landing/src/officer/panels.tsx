@@ -362,7 +362,130 @@ export function PesticidePanel({ p }: { p: PesticideBaseline }) {
         confidence gate, and the spray check vetoes wrong-class, wrong-crop and herbicide sprays
         before they happen.
       </p>
-      <p className="mt-3 text-[12px] leading-relaxed text-soil-dark/70">{p.source}. {p.unit_note}</p>
+      <p className="mt-3 text-[12px] leading-relaxed text-soil-dark/70">
+        {p.earlier_source ? <>2021-22 on: DPPQS Statistical Database (ppqs.gov.in). Earlier years: MoSPI ENVSTATS, which republishes it. </> : <>{p.source}. </>}
+        {p.unit_note}
+      </p>
+    </Card>
+  )
+}
+
+/** What is sprayed across India: the four kinds a farmer buys, and the
+ *  ingredients sold most. National and indigenous-only, so it is context for
+ *  the state figure beside it, never added to it. */
+/** A change between two years. From a small base a percentage runs to four
+ *  figures and reads as alarm; three times or more is said as a multiple. */
+function change(was: number, now: number): { text: string; up: boolean } | null {
+  if (!was) return null
+  const ratio = now / was
+  if (ratio >= 3) return { text: `×${Math.round(ratio)}`, up: true }
+  const pct = Math.round(100 * (ratio - 1))
+  return { text: `${pct > 0 ? '+' : ''}${pct}%`, up: pct > 0 }
+}
+
+export function SprayedPanel({ p }: { p: PesticideBaseline }) {
+  const s = p.sprayed
+  if (!s) return null
+  const tonnes = (v: number) => Math.round(v).toLocaleString('en-IN')
+  const latestOf = (series: [string, number][]) => series[series.length - 1]
+  const most = Math.max(1, ...s.groups.map((g) => latestOf(g.series)[1]))
+  const year = latestOf(s.groups[0].series)[0]
+  const from = s.groups[0].series[0][0]
+  const tone: Record<string, string> = { i: 'bg-ember', f: 'bg-[#c4841d]', h: 'bg-soil-dark/45', bp: 'bg-leaf' }
+  return (
+    <Card className="p-5 lg:p-6 h-full">
+      <CardHead icon={FlaskConical} tone="text-ochre" title="What is sprayed in India"
+        sub={<>By kind, {year}, and the change since {from}. Red is the wrong way: more chemical, or less biological — the rung AnnRakshak puts first.</>} />
+      <ul className="mt-5 space-y-3.5">
+        {s.groups.map((g) => {
+          const [, v] = latestOf(g.series)
+          const c = change(g.series[0][1], v)
+          return (
+            <li key={g.id}>
+              <p className="flex items-baseline justify-between gap-3 text-[13px]">
+                <span className="font-semibold text-soil-dark/85">{g.name}</span>
+                <span className="tabular-nums text-soil-dark/70">
+                  {tonnes(v)} t
+                  {c && (
+                    <b className={`ml-2 font-semibold ${c.up === (g.id !== 'bp') ? 'text-ember' : 'text-leaf-deep'}`}>{c.text}</b>
+                  )}
+                </span>
+              </p>
+              <div className="mt-1.5 h-2.5 rounded-full bg-soil-dark/[0.07]">
+                <div className={`h-full rounded-full ${tone[g.id] ?? 'bg-soil-dark/30'}`} style={{ width: `${(v / most) * 100}%` }} />
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+      <p className="mt-6 text-[13px] font-semibold text-soil-dark/85">Most used ingredients, {year}</p>
+      <ol className="mt-2 divide-y divide-soil-dark/[0.07]">
+        {s.top.map((t, i) => {
+          const [, v] = latestOf(t.series)
+          const c = change(t.series[0][1], v)
+          return (
+            <li key={t.name} className="flex items-baseline gap-3 py-2 text-[13px]">
+              <span className="w-4 shrink-0 tabular-nums text-soil-dark/50">{i + 1}</span>
+              <span className="min-w-0 flex-1">
+                <span className="font-medium text-soil-dark/90">{t.name}</span>
+                <span className="text-soil-dark/60"> · {t.group.toLowerCase()}</span>
+              </span>
+              <span className="tabular-nums text-soil-dark/75">{tonnes(v)} t</span>
+              {c && (
+                <span className={`w-12 text-right tabular-nums text-[12px] font-semibold ${c.up ? 'text-ember' : 'text-leaf-deep'}`}>{c.text}</span>
+              )}
+            </li>
+          )
+        })}
+      </ol>
+      <p className="mt-3 text-[12px] leading-relaxed text-soil-dark/70">{s.note} Source: DPPQS Statistical Database.</p>
+    </Card>
+  )
+}
+
+/** The state's estimated pesticide demand, and next year's projection, for
+ *  the office planning what to stock. In tonnes of formulation: it is not set
+ *  against use, which states report partly in technical grade. */
+export function DemandCard({ p }: { p: PesticideBaseline }) {
+  const d = p.demand
+  if (!d || (!d.chemical.length && !d.bio.length)) return null
+  const tonnes = (v: number) => Math.round(v).toLocaleString('en-IN')
+  const last = (series: [string, number][]) => series[series.length - 1]
+  const chem = last(d.chemical)
+  const bio = last(d.bio)
+  const proj = d.projected
+  const bioShare = proj?.chemical && proj?.bio ? Math.round((100 * proj.bio) / (proj.chemical + proj.bio)) : null
+  const rows: [string, [string, number] | undefined, number | undefined][] = [
+    ['Chemical pesticides', chem, proj?.chemical],
+    ['Bio-pesticides', bio, proj?.bio],
+  ]
+  return (
+    <Card className="p-5 lg:p-6">
+      <CardHead icon={FlaskConical} tone="text-ochre" title={`Estimated demand — ${p.state}`}
+        sub="What the state expects to need, from the DPPQS zonal conferences on plant-protection inputs." />
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        {rows.map(([label, now, next]) => (
+          <div key={label} className="rounded-2xl bg-[#f8f6f0] p-4">
+            <p className="text-[13px] font-semibold text-soil-dark/80">{label}</p>
+            <p className="mt-2 text-[26px] font-semibold leading-none tabular-nums">
+              {next != null ? tonnes(next) : now ? tonnes(now[1]) : '—'}<span className="text-sm font-medium text-soil-dark/70"> t</span>
+            </p>
+            <p className="mt-1.5 text-[12px] text-soil-dark/70">
+              {next != null && proj ? `projected for ${proj.year}` : now ? now[0] : 'not reported'}
+              {next != null && now && <> · {tonnes(now[1])} t in {now[0]}</>}
+            </p>
+          </div>
+        ))}
+      </div>
+      {bioShare != null && (
+        <p className="mt-4 text-[13px] text-soil-dark/80">
+          Bio-pesticides are <b className="font-semibold">{bioShare}%</b> of next year&apos;s projected demand: the
+          share an office that stocks the biological rung first can move.
+        </p>
+      )}
+      <p className="mt-3 text-[12px] leading-relaxed text-soil-dark/70">
+        Tonnes of formulation. {d.note} Source: DPPQS Statistical Database (ppqs.gov.in).
+      </p>
     </Card>
   )
 }
@@ -463,6 +586,7 @@ const REASON_LABEL: Record<string, string> = {
   LIVE_FEW_VIEWS: 'Live call: too few clear views',
   NOT_A_CROP_PHOTO: 'Not a photo of a crop',
   LAB_CLASS_CONFIRM: 'Lab-trained class, asked to confirm',
+  LOOKALIKE_CONFIRM: 'Often mistaken for a look-alike, asked to confirm',
 }
 const reasonLabel = (r: string) =>
   REASON_LABEL[r] ?? r.charAt(0) + r.slice(1).toLowerCase().replace(/_/g, ' ')

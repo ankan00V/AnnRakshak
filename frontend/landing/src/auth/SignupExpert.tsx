@@ -10,6 +10,7 @@ import { Bone, Card, ErrorBox, Loading } from '../ui/kit'
 import { useAuth } from './AuthContext'
 import { emailOk, phoneOk } from './helpers'
 import { Actions, Chips, CodePanel, Field, FormCard, Input, Primary, Secondary, Select, Steps } from './parts'
+import { usePublishDraft } from './progress'
 import Turnstile from './Turnstile'
 
 /** What an expert is asked, and why: it decides which cases reach them and
@@ -133,6 +134,14 @@ export default function SignupExpert() {
                   t('authExpertStep3'), t('authFarmerStep4')]
   const o = options.data
   const name = (list: { id: string; name: string }[] | undefined, id: string) => list?.find((x) => x.id === id)?.name ?? id
+
+  // The profile the phone beside the form shows, as it stands.
+  usePublishDraft({
+    role: 'expert', name: f.name.trim(), phone: f.phone, place: f.state, fields: [],
+    post: [o ? name(o.designations, f.designation) : '', f.organisation.trim()].filter(Boolean).join(' · '),
+    covers: f.districts,
+    crops: f.crops.map((c) => (o ? name(o.crops, c) : c)),
+  })
 
   if (options.error) return <ErrorBox offlineLabel={t('offline')} error={options.error} onRetry={options.reload} retryLabel={t('retry')} />
   if (!o) {

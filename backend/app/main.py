@@ -40,6 +40,35 @@ logging.basicConfig(
 log = logging.getLogger("annrakshak")
 
 
+DB_WAIT_S = float(os.getenv("ANNRAKSHAK_DB_WAIT_S", "120"))
+"""How long startup waits for the database to answer before giving up."""
+
+
+async def _init_db_when_reachable() -> None:
+    """Prepare the database, waiting for it to be reachable.
+
+    A laptop that starts the server at login has no network for the first
+    seconds: the database host would not resolve, startup failed, and the
+    reloader kept the port while serving nothing — every screen of the app
+    hung with no error. A connection failure is now retried for DB_WAIT_S
+    with growing pauses; any other error still stops startup at once."""
+    from sqlalchemy.exc import OperationalError  # noqa: PLC0415
+
+    loop = asyncio.get_running_loop()
+    deadline, pause = loop.time() + DB_WAIT_S, 2.0
+    while True:
+        try:
+            init_db()
+            return
+        except OperationalError as e:
+            if loop.time() + pause > deadline:
+                raise
+            log.warning("database not reachable yet (%s); retrying in %.0f s",
+                        str(e.orig).splitlines()[0] if e.orig else e, pause)
+            await asyncio.sleep(pause)
+            pause = min(pause * 2, 20.0)
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     # A laptop is told; a server that says it is production is stopped. Every
@@ -52,7 +81,7 @@ async def lifespan(_: FastAPI):
 
     get_kb()  # refuse to start on a broken knowledge base
     krishi_kb.index()  # ... or a broken Krishi help base
-    init_db()
+    await _init_db_when_reachable()
     runtime.arm()
     tasks = [asyncio.create_task(cache.listen(notify.broker.deliver_local))]
     if WATCH_ENABLED:

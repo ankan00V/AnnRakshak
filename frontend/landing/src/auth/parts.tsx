@@ -7,27 +7,22 @@ import type { TKey } from '../lib/i18n'
 import { wentBySms } from './helpers'
 import { usePublishProgress } from './progress'
 
-/** On a phone the page is cream and a white box is the thing you type in. On a
- *  laptop the form sits on a white sheet, so the same white box would vanish
- *  into it — there the boxes take the page's own cream, which is how every
- *  other card in the app holds a field. */
+/** The form sits on a white card on every screen, so a white box would
+ *  vanish into it: the boxes take the page's soft cream, which is how every
+ *  other card in the app holds a field, and turn white while you type. */
 const input =
-  'w-full min-h-[48px] rounded-xl border px-3 bg-white lg:bg-cream/50 text-[16px] ' +
-  'focus:outline-none focus:ring-2 focus:ring-leaf/30 lg:focus:bg-white'
+  'w-full min-h-[48px] rounded-xl border px-3 bg-[#fbf8f1] text-[16px] transition-colors ' +
+  'focus:outline-none focus:ring-2 focus:ring-leaf/30 focus:bg-white'
 
-/** The sheet the form is written on, from `lg` up. */
+/** A form's own section. The card around every sign-in screen is drawn by
+ *  the layout, so this is only the grouping. */
 export function FormCard({ children }: { children: ReactNode }) {
-  return (
-    <section className="lg:rounded-3xl lg:bg-white lg:border lg:border-soil-dark/10 lg:px-9 lg:py-8
-                        lg:shadow-[0_20px_46px_-30px_rgba(43,29,18,0.45)]">
-      {children}
-    </section>
-  )
+  return <section>{children}</section>
 }
 
 /** The row the form ends on: a rule, then where you can go from here. */
 export function Actions({ children }: { children: ReactNode }) {
-  return <div className="mt-6 lg:mt-8 lg:pt-6 lg:border-t lg:border-soil-dark/10 flex gap-3">{children}</div>
+  return <div className="mt-7 flex gap-3 border-t border-soil-dark/10 pt-6">{children}</div>
 }
 
 /** What a Field hands the box inside it: its name, its state, its note. */
@@ -137,7 +132,7 @@ export function Chips<T extends string>({ options, value, onChange, multi = fals
           <button type="button" key={o.id} onClick={() => toggle(o.id)} aria-pressed={on}
             className={`min-h-[44px] lg:min-h-[46px] rounded-xl border px-3 py-2 text-left text-[14px] font-medium flex items-center gap-2 transition-colors active:bg-leaf/5 ${
               on ? 'border-leaf-deep bg-leaf/10 text-leaf-deep'
-                : 'border-soil-dark/15 bg-white lg:bg-cream/50 hover:border-leaf/40 lg:hover:bg-cream'}`}>
+                : 'border-soil-dark/15 bg-[#fbf8f1] hover:border-leaf/40 hover:bg-white'}`}>
             <span className="flex-1 min-w-0">{o.label}</span>
             {on && <Check className="w-4 h-4 shrink-0" />}
           </button>
@@ -147,20 +142,20 @@ export function Chips<T extends string>({ options, value, onChange, multi = fals
   )
 }
 
-/** The step counter on a phone. On a laptop the side panel draws the walk in
- *  full, so only the heading stays here and the bar would say it twice. */
+/** Where this sign-up has got to: the step, its name, and a bar of all of
+ *  them. Published too, for the preview phone beside the card. */
 export function Steps({ step, titles }: { step: number; titles: string[] }) {
   const { t } = useFarmer()
   usePublishProgress(step, titles)
   return (
-    <div className="mb-5 lg:mb-7 lg:pb-5 lg:border-b lg:border-soil-dark/10">
-      <p className="text-[12px] uppercase tracking-wider text-soil-dark/70 font-semibold lg:hidden">
+    <div className="mb-6 rounded-2xl bg-[#f6f1e6] px-4 py-3.5">
+      <p className="text-[12px] uppercase tracking-wider text-[#9a6210] font-semibold">
         {t('authStep').replace('{n}', String(step + 1)).replace('{total}', String(titles.length))}
       </p>
-      <h2 className="mt-1 lg:mt-0 font-instrument-serif text-[28px] lg:text-[30px] leading-tight">{titles[step]}</h2>
-      <div className="mt-3 grid gap-1.5 lg:hidden" style={{ gridTemplateColumns: `repeat(${titles.length}, 1fr)` }}>
+      <h2 className="mt-0.5 font-display text-[22px] leading-tight tracking-[-0.01em] text-[#1f3a26]">{titles[step]}</h2>
+      <div className="mt-3 grid gap-1.5" style={{ gridTemplateColumns: `repeat(${titles.length}, 1fr)` }}>
         {titles.map((x, i) => (
-          <span key={x + i} className={`h-1.5 rounded-full ${i <= step ? 'bg-leaf-deep' : 'bg-soil-dark/10'}`} />
+          <span key={x + i} title={x} className={`h-1.5 rounded-full transition-colors ${i <= step ? 'bg-[#1d4a2c]' : 'bg-soil-dark/10'}`} />
         ))}
       </div>
     </div>
@@ -172,7 +167,7 @@ export function Primary({ children, busy, disabled, onClick, type = 'button' }: 
 }) {
   return (
     <button type={type} onClick={onClick} disabled={disabled || busy}
-      className="w-full min-h-[52px] rounded-full bg-leaf-deep text-cream text-[15px] font-semibold flex items-center justify-center gap-2 disabled:opacity-50 hover:brightness-110 transition">
+      className="w-full min-h-[52px] rounded-full bg-[#1d4a2c] text-cream text-[15px] font-semibold flex items-center justify-center gap-2 shadow-[0_12px_24px_-14px_rgba(29,74,44,0.8)] disabled:opacity-45 disabled:shadow-none hover:bg-[#245a35] transition">
       {busy && <Loader2 className="w-4 h-4 animate-spin" />}
       {children}
     </button>
@@ -182,7 +177,7 @@ export function Primary({ children, busy, disabled, onClick, type = 'button' }: 
 export function Secondary({ children, onClick }: { children: ReactNode; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick}
-      className="min-h-[52px] px-5 rounded-full border border-soil-dark/15 text-[15px] font-medium text-soil-dark/70 hover:bg-white">
+      className="min-h-[52px] px-5 rounded-full border border-soil-dark/15 text-[15px] font-medium text-soil-dark/70 hover:bg-[#f6f1e6]">
       {children}
     </button>
   )
@@ -198,7 +193,7 @@ export function CodeBoxes({ value, onChange, digits = 6, onComplete }: {
   // Capped on a laptop: six boxes stretched across the full column read as six
   // letterboxes rather than six digits.
   return (
-    <div className="relative lg:max-w-md" onClick={() => ref.current?.focus()}>
+    <div className="relative" onClick={() => ref.current?.focus()}>
       <input ref={ref} value={value} inputMode="numeric" autoComplete="one-time-code" maxLength={digits}
         aria-label="One-time code"
         onChange={(e) => {
@@ -210,7 +205,7 @@ export function CodeBoxes({ value, onChange, digits = 6, onComplete }: {
       <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${digits}, 1fr)` }} aria-hidden>
         {Array.from({ length: digits }, (_, i) => (
           <span key={i}
-            className={`h-14 rounded-xl border-2 bg-white flex items-center justify-center text-2xl font-semibold tabular-nums ${
+            className={`h-14 rounded-xl border-2 bg-[#fbf8f1] flex items-center justify-center text-2xl font-semibold tabular-nums ${
               i === value.length ? 'border-leaf-deep' : value[i] ? 'border-leaf/40' : 'border-soil-dark/15'}`}>
             {value[i] ?? ''}
           </span>

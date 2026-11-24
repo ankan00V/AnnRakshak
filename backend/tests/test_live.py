@@ -891,6 +891,59 @@ def test_a_reconnection_that_drops_again_at_once_keeps_the_walk(client):
         assert ws.receive_json()["guide"]["read"] == 4
 
 
+def test_an_older_reconnection_that_arrives_late_does_not_take_the_walk_from_a_newer_one(client, monkeypatch):
+    """Each connection checks the field and the caller in the database before
+    it reads what the phone said. On a slow database the reconnection that
+    dropped can get through that check after the one that followed it has
+    already picked the walk up — and it used to take the walk off that live
+    connection, which then closed in the farmer's hand. The phone has moved on:
+    the older reconnection is the one with nothing to take."""
+    import threading
+
+    from app import auth
+    from app.routers import live as live_router
+
+    real_ws_user, real_take_over = auth.ws_user, live_router._take_over
+    checks, release = [], threading.Event()
+
+    def slow_second_check(ws, db):
+        checks.append(1)
+        if len(checks) == 2:            # the reconnection that drops: its database is slow
+            release.wait(10)
+        return real_ws_user(ws, db)
+
+    takeovers, second_done = [], threading.Event()
+
+    async def watched_take_over(*a, **kw):
+        takeovers.append(1)
+        try:
+            return await real_take_over(*a, **kw)
+        finally:
+            if len(takeovers) == 2:
+                second_done.set()
+
+    monkeypatch.setattr(auth, "ws_user", slow_second_check)
+    monkeypatch.setattr(live_router, "_take_over", watched_take_over)
+
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "start", "lang": "en", "mode": "video"})
+        old = ws.receive_json()["resume"]
+        read_video(ws, range(950, 954))
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "resume", "token": old})   # and gone, still stuck in its check
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "resume", "token": old})
+        back = ws.receive_json()
+        assert back["resumed"] and back["guide"]["read"] == 4
+        release.set()                                    # the older one gets through now
+        assert second_done.wait(10)
+        ws.send_json({"type": "ping"})
+        assert ws.receive_json()["type"] == "pong"       # still this connection's walk
+    with client.websocket_connect("/api/live/1") as ws:
+        ws.send_json({"type": "resume", "token": back["resume"]})
+        assert ws.receive_json()["guide"]["read"] == 4
+
+
 # --- after review: the failures between the cracks ---------------------------
 
 def test_a_phone_whose_old_line_is_still_open_can_take_its_call_back(client):

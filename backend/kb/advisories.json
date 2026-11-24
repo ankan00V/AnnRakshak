@@ -1,5 +1,5 @@
 {
- "_note": "One advisory per target. Ladder order is cultural -> biological -> chemical and the loader refuses any other order. Chemical rungs name an ingredient from pesticides.json; 'verified' flips to true only after a team member checks the ingredient/crop/target/dose against the CIB&RC major-uses list (see backend/kb/KB_REVIEW.md). Doses are per litre of water for a knapsack spray unless 'dose_basis' says otherwise; the printed label stays the authority on dose.",
+ "_note": "One advisory per target. Ladder order is cultural -> biological -> chemical and the loader refuses any other order. Chemical rungs name an ingredient from pesticides.json. Every chemical rung is checked against the CIB&RC Major Uses of Pesticides lists (data/verify_doses.py): 'registration' records the row it rests on — crop, pest, formulation per hectare, water per hectare, waiting period — and a rung whose product is not registered for that crop and pest is not here. Doses are per litre of water at the registered water volume; the printed label stays the authority on dose. 'organic' lists the bio-pesticides and neem products registered for that crop and pest in the CIB&RC Major Uses lists for bio-insecticides and bio-fungicides (data/organic_options.py), each with the registration it rests on; a target with none registered has no 'organic' list.",
  "rice_blast": {
   "what_to_check": {
    "en": "Check the upper leaves of 10 plants along a diagonal, and the node just below the panicle.",
@@ -49,11 +49,19 @@
     "dose_per_litre": 0.6,
     "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "At first leaf spots; repeat at 50% heading if neck blast risk continues.",
      "hi": "पहले धब्बे दिखने पर; गर्दन झोंका का खतरा रहे तो 50% बाली आने पर दोहराएँ।",
      "mr": "पहिले ठिपके दिसताच; मान करपा धोका असल्यास 50% लोंबी आल्यावर पुन्हा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Paddy (Rice)",
+     "pest": "Blast",
+     "formulation_per_ha": "300–400 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 30
     }
    },
    {
@@ -62,11 +70,19 @@
     "dose_per_litre": 1.5,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Alternative to tricyclazole; do not use both in the same round.",
      "hi": "ट्राइसाइक्लाजोल का विकल्प; एक ही बार में दोनों न मिलाएँ।",
      "mr": "ट्रायसायक्लाझोलचा पर्याय; एकाच फवारणीत दोन्ही मिसळू नका."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Blast",
+     "formulation_per_ha": "750 ml",
+     "water_l_per_ha": "500–1000",
+     "waiting_days": 60
     }
    }
   ],
@@ -90,6 +106,70 @@
     "title": "Blast (leaf and collar) fact sheet",
     "publisher": "IRRI Rice Knowledge Bank",
     "url": "http://www.knowledgebank.irri.org"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "pseudomonas_0_5wp",
+    "use": "spray",
+    "per_acre": {
+     "amount": 400,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "Spray when the first spots appear.",
+     "hi": "पहले धब्बे दिखते ही छिड़कें।",
+     "mr": "पहिले ठिपके दिसताच फवारा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
+     "crop": "Rice",
+     "pest": "Leaf and neck blast (Pyricularia oryzae)",
+     "formulation_per_ha": "1 kg",
+     "water_l_per_ha": null,
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "pseudomonas_0_5wp",
+    "use": "seed",
+    "per_kg_seed": {
+     "amount": 10,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "For your next sowing: coat the seed evenly, dry it in shade, then sow.",
+     "hi": "अगली बुवाई के लिए: बीज पर समान रूप से लगाएँ, छाया में सुखाएँ, फिर बोएँ।",
+     "mr": "पुढील पेरणीसाठी: बियाण्यावर सारखे लावा, सावलीत वाळवा, मग पेरा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
+     "crop": "Rice",
+     "pest": "Leaf and neck blast (Pyricularia oryzae)",
+     "formulation_per_ha": "10 g/kg seed",
+     "water_l_per_ha": null,
+     "waiting_days": null
+    }
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -130,28 +210,44 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "mancozeb_75wp",
-    "dose_per_litre": 2.5,
-    "dose_unit": "g",
+    "ingredient": "flutriafol_23sc",
+    "dose_per_litre": 1.2,
+    "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "When spots appear on more than a few leaves; repeat after 10–15 days if needed.",
      "hi": "कई पत्तियों पर धब्बे दिखें तब; ज़रूरत हो तो 10–15 दिन बाद दोहराएँ।",
      "mr": "अनेक पानांवर ठिपके दिसल्यास; गरज असल्यास 10–15 दिवसांनी पुन्हा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Rice",
+     "pest": "Sheath blight & brown spot",
+     "formulation_per_ha": "600 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 24
     }
    },
    {
     "tier": "chemical",
-    "ingredient": "propiconazole_25ec",
-    "dose_per_litre": 1.0,
-    "dose_unit": "ml",
+    "ingredient": "mancozeb_hexaconazole_wg",
+    "dose_per_litre": 2.5,
+    "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Alternative when grain discolouration threatens at heading.",
      "hi": "बाली के समय दानों के बदरंग होने का खतरा हो तो विकल्प।",
      "mr": "लोंबी अवस्थेत दाणे काळवंडण्याचा धोका असल्यास पर्याय."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Rice",
+     "pest": "Blast, sheath blight, brown spot, grain discolouration",
+     "formulation_per_ha": "1250 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 30
     }
    }
   ],
@@ -170,6 +266,49 @@
     "title": "Rice Knowledge Management Portal — Brown spot",
     "publisher": "ICAR-Indian Institute of Rice Research",
     "url": "https://www.rkmp.co.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "pseudomonas_1_5wp",
+    "use": "seed",
+    "per_kg_seed": {
+     "amount": 5,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "For your next sowing: coat the seed evenly, dry it in shade, then sow.",
+     "hi": "अगली बुवाई के लिए: बीज पर समान रूप से लगाएँ, छाया में सुखाएँ, फिर बोएँ।",
+     "mr": "पुढील पेरणीसाठी: बियाण्यावर सारखे लावा, सावलीत वाळवा, मग पेरा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
+     "crop": "Paddy",
+     "pest": "Leaf spot (Helminthosporium oryzae)",
+     "formulation_per_ha": "5 g/kg seed",
+     "water_l_per_ha": null,
+     "waiting_days": null
+    }
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -223,15 +362,23 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "copper_oxychloride_50wp",
-    "dose_per_litre": 2.5,
+    "ingredient": "copper_hydroxide_53_8df",
+    "dose_per_litre": 3.0,
     "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Slows spread to new leaves; no spray cures leaves that are already infected.",
      "hi": "नई पत्तियों पर फैलाव धीमा करता है; संक्रमित पत्तियाँ ठीक नहीं होतीं।",
      "mr": "नव्या पानांवरचा प्रसार कमी करते; आधीच बाधित पाने बरी होत नाहीत."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "False smut, bacterial leaf blight",
+     "formulation_per_ha": "1500 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 10
     }
    }
   ],
@@ -250,6 +397,69 @@
     "title": "Bacterial blight fact sheet",
     "publisher": "IRRI Rice Knowledge Bank",
     "url": "http://www.knowledgebank.irri.org"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "bacillus_subtilis_2as",
+    "use": "spray",
+    "dose_per_litre": 4,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray 40–45 days after transplanting.",
+     "hi": "रोपाई के 40–45 दिन बाद छिड़कें।",
+     "mr": "पुनर्लागवडीनंतर 40–45 दिवसांनी फवारा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
+     "crop": "Paddy",
+     "pest": "Bacterial leaf blight (Xanthomonas oryzae pv. oryzae)",
+     "formulation_per_ha": "1.87-2.50 litre",
+     "water_l_per_ha": "500",
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "bacillus_subtilis_2as",
+    "use": "root_dip",
+    "dose_per_litre": 10,
+    "dose_unit": "ml",
+    "minutes": 30,
+    "timing": {
+     "en": "At transplanting, before the seedlings go into the field.",
+     "hi": "रोपाई के समय, पौध खेत में लगाने से पहले।",
+     "mr": "पुनर्लागवडीच्या वेळी, रोपे शेतात लावण्यापूर्वी."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
+     "crop": "Paddy",
+     "pest": "Bacterial leaf blight (Xanthomonas oryzae pv. oryzae)",
+     "formulation_per_ha": "10 ml/litre of water",
+     "water_l_per_ha": null,
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "pseudomonas_1_5wp",
+    "use": "seed",
+    "per_kg_seed": {
+     "amount": 5,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "For your next sowing: coat the seed evenly, dry it in shade, then sow.",
+     "hi": "अगली बुवाई के लिए: बीज पर समान रूप से लगाएँ, छाया में सुखाएँ, फिर बोएँ।",
+     "mr": "पुढील पेरणीसाठी: बियाण्यावर सारखे लावा, सावलीत वाळवा, मग पेरा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
+     "crop": "Paddy",
+     "pest": "Bacterial leaf blight (Xanthomonas oryzae)",
+     "formulation_per_ha": "5 g/kg seed",
+     "water_l_per_ha": null,
+     "waiting_days": null
+    }
    }
   ]
  },
@@ -289,24 +499,40 @@
     "dose_per_litre": 2.0,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Direct the spray at the lower stems where the patches are.",
      "hi": "छिड़काव नीचे तने पर करें जहाँ धब्बे हैं।",
      "mr": "फवारणी खालच्या खोडावर, जिथे चट्टे आहेत तिथे करा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Blast, sheath blight",
+     "formulation_per_ha": "1000 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 40
     }
    },
    {
     "tier": "chemical",
     "ingredient": "validamycin_3l",
-    "dose_per_litre": 2.5,
+    "dose_per_litre": 2.7,
     "dose_unit": "ml",
-    "water_l_per_acre": 200,
-    "verified": false,
+    "water_l_per_acre": 300,
+    "verified": true,
     "timing": {
      "en": "Alternative to hexaconazole.",
      "hi": "हेक्साकोनाजोल का विकल्प।",
      "mr": "हेक्झाकोनाझोलचा पर्याय."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Sheath blight",
+     "formulation_per_ha": "2000 ml",
+     "water_l_per_ha": "750",
+     "waiting_days": 14
     }
    }
   ],
@@ -325,6 +551,48 @@
     "title": "Rice Knowledge Management Portal — Sheath blight",
     "publisher": "ICAR-Indian Institute of Rice Research",
     "url": "https://www.rkmp.co.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "trichoderma_viride_1wp",
+    "use": "spray",
+    "dose_per_litre": 5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Start 30 days after planting; spray three times, 15 days apart.",
+     "hi": "रोपाई के 30 दिन बाद शुरू करें; 15 दिन के अंतर पर तीन बार छिड़कें।",
+     "mr": "लागवडीनंतर 30 दिवसांनी सुरू करा; 15 दिवसांच्या अंतराने तीन वेळा फवारा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
+     "crop": "Paddy",
+     "pest": "Sheath blight (Rhizoctonia solani)",
+     "formulation_per_ha": "2.5 kg",
+     "water_l_per_ha": "500",
+     "waiting_days": null
+    }
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -356,29 +624,45 @@
     }
    },
    {
-    "tier": "chemical",
-    "ingredient": "propiconazole_25ec",
-    "dose_per_litre": 1.0,
-    "dose_unit": "ml",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "Preventive only: at boot-leaf stage, before panicles emerge. Too late once balls are visible.",
-     "hi": "केवल बचाव के लिए: बाली निकलने से पहले। गेंदें दिखने के बाद देर हो चुकी होती है।",
-     "mr": "फक्त प्रतिबंधासाठी: लोंबी बाहेर पडण्यापूर्वी. गोळे दिसल्यावर उशीर झालेला असतो."
-    }
+    "tier": "cultural",
+    "action": {
+     "en": "Alternate wetting and drying instead of keeping the field flooded, keep nitrogen moderate, and after harvest clear the infected panicles and stubble from the field.",
+     "hi": "खेत में लगातार पानी भरा रखने के बजाय बारी-बारी से गीला-सूखा करें, नाइट्रोजन सीमित रखें, और कटाई के बाद संक्रमित बालियाँ और ठूँठ खेत से हटा दें।",
+     "mr": "शेतात सतत पाणी साचवण्याऐवजी आलटून-पालटून ओले-कोरडे करा, नत्र मर्यादित ठेवा, आणि कापणीनंतर बाधित लोंब्या व खुंट शेतातून काढून टाका."
+    },
+    "source": "IRRI Rice Knowledge Bank, False smut",
+    "added_by": "organic_practices"
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Next season, soak the seed in hot water at 52 °C for 10 minutes, or coat it with Pseudomonas fluorescens at 10 g per kg of seed.",
+     "hi": "अगले मौसम में बीज को 52 °C गर्म पानी में 10 मिनट भिगोएँ, या प्रति किलो बीज 10 ग्राम स्यूडोमोनास फ्लोरेसेंस से उपचारित करें।",
+     "mr": "पुढील हंगामात बियाणे 52 °C गरम पाण्यात 10 मिनिटे भिजवा, किंवा प्रति किलो बियाण्यास 10 ग्रॅम स्युडोमोनास फ्लुरोसन्स लावा."
+    },
+    "source": "IRRI Rice Knowledge Bank, False smut; NCIPM & DPPQS, Integrated Pest Management Package for Rice (seed treatment for seed-borne disease)",
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "chemical",
     "ingredient": "copper_hydroxide_77wp",
-    "dose_per_litre": 2.0,
+    "dose_per_litre": 2.7,
     "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
+    "water_l_per_acre": 300,
+    "verified": true,
     "timing": {
-     "en": "Alternative preventive spray at boot-leaf stage.",
-     "hi": "बाली निकलने से पहले का वैकल्पिक बचाव छिड़काव।",
-     "mr": "लोंबी येण्यापूर्वी पर्यायी प्रतिबंधक फवारणी."
+     "en": "Preventive only: at boot-leaf stage, before panicles emerge. Too late once balls are visible.",
+     "hi": "केवल बचाव के लिए: बाली निकलने से पहले। गेंदें दिखने के बाद देर हो चुकी होती है।",
+     "mr": "फक्त प्रतिबंधासाठी: लोंबी बाहेर पडण्यापूर्वी. गोळे दिसल्यावर उशीर झालेला असतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "False smut",
+     "formulation_per_ha": "2000 g",
+     "water_l_per_ha": "750",
+     "waiting_days": null
     }
    }
   ],
@@ -397,6 +681,26 @@
     "title": "False smut fact sheet",
     "publisher": "IRRI Rice Knowledge Bank",
     "url": "http://www.knowledgebank.irri.org"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -431,16 +735,46 @@
     }
    },
    {
+    "tier": "cultural",
+    "action": {
+     "en": "Tolerant varieties named in the national IPM package: Vikramarya, Nidhi, Amulya, Dinesh, Lakshmi and Nalini. Transplant seedlings older than 3 weeks, at the same time as your neighbours.",
+     "hi": "राष्ट्रीय IPM पैकेज में बताई गई सहनशील किस्में: विक्रमार्य, निधि, अमूल्य, दिनेश, लक्ष्मी और नलिनी। 3 सप्ताह से पुरानी पौध रोपें, पड़ोसियों के साथ एक ही समय पर।",
+     "mr": "राष्ट्रीय IPM पॅकेजमधील सहनशील वाण: विक्रमार्य, निधी, अमूल्य, दिनेश, लक्ष्मी आणि नलिनी. 3 आठवड्यांपेक्षा जुनी रोपे लावा, शेजाऱ्यांसोबत एकाच वेळी."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Rice",
+    "added_by": "organic_practices",
+    "backing": "recommended"
+   },
+   {
+    "tier": "biological",
+    "action": {
+     "en": "Protect the spiders, mirid bugs and other predators that eat the green leafhopper which spreads tungro: no broad-spectrum sprays early in the season.",
+     "hi": "टुंग्रो फैलाने वाले हरे फुदके को खाने वाली मकड़ियों, मिरिड बग और दूसरे शिकारी कीटों को बचाएँ: मौसम की शुरुआत में व्यापक असर वाले छिड़काव न करें।",
+     "mr": "टुंग्रो पसरवणाऱ्या हिरव्या तुडतुड्याला खाणारे कोळी, मिरिड ढेकूण आणि इतर भक्षक वाचवा: हंगामाच्या सुरुवातीला सर्वव्यापी फवारण्या करू नका."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Rice",
+    "added_by": "organic_practices",
+    "backing": "recommended"
+   },
+   {
     "tier": "chemical",
     "ingredient": "imidacloprid_17_8sl",
     "dose_per_litre": 0.2,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Only against the small green insects that spread it, and only if there are many of them.",
      "hi": "केवल फुदके के विरुद्ध, और तभी जब फुदके ज़्यादा हों।",
      "mr": "फक्त तुडतुड्यांविरुद्ध, आणि तुडतुडे जास्त असल्यासच."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Paddy (Rice)",
+     "pest": "Green leaf hopper (the tungro vector), plant hoppers",
+     "formulation_per_ha": "100–125 ml",
+     "water_l_per_ha": "500–700",
+     "waiting_days": 40
     }
    }
   ],
@@ -479,18 +813,35 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Avoid excess nitrogen; drag a rope across the crop to shake the larvae out of the folds.",
-     "hi": "ज़्यादा नाइट्रोजन से बचें; पत्तियों से इल्ली गिराने के लिए फसल पर रस्सी फिराएँ।",
-     "mr": "जास्त नत्र टाळा; गुंडाळीतून अळ्या पाडण्यासाठी पिकावरून दोरी फिरवा."
-    }
+     "en": "Do not over-fertilise with nitrogen: heavily fertilised plots draw the moths to lay their eggs.",
+     "hi": "नाइट्रोजन खाद ज़्यादा न डालें: ज़्यादा खाद वाले खेत पतंगों को अंडे देने के लिए खींचते हैं।",
+     "mr": "नत्र खत जास्त देऊ नका: जास्त खत दिलेली शेते पतंगांना अंडी घालण्यासाठी आकर्षित करतात."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Rice",
+    "added_by": "organic_practices",
+    "backing": "recommended"
+   },
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Before flowering, with water standing in the field, pass a 20–30 metre coir or jute rope across the top of the crop, forwards and then back, to shake the larvae out of the folds.",
+     "hi": "फूल आने से पहले, खेत में पानी भरा रहते हुए, 20–30 मीटर लंबी नारियल या जूट की रस्सी फसल के ऊपर से आगे और फिर पीछे खींचें, ताकि मुड़ी पत्तियों से सूंडियाँ गिर जाएँ।",
+     "mr": "फुलोऱ्यापूर्वी, शेतात पाणी साचलेले असताना, 20–30 मीटर लांब काथ्याचा किंवा तागाचा दोर पिकाच्या वरून पुढे आणि मग मागे ओढा, म्हणजे गुंडाळलेल्या पानांतून अळ्या खाली पडतील."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026",
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "biological",
     "action": {
-     "en": "Release the egg parasitoid Trichogramma chilonis (cards at 50,000 per hectare), weekly for 4–6 weeks.",
-     "hi": "अंड परजीवी ट्राइकोग्रामा किलोनिस (50,000 प्रति हेक्टेयर कार्ड) हर हफ्ते 4–6 हफ्ते छोड़ें।",
-     "mr": "अंडी परोपजीवी ट्रायकोग्रामा चिलोनिस (हेक्टरी 50,000 कार्ड) दर आठवड्याला 4–6 आठवडे सोडा."
-    }
+     "en": "From 30 days after transplanting, staple Trichogramma egg cards: two cards each of T. japonicum and T. chilonis per acre, 5 to 6 times, a week apart. Cut each card into 20 strips and staple them under the leaves at 40 spots across the acre, in the evening.",
+     "hi": "रोपाई के 30 दिन बाद से ट्राइकोग्रामा अंडा कार्ड लगाएँ: प्रति एकड़ टी. जैपोनिकम और टी. चिलोनिस के दो-दो कार्ड, एक-एक हफ्ते के अंतर पर 5 से 6 बार। हर कार्ड को 20 पट्टियों में काटें और शाम को एकड़ भर में 40 जगह पत्तियों के नीचे स्टेपल करें।",
+     "mr": "पुनर्लागवडीनंतर 30 दिवसांपासून ट्रायकोग्रामा अंडी कार्ड लावा: एकरी टी. जॅपोनिकम आणि टी. चिलोनिसचे प्रत्येकी दोन कार्ड, आठवड्याच्या अंतराने 5 ते 6 वेळा. प्रत्येक कार्डाच्या 20 पट्ट्या कापा आणि संध्याकाळी एकरभर 40 ठिकाणी पानांच्या खाली स्टेपल करा."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026 (organic farming chapter)",
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "chemical",
@@ -498,11 +849,19 @@
     "dose_per_litre": 0.3,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Only after the threshold is crossed.",
      "hi": "केवल कार्रवाई सीमा पार होने के बाद।",
      "mr": "फक्त कृती मर्यादा ओलांडल्यानंतर."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Rice",
+     "pest": "Stem borer, leaf folder",
+     "formulation_per_ha": "150 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 47
     }
    }
   ],
@@ -521,6 +880,88 @@
     "title": "Rice Knowledge Management Portal — Leaf folder",
     "publisher": "ICAR-Indian Institute of Rice Research",
     "url": "https://www.rkmp.co.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "bt_kurstaki_wp",
+    "use": "spray",
+    "dose_per_litre": 3,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray in the evening when young caterpillars are seen; sunlight breaks Bt down.",
+     "hi": "छोटी इल्लियाँ दिखें तो शाम को छिड़कें; धूप Bt को नष्ट कर देती है।",
+     "mr": "लहान अळ्या दिसताच संध्याकाळी फवारा; उन्हाने Bt नष्ट होते."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Stem borer & Leaf folder",
+     "formulation_per_ha": "1.50 kg",
+     "water_l_per_ha": "500-750",
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "beauveria_1_15wp",
+    "use": "spray",
+    "dose_per_litre": 3.4,
+    "dose_unit": "g",
+    "water_l_per_acre": 300,
+    "timing": {
+     "en": "Spray in the evening on a moist crop; the fungus needs humidity to infect the pest.",
+     "hi": "शाम को नम फसल पर छिड़कें; फफूंद को कीट को संक्रमित करने के लिए नमी चाहिए।",
+     "mr": "संध्याकाळी ओलसर पिकावर फवारा; बुरशीला किडीला बाधित करण्यासाठी ओलावा लागतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Leaf folder (Cnaphalocrocis medinalis)",
+     "formulation_per_ha": "2.5 kg",
+     "water_l_per_ha": "750-850",
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "azadirachtin_0_15ec",
+    "use": "spray",
+    "dose_per_litre": 3,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray early, when the pest first appears; neem stops feeding and egg-laying more than it kills.",
+     "hi": "कीट दिखते ही जल्दी छिड़कें; नीम कीट को मारने से ज़्यादा उसका खाना और अंडे देना रोकता है।",
+     "mr": "कीड दिसताच लवकर फवारा; कडुनिंब कीड मारण्यापेक्षा तिचे खाणे आणि अंडी घालणे थांबवतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Brown plant hopper, Leaf folder",
+     "formulation_per_ha": "1500-2500 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 5
+    }
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "agniastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "neemastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -557,10 +998,13 @@
    {
     "tier": "biological",
     "action": {
-     "en": "Release Trichogramma japonicum at 50,000 per hectare when moths are seen in traps.",
-     "hi": "ट्रैप में पतंगे दिखें तो ट्राइकोग्रामा जैपोनिकम 50,000 प्रति हेक्टेयर छोड़ें।",
-     "mr": "सापळ्यात पतंग दिसताच ट्रायकोग्रामा जॅपोनिकम हेक्टरी 50,000 सोडा."
-    }
+     "en": "From 30 days after transplanting, staple Trichogramma egg cards: two cards each of T. japonicum and T. chilonis per acre, 5 to 6 times, a week apart. Cut each card into 20 strips and staple them under the leaves at 40 spots across the acre, in the evening.",
+     "hi": "रोपाई के 30 दिन बाद से ट्राइकोग्रामा अंडा कार्ड लगाएँ: प्रति एकड़ टी. जैपोनिकम और टी. चिलोनिस के दो-दो कार्ड, एक-एक हफ्ते के अंतर पर 5 से 6 बार। हर कार्ड को 20 पट्टियों में काटें और शाम को एकड़ भर में 40 जगह पत्तियों के नीचे स्टेपल करें।",
+     "mr": "पुनर्लागवडीनंतर 30 दिवसांपासून ट्रायकोग्रामा अंडी कार्ड लावा: एकरी टी. जॅपोनिकम आणि टी. चिलोनिसचे प्रत्येकी दोन कार्ड, आठवड्याच्या अंतराने 5 ते 6 वेळा. प्रत्येक कार्डाच्या 20 पट्ट्या कापा आणि संध्याकाळी एकरभर 40 ठिकाणी पानांच्या खाली स्टेपल करा."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026 (organic farming chapter)",
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "chemical",
@@ -568,11 +1012,23 @@
     "dose_per_litre": null,
     "dose_basis": "4 kg granules per acre, broadcast in 3–5 cm of standing water",
     "water_l_per_acre": null,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Only after the dead-heart threshold is crossed.",
      "hi": "केवल मृत गोभ सीमा पार होने के बाद।",
      "mr": "फक्त मेलेल्या गाभ्यांची मर्यादा ओलांडल्यानंतर."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Yellow stem borer, leaf folder",
+     "formulation_per_ha": "10 kg",
+     "water_l_per_ha": "broadcast",
+     "waiting_days": 53
+    },
+    "per_acre": {
+     "amount": 4,
+     "unit": "kg"
     }
    }
   ],
@@ -591,6 +1047,68 @@
     "title": "Rice Knowledge Management Portal — Yellow stem borer",
     "publisher": "ICAR-Indian Institute of Rice Research",
     "url": "https://www.rkmp.co.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "bt_kurstaki_wp",
+    "use": "spray",
+    "dose_per_litre": 3,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray in the evening when young caterpillars are seen; sunlight breaks Bt down.",
+     "hi": "छोटी इल्लियाँ दिखें तो शाम को छिड़कें; धूप Bt को नष्ट कर देती है।",
+     "mr": "लहान अळ्या दिसताच संध्याकाळी फवारा; उन्हाने Bt नष्ट होते."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Stem borer & Leaf folder",
+     "formulation_per_ha": "1.50 kg",
+     "water_l_per_ha": "500-750",
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "azadirachtin_5",
+    "use": "spray",
+    "dose_per_litre": 0.5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 160,
+    "timing": {
+     "en": "Spray early, when the pest first appears; neem stops feeding and egg-laying more than it kills.",
+     "hi": "कीट दिखते ही जल्दी छिड़कें; नीम कीट को मारने से ज़्यादा उसका खाना और अंडे देना रोकता है।",
+     "mr": "कीड दिसताच लवकर फवारा; कडुनिंब कीड मारण्यापेक्षा तिचे खाणे आणि अंडी घालणे थांबवतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Brown plant hopper, Leaf folder, Stem borer",
+     "formulation_per_ha": "200 ml",
+     "water_l_per_ha": "400",
+     "waiting_days": 5
+    }
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "agniastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "dashparni_ark",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -622,6 +1140,17 @@
     }
    },
    {
+    "tier": "cultural",
+    "action": {
+     "en": "From a month after transplanting, tilt a few plants every week and tap their base 2 or 3 times. Act when 5 or more hoppers per hill fall onto the water.",
+     "hi": "रोपाई के एक महीने बाद से, हर हफ्ते कुछ पौधों को थोड़ा झुकाकर उनके निचले हिस्से पर 2-3 बार थपथपाएँ। जब प्रति झुंड 5 या ज़्यादा फुदके पानी पर गिरें, तब उपाय करें।",
+     "mr": "पुनर्लागवडीनंतर एका महिन्यापासून, दर आठवड्याला काही चुडे थोडे झुकवून त्यांच्या बुडख्यावर 2-3 वेळा टॅप करा. प्रति चूड 5 किंवा जास्त तुडतुडे पाण्यावर पडल्यास उपाय करा."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026",
+    "added_by": "organic_practices",
+    "backing": "recommended"
+   },
+   {
     "tier": "biological",
     "action": {
      "en": "Protect spiders, mirid bugs and water striders — avoid broad-spectrum sprays early in the season.",
@@ -635,24 +1164,40 @@
     "dose_per_litre": 0.6,
     "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Aim the nozzle at the base of the plants, not the leaves.",
      "hi": "नोज़ल पौधे के निचले भाग पर रखें, पत्तियों पर नहीं।",
      "mr": "नोझल रोपांच्या तळाकडे ठेवा, पानांवर नव्हे."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Paddy (Rice)",
+     "pest": "Brown plant hopper",
+     "formulation_per_ha": "300 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 19
     }
    },
    {
     "tier": "chemical",
-    "ingredient": "buprofezin_25sc",
-    "dose_per_litre": 1.6,
-    "dose_unit": "ml",
+    "ingredient": "buprofezin_70df",
+    "dose_per_litre": 0.5,
+    "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Alternative; acts on the young hoppers.",
      "hi": "विकल्प; शिशुओं पर असर करता है।",
      "mr": "पर्याय; पिल्लांवर परिणाम करते."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Rice",
+     "pest": "Brown plant hopper",
+     "formulation_per_ha": "250 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 24
     }
    }
   ],
@@ -671,6 +1216,114 @@
     "title": "Planthopper fact sheet",
     "publisher": "IRRI Rice Knowledge Bank",
     "url": "http://www.knowledgebank.irri.org"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "metarhizium_1_15wp",
+    "use": "spray",
+    "dose_per_litre": 5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray the base of the plants in the evening; the fungus needs humidity to infect the hoppers.",
+     "hi": "शाम को पौधों के निचले हिस्से पर छिड़कें; फफूंद को फुदकों को संक्रमित करने के लिए नमी चाहिए।",
+     "mr": "संध्याकाळी चुडांच्या बुडख्यावर फवारा; बुरशीला तुडतुड्यांना बाधित करण्यासाठी ओलावा लागतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Rice",
+     "pest": "Brown plant hopper (Nilaparvata lugens)",
+     "formulation_per_ha": "2.5 kg",
+     "water_l_per_ha": "500",
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "azadirachtin_0_15ec",
+    "use": "spray",
+    "dose_per_litre": 3,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray early, when the pest first appears; neem stops feeding and egg-laying more than it kills.",
+     "hi": "कीट दिखते ही जल्दी छिड़कें; नीम कीट को मारने से ज़्यादा उसका खाना और अंडे देना रोकता है।",
+     "mr": "कीड दिसताच लवकर फवारा; कडुनिंब कीड मारण्यापेक्षा तिचे खाणे आणि अंडी घालणे थांबवतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Brown plant hopper, Leaf folder",
+     "formulation_per_ha": "1500-2500 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 5
+    }
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "pau_neem_extract",
+    "dose": {
+     "en": "4 litres of the extract in 100 litres of water, for one acre.",
+     "hi": "एक एकड़ के लिए 100 लीटर पानी में 4 लीटर अर्क।",
+     "mr": "एका एकरासाठी 100 लिटर पाण्यात 4 लिटर अर्क."
+    },
+    "per_acre": {
+     "amount": 4,
+     "unit": "L",
+     "water_l": 100
+    },
+    "timing": {
+     "en": "Spray at the first sign of hoppers, aiming at the base of the plants with a knapsack sprayer. Repeat if needed.",
+     "hi": "फुदके दिखते ही छिड़कें, नैपसैक स्प्रेयर से पौधों के निचले हिस्से की ओर। ज़रूरत हो तो दोहराएँ।",
+     "mr": "तुडतुडे दिसताच फवारा, नॅपसॅक पंपाने चुडांच्या बुडख्याकडे. गरज असल्यास पुन्हा फवारा."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026 (organic farming chapter)"
+   },
+   {
+    "prep": "neem_oil",
+    "per_litre": {
+     "amount": 5,
+     "unit": "ml"
+    },
+    "detergent_ml_per_litre": 2,
+    "timing": {
+     "en": "Spray the base of the plants, where the hoppers sit. It cuts egg-laying rather than killing outright.",
+     "hi": "पौधों के निचले हिस्से पर छिड़कें, जहाँ फुदके बैठते हैं। यह मारने से ज़्यादा अंडे देना कम करता है।",
+     "mr": "चुडांच्या बुडख्यावर फवारा, जिथे तुडतुडे बसतात. हे मारण्यापेक्षा अंडी घालणे कमी करते."
+    },
+    "source": "DPPQS advisory on brown planthopper in rice"
+   },
+   {
+    "prep": "nske_5",
+    "per_litre": {
+     "amount": 50,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "While the count is still below about 10 hoppers per hill; aim at the base of the plants.",
+     "hi": "जब तक गिनती प्रति पौधा लगभग 10 फुदकों से कम हो; पौधों के निचले हिस्से पर छिड़कें।",
+     "mr": "मोजणी प्रति चूड सुमारे 10 तुडतुड्यांपेक्षा कमी असेपर्यंत; चुडांच्या बुडख्यावर फवारा."
+    },
+    "source": "DPPQS advisory on brown planthopper in rice"
+   },
+   {
+    "prep": "neemastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "brahmastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -697,6 +1350,17 @@
     }
    },
    {
+    "tier": "cultural",
+    "action": {
+     "en": "Resistant varieties named in the national IPM package: PEMH 5, Vivek 21, Vivek 23, Vivek 25 and Pratap Kanchan 2; Nithyashree for Karnataka and Andhra Pradesh.",
+     "hi": "राष्ट्रीय IPM पैकेज में बताई गई प्रतिरोधी किस्में: PEMH 5, विवेक 21, विवेक 23, विवेक 25 और प्रताप कंचन 2; कर्नाटक और आंध्र प्रदेश के लिए नित्यश्री।",
+     "mr": "राष्ट्रीय IPM पॅकेजमधील प्रतिकारक वाण: PEMH 5, विवेक 21, विवेक 23, विवेक 25 आणि प्रताप कांचन 2; कर्नाटक व आंध्र प्रदेशासाठी नित्यश्री."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize",
+    "added_by": "organic_practices",
+    "backing": "recommended"
+   },
+   {
     "tier": "biological",
     "action": {
      "en": "Spray Trichoderma harzianum at 5 g per litre at first lesions.",
@@ -709,25 +1373,41 @@
     "ingredient": "mancozeb_75wp",
     "dose_per_litre": 2.5,
     "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
+    "water_l_per_acre": 300,
+    "verified": true,
     "timing": {
      "en": "At first lesions; repeat after 10–14 days if wet weather continues.",
      "hi": "पहले धब्बे पर; नमी बनी रहे तो 10–14 दिन बाद दोहराएँ।",
      "mr": "पहिल्या चट्ट्यांवर; ओलसर हवामान राहिल्यास 10–14 दिवसांनी पुन्हा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Maize",
+     "pest": "Leaf blight, downy mildew",
+     "formulation_per_ha": "1.5–2 kg",
+     "water_l_per_ha": "750",
+     "waiting_days": null
     }
    },
    {
     "tier": "chemical",
-    "ingredient": "propiconazole_25ec",
+    "ingredient": "kresoxim_methyl_44_3sc",
     "dose_per_litre": 1.0,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Alternative when lesions are spreading fast before tasseling.",
      "hi": "नर मंजरी से पहले धब्बे तेज़ी से फैलें तो विकल्प।",
      "mr": "तुरा येण्यापूर्वी चट्टे वेगाने पसरत असतील तर पर्याय."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Maize",
+     "pest": "Turcicum leaf blight, rust",
+     "formulation_per_ha": "500 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 25
     }
    }
   ],
@@ -751,6 +1431,26 @@
     "title": "Maize Doctor — Northern corn leaf blight",
     "publisher": "CIMMYT",
     "url": "https://maizedoctor.org"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -777,16 +1477,35 @@
     }
    },
    {
+    "tier": "cultural",
+    "action": {
+     "en": "Resistant varieties named in the national IPM package: HM 10, PAU 352, Malviya Hybrid Makka 2, PEMH 1, PEMH 5, HQPM 1, HQPM 4, HQPM 5, HQPM 7, Shaktiman 3, Shaktiman 4 and HSC 1.",
+     "hi": "राष्ट्रीय IPM पैकेज में बताई गई प्रतिरोधी किस्में: HM 10, PAU 352, मालवीय हाइब्रिड मक्का 2, PEMH 1, PEMH 5, HQPM 1, HQPM 4, HQPM 5, HQPM 7, शक्तिमान 3, शक्तिमान 4 और HSC 1।",
+     "mr": "राष्ट्रीय IPM पॅकेजमधील प्रतिकारक वाण: HM 10, PAU 352, मालवीय हायब्रिड मका 2, PEMH 1, PEMH 5, HQPM 1, HQPM 4, HQPM 5, HQPM 7, शक्तिमान 3, शक्तिमान 4 आणि HSC 1."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize",
+    "added_by": "organic_practices",
+    "backing": "recommended"
+   },
+   {
     "tier": "chemical",
     "ingredient": "mancozeb_75wp",
     "dose_per_litre": 2.5,
     "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
+    "water_l_per_acre": 300,
+    "verified": true,
     "timing": {
      "en": "At first spots; repeat after 10–14 days if needed.",
      "hi": "पहले धब्बे पर; ज़रूरत हो तो 10–14 दिन बाद दोहराएँ।",
      "mr": "पहिल्या ठिपक्यांवर; गरज असल्यास 10–14 दिवसांनी पुन्हा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Maize",
+     "pest": "Leaf blight, downy mildew",
+     "formulation_per_ha": "1.5–2 kg",
+     "water_l_per_ha": "750",
+     "waiting_days": null
     }
    }
   ],
@@ -805,6 +1524,26 @@
     "title": "Maize diseases — Maydis leaf blight",
     "publisher": "ICAR-Indian Institute of Maize Research",
     "url": "https://iimr.icar.gov.in"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -831,29 +1570,35 @@
     }
    },
    {
+    "tier": "cultural",
+    "action": {
+     "en": "Resistant hybrids named in the national IPM package: Buland, Sheetal, HHM 1, HHM 2, HQPM 1 and Nithyashree.",
+     "hi": "राष्ट्रीय IPM पैकेज में बताए गए प्रतिरोधी संकर: बुलंद, शीतल, HHM 1, HHM 2, HQPM 1 और नित्यश्री।",
+     "mr": "राष्ट्रीय IPM पॅकेजमधील प्रतिकारक संकरित वाण: बुलंद, शीतल, HHM 1, HHM 2, HQPM 1 आणि नित्यश्री."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize",
+    "added_by": "organic_practices",
+    "backing": "recommended"
+   },
+   {
     "tier": "chemical",
-    "ingredient": "mancozeb_75wp",
-    "dose_per_litre": 2.5,
-    "dose_unit": "g",
+    "ingredient": "kresoxim_methyl_44_3sc",
+    "dose_per_litre": 1.0,
+    "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "When raised rust spots appear on the upper leaves before the top flower opens.",
      "hi": "नर मंजरी से पहले ऊपरी पत्तियों पर दाने दिखें तब।",
      "mr": "तुरा येण्यापूर्वी वरच्या पानांवर फोड दिसल्यास."
-    }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "propiconazole_25ec",
-    "dose_per_litre": 1.0,
-    "dose_unit": "ml",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "Alternative to mancozeb.",
-     "hi": "मैंकोजेब का विकल्प।",
-     "mr": "मॅन्कोझेबचा पर्याय."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Maize",
+     "pest": "Turcicum leaf blight, rust",
+     "formulation_per_ha": "500 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 25
     }
    }
   ],
@@ -872,6 +1617,26 @@
     "title": "Maize Doctor — Common rust",
     "publisher": "CIMMYT",
     "url": "https://maizedoctor.org"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -898,6 +1663,17 @@
     }
    },
    {
+    "tier": "cultural",
+    "action": {
+     "en": "Resistant varieties named in the national IPM package: Pratap Kanchan 2, Pratap Makka 3, Pratap Makka 5, Shaktiman 1 and Shaktiman 3.",
+     "hi": "राष्ट्रीय IPM पैकेज में बताई गई प्रतिरोधी किस्में: प्रताप कंचन 2, प्रताप मक्का 3, प्रताप मक्का 5, शक्तिमान 1 और शक्तिमान 3।",
+     "mr": "राष्ट्रीय IPM पॅकेजमधील प्रतिकारक वाण: प्रताप कांचन 2, प्रताप मका 3, प्रताप मका 5, शक्तिमान 1 आणि शक्तिमान 3."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize",
+    "added_by": "organic_practices",
+    "backing": "recommended"
+   },
+   {
     "tier": "biological",
     "action": {
      "en": "Mix Pseudomonas fluorescens or Trichoderma into the soil at sowing next season.",
@@ -906,16 +1682,38 @@
     }
    },
    {
+    "tier": "biological",
+    "action": {
+     "en": "Next season, coat the seed with Trichoderma harzianum 2% WP at 20 g per kg of seed.",
+     "hi": "अगले मौसम में प्रति किलो बीज 20 ग्राम ट्राइकोडर्मा हार्जियानम 2% WP से बीज उपचार करें।",
+     "mr": "पुढील हंगामात प्रति किलो बियाण्यास 20 ग्रॅम ट्रायकोडर्मा हर्जियानम 2% WP लावा."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize",
+    "added_by": "organic_practices",
+    "backing": "recommended"
+   },
+   {
     "tier": "chemical",
-    "ingredient": "validamycin_3l",
-    "dose_per_litre": 2.5,
-    "dose_unit": "ml",
-    "water_l_per_acre": 200,
-    "verified": false,
+    "ingredient": "ipconazole_metalaxyl_me",
+    "use": "seed",
+    "dose_basis": {
+     "en": "Seed treatment: use the dose printed on the product label.",
+     "hi": "बीज उपचार: उत्पाद के लेबल पर छपी मात्रा का इस्तेमाल करें।",
+     "mr": "बीजप्रक्रिया: उत्पादनाच्या लेबलवर छापलेले प्रमाण वापरा."
+    },
     "timing": {
-     "en": "Direct the spray at the lower stem and sheaths.",
-     "hi": "छिड़काव निचले तने और आवरणों पर करें।",
-     "mr": "फवारणी खालच्या खोडावर व आवरणांवर करा."
+     "en": "Treat next season's seed just before sowing, and dry it in the shade.",
+     "hi": "अगले मौसम के बीज का बुवाई से ठीक पहले उपचार करें, और छाया में सुखाएँ।",
+     "mr": "पुढील हंगामातील बियाण्यावर पेरणीपूर्वी लगेच प्रक्रिया करा, आणि सावलीत वाळवा."
+    },
+    "verified": true,
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Maize",
+     "pest": "Maydis leaf blight, Fusarium stalk rot, banded leaf & sheath blight, downy mildew",
+     "formulation_per_ha": "seed treatment; the list does not state the seed quantity, see the label",
+     "water_l_per_ha": "NA",
+     "waiting_days": null
     }
    }
   ],
@@ -934,6 +1732,26 @@
     "title": "Maize diseases — Banded leaf and sheath blight",
     "publisher": "ICAR-Indian Institute of Maize Research",
     "url": "https://iimr.icar.gov.in"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -960,16 +1778,35 @@
     }
    },
    {
+    "tier": "cultural",
+    "action": {
+     "en": "Sow before the rains set in, and do not sow maize next to sorghum or after it. Resistant varieties in the national IPM package: PEMH 5, Bio 9636, DMH 1, COH(M) 4, COH(M) 5 and Nithyashree.",
+     "hi": "बारिश शुरू होने से पहले बुवाई करें, और मक्का को ज्वार के पास या ज्वार के बाद न बोएँ। राष्ट्रीय IPM पैकेज की प्रतिरोधी किस्में: PEMH 5, बायो 9636, DMH 1, COH(M) 4, COH(M) 5 और नित्यश्री।",
+     "mr": "पाऊस सुरू होण्यापूर्वी पेरणी करा, आणि मका ज्वारीच्या शेजारी किंवा ज्वारीनंतर पेरू नका. राष्ट्रीय IPM पॅकेजमधील प्रतिकारक वाण: PEMH 5, बायो 9636, DMH 1, COH(M) 4, COH(M) 5 आणि नित्यश्री."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize",
+    "added_by": "organic_practices",
+    "backing": "recommended"
+   },
+   {
     "tier": "chemical",
-    "ingredient": "metalaxyl_mancozeb_72wp",
+    "ingredient": "mancozeb_75wp",
     "dose_per_litre": 2.5,
     "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
+    "water_l_per_acre": 300,
+    "verified": true,
     "timing": {
      "en": "On young crops in the first 3–4 weeks when infection is spreading.",
      "hi": "पहले 3–4 हफ्तों में जब संक्रमण फैल रहा हो।",
      "mr": "पहिल्या 3–4 आठवड्यांत संसर्ग पसरत असताना."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Maize",
+     "pest": "Leaf blight, downy mildew",
+     "formulation_per_ha": "1.5–2 kg",
+     "water_l_per_ha": "750",
+     "waiting_days": null
     }
    }
   ],
@@ -1027,6 +1864,17 @@
     }
    },
    {
+    "tier": "cultural",
+    "action": {
+     "en": "Sow at the recommended time, and do not sow maize at different times in neighbouring fields: it lets the pest move from field to field. Look for the egg masses, covered in hairs and easy to see on the leaves, and destroy them.",
+     "hi": "सिफारिश किए गए समय पर बोएँ, और पास के खेतों में अलग-अलग समय पर मक्का न बोएँ: इससे कीट एक खेत से दूसरे में जाता है। पत्तियों पर बालों से ढके, आसानी से दिखने वाले अंडों के गुच्छे ढूँढकर नष्ट करें।",
+     "mr": "शिफारस केलेल्या वेळी पेरा, आणि शेजारच्या शेतांत वेगवेगळ्या वेळी मका पेरू नका: त्यामुळे कीड एका शेतातून दुसऱ्यात जाते. पानांवर केसांनी झाकलेले, सहज दिसणारे अंड्यांचे पुंजके शोधून नष्ट करा."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026",
+    "added_by": "organic_practices",
+    "backing": "recommended"
+   },
+   {
     "tier": "biological",
     "action": {
      "en": "Spray Metarhizium anisopliae at 5 g per litre, or neem (azadirachtin 1500 ppm) at 5 ml per litre, into the whorl.",
@@ -1036,41 +1884,23 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "emamectin_benzoate_5sg",
-    "dose_per_litre": 0.4,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "Only after the threshold is crossed; into the whorl.",
-     "hi": "केवल सीमा पार होने पर; गोभ में।",
-     "mr": "फक्त मर्यादा ओलांडल्यावर; पोंग्यात."
-    }
-   },
-   {
-    "tier": "chemical",
     "ingredient": "chlorantraniliprole_18_5sc",
     "dose_per_litre": 0.4,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
-     "en": "Rotate with emamectin; do not repeat the same ingredient.",
-     "hi": "इमामेक्टिन के साथ बदल-बदलकर; एक ही दवा न दोहराएँ।",
-     "mr": "इमामेक्टिनसोबत आलटून-पालटून; तेच औषध पुन्हा वापरू नका."
-    }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "spinetoram_11_7sc",
-    "dose_per_litre": 0.5,
-    "dose_unit": "ml",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "Third option for rotation.",
-     "hi": "बदल-बदलकर उपयोग का तीसरा विकल्प।",
-     "mr": "आलटून-पालटून वापरासाठी तिसरा पर्याय."
+     "en": "Only after the threshold is crossed; into the whorl.",
+     "hi": "केवल सीमा पार होने पर; गोभ में।",
+     "mr": "फक्त मर्यादा ओलांडल्यावर; पोंग्यात."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Maize",
+     "pest": "Stem borers, fall armyworm",
+     "formulation_per_ha": "200 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 10
     }
    }
   ],
@@ -1089,6 +1919,61 @@
     "title": "Fall armyworm: Integrated pest management",
     "publisher": "Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://ppqs.gov.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "beauveria_1_5as",
+    "use": "spray",
+    "dose_per_litre": 6.3,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray into the leaf whorl in the evening while the larvae are small.",
+     "hi": "इल्लियाँ छोटी हों तब शाम को पत्तियों के गोभ में छिड़कें।",
+     "mr": "अळ्या लहान असताना संध्याकाळी पोंग्यात फवारा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Maize",
+     "pest": "Fall army worm (Spodoptera frugiperda)",
+     "formulation_per_ha": "3125 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": null
+    }
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "nske_5",
+    "per_litre": {
+     "amount": 50,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "Spray into the whorl while the young larvae are still scraping windows in the leaves, from the seedling to the early whorl stage.",
+     "hi": "जब छोटी इल्लियाँ पत्तों को खुरचकर खिड़की जैसे निशान बना रही हों, तब पौध से शुरुआती गोभ अवस्था तक गोभ में छिड़कें।",
+     "mr": "लहान अळ्या पानांवर खरवडून खिडकीसारख्या खुणा करत असताना, रोपावस्थेपासून सुरुवातीच्या पोंगा अवस्थेपर्यंत पोंग्यात फवारा."
+    },
+    "source": "ICAR-IIMR, Identification and management of fall armyworm"
+   },
+   {
+    "prep": "neemastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "dashparni_ark",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -1115,24 +2000,46 @@
     }
    },
    {
+    "tier": "cultural",
+    "action": {
+     "en": "After harvest, plough the field and destroy the stubble, stalks and cobs where the borer larvae spend the winter. While hoeing, pull out and destroy badly bored plants.",
+     "hi": "कटाई के बाद खेत जोतें और ठूंठ, डंठल और भुट्टे नष्ट करें, जिनमें तना छेदक की सूंडियाँ सर्दी बिताती हैं। निराई-गुड़ाई के समय बुरी तरह छेदे गए पौधे उखाड़कर नष्ट करें।",
+     "mr": "काढणीनंतर शेत नांगरा आणि खोडकिडीच्या अळ्या हिवाळा घालवतात ते खुंट, धाटे आणि कणसे नष्ट करा. खुरपणी करताना जास्त पोखरलेली झाडे उपटून नष्ट करा."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026",
+    "added_by": "organic_practices",
+    "backing": "recommended"
+   },
+   {
     "tier": "biological",
     "action": {
-     "en": "Release Trichogramma chilonis cards (about 1 lakh per hectare) from 10 days after sowing.",
-     "hi": "बुवाई के 10 दिन बाद से ट्राइकोग्रामा किलोनिस कार्ड (लगभग 1 लाख प्रति हेक्टेयर) छोड़ें।",
-     "mr": "पेरणीनंतर 10 दिवसांपासून ट्रायकोग्रामा चिलोनिस कार्ड (हेक्टरी सुमारे 1 लाख) सोडा."
-    }
+     "en": "Staple Trichogramma chilonis egg cards twice: 40,000 parasitised eggs per acre on the 10-day-old crop, and again 7 days later. Cut the cards into 40 strips and staple them under the central whorl leaves in the evening. Not on rainy days.",
+     "hi": "ट्राइकोग्रामा चिलोनिस अंडा कार्ड दो बार लगाएँ: 10 दिन की फसल पर प्रति एकड़ 40,000 परजीवित अंडे, और फिर 7 दिन बाद। कार्डों को 40 पट्टियों में काटें और शाम को बीच की पोंगली की पत्तियों के नीचे स्टेपल करें। बारिश वाले दिन नहीं।",
+     "mr": "ट्रायकोग्रामा चिलोनिस अंडी कार्ड दोनदा लावा: 10 दिवसांच्या पिकावर एकरी 40,000 परजीवीग्रस्त अंडी, आणि पुन्हा 7 दिवसांनी. कार्डांच्या 40 पट्ट्या कापा आणि संध्याकाळी मधल्या पोंग्याच्या पानांखाली स्टेपल करा. पावसाच्या दिवशी नाही."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026",
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "chemical",
     "ingredient": "chlorantraniliprole_18_5sc",
-    "dose_per_litre": 0.3,
+    "dose_per_litre": 0.4,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Only after the threshold is crossed; into the whorl.",
      "hi": "केवल सीमा पार होने पर; गोभ में।",
      "mr": "फक्त मर्यादा ओलांडल्यावर; पोंग्यात."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Maize",
+     "pest": "Stem borers, fall armyworm",
+     "formulation_per_ha": "200 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 10
     }
    }
   ],
@@ -1151,6 +2058,26 @@
     "title": "Maize insect pests — Stem borer",
     "publisher": "ICAR-Indian Institute of Maize Research",
     "url": "https://iimr.icar.gov.in"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "agniastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "dashparni_ark",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -1176,30 +2103,49 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Gather and destroy the flowers webbed shut every week; terminate the crop by December and graze or shred the stalks."
+     "en": "Gather and destroy the flowers webbed shut every week; terminate the crop by December and graze or shred the stalks.",
+     "hi": "हर हफ़्ते जाले से बंद हुए फूल इकट्ठा करके नष्ट करें; दिसंबर तक फसल खत्म कर दें और डंठलों को पशुओं से चरवा दें या बारीक काट दें।",
+     "mr": "दर आठवड्याला जाळ्याने बंद झालेली फुले गोळा करून नष्ट करा; डिसेंबरपर्यंत पीक संपवा आणि पऱ्हाट्या जनावरांना चारा किंवा बारीक तुकडे करा."
     }
    },
    {
     "tier": "cultural",
     "action": {
-     "en": "Install pheromone traps at 5 per hectare from 45 days after sowing to watch moth numbers."
-    }
+     "en": "From the start of flowering, watch moth numbers with a Sticka or Delta trap baited with gossyplure: one trap per hectare, 15 cm above the crop, lure changed every 15 days.",
+     "hi": "फूल आने की शुरुआत से, गॉसिप्ल्योर वाले स्टिका या डेल्टा ट्रैप से पतंगों की संख्या देखें: प्रति हेक्टेयर एक ट्रैप, फसल से 15 सेमी ऊपर, हर 15 दिन में ल्योर बदलें।",
+     "mr": "फुलोऱ्याच्या सुरुवातीपासून, गॉसिप्लूर असलेल्या स्टिका किंवा डेल्टा सापळ्याने पतंगांची संख्या पाहा: हेक्टरी एक सापळा, पिकाच्या 15 सेमी वर, दर 15 दिवसांनी ल्युअर बदला."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026",
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "biological",
     "action": {
-     "en": "Release Trichogramma bactrae egg parasitoids at 1.5 lakh per hectare; use pheromone-based mating disruption where available."
+     "en": "Release Trichogramma bactrae egg parasitoids at 1.5 lakh per hectare; use pheromone-based mating disruption where available.",
+     "hi": "प्रति हेक्टेयर 1.5 लाख ट्राइकोग्रामा बैक्ट्री अंड परजीवी छोड़ें; जहाँ उपलब्ध हो, फेरोमोन से मिलन-बाधा विधि अपनाएँ।",
+     "mr": "हेक्टरी 1.5 लाख ट्रायकोग्रामा बॅक्ट्री अंडी-परोपजीवी सोडा; उपलब्ध असल्यास कामगंधावर आधारित मीलन-अडथळा पद्धत वापरा."
     }
    },
    {
     "tier": "chemical",
     "ingredient": "profenofos_50ec",
-    "dose_per_litre": 2.0,
+    "dose_per_litre": 3.0,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
-     "en": "Only after the threshold is crossed."
+     "en": "Only after the threshold is crossed.",
+     "hi": "केवल आर्थिक सीमा पार होने के बाद ही।",
+     "mr": "फक्त आर्थिक नुकसान पातळी ओलांडल्यानंतरच."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Bollworm",
+     "formulation_per_ha": "1500–2000 ml",
+     "water_l_per_ha": "500–1000",
+     "waiting_days": 15
     }
    },
    {
@@ -1208,14 +2154,26 @@
     "dose_per_litre": 2.0,
     "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
-     "en": "Rotate with profenofos; do not repeat the same ingredient."
+     "en": "Rotate with profenofos; do not repeat the same ingredient.",
+     "hi": "प्रोफेनोफॉस के साथ बदल-बदल कर इस्तेमाल करें; एक ही दवा दोबारा न दोहराएँ।",
+     "mr": "प्रोफेनोफॉससोबत आलटून-पालटून वापरा; तेच औषध पुन्हा वापरू नका."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Bollworms",
+     "formulation_per_ha": "1000 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 30
     }
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if more than 10% of green bolls carry larvae."
+   "en": "Call an expert if more than 10% of green bolls carry larvae.",
+   "hi": "अगर 10% से ज़्यादा हरे टिंडों में इल्लियाँ हों तो विशेषज्ञ को बुलाएँ।",
+   "mr": "10% पेक्षा जास्त हिरव्या बोंडांमध्ये अळ्या असल्यास तज्ज्ञांना बोलवा."
   },
   "citations": [
    {
@@ -1227,6 +2185,60 @@
     "title": "AESA-based IPM Package: Cotton",
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "azadirachtin_0_15ec",
+    "use": "spray",
+    "dose_per_litre": 5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray from first flowering, before the larvae enter the bolls; it cannot reach larvae already inside.",
+     "hi": "पहले फूल आने से छिड़कें, इल्ली के टिंडे में घुसने से पहले; अंदर घुसी इल्ली तक यह नहीं पहुँचता।",
+     "mr": "पहिल्या फुलोऱ्यापासून, अळी बोंडात शिरण्यापूर्वी फवारा; आत शिरलेल्या अळीपर्यंत ते पोहोचत नाही."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "White fly, Bollworms",
+     "formulation_per_ha": "2500-5000 ml",
+     "water_l_per_ha": "500-1000",
+     "waiting_days": 5
+    }
+   },
+   {
+    "ingredient": "pb_rope_l",
+    "use": "dispenser",
+    "per_acre": {
+     "amount": 160,
+     "unit": "dispensers"
+    },
+    "timing": {
+     "en": "The register gives it for a block of 25 hectares. It confuses the male moths so they cannot find mates, so it works when a whole area of fields uses it, not one small plot.",
+     "hi": "रजिस्टर इसे 25 हेक्टेयर के एक ब्लॉक के लिए देता है। यह नर पतंगों को भ्रमित करता है ताकि वे मादा तक न पहुँचें, इसलिए यह तभी काम करता है जब पूरे इलाके के खेत इसे लगाएँ, किसी एक छोटे खेत में नहीं।",
+     "mr": "नोंदणी ते 25 हेक्टरच्या एका पट्ट्यासाठी देते. ते नर पतंगांना गोंधळात टाकते म्हणजे ते मादीपर्यंत पोहोचत नाहीत, म्हणून संपूर्ण परिसरातील शेतांनी ते लावल्यावरच ते काम करते, एखाद्या लहान शेतात नाही."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Pink bollworm (Pectinophora gossypiella)",
+     "formulation_per_ha": "9875 dispensers for 25 ha (395 per ha)",
+     "water_l_per_ha": null,
+     "waiting_days": null
+    }
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "dashparni_ark",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -1247,13 +2259,28 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Grow a border of marigold or maize as a trap crop; set bird perches (10 per acre)."
+     "en": "Grow a border of marigold or maize as a trap crop; set bird perches (10 per acre).",
+     "hi": "फँसाऊ फसल के रूप में खेत की मेड़ पर गेंदा या मक्का लगाएँ; पक्षियों के बैठने के लिए ठिकाने लगाएँ (प्रति एकड़ 10)।",
+     "mr": "सापळा पीक म्हणून बांधावर झेंडू किंवा मका लावा; पक्ष्यांसाठी बसण्याचे थांबे लावा (एकरी 10)."
     }
+   },
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "From the start of flowering, watch moth numbers with Sleeve or Moth-catch pheromone traps holding at least 2 mg of pheromone: two traps per hectare, 15 cm above the crop, lure changed every 15 days.",
+     "hi": "फूल आने की शुरुआत से, कम से कम 2 मिग्रा फेरोमोन वाले स्लीव या मॉथ-कैच ट्रैप से पतंगों की संख्या देखें: प्रति हेक्टेयर दो ट्रैप, फसल से 15 सेमी ऊपर, हर 15 दिन में ल्योर बदलें।",
+     "mr": "फुलोऱ्याच्या सुरुवातीपासून, किमान 2 मिग्रॅ फेरोमोन असलेल्या स्लीव्ह किंवा मॉथ-कॅच सापळ्यांनी पतंगांची संख्या पाहा: हेक्टरी दोन सापळे, पिकाच्या 15 सेमी वर, दर 15 दिवसांनी ल्युअर बदला."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026",
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "biological",
     "action": {
-     "en": "Spray HaNPV at 250 larval equivalents per hectare in the evening, or neem seed kernel extract 5%."
+     "en": "Spray HaNPV at 250 larval equivalents per hectare in the evening, or neem seed kernel extract 5%.",
+     "hi": "शाम को प्रति हेक्टेयर 250 लार्वल इक्विवेलेंट HaNPV छिड़कें, या 5% नीम बीज गिरी अर्क।",
+     "mr": "संध्याकाळी हेक्टरी 250 अळी-समतुल्य HaNPV फवारा, किंवा 5% निंबोळी अर्क."
     }
    },
    {
@@ -1262,25 +2289,47 @@
     "dose_per_litre": 0.4,
     "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
-     "en": "Only after the threshold is crossed."
+     "en": "Only after the threshold is crossed.",
+     "hi": "केवल आर्थिक सीमा पार होने के बाद ही।",
+     "mr": "फक्त आर्थिक नुकसान पातळी ओलांडल्यानंतरच."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Boll worms",
+     "formulation_per_ha": "190–220 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 10
     }
    },
    {
     "tier": "chemical",
     "ingredient": "indoxacarb_14_5sc",
-    "dose_per_litre": 1.0,
+    "dose_per_litre": 0.8,
     "dose_unit": "ml",
-    "water_l_per_acre": 200,
-    "verified": false,
+    "water_l_per_acre": 250,
+    "verified": true,
     "timing": {
-     "en": "Rotate with emamectin."
+     "en": "Rotate with emamectin.",
+     "hi": "इमामेक्टिन के साथ बदल-बदल कर इस्तेमाल करें।",
+     "mr": "इमामेक्टिनसोबत आलटून-पालटून वापरा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Bollworm",
+     "formulation_per_ha": "500 ml",
+     "water_l_per_ha": "600–1000",
+     "waiting_days": 16
     }
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if more than 10% of squares and bolls are bored."
+   "en": "Call an expert if more than 10% of squares and bolls are bored.",
+   "hi": "अगर 10% से ज़्यादा कलियों और टिंडों में छेद हों तो विशेषज्ञ को बुलाएँ।",
+   "mr": "10% पेक्षा जास्त पाते व बोंडांना छिद्रे असल्यास तज्ज्ञांना बोलवा."
   },
   "citations": [
    {
@@ -1292,6 +2341,79 @@
     "title": "AESA-based IPM Package: Cotton",
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "hanpv_0_43as",
+    "use": "spray",
+    "dose_per_litre": 5.4,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray in the evening when the caterpillars are small; the virus works on young larvae.",
+     "hi": "इल्लियाँ छोटी हों तब शाम को छिड़कें; विषाणु छोटी इल्लियों पर असर करता है।",
+     "mr": "अळ्या लहान असताना संध्याकाळी फवारा; विषाणू लहान अळ्यांवर परिणाम करतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Helicoverpa armigera",
+     "formulation_per_ha": "2700 ml",
+     "water_l_per_ha": "400-600",
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "bt_kurstaki_wp",
+    "use": "spray",
+    "dose_per_litre": 1.5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray in the evening when young caterpillars are seen; sunlight breaks Bt down.",
+     "hi": "छोटी इल्लियाँ दिखें तो शाम को छिड़कें; धूप Bt को नष्ट कर देती है।",
+     "mr": "लहान अळ्या दिसताच संध्याकाळी फवारा; उन्हाने Bt नष्ट होते."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Bollworms, Spodoptera",
+     "formulation_per_ha": "0.75-1.00 kg",
+     "water_l_per_ha": "500-750",
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "azadirachtin_0_15ec",
+    "use": "spray",
+    "dose_per_litre": 5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray early, when the pest first appears; neem stops feeding and egg-laying more than it kills.",
+     "hi": "कीट दिखते ही जल्दी छिड़कें; नीम कीट को मारने से ज़्यादा उसका खाना और अंडे देना रोकता है।",
+     "mr": "कीड दिसताच लवकर फवारा; कडुनिंब कीड मारण्यापेक्षा तिचे खाणे आणि अंडी घालणे थांबवतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "White fly, Bollworms",
+     "formulation_per_ha": "2500-5000 ml",
+     "water_l_per_ha": "500-1000",
+     "waiting_days": 5
+    }
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "dashparni_ark",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -1317,13 +2439,17 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Put up yellow sticky traps (10 per acre) at the height of the crop; remove weed hosts around the field."
+     "en": "Put up yellow sticky traps (10 per acre) at the height of the crop; remove weed hosts around the field.",
+     "hi": "फसल की ऊँचाई पर पीले चिपचिपे ट्रैप लगाएँ (प्रति एकड़ 10); खेत के आसपास के खरपतवार हटाएँ जिन पर कीट पलते हैं।",
+     "mr": "पिकाच्या उंचीवर पिवळे चिकट सापळे लावा (एकरी 10); शेताभोवतीची किडीला आश्रय देणारी तणे काढा."
     }
    },
    {
     "tier": "biological",
     "action": {
-     "en": "Spray neem oil at 5 ml per litre, or Lecanicillium lecanii at 5 g per litre in humid weather."
+     "en": "Spray neem oil at 5 ml per litre, or Lecanicillium lecanii at 5 g per litre in humid weather.",
+     "hi": "नीम का तेल 5 मिली प्रति लीटर छिड़कें, या नम मौसम में लेकानिसिलियम लेकानी 5 ग्राम प्रति लीटर।",
+     "mr": "निंबोळी तेल 5 मिली प्रति लिटर फवारा, किंवा दमट हवामानात लेकॅनिसिलियम लेकॅनी 5 ग्रॅम प्रति लिटर."
     }
    },
    {
@@ -1332,9 +2458,19 @@
     "dose_per_litre": 1.0,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
-     "en": "Only after the threshold is crossed; acts on eggs and young hoppers."
+     "en": "Only after the threshold is crossed; acts on eggs and young hoppers.",
+     "hi": "केवल आर्थिक सीमा पार होने के बाद ही; यह अंडों और छोटे कीटों पर असर करता है।",
+     "mr": "फक्त आर्थिक नुकसान पातळी ओलांडल्यानंतरच; हे अंडी व लहान किडींवर काम करते."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Whitefly",
+     "formulation_per_ha": "500–700 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 50
     }
    },
    {
@@ -1343,20 +2479,125 @@
     "dose_per_litre": 1.2,
     "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
-     "en": "Alternative; rotate, never repeat back to back."
+     "en": "Alternative; rotate, never repeat back to back.",
+     "hi": "विकल्प; बदल-बदल कर इस्तेमाल करें, लगातार दो बार कभी न दोहराएँ।",
+     "mr": "पर्याय; आलटून-पालटून वापरा, सलग दोनदा कधीही वापरू नका."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Whiteflies, aphids, thrips, jassids",
+     "formulation_per_ha": "600 g",
+     "water_l_per_ha": "500–1000",
+     "waiting_days": 21
     }
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if leaves turn black with sooty mould or leaf curl spreads."
+   "en": "Call an expert if leaves turn black with sooty mould or leaf curl spreads.",
+   "hi": "अगर पत्तियाँ काली फफूँद से काली पड़ें या पत्ती मरोड़ फैले तो विशेषज्ञ को बुलाएँ।",
+   "mr": "पाने काजळीसारख्या बुरशीने काळी पडल्यास किंवा पर्णगुच्छ (पाने आकसणे) पसरल्यास तज्ज्ञांना बोलवा."
   },
   "citations": [
    {
     "title": "Whitefly management advisory",
     "publisher": "ICAR-Central Institute for Cotton Research, Nagpur",
     "url": "https://cicr.org.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "lecanicillium_1_15wp",
+    "use": "spray",
+    "dose_per_litre": 5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray in the evening on a moist crop; the fungus needs humidity to infect the pest.",
+     "hi": "शाम को नम फसल पर छिड़कें; फफूंद को कीट को संक्रमित करने के लिए नमी चाहिए।",
+     "mr": "संध्याकाळी ओलसर पिकावर फवारा; बुरशीला किडीला बाधित करण्यासाठी ओलावा लागतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "White flies",
+     "formulation_per_ha": "2500 g",
+     "water_l_per_ha": "500",
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "azadirachtin_0_15ec",
+    "use": "spray",
+    "dose_per_litre": 5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray early, when the pest first appears; neem stops feeding and egg-laying more than it kills.",
+     "hi": "कीट दिखते ही जल्दी छिड़कें; नीम कीट को मारने से ज़्यादा उसका खाना और अंडे देना रोकता है।",
+     "mr": "कीड दिसताच लवकर फवारा; कडुनिंब कीड मारण्यापेक्षा तिचे खाणे आणि अंडी घालणे थांबवतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "White fly, Bollworms",
+     "formulation_per_ha": "2500-5000 ml",
+     "water_l_per_ha": "500-1000",
+     "waiting_days": 5
+    }
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "nske_5",
+    "per_litre": {
+     "amount": 50,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "Spray when you first see the insects under the leaves, covering the undersides.",
+     "hi": "पत्तों के नीचे कीट दिखते ही छिड़कें, पत्तों की निचली सतह पर अच्छी तरह।",
+     "mr": "पानांच्या खाली किडे दिसताच फवारा, पानांच्या खालच्या बाजूला नीट."
+    },
+    "source": "APEDA Farmer Connect: IPM with recommended pesticides (Government of India)"
+   },
+   {
+    "prep": "pau_neem_extract",
+    "dose": {
+     "en": "1200 ml of the extract for one acre.",
+     "hi": "एक एकड़ के लिए 1200 मिली अर्क।",
+     "mr": "एका एकरासाठी 1200 मिली अर्क."
+    },
+    "per_acre": {
+     "amount": 1200,
+     "unit": "ml"
+    },
+    "timing": {
+     "en": "Spray when whitefly first appears early in the season, covering the undersides of the leaves.",
+     "hi": "मौसम की शुरुआत में सफेद मक्खी दिखते ही छिड़कें, पत्तों की निचली सतह पर अच्छी तरह।",
+     "mr": "हंगामाच्या सुरुवातीला पांढरी माशी दिसताच फवारा, पानांच्या खालच्या बाजूला नीट."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026"
+   },
+   {
+    "prep": "neemastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "brahmastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -1377,13 +2618,17 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Grow hairy-leaved, jassid-tolerant varieties; avoid excess nitrogen and close spacing."
+     "en": "Grow hairy-leaved, jassid-tolerant varieties; avoid excess nitrogen and close spacing.",
+     "hi": "रोएँदार पत्ती वाली, जैसिड-सहनशील किस्में उगाएँ; ज़्यादा नाइट्रोजन और घनी बुवाई से बचें।",
+     "mr": "केसाळ पानांचे, तुडतुडे-सहनशील वाण लावा; जास्त नत्र व दाट लागवड टाळा."
     }
    },
    {
     "tier": "biological",
     "action": {
-     "en": "Spray neem oil at 5 ml per litre; conserve lacewings and ladybird beetles."
+     "en": "Spray neem oil at 5 ml per litre; conserve lacewings and ladybird beetles.",
+     "hi": "नीम का तेल 5 मिली प्रति लीटर छिड़कें; लेसविंग और लेडीबर्ड भृंगों को बचाएँ।",
+     "mr": "निंबोळी तेल 5 मिली प्रति लिटर फवारा; क्रायसोपा (लेसविंग) व लेडीबर्ड भुंगे वाचवा."
     }
    },
    {
@@ -1392,20 +2637,87 @@
     "dose_per_litre": 0.3,
     "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
-     "en": "Only after the threshold is crossed."
+     "en": "Only after the threshold is crossed.",
+     "hi": "केवल आर्थिक सीमा पार होने के बाद ही।",
+     "mr": "फक्त आर्थिक नुकसान पातळी ओलांडल्यानंतरच."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Aphids, jassids, thrips, whiteflies",
+     "formulation_per_ha": "150 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 25
     }
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if leaves turn reddish-brown and dry across the field."
+   "en": "Call an expert if leaves turn reddish-brown and dry across the field.",
+   "hi": "अगर पूरे खेत में पत्तियाँ लाल-भूरी होकर सूखने लगें तो विशेषज्ञ को बुलाएँ।",
+   "mr": "संपूर्ण शेतात पाने लालसर-तपकिरी होऊन सुकू लागल्यास तज्ज्ञांना बोलवा."
   },
   "citations": [
    {
     "title": "Sucking pest management in cotton",
     "publisher": "ICAR-Central Institute for Cotton Research, Nagpur",
     "url": "https://cicr.org.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "azadirachtin_5",
+    "use": "spray",
+    "dose_per_litre": 0.5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 300,
+    "timing": {
+     "en": "Spray early, when the pest first appears; neem stops feeding and egg-laying more than it kills.",
+     "hi": "कीट दिखते ही जल्दी छिड़कें; नीम कीट को मारने से ज़्यादा उसका खाना और अंडे देना रोकता है।",
+     "mr": "कीड दिसताच लवकर फवारा; कडुनिंब कीड मारण्यापेक्षा तिचे खाणे आणि अंडी घालणे थांबवतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Whitefly, Leaf hoppers, Helicoverpa armigera, Aphids",
+     "formulation_per_ha": "375 ml",
+     "water_l_per_ha": "750",
+     "waiting_days": 5
+    }
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "nske_5",
+    "per_litre": {
+     "amount": 50,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "Spray when you first see the insects under the leaves, covering the undersides.",
+     "hi": "पत्तों के नीचे कीट दिखते ही छिड़कें, पत्तों की निचली सतह पर अच्छी तरह।",
+     "mr": "पानांच्या खाली किडे दिसताच फवारा, पानांच्या खालच्या बाजूला नीट."
+    },
+    "source": "APEDA Farmer Connect: IPM with recommended pesticides (Government of India)"
+   },
+   {
+    "prep": "neemastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "brahmastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -1426,23 +2738,37 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Pull out infected plants early and bury them in a pit; put up yellow sticky traps; grow YMV-resistant varieties next season."
+     "en": "Pull out infected plants early and bury them in a pit; put up yellow sticky traps; grow YMV-resistant varieties next season.",
+     "hi": "संक्रमित पौधों को जल्दी उखाड़कर गड्ढे में दबा दें; पीले चिपचिपे ट्रैप लगाएँ; अगले मौसम में पीला मोज़ेक प्रतिरोधी किस्में उगाएँ।",
+     "mr": "बाधित झाडे लवकर उपटून खड्ड्यात पुरा; पिवळे चिकट सापळे लावा; पुढील हंगामात पिवळा मोझॅक प्रतिकारक वाण लावा."
     }
    },
    {
     "tier": "chemical",
-    "ingredient": "thiamethoxam_25wg",
-    "dose_per_litre": 0.2,
-    "dose_unit": "g",
+    "ingredient": "pyriproxyfen_bifenthrin_ec",
+    "dose_per_litre": 2.0,
+    "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
-     "en": "Against the whiteflies that spread it only, when whiteflies are seen."
+     "en": "Against the whiteflies that spread it only, when whiteflies are seen.",
+     "hi": "केवल इसे फैलाने वाली सफेद मक्खी के विरुद्ध, जब सफेद मक्खी दिखे।",
+     "mr": "फक्त हा रोग पसरवणाऱ्या पांढऱ्या माशीविरुद्ध, पांढरी माशी दिसल्यावर."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Soybean",
+     "pest": "Whitefly (the yellow mosaic vector)",
+     "formulation_per_ha": "1000 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 35
     }
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if more than 5% of plants show mosaic before flowering."
+   "en": "Call an expert if more than 5% of plants show mosaic before flowering.",
+   "hi": "अगर फूल आने से पहले 5% से ज़्यादा पौधों में मोज़ेक दिखे तो विशेषज्ञ को बुलाएँ।",
+   "mr": "फुलोऱ्यापूर्वी 5% पेक्षा जास्त झाडांवर मोझॅक दिसल्यास तज्ज्ञांना बोलवा."
   },
   "citations": [
    {
@@ -1454,6 +2780,21 @@
     "title": "AESA-based IPM Package: Soybean",
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "nske_5",
+    "per_litre": {
+     "amount": 50,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "It keeps down the whitefly that spreads the virus; it does not cure plants already infected.",
+     "hi": "यह वायरस फैलाने वाली सफेद मक्खी को कम करता है; पहले से संक्रमित पौधों को ठीक नहीं करता।",
+     "mr": "हे विषाणू पसरवणाऱ्या पांढऱ्या माशीला कमी करते; आधीच बाधित झाडे बरी करत नाही."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Soybean"
    }
   ]
  },
@@ -1474,8 +2815,21 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Cut and destroy girdled plant parts every few days; plough deep in summer."
+     "en": "Cut and destroy girdled plant parts every few days; plough deep in summer.",
+     "hi": "हर कुछ दिनों में चक्र भृंग से कटे पौधों के हिस्से काटकर नष्ट करें; गर्मी में गहरी जुताई करें।",
+     "mr": "दर काही दिवसांनी चक्रभुंग्याने कापलेले झाडांचे भाग कापून नष्ट करा; उन्हाळ्यात खोल नांगरट करा."
     }
+   },
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Grow dhaincha as a trap crop around the field: the beetles gather on it, away from the soybean.",
+     "hi": "खेत के चारों ओर ढैंचा को फँसाऊ फसल के रूप में उगाएँ: भृंग सोयाबीन से हटकर उस पर जमा होते हैं।",
+     "mr": "शेताभोवती धैंचा सापळा पीक म्हणून लावा: भुंगे सोयाबीनपासून दूर त्यावर जमतात."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Soybean",
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "chemical",
@@ -1483,9 +2837,19 @@
     "dose_per_litre": 1.5,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
-     "en": "At first girdling, before flowering."
+     "en": "At first girdling, before flowering.",
+     "hi": "पहली बार चक्र (गर्डलिंग) दिखते ही, फूल आने से पहले।",
+     "mr": "पहिले चक्र (गर्डलिंग) दिसताच, फुलोऱ्यापूर्वी."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Soybean",
+     "pest": "Girdle beetle",
+     "formulation_per_ha": "750 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 17
     }
    },
    {
@@ -1494,20 +2858,43 @@
     "dose_per_litre": 0.3,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
-     "en": "Alternative; also controls defoliating caterpillars."
+     "en": "Alternative; also controls defoliating caterpillars.",
+     "hi": "विकल्प; यह पत्ते खाने वाली इल्लियों को भी नियंत्रित करता है।",
+     "mr": "पर्याय; पाने खाणाऱ्या अळ्यांचेही नियंत्रण करते."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Soybean",
+     "pest": "Girdle beetle, tobacco caterpillar, green semilooper, stem fly",
+     "formulation_per_ha": "150 ml",
+     "water_l_per_ha": "500–750",
+     "waiting_days": 22
     }
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if more than 10% of plants are girdled."
+   "en": "Call an expert if more than 10% of plants are girdled.",
+   "hi": "अगर 10% से ज़्यादा पौधे चक्र भृंग से कटे हों तो विशेषज्ञ को बुलाएँ।",
+   "mr": "10% पेक्षा जास्त झाडे चक्रभुंग्याने बाधित असल्यास तज्ज्ञांना बोलवा."
   },
   "citations": [
    {
     "title": "Soybean: Package of practices",
     "publisher": "ICAR-Indian Institute of Soybean Research, Indore",
     "url": "https://iisrindore.icar.gov.in"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "dashparni_ark",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -1528,13 +2915,17 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Pluck and destroy leaves carrying egg masses or larval groups; set pheromone traps at 5 per acre."
+     "en": "Pluck and destroy leaves carrying egg masses or larval groups; set pheromone traps at 5 per acre.",
+     "hi": "अंडों के गुच्छे या इल्लियों के झुंड वाली पत्तियाँ तोड़कर नष्ट करें; प्रति एकड़ 5 फेरोमोन ट्रैप लगाएँ।",
+     "mr": "अंडीपुंज किंवा अळ्यांचे समूह असलेली पाने तोडून नष्ट करा; एकरी 5 कामगंध सापळे लावा."
     }
    },
    {
     "tier": "biological",
     "action": {
-     "en": "Spray SlNPV at 250 larval equivalents per hectare or Bacillus thuringiensis in the evening."
+     "en": "Spray SlNPV at 250 larval equivalents per hectare or Bacillus thuringiensis in the evening.",
+     "hi": "शाम को प्रति हेक्टेयर 250 लार्वल इक्विवेलेंट SlNPV या बैसिलस थुरिंजिएंसिस छिड़कें।",
+     "mr": "संध्याकाळी हेक्टरी 250 अळी-समतुल्य SlNPV किंवा बॅसिलस थुरिंजिएन्सिस फवारा."
     }
    },
    {
@@ -1543,20 +2934,87 @@
     "dose_per_litre": 0.3,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
-     "en": "When larvae exceed about 4 per metre of row."
+     "en": "When larvae exceed about 4 per metre of row.",
+     "hi": "जब कतार के प्रति मीटर लगभग 4 से ज़्यादा इल्लियाँ हों।",
+     "mr": "जेव्हा ओळीच्या प्रति मीटरमध्ये सुमारे 4 पेक्षा जास्त अळ्या असतील."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Soybean",
+     "pest": "Girdle beetle, tobacco caterpillar, green semilooper, stem fly",
+     "formulation_per_ha": "150 ml",
+     "water_l_per_ha": "500–750",
+     "waiting_days": 22
     }
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if defoliation passes 30% before pod filling."
+   "en": "Call an expert if defoliation passes 30% before pod filling.",
+   "hi": "अगर फली भरने से पहले 30% से ज़्यादा पत्ते झड़ जाएँ तो विशेषज्ञ को बुलाएँ।",
+   "mr": "शेंगा भरण्यापूर्वी 30% पेक्षा जास्त पाने गळाल्यास तज्ज्ञांना बोलवा."
   },
   "citations": [
    {
     "title": "Soybean: Package of practices",
     "publisher": "ICAR-Indian Institute of Soybean Research, Indore",
     "url": "https://iisrindore.icar.gov.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "bt_kurstaki_wp",
+    "use": "spray",
+    "dose_per_litre": 1.5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray in the evening when young caterpillars are seen; sunlight breaks Bt down.",
+     "hi": "छोटी इल्लियाँ दिखें तो शाम को छिड़कें; धूप Bt को नष्ट कर देती है।",
+     "mr": "लहान अळ्या दिसताच संध्याकाळी फवारा; उन्हाने Bt नष्ट होते."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Soybean",
+     "pest": "Spodoptera, Heliothis, Spilosoma, Semilooper, Leaf miner",
+     "formulation_per_ha": "0.75 kg",
+     "water_l_per_ha": "500-750",
+     "waiting_days": null
+    }
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "nske_5",
+    "per_litre": {
+     "amount": 50,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "Spray while the caterpillars are small, when you first see leaves eaten from the underside.",
+     "hi": "इल्लियाँ छोटी हों तभी छिड़कें, जब पत्ते नीचे से खाए हुए पहली बार दिखें।",
+     "mr": "अळ्या लहान असतानाच फवारा, पाने खालून खाल्लेली पहिल्यांदा दिसताच."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Soybean"
+   },
+   {
+    "prep": "neemastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "dashparni_ark",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -1577,7 +3035,9 @@
    {
     "tier": "cultural",
     "action": {
-     "en": "Grow rust-tolerant varieties and sow early to escape late-season rust."
+     "en": "Grow rust-tolerant varieties and sow early to escape late-season rust.",
+     "hi": "गेरुई-सहनशील किस्में उगाएँ और देर से आने वाली गेरुई से बचने के लिए जल्दी बुवाई करें।",
+     "mr": "तांबेरा-सहनशील वाण लावा आणि हंगामाच्या शेवटी येणारा तांबेरा टाळण्यासाठी लवकर पेरणी करा."
     }
    },
    {
@@ -1586,31 +3046,87 @@
     "dose_per_litre": 1.0,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
-     "en": "At first pustules; repeat after 15 days if weather stays wet."
+     "en": "At first pustules; repeat after 15 days if weather stays wet.",
+     "hi": "पहले फफोले दिखते ही; अगर मौसम नम बना रहे तो 15 दिन बाद दोहराएँ।",
+     "mr": "पहिले फोड दिसताच; हवामान ओलसर राहिल्यास 15 दिवसांनी पुन्हा करा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Soybean",
+     "pest": "Rust (Phakopsora pachyrhizi)",
+     "formulation_per_ha": "500 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 26
     }
    },
    {
     "tier": "chemical",
     "ingredient": "hexaconazole_5ec",
-    "dose_per_litre": 1.6,
+    "dose_per_litre": 1.0,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
-     "en": "Alternative to propiconazole."
+     "en": "Alternative to propiconazole.",
+     "hi": "प्रोपिकोनाज़ोल का विकल्प।",
+     "mr": "प्रोपिकोनाझोलला पर्याय."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Soybean",
+     "pest": "Rust",
+     "formulation_per_ha": "0.1% (100 ml / 100 L)",
+     "water_l_per_ha": "as required",
+     "waiting_days": 30
     }
    }
   ],
   "expert_trigger": {
-   "en": "Call an expert if raised rust spots reach the top leaves at pod filling."
+   "en": "Call an expert if raised rust spots reach the top leaves at pod filling.",
+   "hi": "अगर फली भरने के समय उभरे गेरुई धब्बे ऊपर की पत्तियों तक पहुँच जाएँ तो विशेषज्ञ को बुलाएँ।",
+   "mr": "शेंगा भरताना उठावदार तांबेरा ठिपके वरच्या पानांपर्यंत पोहोचल्यास तज्ज्ञांना बोलवा."
   },
   "citations": [
    {
     "title": "Soybean: Package of practices",
     "publisher": "ICAR-Indian Institute of Soybean Research, Indore",
     "url": "https://iisrindore.icar.gov.in"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "neem_oil",
+    "per_litre": {
+     "amount": 10,
+     "unit": "ml"
+    },
+    "detergent_ml_per_litre": 2,
+    "timing": {
+     "en": "Three sprays: 30, 45 and 60 days after sowing.",
+     "hi": "तीन छिड़काव: बुवाई के 30, 45 और 60 दिन बाद।",
+     "mr": "तीन फवारण्या: पेरणीनंतर 30, 45 आणि 60 दिवसांनी."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Soybean"
+   },
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -1661,6 +3177,26 @@
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
    }
+  ],
+  "homemade": [
+   {
+    "prep": "neemastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "dashparni_ark",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   }
   ]
  },
  "rice_white_stem_borer": {
@@ -1696,22 +3232,33 @@
    {
     "tier": "biological",
     "action": {
-     "en": "Release Trichogramma japonicum at 50,000 per hectare when moths are seen in traps.",
-     "hi": "ट्रैप में पतंगे दिखें तो ट्राइकोग्रामा जैपोनिकम 50,000 प्रति हेक्टेयर छोड़ें।",
-     "mr": "सापळ्यात पतंग दिसताच ट्रायकोग्रामा जॅपोनिकम हेक्टरी 50,000 सोडा."
-    }
+     "en": "From 30 days after transplanting, staple Trichogramma egg cards: two cards each of T. japonicum and T. chilonis per acre, 5 to 6 times, a week apart. Cut each card into 20 strips and staple them under the leaves at 40 spots across the acre, in the evening.",
+     "hi": "रोपाई के 30 दिन बाद से ट्राइकोग्रामा अंडा कार्ड लगाएँ: प्रति एकड़ टी. जैपोनिकम और टी. चिलोनिस के दो-दो कार्ड, एक-एक हफ्ते के अंतर पर 5 से 6 बार। हर कार्ड को 20 पट्टियों में काटें और शाम को एकड़ भर में 40 जगह पत्तियों के नीचे स्टेपल करें।",
+     "mr": "पुनर्लागवडीनंतर 30 दिवसांपासून ट्रायकोग्रामा अंडी कार्ड लावा: एकरी टी. जॅपोनिकम आणि टी. चिलोनिसचे प्रत्येकी दोन कार्ड, आठवड्याच्या अंतराने 5 ते 6 वेळा. प्रत्येक कार्डाच्या 20 पट्ट्या कापा आणि संध्याकाळी एकरभर 40 ठिकाणी पानांच्या खाली स्टेपल करा."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026 (organic farming chapter)",
+    "added_by": "organic_practices",
+    "backing": "recommended"
    },
    {
     "tier": "chemical",
-    "ingredient": "chlorantraniliprole_0_4gr",
-    "dose_per_litre": null,
-    "dose_basis": "4 kg granules per acre, broadcast in 3–5 cm of standing water",
-    "water_l_per_acre": null,
-    "verified": false,
+    "ingredient": "chlorantraniliprole_18_5sc",
+    "dose_per_litre": 0.3,
+    "water_l_per_acre": 200,
+    "verified": true,
     "timing": {
      "en": "Only after the dead-heart threshold is crossed.",
      "hi": "केवल मृत गोभ सीमा पार होने के बाद।",
      "mr": "फक्त मेलेल्या गाभ्यांची मर्यादा ओलांडल्यानंतर."
+    },
+    "dose_unit": "ml",
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Rice",
+     "pest": "Stem borer, leaf folder",
+     "formulation_per_ha": "150 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 47
     }
    }
   ],
@@ -1730,6 +3277,68 @@
     "title": "AESA-based IPM Package: Rice",
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "bt_kurstaki_wp",
+    "use": "spray",
+    "dose_per_litre": 3,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray in the evening when young caterpillars are seen; sunlight breaks Bt down.",
+     "hi": "छोटी इल्लियाँ दिखें तो शाम को छिड़कें; धूप Bt को नष्ट कर देती है।",
+     "mr": "लहान अळ्या दिसताच संध्याकाळी फवारा; उन्हाने Bt नष्ट होते."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Stem borer & Leaf folder",
+     "formulation_per_ha": "1.50 kg",
+     "water_l_per_ha": "500-750",
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "azadirachtin_5",
+    "use": "spray",
+    "dose_per_litre": 0.5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 160,
+    "timing": {
+     "en": "Spray early, when the pest first appears; neem stops feeding and egg-laying more than it kills.",
+     "hi": "कीट दिखते ही जल्दी छिड़कें; नीम कीट को मारने से ज़्यादा उसका खाना और अंडे देना रोकता है।",
+     "mr": "कीड दिसताच लवकर फवारा; कडुनिंब कीड मारण्यापेक्षा तिचे खाणे आणि अंडी घालणे थांबवतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Rice (Paddy)",
+     "pest": "Brown plant hopper, Leaf folder, Stem borer",
+     "formulation_per_ha": "200 ml",
+     "water_l_per_ha": "400",
+     "waiting_days": 5
+    }
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "agniastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "dashparni_ark",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -1756,17 +3365,15 @@
     }
    },
    {
-    "tier": "chemical",
-    "ingredient": "mancozeb_75wp",
-    "dose_per_litre": 2.5,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "When spots spread to the upper leaves before tasseling.",
-     "hi": "नर मंजरी से पहले धब्बे ऊपरी पत्तियों तक फैलें तब।",
-     "mr": "तुरा येण्यापूर्वी ठिपके वरच्या पानांवर पसरल्यास."
-    }
+    "tier": "cultural",
+    "action": {
+     "en": "Before sowing, plough deep two or three times, 10 to 15 days apart, to bury the old crop debris and weeds; sow certified seed and throw out light, chaffy or damaged seed.",
+     "hi": "बुवाई से पहले 10 से 15 दिन के अंतर पर दो-तीन बार गहरी जुताई करें, ताकि पुरानी फसल के अवशेष और खरपतवार दब जाएँ; प्रमाणित बीज बोएँ और हल्के, खोखले या टूटे बीज निकाल दें।",
+     "mr": "पेरणीपूर्वी 10 ते 15 दिवसांच्या अंतराने दोन-तीन वेळा खोल नांगरट करा, म्हणजे जुन्या पिकाचे अवशेष व तण गाडले जातील; प्रमाणित बियाणे पेरा आणि हलके, पोचट किंवा तुटलेले बी काढून टाका."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize (cultural practices for diseases)",
+    "added_by": "organic_practices",
+    "backing": "recommended"
    }
   ],
   "expert_trigger": {
@@ -1784,6 +3391,26 @@
     "title": "AESA-based IPM Package: Maize",
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -1819,15 +3446,23 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "thiamethoxam_25wg",
-    "dose_per_litre": 0.2,
-    "dose_unit": "g",
+    "ingredient": "thiamethoxam_lambda_zc",
+    "dose_per_litre": 0.25,
+    "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Only if colonies cover the top flower on more than 1 in 5 plants before pollen is shed.",
      "hi": "केवल तब जब परागण से पहले 5 में से 1 से ज़्यादा पौधों की नर मंजरी झुंडों से ढकी हो।",
      "mr": "फक्त परागीभवनापूर्वी 5 पैकी 1 पेक्षा जास्त झाडांचे तुरे वसाहतींनी झाकलेले असल्यास."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Maize",
+     "pest": "Aphid, shoot fly, stem borer",
+     "formulation_per_ha": "125 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 42
     }
    }
   ],
@@ -1846,6 +3481,26 @@
     "title": "AESA-based IPM Package: Maize",
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "neemastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "brahmastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -1886,15 +3541,25 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "copper_oxychloride_50wp",
-    "dose_per_litre": 2.5,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
+    "ingredient": "carboxin_75wp",
+    "use": "seed",
+    "per_kg_seed": {
+     "amount": 2.5,
+     "unit": "g"
+    },
     "timing": {
-     "en": "At first spots in wet weather; repeat after 10–15 days if it keeps spreading.",
-     "hi": "नम मौसम में पहले धब्बों पर; फैलता रहे तो 10–15 दिन बाद दोहराएँ।",
-     "mr": "ओलसर हवामानात पहिल्या ठिपक्यांवर; पसरत राहिल्यास 10–15 दिवसांनी पुन्हा."
+     "en": "A one-time treatment of next season's seed before sowing.",
+     "hi": "अगले मौसम के बीज का बुवाई से पहले एक बार उपचार।",
+     "mr": "पुढील हंगामातील बियाण्यावर पेरणीपूर्वी एकदाच प्रक्रिया."
+    },
+    "verified": true,
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Angular leaf spot (bacterial blight)",
+     "formulation_per_ha": "2–2.5 g per kg seed (seed treatment)",
+     "water_l_per_ha": "N/A",
+     "waiting_days": null
     }
    }
   ],
@@ -1918,6 +3583,29 @@
     "title": "Crop protection — Cotton",
     "publisher": "TNAU Agritech Portal",
     "url": "https://agritech.tnau.ac.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "pseudomonas_0_5wp",
+    "use": "seed",
+    "per_kg_seed": {
+     "amount": 10,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "For your next sowing: coat the seed evenly, dry it in shade, then sow.",
+     "hi": "अगली बुवाई के लिए: बीज पर समान रूप से लगाएँ, छाया में सुखाएँ, फिर बोएँ।",
+     "mr": "पुढील पेरणीसाठी: बियाण्यावर सारखे लावा, सावलीत वाळवा, मग पेरा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-fungicides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Bacterial leaf blight",
+     "formulation_per_ha": "10 g/kg seed",
+     "water_l_per_ha": null,
+     "waiting_days": null
+    }
    }
   ]
  },
@@ -1962,11 +3650,19 @@
     "dose_per_litre": 1.0,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Only when whiteflies exceed 8–10 adults per leaf; against the whitefly, not the virus.",
      "hi": "सफ़ेद मक्खी प्रति पत्ती 8–10 से ज़्यादा हो तभी; सफ़ेद मक्खी के लिए, विषाणु के लिए नहीं।",
      "mr": "पांढऱ्या माशा प्रति पान 8–10 पेक्षा जास्त असतील तेव्हाच; पांढऱ्या माशीसाठी, विषाणूसाठी नाही."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Whitefly (the leaf curl vector)",
+     "formulation_per_ha": "500–700 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 50
     }
    },
    {
@@ -1975,11 +3671,19 @@
     "dose_per_litre": 1.2,
     "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Alternative to rotate with; not on consecutive sprays.",
      "hi": "बदल-बदल कर डालने का विकल्प; लगातार दो छिड़काव में नहीं।",
      "mr": "आलटून-पालटून वापरायचा पर्याय; लागोपाठ दोन फवारण्यांत नाही."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Whiteflies (the leaf curl vector), aphids, thrips, jassids",
+     "formulation_per_ha": "600 g",
+     "water_l_per_ha": "500–1000",
+     "waiting_days": 21
     }
    }
   ],
@@ -1998,6 +3702,63 @@
     "title": "AESA-based IPM Package: Cotton",
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "lecanicillium_1_15wp",
+    "use": "spray",
+    "dose_per_litre": 5,
+    "dose_unit": "g",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray in the evening on a moist crop; the fungus needs humidity to infect the pest.",
+     "hi": "शाम को नम फसल पर छिड़कें; फफूंद को कीट को संक्रमित करने के लिए नमी चाहिए।",
+     "mr": "संध्याकाळी ओलसर पिकावर फवारा; बुरशीला किडीला बाधित करण्यासाठी ओलावा लागतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "White flies",
+     "formulation_per_ha": "2500 g",
+     "water_l_per_ha": "500",
+     "waiting_days": null
+    }
+   },
+   {
+    "ingredient": "azadirachtin_0_15ec",
+    "use": "spray",
+    "dose_per_litre": 5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 200,
+    "timing": {
+     "en": "Spray early, when the pest first appears; neem stops feeding and egg-laying more than it kills.",
+     "hi": "कीट दिखते ही जल्दी छिड़कें; नीम कीट को मारने से ज़्यादा उसका खाना और अंडे देना रोकता है।",
+     "mr": "कीड दिसताच लवकर फवारा; कडुनिंब कीड मारण्यापेक्षा तिचे खाणे आणि अंडी घालणे थांबवतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "White fly, Bollworms",
+     "formulation_per_ha": "2500-5000 ml",
+     "water_l_per_ha": "500-1000",
+     "waiting_days": 5
+    }
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "nske_5",
+    "per_litre": {
+     "amount": 50,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "It keeps down the whitefly that spreads the virus; it does not cure plants already infected.",
+     "hi": "यह वायरस फैलाने वाली सफेद मक्खी को कम करता है; पहले से संक्रमित पौधों को ठीक नहीं करता।",
+     "mr": "हे विषाणू पसरवणाऱ्या पांढऱ्या माशीला कमी करते; आधीच बाधित झाडे बरी करत नाही."
+    },
+    "source": "APEDA Farmer Connect: IPM with recommended pesticides (Government of India)"
    }
   ]
  },
@@ -2038,15 +3799,26 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "carbendazim_50wp",
-    "dose_per_litre": 1.0,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
+    "ingredient": "sedaxane_fludioxonil_thiamethoxam_fs",
+    "use": "seed",
+    "per_kg_seed": {
+     "amount": 4.0,
+     "unit": "ml",
+     "water_ml": 10
+    },
     "timing": {
-     "en": "As a root-zone drench around plants next to the wilted ones, not as a leaf spray.",
-     "hi": "मुरझाए पौधों के पास के पौधों की जड़ों में डालें, पत्तियों पर छिड़काव नहीं।",
-     "mr": "मरगळलेल्या झाडांशेजारील झाडांच्या मुळांशी ओता, पानांवर फवारणी नाही."
+     "en": "Treat next season's seed just before sowing, and dry it in the shade.",
+     "hi": "अगले मौसम के बीज का बुवाई से ठीक पहले उपचार करें, और छाया में सुखाएँ।",
+     "mr": "पुढील हंगामातील बियाण्यावर पेरणीपूर्वी लगेच प्रक्रिया करा, आणि सावलीत वाळवा."
+    },
+    "verified": true,
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Fungal wilt, root rot",
+     "formulation_per_ha": "4.0 ml per kg seed (seed treatment)",
+     "water_l_per_ha": "10 ml per kg seed",
+     "waiting_days": null
     }
    }
   ],
@@ -2100,28 +3872,23 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "mancozeb_75wp",
-    "dose_per_litre": 2.5,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "When spots spread to the middle leaves; repeat after 15 days if wet weather continues.",
-     "hi": "धब्बे बीच की पत्तियों तक फैलें तब; नमी बनी रहे तो 15 दिन बाद दोहराएँ।",
-     "mr": "ठिपके मधल्या पानांपर्यंत पसरल्यावर; ओलसर हवामान राहिल्यास 15 दिवसांनी पुन्हा."
-    }
-   },
-   {
-    "tier": "chemical",
     "ingredient": "propiconazole_25ec",
     "dose_per_litre": 1.0,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
-     "en": "Alternative if spots keep spreading after mancozeb.",
-     "hi": "मैंकोज़ेब के बाद भी धब्बे फैलते रहें तो विकल्प।",
-     "mr": "मॅन्कोझेबनंतरही ठिपके पसरत राहिल्यास पर्याय."
+     "en": "When spots spread to the middle leaves; repeat after 15 days if wet weather continues.",
+     "hi": "धब्बे बीच की पत्तियों तक फैलें तब; नमी बनी रहे तो 15 दिन बाद दोहराएँ।",
+     "mr": "ठिपके मधल्या पानांपर्यंत पसरल्यावर; ओलसर हवामान राहिल्यास 15 दिवसांनी पुन्हा."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Alternaria leaf spot",
+     "formulation_per_ha": "500 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 23
     }
    }
   ],
@@ -2145,6 +3912,26 @@
     "title": "Crop protection — Cotton",
     "publisher": "TNAU Agritech Portal",
     "url": "https://agritech.tnau.ac.in"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -2189,11 +3976,19 @@
     "dose_per_litre": 0.3,
     "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "Only when more than 1 in 10 plants have aphid clusters and natural enemies are few.",
      "hi": "जब 10 में से 1 से ज़्यादा पौधों पर माहू के झुंड हों और मित्र कीट कम हों तभी।",
      "mr": "10 पैकी 1 पेक्षा जास्त झाडांवर माव्याचे थवे असतील व मित्रकीटक कमी असतील तेव्हाच."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Aphids, jassids, thrips, whiteflies",
+     "formulation_per_ha": "150 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 25
     }
    }
   ],
@@ -2212,6 +4007,61 @@
     "title": "AESA-based IPM Package: Cotton",
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
+   }
+  ],
+  "organic": [
+   {
+    "ingredient": "azadirachtin_5",
+    "use": "spray",
+    "dose_per_litre": 0.5,
+    "dose_unit": "ml",
+    "water_l_per_acre": 300,
+    "timing": {
+     "en": "Spray early, when the pest first appears; neem stops feeding and egg-laying more than it kills.",
+     "hi": "कीट दिखते ही जल्दी छिड़कें; नीम कीट को मारने से ज़्यादा उसका खाना और अंडे देना रोकता है।",
+     "mr": "कीड दिसताच लवकर फवारा; कडुनिंब कीड मारण्यापेक्षा तिचे खाणे आणि अंडी घालणे थांबवतो."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Bio-insecticides, as on 30.09.2026",
+     "crop": "Cotton",
+     "pest": "Whitefly, Leaf hoppers, Helicoverpa armigera, Aphids",
+     "formulation_per_ha": "375 ml",
+     "water_l_per_ha": "750",
+     "waiting_days": 5
+    }
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "nske_5",
+    "per_litre": {
+     "amount": 50,
+     "unit": "g"
+    },
+    "timing": {
+     "en": "Spray when you first see the insects under the leaves, covering the undersides.",
+     "hi": "पत्तों के नीचे कीट दिखते ही छिड़कें, पत्तों की निचली सतह पर अच्छी तरह।",
+     "mr": "पानांच्या खाली किडे दिसताच फवारा, पानांच्या खालच्या बाजूला नीट."
+    },
+    "source": "APEDA Farmer Connect: IPM with recommended pesticides (Government of India)"
+   },
+   {
+    "prep": "neemastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "brahmastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month, as the natural farming protocol advises, before the pest builds up.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, कीट बढ़ने से पहले हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, कीड वाढण्यापूर्वी दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -2247,15 +4097,23 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "hexaconazole_5ec",
-    "dose_per_litre": 2.0,
-    "dose_unit": "ml",
+    "ingredient": "pyraclostrobin_20wg",
+    "dose_per_litre": 0.8,
+    "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "When spots appear on upper leaves before pod filling.",
      "hi": "दाना भरने से पहले ऊपरी पत्तियों पर धब्बे दिखें तब।",
      "mr": "दाणे भरण्यापूर्वी वरच्या पानांवर ठिपके दिसल्यावर."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Soybean",
+     "pest": "Frog eye leaf spot (Cercospora)",
+     "formulation_per_ha": "375–500 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 26
     }
    }
   ],
@@ -2274,6 +4132,26 @@
     "title": "AESA-based IPM Package: Soybean",
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -2306,19 +4184,6 @@
      "hi": "बुवाई से पहले बीज को ट्राइकोडर्मा विरिडी 5 ग्राम प्रति किलो से उपचारित करें।",
      "mr": "पेरणीपूर्वी बियाण्यास ट्रायकोडर्मा व्हिरिडी 5 ग्रॅम प्रति किलो प्रक्रिया करा."
     }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "carbendazim_50wp",
-    "dose_per_litre": 1.0,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "If spots climb past the middle of the plant before pod filling.",
-     "hi": "दाना भरने से पहले धब्बे पौधे के बीच से ऊपर चढ़ें तो।",
-     "mr": "दाणे भरण्यापूर्वी ठिपके झाडाच्या मध्यापेक्षा वर चढल्यास."
-    }
    }
   ],
   "expert_trigger": {
@@ -2336,6 +4201,26 @@
     "title": "AESA-based IPM Package: Soybean",
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -2368,32 +4253,6 @@
      "hi": "पहले धब्बों पर ट्राइकोडर्मा हरजियानम 5 ग्राम प्रति लीटर छिड़कें।",
      "mr": "पहिल्या ठिपक्यांवर ट्रायकोडर्मा हर्जियानम 5 ग्रॅम प्रति लिटर फवारा."
     }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "propiconazole_25ec",
-    "dose_per_litre": 1.0,
-    "dose_unit": "ml",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "When spots reach the leaves just below the cob before the top flower opens.",
-     "hi": "नर मंजरी से पहले धब्बे भुट्टे के नीचे की पत्तियों तक पहुँचें तब।",
-     "mr": "तुरा येण्यापूर्वी ठिपके कणसाखालच्या पानांपर्यंत पोहोचल्यावर."
-    }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "mancozeb_75wp",
-    "dose_per_litre": 2.5,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "Alternative; repeat after 10–14 days in wet weather.",
-     "hi": "विकल्प; नम मौसम में 10–14 दिन बाद दोहराएँ।",
-     "mr": "पर्याय; ओलसर हवामानात 10–14 दिवसांनी पुन्हा."
-    }
    }
   ],
   "expert_trigger": {
@@ -2416,6 +4275,26 @@
     "title": "AESA-based IPM Package: Maize",
     "publisher": "NIPHM & Directorate of Plant Protection, Quarantine and Storage",
     "url": "https://niphm.gov.in"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -2445,6 +4324,17 @@
      "hi": "समय पर कटाई करें; सड़े भुट्टे अलग करें; भंडारण से पहले भुट्टे और दाने धूप में 14% से कम नमी तक सुखाएँ; फॉल आर्मीवर्म और तना छेदक को रोकें जो रास्ता खोलते हैं।",
      "mr": "वेळेवर काढणी करा; कुजलेली कणसे वेगळी करा; साठवण्यापूर्वी कणसे व दाणे उन्हात 14% पेक्षा कमी ओलाव्यापर्यंत वाळवा; लष्करी अळी व खोडकिडीचे नियंत्रण करा, जे बुरशीला वाट मोकळी करतात."
     }
+   },
+   {
+    "tier": "cultural",
+    "action": {
+     "en": "Do not let the crop go short of water from flowering to grain filling, and do not give high nitrogen with too little potash.",
+     "hi": "फूल आने से दाना भरने तक फसल में पानी की कमी न होने दें, और कम पोटाश के साथ ज़्यादा नाइट्रोजन न दें।",
+     "mr": "फुलोऱ्यापासून दाणे भरेपर्यंत पिकाला पाण्याचा ताण पडू देऊ नका, आणि कमी पालाशसोबत जास्त नत्र देऊ नका."
+    },
+    "source": "NCIPM & DPPQS, Integrated Pest Management Package for Maize (cultural practices for diseases)",
+    "added_by": "organic_practices",
+    "backing": "recommended"
    }
   ],
   "expert_trigger": {
@@ -2493,6 +4383,17 @@
     }
    },
    {
+    "tier": "cultural",
+    "action": {
+     "en": "If the attack starts in the nursery, clip off and destroy the leaf tips of the affected seedlings before transplanting.",
+     "hi": "अगर हमला नर्सरी में शुरू हो, तो रोपाई से पहले प्रभावित पौध की पत्तियों के सिरे काटकर नष्ट करें।",
+     "mr": "प्रादुर्भाव रोपवाटिकेतच सुरू झाल्यास, पुनर्लागवडीपूर्वी बाधित रोपांच्या पानांची टोके कापून नष्ट करा."
+    },
+    "source": "PAU Ludhiana, Package of Practices for Crops of Punjab, Kharif 2026",
+    "added_by": "organic_practices",
+    "backing": "recommended"
+   },
+   {
     "tier": "biological",
     "action": {
      "en": "Leave the natural enemies alone — small wasps parasitise the eggs and grubs, and a reduviid bug eats the adults.",
@@ -2506,11 +4407,19 @@
     "dose_per_litre": 2.5,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
-     "en": "Only if more than 1 in 4 leaves is scraped and the crop is still tillering.",
+     "en": "Only if more than 1 in 4 leaves is scraped and the crop is still putting out new shoots.",
      "hi": "तभी जब हर 4 में से 1 से ज़्यादा पत्ती खुरची हो और फसल अभी कल्ले फूट रही हो।",
      "mr": "दर 4 पैकी 1 पेक्षा जास्त पाने खरवडली असतील आणि पीक अजून फुटवे अवस्थेत असेल तरच."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Insecticides, as on 30.09.2026",
+     "crop": "Paddy (Rice)",
+     "pest": "Hispa",
+     "formulation_per_ha": "1250 ml",
+     "water_l_per_ha": "500–1000",
+     "waiting_days": null
     }
    }
   ],
@@ -2565,19 +4474,6 @@
      "en": "Next season, coat the seed with Pseudomonas fluorescens at 10 g per kg and soak-dry before sowing.",
      "hi": "अगले मौसम में बीज को स्यूडोमोनास फ्लोरेसेंस 10 ग्राम प्रति किलो से उपचारित करें और बोने से पहले सुखा लें।",
      "mr": "पुढील हंगामात बियाण्यास स्युडोमोनास फ्लुरोसेन्स 10 ग्रॅम प्रति किलो लावा आणि पेरणीपूर्वी वाळवा."
-    }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "copper_oxychloride_50wp",
-    "dose_per_litre": 3.0,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "Only if streaks are spreading fast before panicle initiation; copper slows it, it does not cure it.",
-     "hi": "तभी जब बाली बनने से पहले धारियाँ तेज़ी से फैल रही हों; ताँबा रोकता है, ठीक नहीं करता।",
-     "mr": "लोंबी तयार होण्यापूर्वी रेषा झपाट्याने पसरत असतील तरच; तांबे रोग आटोक्यात ठेवते, बरे करत नाही."
     }
    }
   ],
@@ -2687,19 +4583,6 @@
      "hi": "अगले मौसम में बीज को ट्राइकोडर्मा विरिडी 4 ग्राम प्रति किलो से उपचारित करें और नर्सरी अच्छी निकासी वाली क्यारी पर लगाएँ।",
      "mr": "पुढील हंगामात बियाण्यास ट्रायकोडर्मा व्हिरिडी 4 ग्रॅम प्रति किलो लावा आणि रोपवाटिका उत्तम निचरा असलेल्या वाफ्यावर करा."
     }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "metalaxyl_mancozeb_72wp",
-    "dose_per_litre": 2.0,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "Seed treatment before sowing is what works; a spray only helps early, on young plants in wet patches.",
-     "hi": "बोने से पहले बीज उपचार ही काम करता है; छिड़काव केवल शुरुआत में, गीले हिस्सों के छोटे पौधों पर मदद करता है।",
-     "mr": "पेरणीपूर्वी बीजप्रक्रिया हाच उपयुक्त उपाय; फवारणी फक्त सुरुवातीला, ओल्या भागातील लहान रोपांवर उपयोगी."
-    }
    }
   ],
   "expert_trigger": {
@@ -2757,15 +4640,23 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "propiconazole_25ec",
+    "ingredient": "mefentrifluconazole_pyraclostrobin_sc",
     "dose_per_litre": 1.0,
     "dose_unit": "ml",
     "water_l_per_acre": 200,
-    "verified": false,
     "timing": {
-     "en": "When ringed spots show on the lower third of the plants, before pod filling.",
-     "hi": "जब पौधों के निचले एक-तिहाई भाग पर छल्लेदार धब्बे दिखें, दाना भरने से पहले।",
-     "mr": "झाडांच्या खालच्या एक तृतीयांश भागावर वलयी ठिपके दिसल्यावर, दाणे भरण्यापूर्वी."
+     "en": "Spray when the first spots with rings appear on the lower leaves.",
+     "hi": "निचली पत्तियों पर छल्लेदार धब्बे पहली बार दिखें तब छिड़कें।",
+     "mr": "खालच्या पानांवर वर्तुळाकार ठिपके पहिल्यांदा दिसताच फवारा."
+    },
+    "verified": true,
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Soybean",
+     "pest": "Frog eye leaf spot and target leaf spot",
+     "formulation_per_ha": "400–500 ml",
+     "water_l_per_ha": "500",
+     "waiting_days": 24
     }
    }
   ],
@@ -2784,6 +4675,26 @@
     "title": "Target spot of soybean",
     "publisher": "Crop Protection Network (US land-grant universities)",
     "url": "https://cropprotectionnetwork.org/encyclopedia/target-spot-of-soybean"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -2819,15 +4730,23 @@
    },
    {
     "tier": "chemical",
-    "ingredient": "hexaconazole_5ec",
-    "dose_per_litre": 2.0,
-    "dose_unit": "ml",
+    "ingredient": "azoxystrobin_mancozeb_wg",
+    "dose_per_litre": 3.0,
+    "dose_unit": "g",
     "water_l_per_acre": 200,
-    "verified": false,
+    "verified": true,
     "timing": {
      "en": "As pods start to form, when the top leaves first go bronze.",
      "hi": "फलियाँ बनने के शुरू में, जब ऊपरी पत्तियाँ पहली बार ताँबई पड़ें।",
      "mr": "शेंगा लागू लागताना, वरची पाने प्रथम तांबूस पडल्यावर."
+    },
+    "registration": {
+     "source": "CIB&RC Major Uses of Pesticides — Fungicides, as on 30.09.2026",
+     "crop": "Soybean",
+     "pest": "Cercospora leaf spot, Myrothecium leaf spot",
+     "formulation_per_ha": "1500 g",
+     "water_l_per_ha": "500",
+     "waiting_days": 30
     }
    }
   ],
@@ -2846,6 +4765,26 @@
     "title": "Cercospora leaf blight and purple seed stain of soybean",
     "publisher": "Crop Protection Network (US land-grant universities)",
     "url": "https://cropprotectionnetwork.org/encyclopedia/cercospora-leaf-blight-of-soybean"
+   }
+  ],
+  "homemade": [
+   {
+    "prep": "sonthastra",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
+   },
+   {
+    "prep": "khatti_lassi",
+    "timing": {
+     "en": "Spray it as a preventive every 15 days to a month while the weather favours the disease, as the natural farming protocol advises.",
+     "hi": "प्राकृतिक खेती के प्रोटोकॉल के अनुसार, जब तक मौसम इस रोग के अनुकूल हो, हर 15 दिन से एक महीने में बचाव के लिए छिड़कें।",
+     "mr": "नैसर्गिक शेतीच्या प्रोटोकॉलनुसार, हवामान या रोगाला पोषक असेपर्यंत दर 15 दिवस ते एक महिन्याने प्रतिबंधासाठी फवारा."
+    },
+    "source": "ICAR, Generic Protocols for Natural Farming (natural farming portal, Ministry of Agriculture & Farmers Welfare)"
    }
   ]
  },
@@ -2877,19 +4816,6 @@
      "en": "Treat next season's seed with Trichoderma viride at 5 g per kg.",
      "hi": "अगले मौसम के बीज को ट्राइकोडर्मा विरिडी 5 ग्राम प्रति किलो से उपचारित करें।",
      "mr": "पुढील हंगामाच्या बियाण्यास ट्रायकोडर्मा व्हिरिडी 5 ग्रॅम प्रति किलो प्रक्रिया करा."
-    }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "metalaxyl_mancozeb_72wp",
-    "dose_per_litre": 2.0,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "Only if the fuzzy patches pass a quarter of the leaves during a long wet spell.",
-     "hi": "तभी जब लंबी नमी में रोएँदार धब्बे चौथाई से ज़्यादा पत्तियों पर फैल जाएँ।",
-     "mr": "दीर्घ ओल्या हवामानात लवदार ठिपके एक चतुर्थांशापेक्षा जास्त पानांवर गेले तरच."
     }
    }
   ],
@@ -2944,19 +4870,6 @@
      "en": "Treat next season's seed with Pseudomonas fluorescens at 10 g per kg.",
      "hi": "अगले मौसम के बीज को स्यूडोमोनास फ्लोरेसेंस 10 ग्राम प्रति किलो से उपचारित करें।",
      "mr": "पुढील हंगामाच्या बियाण्यास स्युडोमोनास फ्लुरोसेन्स 10 ग्रॅम प्रति किलो लावा."
-    }
-   },
-   {
-    "tier": "chemical",
-    "ingredient": "copper_oxychloride_50wp",
-    "dose_per_litre": 3.0,
-    "dose_unit": "g",
-    "water_l_per_acre": 200,
-    "verified": false,
-    "timing": {
-     "en": "If angular spots keep spreading on the new leaves in a cool wet spell — copper slows it; nothing cures it.",
-     "hi": "ठंडी-नम अवधि में नई पत्तियों पर कोणदार धब्बे बढ़ते रहें तो — ताँबा इसे धीमा करता है, ठीक कोई नहीं करता।",
-     "mr": "थंड-ओल्या काळात कोवळ्या पानांवर कोनाकृती ठिपके वाढतच राहिले तर — तांबे रोग मंदावते, बरा करत नाही."
     }
    }
   ],

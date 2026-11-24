@@ -24,6 +24,7 @@ const REASON_LABEL: Record<string, string> = {
   MINORITY_VIEWS: 'Live call: seen in only some views',
   LOOKALIKE: 'Live call: a look-alike problem',
   LAB_CLASS_CONFIRM: 'Needs a lab-class check',
+  LOOKALIKE_CONFIRM: 'Look-alike check',
   LAB_CLASS_BELOW_GATE: 'Lab-class, not confident',
   NOT_A_CROP_PHOTO: 'Not a crop photo',
   UNFAMILIAR_PHOTO: 'Unfamiliar photo',
